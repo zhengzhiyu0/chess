@@ -8,6 +8,8 @@ export class Engines {
   maia: Maia | null = null;
   sf: Stockfish | null = null;
   private maiaLoading: Promise<Maia> | null = null;
+  /** backend the current Maia was requested with (it may have fallen back to WASM) */
+  private maiaWanted: Settings['backend'] | null = null;
   private sfLoading: Promise<Stockfish> | null = null;
 
   constructor(
@@ -32,12 +34,13 @@ export class Engines {
 
   async getMaia(): Promise<Maia> {
     const st = this.settings();
-    if (this.maia?.alive && this.maia.model === st.model && this.maia.backend === st.backend) return this.maia;
+    if (this.maia?.alive && this.maia.model === st.model && this.maiaWanted === st.backend) return this.maia;
     if (this.maiaLoading) {
       const m = await this.maiaLoading;
-      if (m.alive && m.model === st.model && m.backend === st.backend) return m;
+      if (m.alive && m.model === st.model && this.maiaWanted === st.backend) return m;
     }
     this.unloadMaia();
+    this.maiaWanted = st.backend;
     if (st.lowMemory && !this.needBoth()) this.unloadSf();
     const model = st.model;
     const lean = st.lowMemory;

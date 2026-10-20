@@ -63,6 +63,22 @@ if (!self.name?.startsWith('em-pthread')) ctx.onmessage = async (e) => {
         ...lean,
       });
       bytes = null;
+      // ORT's WebGPU EP can silently return an all-zero move head (seen with ORT 1.30), which
+      // makes every legal move equally likely; reject it so the caller falls back to WASM
+      if (msg.backend === 'webgpu') {
+        const start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+        const probe = await session.run({
+          tokens: new ort.Tensor('float32', buildTokens([start]), [1, 64, FEAT]),
+          self_elo: new ort.Tensor('float32', Float32Array.of(1500), [1]),
+          oppo_elo: new ort.Tensor('float32', Float32Array.of(1500), [1]),
+        });
+        const d = probe.logits_move.data as Float32Array;
+        if (!d.every(Number.isFinite) || Math.max(...d) === Math.min(...d)) {
+          await session.release();
+          session = null;
+          throw new Error('WebGPU 推理结果异常');
+        }
+      }
       ctx.postMessage({ type: 'loaded', reqId: msg.reqId, backend: msg.backend });
     } else if (msg.type === 'eval') {
       if (!session) throw new Error('模型尚未加载');

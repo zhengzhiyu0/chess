@@ -115,6 +115,15 @@ function unloadSf() {
   sfLoading = null;
 }
 
+/**
+ * Coached play alternates Maia and Stockfish every move. Unloading one to load the other would
+ * reload hundreds of MB per move, and iOS does not reliably free a terminated worker's wasm memory,
+ * so the page gets killed after a few moves. Keep both resident instead.
+ */
+function needBothEngines() {
+  return coachOn && mode === 'play';
+}
+
 async function getMaia(): Promise<Maia> {
   if (maia && maia.model === settings.model && maia.backend === settings.backend) return maia;
   if (maiaLoading) {
@@ -122,16 +131,20 @@ async function getMaia(): Promise<Maia> {
     if (m.model === settings.model && m.backend === settings.backend) return m;
   }
   unloadMaia();
-  if (settings.lowMemory) unloadSf();
+  if (settings.lowMemory && !needBothEngines()) unloadSf();
   const model = settings.model;
+  const lean = settings.lowMemory;
   setStatus(`加载 ${MODELS[model].label}…`);
-  maiaLoading = Maia.create(model, settings.backend, (l, t) =>
-    setStatus(`加载 Maia ${((l / t) * 100).toFixed(0)}%（${(t / 1048576).toFixed(0)}MB）`),
+  maiaLoading = Maia.create(
+    model,
+    settings.backend,
+    (l, t) => setStatus(`加载 Maia ${((l / t) * 100).toFixed(0)}%（${(t / 1048576).toFixed(0)}MB）`),
+    lean,
   )
     .catch(async (err) => {
       if (settings.backend !== 'webgpu') throw err;
       console.warn('WebGPU 失败，回退 WASM', err);
-      return Maia.create(model, 'wasm');
+      return Maia.create(model, 'wasm', undefined, lean);
     })
     .then((m) => {
       maia = m;
@@ -149,7 +162,7 @@ async function getMaia(): Promise<Maia> {
 async function getSf(): Promise<Stockfish> {
   if (sf) return sf;
   if (sfLoading) return sfLoading;
-  if (settings.lowMemory) unloadMaia();
+  if (settings.lowMemory && !needBothEngines()) unloadMaia();
   setStatus('加载 Stockfish 19…');
   sfLoading = Stockfish.create(settings.sfThreads, settings.sfHash)
     .then((s) => {
@@ -1548,6 +1561,10 @@ function init() {
     drawable: { enabled: true },
   });
   homeCg = Chessground($('home-board'), { viewOnly: true, coordinates: false, animation: { enabled: false } });
+  // chessground caches the board rect and only refreshes it on scroll/resize; layout shifts without a
+  // size change (e.g. the screen slide-in transition) leave it stale and taps land on the wrong square
+  const freshBounds = () => cg.state.dom.bounds.clear();
+  for (const ev of ['touchstart', 'mousedown']) $('board').addEventListener(ev, freshBounds, { capture: true, passive: true });
   bind();
   const saved = localStorage.getItem(GAME_KEY);
   if (!saved || !loadGame(JSON.parse(saved) as SavedGame)) userColor = settings.color === 'b' ? 'b' : 'w';

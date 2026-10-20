@@ -59,6 +59,7 @@ export class Maia {
     model: ModelId,
     backend: 'wasm' | 'webgpu',
     onProgress?: (loaded: number, total: number) => void,
+    lean = false,
   ): Promise<Maia> {
     const m = new Maia(model, backend);
     m.onProgress = onProgress ?? null;
@@ -69,6 +70,7 @@ export class Maia {
         modelBase: new URL(`models/maia3-${model}/`, document.baseURI).href,
         backend,
         numThreads,
+        lean,
       });
     } catch (err) {
       m.dispose();

@@ -25,11 +25,12 @@ function isolate(res) {
 async function networkFirst(req) {
   const cache = await caches.open(CACHE);
   try {
-    const res = await fetch(req);
-    if (res.ok) await cache.put(req, res.clone());
+    // bypass the HTTP cache too, otherwise a stale index.html (old UI) can come back after a reload
+    const res = await fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' });
+    if (res.ok) await cache.put(req.url, res.clone());
     return res;
   } catch {
-    return (await cache.match(req, { ignoreSearch: true })) || Response.error();
+    return (await cache.match(req.url, { ignoreSearch: true })) || Response.error();
   }
 }
 

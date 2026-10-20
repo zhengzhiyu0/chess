@@ -2,7 +2,7 @@ import * as ort from 'onnxruntime-web';
 import { buildTokens, FEAT } from './encode';
 
 export type WorkerIn =
-  | { type: 'load'; reqId: number; modelBase: string; backend: 'wasm' | 'webgpu'; numThreads: number }
+  | { type: 'load'; reqId: number; modelBase: string; backend: 'wasm' | 'webgpu'; numThreads: number; lean: boolean }
   | { type: 'eval'; reqId: number; fens: string[]; indices: number[]; selfElo: number; oppoElo: number };
 
 export type WorkerOut =
@@ -52,11 +52,17 @@ if (!self.name?.startsWith('em-pthread')) ctx.onmessage = async (e) => {
         await session.release();
         session = null;
       }
-      const bytes = await fetchModel(msg.modelBase);
+      let bytes: Uint8Array | null = await fetchModel(msg.modelBase);
+      // wasm memory never shrinks, so peak usage is what counts; these trim ~15% on the 79M model
+      const lean: ort.InferenceSession.SessionOptions = msg.lean
+        ? { enableCpuMemArena: false, enableMemPattern: false, extra: { session: { disable_prepacking: '1' } } }
+        : {};
       session = await ort.InferenceSession.create(bytes, {
         executionProviders: msg.backend === 'webgpu' ? ['webgpu', 'wasm'] : ['wasm'],
         graphOptimizationLevel: 'all',
+        ...lean,
       });
+      bytes = null;
       ctx.postMessage({ type: 'loaded', reqId: msg.reqId, backend: msg.backend });
     } else if (msg.type === 'eval') {
       if (!session) throw new Error('模型尚未加载');

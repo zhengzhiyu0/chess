@@ -1,0 +1,35 @@
+web/src/settings.ts
+  s_cee21cb6fc873a::t_ec7be02120567f 14-15,35
+web/src/style.css
+  s_cee21cb6fc873a::t_3cede8f188ed29 329-361
+web/public/sw.js
+  s_cee21cb6fc873a::t_d496bf752afa3a 50-54
+web/src/offline.ts
+  s_cee21cb6fc873a::t_9f760c77b210b8 97-98
+  s_cee21cb6fc873a::t_5f72287fe32870 92-96
+  s_cee21cb6fc873a::t_58353145494891 1-91,99-173
+web/vite.config.ts
+  s_cee21cb6fc873a::t_732130c51b6208 2-4,12-44,47
+web/index.html
+  s_cee21cb6fc873a::t_ed3fd03b08fdb6 21,129-143
+web/src/main.ts
+  s_cee21cb6fc873a::t_319125d6a947ff 927
+  s_cee21cb6fc873a::t_ae906303102146 16-28,810,822-926,928-931,989
+  s_cee21cb6fc873a::t_4dba043ee3adf7 1049-1054
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6b74b0a3f6d688263d2a5053982c1b0c89c2febf",
+  "prompts": {},
+  "sessions": {
+    "s_cee21cb6fc873a": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9a8df138-4488-418c-8fa5-b9b5035a9b9f",
+        "model": "customendpoint/ufosaga/claude-opus-5.5"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

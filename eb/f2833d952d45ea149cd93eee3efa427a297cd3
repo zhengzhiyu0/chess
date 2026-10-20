@@ -1,0 +1,26 @@
+web/public/sw.js
+  s_bde637f3c69395::t_bd1b7d795853f1 28-30,33
+web/src/maia/worker.ts
+  s_bde637f3c69395::t_d5deb9d387ea92 5,55-59,63,65
+web/src/maia/maia.ts
+  s_bde637f3c69395::t_33c007c322192c 62,73
+web/src/main.ts
+  s_bde637f3c69395::t_2f94fea78cdd64 118-126,134,136,138-142,147,165
+  s_bde637f3c69395::t_f62c62827a6823 1564-1567
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ebf2833d952d45ea149cd93eee3efa427a297cd3",
+  "prompts": {},
+  "sessions": {
+    "s_bde637f3c69395": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "aafea964-7932-4589-9ae9-d78ed9bfa625",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -40,12 +40,16 @@ self.addEventListener('message', (e) => {
   if (e.data === 'version') e.source?.postMessage({ version: VERSION });
 });
 
-function isolate(res) {
+// icons/manifest are also fetched by the OS (e.g. iOS "Add to Home Screen"), which is not same-origin;
+// CORP same-origin there makes iOS fall back to a letter icon
+const PUBLIC_ASSET = /\/icons\/|\.webmanifest$/;
+
+function isolate(res, url) {
   if (!res || res.status === 0 || res.type === 'opaque') return res;
   const h = new Headers(res.headers);
   h.set('Cross-Origin-Opener-Policy', 'same-origin');
   h.set('Cross-Origin-Embedder-Policy', 'require-corp');
-  h.set('Cross-Origin-Resource-Policy', 'same-origin');
+  h.set('Cross-Origin-Resource-Policy', PUBLIC_ASSET.test(url.pathname) ? 'cross-origin' : 'same-origin');
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
@@ -77,9 +81,9 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== location.origin) return;
   // the in-app download manager writes to the cache itself
   if (req.cache === 'no-store') {
-    e.respondWith(fetch(req).then(isolate));
+    e.respondWith(fetch(req).then((res) => isolate(res, url)));
     return;
   }
   const shell = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html') || url.pathname.endsWith('.webmanifest') || url.pathname.endsWith('manifest.json');
-  e.respondWith((shell ? networkFirst(req) : cacheFirst(req)).then(isolate));
+  e.respondWith((shell ? networkFirst(req) : cacheFirst(req)).then((res) => isolate(res, url)));
 });

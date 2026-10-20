@@ -26,6 +26,12 @@ export interface Settings {
   /** always show the engine's best move on your turn */
   coachBest: boolean;
   coachEval: boolean;
+  /** time control id, see TIME_CONTROLS ('none' = untimed) */
+  timeControl: string;
+  sound: boolean;
+  haptics: boolean;
+  /** queue a move while the opponent is thinking */
+  premove: boolean;
 }
 
 const KEY = 'maia-coach.settings';
@@ -53,6 +59,10 @@ export function defaultSettings(): Settings {
     coachHanging: true,
     coachBest: false,
     coachEval: false,
+    timeControl: 'none',
+    sound: true,
+    haptics: true,
+    premove: true,
   };
 }
 

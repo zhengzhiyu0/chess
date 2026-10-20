@@ -1,37 +1,30 @@
 import { Chess, type Square } from 'chess.js';
 import { Chessground } from '@lichess-org/chessground';
 import type { Api } from '@lichess-org/chessground/api';
-import type { Key } from '@lichess-org/chessground/types';
+import type { Key, MoveMetadata } from '@lichess-org/chessground/types';
 import type { DrawShape } from '@lichess-org/chessground/draw';
 import '@lichess-org/chessground/assets/chessground.base.css';
 import '@lichess-org/chessground/assets/chessground.cburnett.css';
 import './style.css';
 
-import { Maia, MODELS, type MaiaResult } from './maia/maia';
+import { MODELS, type MaiaResult } from './maia/maia';
 import { sampleMove } from './maia/sample';
-import { Stockfish, type SfLine } from './engine/stockfish';
+import type { Stockfish, SfLine } from './engine/stockfish';
 import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
-import { loadSettings, saveSettings, type Color, type Settings } from './settings';
-import {
-  deletePackage,
-  downloadPackage,
-  fmtMB,
-  isComplete,
-  listPackages,
-  loadPrecache,
-  pruneStale,
-  requestPersistence,
-  storageInfo,
-  type Package,
-  type PackageId,
-} from './offline';
+import { loadSettings, saveSettings, type Settings } from './settings';
+import { GameTree, type GNode } from './game/tree';
+import { END_REASON_TEXT, START_FEN, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
+import { exportPgn as treeToPgn, parsePgn, type Annotation } from './game/pgn';
+import { ChessClock, TIME_CONTROLS, fmtClockShort, pgnTimeControl, thinkBudget, timeControlOf } from './game/clock';
+import { computeStats, loadHistory, newGameId, saveHistory, upsert, type StoredGame } from './game/history';
+import { configureSound, play, soundForSan, unlockAudio } from './audio/sound';
+import { $, escapeHtml, setStatus } from './app/dom';
+import { Engines } from './app/engines';
+import { openEngines } from './app/engines-ui';
+import { findNode, movesHtml } from './app/moves-ui';
+import { openHistory } from './app/history-ui';
 
 // ---------- state ----------
-
-interface PlayedMove {
-  uci: string;
-  san: string;
-}
 
 interface PosEval {
   lines: SfLine[];
@@ -45,7 +38,18 @@ interface Threat {
   text: string;
 }
 
-interface SavedGame {
+/** Per-position analysis cache stored on tree nodes. */
+interface Ann {
+  eval: PosEval;
+  human: MaiaResult;
+  /** null = computed, nothing serious */
+  threat: Threat | null;
+}
+
+type Node = GNode<Ann>;
+
+/** Save format before the move tree existed. */
+interface LegacyGame {
   startFen: string;
   moves: string[];
   userColor: Color;
@@ -53,22 +57,28 @@ interface SavedGame {
   coach?: boolean;
 }
 
-const START_FEN = new Chess().fen();
 const GAME_KEY = 'maia-coach.game';
 
 let settings: Settings = loadSettings();
-let startFen = START_FEN;
-let moves: PlayedMove[] = [];
-let fens: string[] = [START_FEN];
-let cursor = 0;
+let tree = new GameTree<Ann>(START_FEN);
+let node: Node = tree.root;
+let gameId = newGameId();
+let gameDate = Date.now();
+let gameElo: number | undefined = settings.elo;
+let gameModel: string = settings.model;
 let userColor: Color = 'w';
 let result = '';
+let reason: EndReason | undefined;
+let imported = false;
+let headers: Record<string, string> | undefined;
+let tcId = 'none';
+let clock: ChessClock | null = null;
+let lowTimeWarned = false;
+let drawOfferPly = -100;
 let mode: 'play' | 'review' = 'play';
 let flipped = false;
 let gameToken = 0;
 let maiaThinking = false;
-let evals: (PosEval | undefined)[] = [];
-let human: (MaiaResult | undefined)[] = [];
 let hintShapes: DrawShape[] = [];
 let liveOn = false;
 let liveCtrl: AbortController | null = null;
@@ -79,224 +89,131 @@ let shownResult = '';
 let coachOn = false;
 let coachState: 'idle' | 'checking' | 'paused' = 'idle';
 let coachCtrl: AbortController | null = null;
-let coachPly = -1;
-let threats: (Threat | null | undefined)[] = [];
+/** position before the user's move that the coach is judging */
+let coachFrom: Node | null = null;
+/** moves taken back with "重走这步", re-attached as variations once a different move is played */
+let retried: { from: Node; nodes: Node[] } | null = null;
+let history: StoredGame[] = loadHistory();
 
-let maia: Maia | null = null;
-let maiaLoading: Promise<Maia> | null = null;
-let sf: Stockfish | null = null;
-let sfLoading: Promise<Stockfish> | null = null;
-
-const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-
-// ---------- engines ----------
-
-let toastTimer = 0;
-
-function setStatus(text: string) {
-  const t = $('status');
-  t.textContent = text;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => t.classList.remove('show'), 2600);
-  $('home-env').textContent = text;
-}
-
-function unloadMaia() {
-  maia?.dispose();
-  maia = null;
-  maiaLoading = null;
-}
-
-function unloadSf() {
-  liveCtrl?.abort();
-  sf?.terminate();
-  sf = null;
-  sfLoading = null;
-}
-
-/**
- * Coached play alternates Maia and Stockfish every move. Unloading one to load the other would
- * reload hundreds of MB per move, and iOS does not reliably free a terminated worker's wasm memory,
- * so the page gets killed after a few moves. Keep both resident instead.
- */
-function needBothEngines() {
-  return coachOn && mode === 'play';
-}
-
-async function getMaia(): Promise<Maia> {
-  if (maia && maia.model === settings.model && maia.backend === settings.backend) return maia;
-  if (maiaLoading) {
-    const m = await maiaLoading;
-    if (m.model === settings.model && m.backend === settings.backend) return m;
-  }
-  unloadMaia();
-  if (settings.lowMemory && !needBothEngines()) unloadSf();
-  const model = settings.model;
-  const lean = settings.lowMemory;
-  setStatus(`加载 ${MODELS[model].label}…`);
-  maiaLoading = Maia.create(
-    model,
-    settings.backend,
-    (l, t) => setStatus(`加载 Maia ${((l / t) * 100).toFixed(0)}%（${(t / 1048576).toFixed(0)}MB）`),
-    lean,
-  )
-    .catch(async (err) => {
-      if (settings.backend !== 'webgpu') throw err;
-      console.warn('WebGPU 失败，回退 WASM', err);
-      return Maia.create(model, 'wasm', undefined, lean);
-    })
-    .then((m) => {
-      maia = m;
-      setStatus(`${MODELS[model].label} 就绪`);
-      return m;
-    })
-    .catch((err) => {
-      maiaLoading = null;
-      setStatus('Maia 加载失败：' + (err as Error).message);
-      throw err;
-    });
-  return maiaLoading;
-}
-
-async function getSf(): Promise<Stockfish> {
-  if (sf) return sf;
-  if (sfLoading) return sfLoading;
-  if (settings.lowMemory && !needBothEngines()) unloadMaia();
-  setStatus('加载 Stockfish 19…');
-  sfLoading = Stockfish.create(settings.sfThreads, settings.sfHash)
-    .then((s) => {
-      sf = s;
-      setStatus(`Stockfish 19 就绪（${s.multiThreaded ? s.threads + ' 线程' : '单线程'}）`);
-      return s;
-    })
-    .catch((err) => {
-      sfLoading = null;
-      setStatus('Stockfish 加载失败：' + (err as Error).message);
-      throw err;
-    });
-  return sfLoading;
-}
+const engines = new Engines(
+  () => settings,
+  // coached play alternates Maia and Stockfish every move; see Engines
+  () => coachOn && mode === 'play',
+  () => liveCtrl?.abort(),
+);
+const getMaia = () => engines.getMaia();
+const getSf = () => engines.getSf();
 
 // ---------- game helpers ----------
 
-function chessAt(ply: number): Chess {
-  return new Chess(fens[ply]);
+function tip(): Node {
+  let n = tree.root;
+  while (n.children[0]) n = n.children[0];
+  return n;
 }
 
-function uciOf(m: { from: string; to: string; promotion?: string }) {
-  return m.from + m.to + (m.promotion ?? '');
-}
+const fensTo = (n: Node) => tree.pathTo(n).map((x) => x.fen);
+const movesTo = (n: Node) => tree.pathTo(n).slice(1).map((x) => x.uci);
+const chessOf = (n: Node) => new Chess(n.fen);
+const currentLine = () => tree.lineThrough(node);
+const arrow = (u: string, brush: string): DrawShape => ({ orig: u.slice(0, 2) as Key, dest: u.slice(2, 4) as Key, brush });
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function toMove(uci: string) {
-  return { from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] };
-}
-
-function sanOf(fen: string, uci: string): string {
-  try {
-    return new Chess(fen).move(toMove(uci)).san;
-  } catch {
-    return uci;
-  }
-}
-
-function pvToSan(fen: string, pv: string[], max = 8): string {
-  const c = new Chess(fen);
-  const out: string[] = [];
-  for (const u of pv.slice(0, max)) {
-    try {
-      const turn = c.turn();
-      const num = Number(c.fen().split(' ')[5]);
-      const san = c.move(toMove(u)).san;
-      out.push(turn === 'w' ? `${num}. ${san}` : out.length === 0 ? `${num}… ${san}` : san);
-    } catch {
-      break;
-    }
-  }
-  return out.join(' ');
-}
-
-function terminalResult(c: Chess): string {
-  if (c.isCheckmate()) return c.turn() === 'w' ? '0-1' : '1-0';
-  if (c.isDraw() || c.isStalemate()) return '1/2-1/2';
-  return '';
+function clearAnn(...keys: (keyof Ann)[]) {
+  for (const n of tree.nodes()) for (const k of keys) delete n.a[k];
 }
 
 function resultText(): string {
-  const c = chessAt(fens.length - 1);
-  if (result === '') return '';
-  const why = c.isCheckmate()
-    ? '将死'
-    : c.isStalemate()
-      ? '逼和'
-      : c.isThreefoldRepetition()
-        ? '三次重复'
-        : c.isInsufficientMaterial()
-          ? '子力不足'
-          : c.isDrawByFiftyMoves()
-            ? '50 回合规则'
-            : '认输';
-  return `${result}（${why}）`;
+  if (!result) return '';
+  return reason ? `${result}（${END_REASON_TEXT[reason]}）` : result;
+}
+
+function stored(): StoredGame {
+  if (!result && !imported) {
+    gameElo = settings.elo;
+    gameModel = settings.model;
+  }
+  return {
+    id: gameId,
+    date: gameDate,
+    startFen: tree.root.fen,
+    tree: tree.serialize(),
+    userColor,
+    result,
+    reason,
+    coach: coachOn,
+    elo: imported ? undefined : gameElo,
+    model: imported ? undefined : gameModel,
+    tc: tcId,
+    clock: clock && !result ? clock.snapshot(performance.now()) : undefined,
+    headers,
+    imported: imported || undefined,
+  };
 }
 
 function saveGame() {
-  const g: SavedGame = { startFen, moves: moves.map((m) => m.uci), userColor, result, coach: coachOn };
-  localStorage.setItem(GAME_KEY, JSON.stringify(g));
-}
-
-function loadGame(g: SavedGame): boolean {
+  const g = stored();
   try {
-    const c = new Chess(g.startFen);
-    const ms: PlayedMove[] = [];
-    const fs = [c.fen()];
-    for (const u of g.moves) {
-      const m = c.move(toMove(u));
-      ms.push({ uci: u, san: m.san });
-      fs.push(c.fen());
-    }
-    startFen = g.startFen;
-    moves = ms;
-    fens = fs;
-    userColor = g.userColor;
-    result = g.result || terminalResult(c);
-    shownResult = result;
-    cursor = fens.length - 1;
-    evals = [];
-    human = [];
-    threats = [];
-    coachOn = Boolean(g.coach);
-    coachReset();
-    return true;
-  } catch {
-    return false;
+    localStorage.setItem(GAME_KEY, JSON.stringify(g));
+  } catch (err) {
+    console.warn('保存对局失败', err);
+  }
+  if (result && !imported) {
+    history = upsert(history, g);
+    saveHistory(history);
   }
 }
 
-function truncate(ply: number) {
-  moves = moves.slice(0, ply);
-  fens = fens.slice(0, ply + 1);
-  evals = evals.slice(0, ply);
-  human = human.slice(0, ply);
-  threats = threats.slice(0, ply);
-  result = '';
-}
-
-function pushMove(uci: string): boolean {
-  const c = chessAt(fens.length - 1);
-  let m;
-  try {
-    m = c.move(toMove(uci));
-  } catch {
-    return false;
-  }
-  moves.push({ uci, san: m.san });
-  fens.push(c.fen());
-  cursor = fens.length - 1;
-  result = terminalResult(c);
+function resetTransient() {
+  shownResult = result;
+  lowTimeWarned = false;
+  drawOfferPly = -100;
   hintShapes = [];
+  retried = null;
+  liveLines = [];
+  coachReset();
   $('hint-box').textContent = '';
-  saveGame();
-  return true;
+}
+
+function loadGame(raw: StoredGame | LegacyGame): boolean {
+  try {
+    const g: StoredGame =
+      'tree' in raw
+        ? raw
+        : {
+            id: newGameId(),
+            date: Date.now(),
+            startFen: raw.startFen,
+            tree: GameTree.fromMoves(raw.startFen, raw.moves).serialize(),
+            userColor: raw.userColor,
+            result: raw.result,
+            coach: raw.coach,
+          };
+    tree = GameTree.deserialize<Ann>(g.startFen, g.tree);
+    node = tip();
+    gameId = g.id;
+    gameDate = g.date;
+    userColor = g.userColor;
+    result = g.result || '';
+    reason = g.reason;
+    if (!result) {
+      const end = terminalOf(fensTo(node));
+      if (end) ({ result, reason } = end);
+    }
+    imported = Boolean(g.imported);
+    headers = g.headers;
+    coachOn = Boolean(g.coach);
+    gameElo = g.elo ?? (imported ? undefined : settings.elo);
+    gameModel = g.model ?? settings.model;
+    tcId = g.tc ?? 'none';
+    const tc = timeControlOf(tcId);
+    clock = tc ? new ChessClock(tc, g.clock ?? node.clock) : null;
+    resetTransient();
+    return true;
+  } catch (err) {
+    console.warn('读取对局失败', err);
+    return false;
+  }
 }
 
 // ---------- board ----------
@@ -314,38 +231,43 @@ function dests(c: Chess): Map<Key, Key[]> {
 }
 
 function canUserMove(): boolean {
-  const atTip = cursor === fens.length - 1;
-  if (mode === 'review') return result === '' || !atTip;
-  return atTip && result === '' && !maiaThinking && coachState === 'idle' && chessAt(cursor).turn() === userColor;
+  if (mode === 'review') return true;
+  return node === tip() && result === '' && !maiaThinking && coachState === 'idle' && turnOf(node.fen) === userColor;
+}
+
+function canPremove(): boolean {
+  return mode === 'play' && settings.premove && node === tip() && result === '' && coachState === 'idle' && turnOf(node.fen) !== userColor;
 }
 
 function arrows(): DrawShape[] {
   const shapes: DrawShape[] = [...hintShapes, ...coachShapes()];
   if (mode === 'review') {
-    const best = liveOn && liveLines[0]?.pv[0] ? liveLines[0].pv[0] : evals[cursor]?.best;
-    if (best) shapes.push({ orig: best.slice(0, 2) as Key, dest: best.slice(2, 4) as Key, brush: 'green' });
-    const h = human[cursor]?.moves[0];
-    if (h && h.uci !== best) shapes.push({ orig: h.uci.slice(0, 2) as Key, dest: h.uci.slice(2, 4) as Key, brush: 'blue' });
+    const best = liveOn && liveLines[0]?.pv[0] ? liveLines[0].pv[0] : node.a.eval?.best;
+    if (best) shapes.push(arrow(best, 'green'));
+    const h = node.a.human?.moves[0];
+    if (h && h.uci !== best) shapes.push(arrow(h.uci, 'blue'));
   }
   return shapes;
 }
 
 function renderBoard() {
-  const c = chessAt(cursor);
-  const last = cursor > 0 ? moves[cursor - 1].uci : undefined;
+  const c = chessOf(node);
   const movable = canUserMove();
+  const pre = !movable && canPremove();
+  const turn = c.turn() === 'w' ? 'white' : 'black';
   const orientation: 'white' | 'black' = (userColor === 'w') !== flipped ? 'white' : 'black';
   cg.set({
-    fen: c.fen(),
+    fen: node.fen,
     orientation,
-    turnColor: c.turn() === 'w' ? 'white' : 'black',
-    lastMove: last ? [last.slice(0, 2) as Key, last.slice(2, 4) as Key] : undefined,
+    turnColor: turn,
+    lastMove: node.uci ? [node.uci.slice(0, 2) as Key, node.uci.slice(2, 4) as Key] : undefined,
     check: c.inCheck(),
     movable: {
       free: false,
-      color: movable ? (c.turn() === 'w' ? 'white' : 'black') : undefined,
+      color: movable ? turn : pre ? (userColor === 'w' ? 'white' : 'black') : undefined,
       dests: movable ? dests(c) : new Map(),
     },
+    premovable: { enabled: pre },
   });
   cg.setAutoShapes(arrows());
 }
@@ -370,105 +292,189 @@ function askPromotion(color: Color): Promise<string> {
   });
 }
 
-async function onUserMove(orig: Key, dest: Key) {
-  const c = chessAt(cursor);
+async function onUserMove(orig: Key, dest: Key, meta?: MoveMetadata) {
+  unlockAudio();
+  const from = node;
+  const c = chessOf(from);
   const piece = c.get(orig as Square);
   let uci = orig + dest;
-  if (piece?.type === 'p' && (dest[1] === '8' || dest[1] === '1')) uci += await askPromotion(c.turn());
-  if (cursor !== fens.length - 1) {
-    if (moves[cursor].uci === uci) {
-      cursor++;
-      update();
+  if (piece?.type === 'p' && (dest[1] === '8' || dest[1] === '1')) uci += meta?.premove ? 'q' : await askPromotion(c.turn());
+  if (node !== from) return;
+  if (mode === 'play') {
+    if (!playMove(uci)) {
+      play('illegal');
+      renderBoard();
       return;
     }
-    truncate(cursor);
+    if (result) return;
+    if (coachOn) void coachCheck(tip().parent!);
+    else void maiaTurn();
+    return;
   }
-  if (!pushMove(uci)) {
+  // review: explore freely, new moves become variations
+  const next = tree.add(from, uci);
+  if (!next) {
+    play('illegal');
     renderBoard();
     return;
   }
+  node = next;
+  hintShapes = [];
+  play(soundForSan(next.san));
+  saveGame();
   update();
-  if (mode !== 'play') return;
-  if (coachOn && result === '') void coachCheck(fens.length - 2);
-  else void maiaTurn();
+  if (liveOn) void runLive();
 }
 
 // ---------- play ----------
 
-/** Positions fed to Maia for `ply`; without history the current position is repeated (official UCI default). */
-function maiaFens(ply: number): string[] {
-  return settings.useHistory ? fens.slice(0, ply + 1) : [fens[ply]];
+/** Positions fed to Maia for `n`; without history the current position is repeated (official UCI default). */
+function maiaFens(n: Node): string[] {
+  return settings.useHistory ? fensTo(n) : [n.fen];
+}
+
+async function maiaEval(n: Node): Promise<MaiaResult> {
+  if (n.a.human) return n.a.human;
+  const m = await getMaia();
+  const res = await m.evaluate(chessOf(n), maiaFens(n), settings.elo, settings.elo);
+  n.a.human = res;
+  return res;
+}
+
+/** Plays `uci` at the end of the game (either side). */
+function playMove(uci: string): boolean {
+  if (result) return false;
+  const parent = tip();
+  const mover = turnOf(parent.fen);
+  const now = performance.now();
+  if (clock && clock.time(mover, now) <= 0) {
+    flag(mover);
+    return false;
+  }
+  const next = tree.add(parent, uci);
+  if (!next) return false;
+  tree.makeMainline(next);
+  if (retried && retried.from === parent) {
+    for (const r of retried.nodes) {
+      if (r.uci === uci) continue;
+      r.comment ??= '教练提示后重走';
+      parent.children.push(r);
+    }
+  }
+  retried = null;
+  if (clock) {
+    if (clock.active === mover) clock.moved(mover, now);
+    next.clock = clock.snapshot(now);
+  }
+  node = next;
+  hintShapes = [];
+  $('hint-box').textContent = '';
+  play(soundForSan(next.san));
+  const end = terminalOf(fensTo(next));
+  if (end) endGame(end.result, end.reason);
+  else saveGame();
+  update();
+  return true;
+}
+
+function endGame(res: string, why: EndReason) {
+  result = res;
+  reason = why;
+  gameToken++;
+  maiaThinking = false;
+  clock?.stop(performance.now());
+  cg.cancelPremove();
+  coachReset();
+  setTimeout(() => play('end'), 250);
+  saveGame();
+}
+
+function flag(color: Color) {
+  if (result) return;
+  endGame(timeoutResult(tip().fen, color), 'timeout');
+  update();
 }
 
 async function maiaTurn() {
-  const tip = fens.length - 1;
-  if (screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle' || chessAt(tip).turn() === userColor) return;
+  const t = tip();
+  if (screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle' || turnOf(t.fen) === userColor) return;
   const token = ++gameToken;
   maiaThinking = true;
   update();
   try {
-    const m = await getMaia();
     const t0 = performance.now();
-    const c = chessAt(tip);
-    const res = await m.evaluate(c, maiaFens(tip), settings.elo, settings.elo);
+    const res = await maiaEval(t);
     if (token !== gameToken) return;
     const pick = sampleMove(res.moves, settings.temperature, 1);
     if (settings.thinkDelay) {
       // longer "thinking" when the position is less obvious to a human
-      const certainty = res.moves[0].p;
-      const want = 300 + Math.random() * 600 + (1 - certainty) * 2500;
+      const unclear = 1 - res.moves[0].p;
+      const want = clock
+        ? thinkBudget(clock.time(turnOf(t.fen), performance.now()), clock.tc.inc, unclear) * (0.7 + Math.random() * 0.6)
+        : 300 + Math.random() * 600 + unclear * 2500;
       const wait = want - (performance.now() - t0);
-      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      if (wait > 0) await sleep(wait);
       if (token !== gameToken) return;
     }
     maiaThinking = false;
-    pushMove(pick.uci);
+    if (playMove(pick.uci) && settings.premove) cg.playPremove();
   } catch (err) {
     console.error(err);
   } finally {
-    if (token === gameToken) maiaThinking = false;
-    update();
-    void coachTurn();
+    if (token === gameToken) {
+      maiaThinking = false;
+      update();
+      void coachTurn();
+    }
   }
 }
 
-function newGame() {
+function newGame(fen = START_FEN, color?: Color) {
   gameToken++;
   maiaThinking = false;
   batchCtrl?.abort();
-  userColor = settings.color === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : settings.color;
+  userColor = color ?? (settings.color === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : settings.color);
   flipped = false;
-  startFen = START_FEN;
-  moves = [];
-  fens = [START_FEN];
-  cursor = 0;
+  tree = new GameTree<Ann>(fen);
+  node = tree.root;
+  gameId = newGameId();
+  gameDate = Date.now();
+  gameElo = settings.elo;
+  gameModel = settings.model;
   result = '';
-  evals = [];
-  human = [];
-  hintShapes = [];
-  shownResult = '';
-  threats = [];
+  reason = undefined;
+  imported = false;
+  headers = undefined;
+  tcId = settings.timeControl;
+  const tc = timeControlOf(tcId);
+  clock = tc ? new ChessClock(tc) : null;
+  if (clock) tree.root.clock = [...clock.remaining];
   coachOn = settings.gameType === 'coach';
-  coachReset();
-  $('hint-box').textContent = '';
-  setMode('play');
+  resetTransient();
+  cg.cancelPremove();
+  play('start');
   saveGame();
-  update();
-  void maiaTurn();
-  void coachTurn();
+  setMode('play');
 }
 
 function undo() {
-  if (moves.length === 0) return;
+  const t = tip();
+  if (t === tree.root || mode !== 'play') return;
+  if (result) {
+    setStatus('对局已结束，不能悔棋');
+    return;
+  }
   gameToken++;
   maiaThinking = false;
-  let ply = fens.length - 1;
-  do ply--;
-  while (ply > 0 && new Chess(fens[ply]).turn() !== userColor);
-  if (new Chess(fens[ply]).turn() !== userColor) ply = 0;
+  let target: Node = t;
+  do target = target.parent!;
+  while (target.parent && turnOf(target.fen) !== userColor);
   coachReset();
-  truncate(ply);
-  cursor = ply;
+  retried = null;
+  target.children = [];
+  node = target;
+  if (clock) clock.set(target.clock ?? [clock.tc.base, clock.tc.base], performance.now());
+  cg.cancelPremove();
   hintShapes = [];
   $('hint-box').textContent = '';
   saveGame();
@@ -478,25 +484,23 @@ function undo() {
 }
 
 async function hint() {
-  const ply = fens.length - 1;
+  const t = tip();
   if (result !== '' || mode !== 'play') return;
   const box = $('hint-box');
   box.textContent = '思考中…';
   try {
     const s = await getSf();
-    const r = await s.analyse(startFen, { moves: moves.map((m) => m.uci), movetime: settings.sfMovetime, multipv: 1 });
-    if (ply !== fens.length - 1) return;
+    const r = await s.analyse(tree.root.fen, { moves: movesTo(t), movetime: settings.sfMovetime, multipv: 1 });
+    if (t !== tip()) return;
     const best = r.bestmove;
-    const turn = chessAt(ply).turn();
-    hintShapes = best ? [{ orig: best.slice(0, 2) as Key, dest: best.slice(2, 4) as Key, brush: 'green' }] : [];
-    let text = best ? `Stockfish 推荐：${sanOf(fens[ply], best)}（${r.lines[0] ? evalText(r.lines[0], turn) : ''}）` : '';
+    hintShapes = best ? [arrow(best, 'green')] : [];
+    let text = best ? `Stockfish 推荐：${sanOf(t.fen, best)}（${r.lines[0] ? evalText(r.lines[0], turnOf(t.fen)) : ''}）` : '';
     if (!settings.lowMemory) {
-      const m = await getMaia();
-      const h = await m.evaluate(chessAt(ply), maiaFens(ply), settings.elo, settings.elo);
-      if (ply !== fens.length - 1) return;
+      const h = await maiaEval(t);
+      if (t !== tip()) return;
       const top = h.moves[0];
-      if (top.uci !== best) hintShapes.push({ orig: top.uci.slice(0, 2) as Key, dest: top.uci.slice(2, 4) as Key, brush: 'blue' });
-      text += `\n${settings.elo} 分棋手最常走：` + h.moves.slice(0, 3).map((x) => `${sanOf(fens[ply], x.uci)} ${(x.p * 100).toFixed(0)}%`).join('，');
+      if (top.uci !== best) hintShapes.push(arrow(top.uci, 'blue'));
+      text += `\n${settings.elo} 分棋手最常走：` + h.moves.slice(0, 3).map((x) => `${sanOf(t.fen, x.uci)} ${(x.p * 100).toFixed(0)}%`).join('，');
     }
     box.textContent = text;
     cg.setAutoShapes(arrows());
@@ -506,25 +510,108 @@ async function hint() {
 }
 
 function resign() {
-  if (result !== '' || moves.length === 0) return;
-  gameToken++;
-  maiaThinking = false;
-  coachReset();
-  result = userColor === 'w' ? '0-1' : '1-0';
-  saveGame();
+  if (result !== '' || tip() === tree.root) return;
+  endGame(userColor === 'w' ? '0-1' : '1-0', 'resign');
   update();
+}
+
+/** Maia accepts a draw when the game is not too young and it does not expect to win. */
+async function offerDraw() {
+  const t = tip();
+  if (result || mode !== 'play') return;
+  if (t.ply < 20) {
+    setStatus('Maia 拒绝了和棋：对局还早');
+    return;
+  }
+  if (t.ply - drawOfferPly < 6) {
+    setStatus('刚提过和棋，过几步再试');
+    return;
+  }
+  drawOfferPly = t.ply;
+  setStatus('Maia 正在考虑和棋…');
+  try {
+    const [w, d, l] = (await maiaEval(t)).wdl;
+    if (t !== tip() || result) return;
+    const maiaToMove = turnOf(t.fen) !== userColor;
+    const maiaScore = maiaToMove ? w + d / 2 : l + d / 2;
+    if (maiaScore <= 0.55) {
+      endGame('1/2-1/2', 'agreement');
+      update();
+      setStatus('Maia 接受了和棋');
+    } else setStatus('Maia 拒绝了和棋');
+  } catch (err) {
+    setStatus('求和失败：' + (err as Error).message);
+  }
+}
+
+// ---------- clock ----------
+
+function clockShouldRun(): Color | null {
+  if (!clock || result || screen !== 'game' || mode !== 'play' || coachState !== 'idle' || document.hidden) return null;
+  const t = tip();
+  // the clock starts after White's first move
+  if (t === tree.root) return null;
+  return turnOf(t.fen);
+}
+
+function syncClock() {
+  if (!clock) return;
+  const now = performance.now();
+  const want = clockShouldRun();
+  if (want) clock.run(want, now);
+  else clock.stop(now);
+}
+
+function clockView(color: Color): { text: string; active: boolean; low: boolean } {
+  const i = color === 'w' ? 0 : 1;
+  let ms: number | null = null;
+  if (mode === 'review' && node.clock) ms = node.clock[i];
+  else if (clock) ms = clock.time(color, performance.now());
+  if (ms === null) return { text: color === 'w' ? '白' : '黑', active: turnOf(node.fen) === color && !result, low: false };
+  const active = clock ? clock.active === color : false;
+  return { text: fmtClockShort(ms), active, low: ms < 20_000 && (active || mode === 'play') };
+}
+
+function renderClocks() {
+  document.querySelectorAll<HTMLElement>('[data-clock]').forEach((el) => {
+    const v = clockView(el.dataset.clock as Color);
+    el.textContent = v.text;
+    el.classList.toggle('active', v.active);
+    el.classList.toggle('low', v.low);
+  });
+}
+
+function tickClock() {
+  if (!clock?.active) return;
+  const now = performance.now();
+  const f = clock.flagged(now);
+  if (f) {
+    flag(f);
+    return;
+  }
+  if (!lowTimeWarned && clock.active === userColor && clock.time(userColor, now) < Math.min(10_000, clock.tc.base / 6)) {
+    lowTimeWarned = true;
+    play('lowtime');
+  }
+  renderClocks();
 }
 
 // ---------- review ----------
 
-function posEvalFrom(ply: number, lines: SfLine[], best: string | null): PosEval {
-  const c = chessAt(ply);
+function posEvalFrom(n: Node, lines: SfLine[], best: string | null): PosEval {
+  const c = chessOf(n);
   const turn = c.turn();
   if (c.isGameOver() || !lines[0]) {
     const white = c.isCheckmate() ? (turn === 'w' ? 0 : 100) : 50;
     return { lines: [], best: null, white, text: c.isCheckmate() ? '#' : '½' };
   }
   return { lines, best, white: whiteWinPct(lines[0], turn), text: evalText(lines[0], turn) };
+}
+
+async function evalNode(s: Stockfish, n: Node, signal: AbortSignal) {
+  if (n.a.eval) return;
+  const r = await s.analyse(tree.root.fen, { moves: movesTo(n), movetime: settings.sfMovetime, signal });
+  if (!signal.aborted) n.a.eval = posEvalFrom(n, r.lines, r.bestmove);
 }
 
 async function analyseGame() {
@@ -535,31 +622,21 @@ async function analyseGame() {
   const bar = $('analyse-progress');
   bar.classList.remove('hidden');
   const fill = bar.firstElementChild as HTMLElement;
-  const n = fens.length;
+  const nodes = currentLine();
+  const n = nodes.length;
+  const sfShare = settings.lowMemory ? 50 : 70;
   try {
     const s = await getSf();
     for (let i = 0; i < n; i++) {
       if (ctrl.signal.aborted) return;
-      if (!evals[i]) {
-        const r = await s.analyse(startFen, {
-          moves: moves.slice(0, i).map((m) => m.uci),
-          movetime: settings.sfMovetime,
-          signal: ctrl.signal,
-        });
-        if (ctrl.signal.aborted) return;
-        evals[i] = posEvalFrom(i, r.lines, r.bestmove);
-      }
-      fill.style.width = `${((i + 1) / n) * (settings.lowMemory ? 50 : 70)}%`;
-      if (i === cursor || i % 4 === 0) update();
+      await evalNode(s, nodes[i], ctrl.signal);
+      fill.style.width = `${((i + 1) / n) * sfShare}%`;
+      if (nodes[i] === node || i % 4 === 0) update();
     }
-    const m = await getMaia();
     for (let i = 0; i < n - 1; i++) {
       if (ctrl.signal.aborted) return;
-      if (!human[i]) {
-        human[i] = await m.evaluate(chessAt(i), maiaFens(i), settings.elo, settings.elo);
-      }
-      const base = settings.lowMemory ? 50 : 70;
-      fill.style.width = `${base + ((i + 1) / (n - 1)) * (100 - base)}%`;
+      await maiaEval(nodes[i]);
+      fill.style.width = `${sfShare + ((i + 1) / (n - 1)) * (100 - sfShare)}%`;
     }
     setStatus('分析完成');
   } catch (err) {
@@ -580,14 +657,16 @@ interface MoveReview {
   accuracy: number;
 }
 
-function reviewOf(i: number): MoveReview | null {
-  const a = evals[i];
-  const b = evals[i + 1];
-  if (!a || !b) return null;
-  const white = chessAt(i).turn() === 'w';
+/** Review of the move that led to `n`. */
+function reviewOf(n: Node): MoveReview | null {
+  const p = n.parent;
+  const a = p?.a.eval;
+  const b = n.a.eval;
+  if (!p || !a || !b) return null;
+  const white = turnOf(p.fen) === 'w';
   const before = white ? a.white : 100 - a.white;
   const after = white ? b.white : 100 - b.white;
-  return { judgement: judge(before, after, moves[i].uci === a.best), before, after, accuracy: moveAccuracy(before, after) };
+  return { judgement: judge(before, after, n.uci === a.best), before, after, accuracy: moveAccuracy(before, after) };
 }
 
 function setLive(on: boolean) {
@@ -597,7 +676,7 @@ function setLive(on: boolean) {
     liveCtrl?.abort();
     liveLines = [];
   }
-  runLive();
+  void runLive();
 }
 
 async function runLive() {
@@ -607,19 +686,20 @@ async function runLive() {
   if (!liveOn || mode !== 'review') return;
   const ctrl = new AbortController();
   liveCtrl = ctrl;
-  const ply = cursor;
+  const n = node;
   try {
     const s = await getSf();
     if (ctrl.signal.aborted) return;
-    await s.analyse(startFen, {
-      moves: moves.slice(0, ply).map((m) => m.uci),
+    await s.analyse(tree.root.fen, {
+      moves: movesTo(n),
       movetime: 60000,
       multipv: 3,
       signal: ctrl.signal,
       onInfo: (lines) => {
-        if (ctrl.signal.aborted || ply !== cursor) return;
+        if (ctrl.signal.aborted || n !== node) return;
         liveLines = lines;
         renderLines();
+        renderEvalBar();
         cg.setAutoShapes(arrows());
       },
     });
@@ -631,31 +711,28 @@ async function runLive() {
 function renderLines() {
   const box = $('sf-lines');
   const lines = liveOn && liveLines.length ? liveLines : [];
-  const turn = chessAt(cursor).turn();
-  box.innerHTML = lines
-    .map((l) => `<div><b>${evalText(l, turn)}</b> <small>d${l.depth}</small> ${pvToSan(fens[cursor], l.pv)}</div>`)
-    .join('');
+  const turn = turnOf(node.fen);
+  box.innerHTML = lines.map((l) => `<div><b>${evalText(l, turn)}</b> <small>d${l.depth}</small> ${pvToSan(node.fen, l.pv)}</div>`).join('');
 }
 
 function renderGraph() {
   const svg = $('graph');
-  const n = fens.length;
+  const nodes = currentLine();
+  const n = nodes.length;
   const pts: string[] = [];
   const dots: string[] = [];
   for (let i = 0; i < n; i++) {
-    const e = evals[i];
+    const e = nodes[i].a.eval;
     if (!e) continue;
     const x = n > 1 ? (i / (n - 1)) * 100 : 0;
     const y = 40 - (e.white / 100) * 40;
     pts.push(`${x.toFixed(2)},${y.toFixed(2)}`);
-    if (i > 0) {
-      const r = reviewOf(i - 1);
-      if (r && ['mistake', 'blunder', 'inaccuracy'].includes(r.judgement)) {
-        dots.push(`<circle cx="${x}" cy="${y}" r="0.9" fill="${JUDGEMENT_INFO[r.judgement].color}"/>`);
-      }
+    const r = reviewOf(nodes[i]);
+    if (r && ['mistake', 'blunder', 'inaccuracy'].includes(r.judgement)) {
+      dots.push(`<circle cx="${x}" cy="${y}" r="0.9" fill="${JUDGEMENT_INFO[r.judgement].color}"/>`);
     }
   }
-  const cx = n > 1 ? (cursor / (n - 1)) * 100 : 0;
+  const cx = n > 1 ? (node.ply / (n - 1)) * 100 : 0;
   const area = pts.length ? `<polygon points="0,40 ${pts.join(' ')} ${pts[pts.length - 1].split(',')[0]},40" fill="#ffffff" opacity="0.95"/>` : '';
   svg.innerHTML =
     `<rect width="100" height="40" fill="#403e3b"/>${area}` +
@@ -668,10 +745,10 @@ function renderGraph() {
 function renderSummary() {
   const box = $('summary');
   const stats = { w: { acc: [] as number[], c: {} as Record<string, number> }, b: { acc: [] as number[], c: {} as Record<string, number> } };
-  for (let i = 0; i < moves.length; i++) {
-    const r = reviewOf(i);
+  for (const n of currentLine()) {
+    const r = reviewOf(n);
     if (!r) continue;
-    const s = stats[chessAt(i).turn()];
+    const s = stats[turnOf(n.parent!.fen)];
     s.acc.push(r.accuracy);
     s.c[r.judgement] = (s.c[r.judgement] ?? 0) + 1;
   }
@@ -687,56 +764,84 @@ function renderSummary() {
       .join(' ');
     return `<div><b>${name}</b> 准确率 ${avg.toFixed(1)}% ${counts}</div>`;
   };
-  box.innerHTML = row('w', userColor === 'w' ? '白（我）' : '白（Maia）') + row('b', userColor === 'b' ? '黑（我）' : '黑（Maia）');
+  const who = (c: Color) => (imported ? (c === 'w' ? '白' : '黑') : `${c === 'w' ? '白' : '黑'}（${userColor === c ? '我' : 'Maia'}）`);
+  box.innerHTML = row('w', who('w')) + row('b', who('b'));
 }
 
 function renderCoach() {
   const box = $('coach-box');
   const parts: string[] = [];
-  const e = evals[cursor];
-  if (cursor > 0) {
-    const i = cursor - 1;
-    const r = reviewOf(i);
-    const prev = evals[i];
-    const turnNum = chessAt(i).fen().split(' ')[5];
-    const san = moves[i].san;
+  const p = node.parent;
+  if (p) {
+    const r = reviewOf(node);
+    const prev = p.a.eval;
+    const num = `${Number(p.fen.split(' ')[5])}${turnOf(p.fen) === 'w' ? '.' : '…'}`;
     if (r && prev) {
       const info = JUDGEMENT_INFO[r.judgement];
       parts.push(
-        `<div class="j" style="color:${info.color}">${turnNum}${chessAt(i).turn() === 'w' ? '.' : '…'} ${san}${info.symbol} — ${info.label}</div>`,
+        `<div class="j" style="color:${info.color}">${num} ${node.san}${info.symbol} — ${info.label}</div>`,
         `<div>行棋方胜率 ${r.before.toFixed(0)}% → ${r.after.toFixed(0)}%</div>`,
       );
-      if (prev.best && prev.best !== moves[i].uci) {
-        parts.push(`<div>更好的是 <b>${sanOf(fens[i], prev.best)}</b>（${prev.text}）：${pvToSan(fens[i], prev.lines[0]?.pv ?? [])}</div>`);
+      if (prev.best && prev.best !== node.uci) {
+        parts.push(`<div>更好的是 <b>${sanOf(p.fen, prev.best)}</b>（${prev.text}）：${pvToSan(p.fen, prev.lines[0]?.pv ?? [])}</div>`);
       }
     }
-    const h = human[i];
+    const h = p.a.human;
     if (h) {
-      const played = h.moves.find((m) => m.uci === moves[i].uci);
+      const played = h.moves.find((m) => m.uci === node.uci);
       parts.push(
         `<div class="human">${settings.elo} 分棋手在此常走：` +
           h.moves
             .slice(0, 3)
-            .map((m) => `${sanOf(fens[i], m.uci)} ${(m.p * 100).toFixed(0)}%`)
+            .map((m) => `${sanOf(p.fen, m.uci)} ${(m.p * 100).toFixed(0)}%`)
             .join('，') +
           `；实战着法人类选择率 ${played ? (played.p * 100).toFixed(1) : '?'}%</div>`,
       );
     }
   }
-  if (e && cursor === fens.length - 1 && e.best) {
-    parts.push(`<div>当前最佳：<b>${sanOf(fens[cursor], e.best)}</b>（${e.text}）</div>`);
-  }
-  if (!parts.length && mode === 'review') parts.push('<div class="muted">点击“分析整局”，Stockfish 会逐步评估，Maia 会告诉你同水平的人通常怎么走。</div>');
+  const e = node.a.eval;
+  if (e && !node.children.length && e.best) parts.push(`<div>当前最佳：<b>${sanOf(node.fen, e.best)}</b>（${e.text}）</div>`);
+  if (node.comment) parts.push(`<div class="note">${escapeHtml(node.comment)}</div>`);
+  if (!parts.length && mode === 'review') parts.push('<div class="muted">点击“分析整局”，Stockfish 会逐步评估，Maia 会告诉你同水平的人通常怎么走。在棋盘上走子可以添加变着。</div>');
   box.innerHTML = parts.join('');
+}
+
+function renderVarActions() {
+  const box = $('var-actions');
+  if (mode !== 'review' || node === tree.root || tree.isMainline(node)) {
+    box.innerHTML = '';
+    return;
+  }
+  box.innerHTML = '<span class="muted">变着</span><button data-va="main">设为主线</button><button data-va="del">删除变着</button>';
+}
+
+function varAction(act: string) {
+  if (act === 'main') tree.makeMainline(node);
+  else if (act === 'del') {
+    // remove the innermost variation that contains the current position
+    let v = node;
+    while (v.parent && v.parent.children[0] === v) v = v.parent;
+    if (!v.parent) return;
+    const back = v.parent;
+    tree.remove(v);
+    node = back;
+  } else return;
+  const end = terminalOf(fensTo(tip()));
+  if (!imported && end && !result) ({ result, reason } = end);
+  saveGame();
+  update();
+  if (liveOn) void runLive();
 }
 
 // ---------- coach ----------
 
 const PIECE_NAME: Record<string, string> = { p: '兵', n: '马', b: '象', r: '车', q: '后', k: '王' };
+const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
+const PIECE_GLYPH: Record<string, string> = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛' };
 const SEVERITY: Record<Judgement, number> = { best: 0, good: 0, inaccuracy: 1, mistake: 2, blunder: 3 };
 
 let prepCtrl: AbortController | null = null;
-let prep: { ply: number; p: Promise<void> } | null = null;
+let prep: { node: Node; p: Promise<void> } | null = null;
 let coachNote = '';
 
 function coachReset() {
@@ -746,14 +851,8 @@ function coachReset() {
   prepCtrl = null;
   prep = null;
   coachState = 'idle';
-  coachPly = -1;
+  coachFrom = null;
   coachNote = '';
-}
-
-async function evalPly(s: Stockfish, i: number, signal: AbortSignal) {
-  if (evals[i]) return;
-  const r = await s.analyse(startFen, { moves: moves.slice(0, i).map((m) => m.uci), movetime: settings.sfMovetime, signal });
-  if (!signal.aborted && i < fens.length) evals[i] = posEvalFrom(i, r.lines, r.bestmove);
 }
 
 /** Same position with the opponent to move: its best move is what they threaten. */
@@ -769,73 +868,74 @@ function nullMoveFen(fen: string): string | null {
   }
 }
 
-async function computeThreat(s: Stockfish, ply: number, signal: AbortSignal) {
-  if (threats[ply] !== undefined) return;
-  const nf = nullMoveFen(fens[ply]);
-  const e = evals[ply];
+async function computeThreat(s: Stockfish, n: Node, signal: AbortSignal) {
+  if (n.a.threat !== undefined) return;
+  const nf = nullMoveFen(n.fen);
+  const e = n.a.eval;
   if (!nf || !e) {
-    threats[ply] = null;
+    n.a.threat = null;
     return;
   }
   const r = await s.analyse(nf, { movetime: Math.min(settings.sfMovetime, 600), signal });
-  if (signal.aborted || ply >= fens.length) return;
+  if (signal.aborted) return;
   const line = r.lines[0];
   if (!r.bestmove || !line) {
-    threats[ply] = null;
+    n.a.threat = null;
     return;
   }
-  const oppNow = chessAt(ply).turn() === 'w' ? 100 - e.white : e.white;
+  const oppNow = turnOf(n.fen) === 'w' ? 100 - e.white : e.white;
   const oppThreat = line.mate !== undefined ? (line.mate > 0 ? 100 : 0) : winPct(line.cp ?? 0);
   if (oppThreat - oppNow < 12) {
-    threats[ply] = null;
+    n.a.threat = null;
     return;
   }
   const mv = new Chess(nf).move(toMove(r.bestmove));
   let text = `对手威胁 <b>${mv.san}</b>`;
   if (line.mate !== undefined && line.mate > 0) text += `，${line.mate} 步杀`;
   else if (mv.captured) text += `，吃掉你的${PIECE_NAME[mv.captured]}`;
-  threats[ply] = { uci: r.bestmove, text };
+  n.a.threat = { uci: r.bestmove, text };
 }
 
 /** Pre-analyse the position on the user's turn (evaluation + opponent threat). */
 function coachTurn() {
-  const tip = fens.length - 1;
+  const t = tip();
   if (!coachOn || screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle') return;
-  if (chessAt(tip).turn() !== userColor || prep?.ply === tip) return;
+  if (turnOf(t.fen) !== userColor || prep?.node === t) return;
   prepCtrl?.abort();
   const ctrl = new AbortController();
   prepCtrl = ctrl;
   const p = (async () => {
     try {
       const s = await getSf();
-      await evalPly(s, tip, ctrl.signal);
+      await evalNode(s, t, ctrl.signal);
       if (ctrl.signal.aborted) return;
       update();
-      await computeThreat(s, tip, ctrl.signal);
+      await computeThreat(s, t, ctrl.signal);
       if (!ctrl.signal.aborted) update();
     } catch (err) {
       console.error(err);
     }
   })();
-  prep = { ply: tip, p };
+  prep = { node: t, p };
 }
 
-/** After the user's move from `ply`: judge it and pause the game if it was bad enough. */
-async function coachCheck(ply: number) {
+/** After the user's move from `from`: judge it and pause the game if it was bad enough. */
+async function coachCheck(from: Node) {
   coachCtrl?.abort();
   const ctrl = new AbortController();
   coachCtrl = ctrl;
   coachState = 'checking';
-  coachPly = ply;
+  coachFrom = from;
   coachNote = '';
   update();
   try {
-    if (prep?.ply === ply) await prep.p;
+    if (prep?.node === from) await prep.p;
     const s = await getSf();
-    await evalPly(s, ply, ctrl.signal);
-    await evalPly(s, ply + 1, ctrl.signal);
+    await evalNode(s, from, ctrl.signal);
+    const mv = from.children[0];
+    if (mv) await evalNode(s, mv, ctrl.signal);
     if (ctrl.signal.aborted) return;
-    const r = reviewOf(ply);
+    const r = mv ? reviewOf(mv) : null;
     coachState = r && SEVERITY[r.judgement] >= SEVERITY[settings.coachLevel] ? 'paused' : 'idle';
   } catch (err) {
     console.error(err);
@@ -849,17 +949,15 @@ async function coachCheck(ply: number) {
 }
 
 function coachRetry() {
-  const ply = coachPly;
-  if (coachState !== 'paused' || ply < 0) return;
+  const from = coachFrom;
+  if (coachState !== 'paused' || !from || !from.children.length) return;
   gameToken++;
   maiaThinking = false;
-  const e = evals[ply];
-  const t = threats[ply];
   coachReset();
-  truncate(ply);
-  evals[ply] = e;
-  threats[ply] = t;
-  cursor = ply;
+  retried = { from, nodes: from.children.splice(0) };
+  node = from;
+  if (clock && from.clock) clock.set(from.clock, performance.now());
+  cg.cancelPremove();
   hintShapes = [];
   coachNote = '再想一想，找一步更好的棋。';
   $('hint-box').textContent = '';
@@ -870,9 +968,9 @@ function coachRetry() {
 
 /** On entering the game: review an unjudged last user move before Maia replies. */
 function resumeCoach() {
-  const tip = fens.length - 1;
-  if (coachOn && mode === 'play' && result === '' && coachState === 'idle' && tip > 0 && chessAt(tip).turn() !== userColor && !reviewOf(tip - 1)) {
-    void coachCheck(tip - 1);
+  const t = tip();
+  if (coachOn && mode === 'play' && result === '' && coachState === 'idle' && t.parent && turnOf(t.fen) !== userColor && !reviewOf(t)) {
+    void coachCheck(t.parent);
     return;
   }
   void maiaTurn();
@@ -881,14 +979,14 @@ function resumeCoach() {
 
 function coachContinue() {
   coachState = 'idle';
-  coachPly = -1;
+  coachFrom = null;
   update();
   void maiaTurn();
 }
 
 /** User pieces that are attacked and either undefended or attacked by something cheaper. */
-function hangingSquares(): Square[] {
-  const c = chessAt(cursor);
+function hangingSquares(n: Node): Square[] {
+  const c = chessOf(n);
   const opp: Color = userColor === 'w' ? 'b' : 'w';
   const out: Square[] = [];
   for (const row of c.board())
@@ -903,56 +1001,56 @@ function hangingSquares(): Square[] {
 }
 
 function coachShapes(): DrawShape[] {
-  const tip = fens.length - 1;
-  if (!coachOn || mode !== 'play' || cursor !== tip || result !== '') return [];
-  const arrow = (u: string, brush: string): DrawShape => ({ orig: u.slice(0, 2) as Key, dest: u.slice(2, 4) as Key, brush });
-  if (coachState === 'paused') {
+  const t = tip();
+  if (!coachOn || mode !== 'play' || node !== t || result !== '') return [];
+  if (coachState === 'paused' && coachFrom) {
     const out: DrawShape[] = [];
-    const ref = evals[coachPly + 1]?.best;
+    const bad = coachFrom.children[0];
+    const ref = bad?.a.eval?.best;
     if (ref) out.push(arrow(ref, 'red'));
-    const better = evals[coachPly]?.best;
-    if (better && better !== moves[coachPly]?.uci) out.push({ ...arrow(better, 'green'), modifiers: { lineWidth: 8 } });
+    const better = coachFrom.a.eval?.best;
+    if (better && better !== bad?.uci) out.push({ ...arrow(better, 'green'), modifiers: { lineWidth: 8 } });
     return out;
   }
-  if (coachState !== 'idle' || chessAt(tip).turn() !== userColor) return [];
+  if (coachState !== 'idle' || turnOf(t.fen) !== userColor) return [];
   const out: DrawShape[] = [];
-  if (settings.coachBest && evals[tip]?.best) out.push(arrow(evals[tip]!.best!, 'green'));
-  const t = threats[tip];
-  if (settings.coachThreats && t) out.push(arrow(t.uci, 'red'));
-  if (settings.coachHanging) for (const sq of hangingSquares()) out.push({ orig: sq as Key, brush: 'red' });
+  if (settings.coachBest && t.a.eval?.best) out.push(arrow(t.a.eval.best, 'green'));
+  if (settings.coachThreats && t.a.threat) out.push(arrow(t.a.threat.uci, 'red'));
+  if (settings.coachHanging) for (const sq of hangingSquares(t)) out.push({ orig: sq as Key, brush: 'red' });
   return out;
 }
 
-function explainMistake(ply: number): string {
-  const r = reviewOf(ply);
-  const before = evals[ply];
-  const after = evals[ply + 1];
-  if (!r || !before || !after) return '';
+function explainMistake(from: Node): string {
+  const mv = from.children[0];
+  const r = mv && reviewOf(mv);
+  const before = from.a.eval;
+  const after = mv?.a.eval;
+  if (!mv || !r || !before || !after) return '';
   const info = JUDGEMENT_INFO[r.judgement];
-  const num = chessAt(ply).fen().split(' ')[5];
+  const num = from.fen.split(' ')[5];
   const parts = [
-    `<div class="cc-head"><span class="cc-title" style="color:${info.color}">${num}${chessAt(ply).turn() === 'w' ? '.' : '…'} ${moves[ply].san}${info.symbol} ${info.label}</span>` +
+    `<div class="cc-head"><span class="cc-title" style="color:${info.color}">${num}${turnOf(from.fen) === 'w' ? '.' : '…'} ${mv.san}${info.symbol} ${info.label}</span>` +
       `<span class="cc-win">胜率 ${r.before.toFixed(0)}% → <b style="color:${info.color}">${r.after.toFixed(0)}%</b></span></div>`,
   ];
   if (after.best) {
-    const mv = chessAt(ply + 1).move(toMove(after.best));
+    const reply = chessOf(mv).move(toMove(after.best));
     const l = after.lines[0];
     let why: string;
-    if (l?.mate !== undefined && l.mate > 0) why = `对手有 ${l.mate} 步杀：${pvToSan(fens[ply + 1], l.pv, 6)}`;
-    else if (mv.captured) why = `对手可以 <b>${mv.san}</b> 吃掉你的${PIECE_NAME[mv.captured]}`;
-    else why = `对手的最佳应对是 <b>${mv.san}</b>：${pvToSan(fens[ply + 1], l?.pv ?? [], 6)}`;
+    if (l?.mate !== undefined && l.mate > 0) why = `对手有 ${l.mate} 步杀：${pvToSan(mv.fen, l.pv, 6)}`;
+    else if (reply.captured) why = `对手可以 <b>${reply.san}</b> 吃掉你的${PIECE_NAME[reply.captured]}`;
+    else why = `对手的最佳应对是 <b>${reply.san}</b>：${pvToSan(mv.fen, l?.pv ?? [], 6)}`;
     parts.push(`<div class="cc-why"><span class="tag bad">问题</span><span>${why}</span></div>`);
   }
-  if (before.best && before.best !== moves[ply].uci) {
-    const mv = chessAt(ply).move(toMove(before.best));
+  if (before.best && before.best !== mv.uci) {
+    const good = chessOf(from).move(toMove(before.best));
     const l = before.lines[0];
     let why = '';
     if (l?.mate !== undefined && l.mate > 0) why = `，${l.mate} 步杀`;
-    else if (mv.captured) why = `，吃掉对方的${PIECE_NAME[mv.captured]}`;
-    else if (mv.san.includes('+')) why = '，并将军';
+    else if (good.captured) why = `，吃掉对方的${PIECE_NAME[good.captured]}`;
+    else if (good.san.includes('+')) why = '，并将军';
     parts.push(
-      `<div class="cc-why"><span class="tag good">更好</span><span><b>${mv.san}</b>（${before.text}）${why}</span></div>`,
-      `<div class="cc-pv">${pvToSan(fens[ply], l?.pv ?? [], 5)}</div>`,
+      `<div class="cc-why"><span class="tag good">更好</span><span><b>${good.san}</b>（${before.text}）${why}</span></div>`,
+      `<div class="cc-pv">${pvToSan(from.fen, l?.pv ?? [], 5)}</div>`,
     );
   }
   return parts.join('');
@@ -965,36 +1063,37 @@ function renderCoachLive() {
     box.innerHTML = '';
     return;
   }
-  const tip = fens.length - 1;
+  const t = tip();
   if (coachState === 'checking') {
     box.innerHTML = '<div class="cl-row muted"><span class="dots"><i></i><i></i><i></i></span>教练正在看你这步…</div>';
     return;
   }
-  if (coachState === 'paused') {
+  if (coachState === 'paused' && coachFrom) {
     box.innerHTML =
-      `<div class="coach-card">${explainMistake(coachPly)}` +
+      `<div class="coach-card">${explainMistake(coachFrom)}` +
       `<div class="cc-actions"><button class="primary" data-act="retry">重走这步</button><button data-act="go">继续对局</button></div></div>`;
     return;
   }
   const parts: string[] = [];
   if (coachNote) parts.push(`<div class="cl-row">${coachNote}</div>`);
-  let last = tip - 1;
-  while (last >= 0 && chessAt(last).turn() !== userColor) last--;
-  const r = last >= 0 && !coachNote ? reviewOf(last) : null;
-  if (r) {
+  // most recent move made by the user
+  let last: Node | null = t;
+  while (last?.parent && turnOf(last.parent.fen) !== userColor) last = last.parent;
+  const r = last?.parent && !coachNote ? reviewOf(last) : null;
+  if (r && last) {
     const info = JUDGEMENT_INFO[r.judgement];
     const ok = SEVERITY[r.judgement] === 0;
-    parts.push(`<div class="cl-row"><span class="tag" style="background:${info.color}">${ok ? '✓' : info.symbol}</span><span>${moves[last].san} ${info.label}</span></div>`);
+    parts.push(`<div class="cl-row"><span class="tag" style="background:${info.color}">${ok ? '✓' : info.symbol}</span><span>${last.san} ${info.label}</span></div>`);
   }
-  if (result === '' && cursor === tip && chessAt(tip).turn() === userColor) {
-    const t = threats[tip];
-    if (settings.coachThreats && t) parts.push(`<div class="cl-row warn"><span class="tag bad">!</span><span>${t.text}</span></div>`);
+  if (result === '' && node === t && turnOf(t.fen) === userColor) {
+    if (settings.coachThreats && t.a.threat) parts.push(`<div class="cl-row warn"><span class="tag bad">!</span><span>${t.a.threat.text}</span></div>`);
     if (settings.coachHanging) {
-      const h = hangingSquares();
-      if (h.length) parts.push(`<div class="cl-row warn"><span class="tag bad">!</span><span>保护不足：${h.map((q) => PIECE_NAME[chessAt(tip).get(q)!.type] + q).join('、')}</span></div>`);
+      const h = hangingSquares(t);
+      const c = chessOf(t);
+      if (h.length) parts.push(`<div class="cl-row warn"><span class="tag bad">!</span><span>保护不足：${h.map((q) => PIECE_NAME[c.get(q)!.type] + q).join('、')}</span></div>`);
     }
-    const e = evals[tip];
-    if (settings.coachBest && e?.best) parts.push(`<div class="cl-row"><span class="tag good">★</span><span>推荐 <b>${sanOf(fens[tip], e.best)}</b>（${e.text}）</span></div>`);
+    const e = t.a.eval;
+    if (settings.coachBest && e?.best) parts.push(`<div class="cl-row"><span class="tag good">★</span><span>推荐 <b>${sanOf(t.fen, e.best)}</b>（${e.text}）</span></div>`);
   }
   box.innerHTML = parts.join('');
 }
@@ -1007,6 +1106,7 @@ function openCoachSettings() {
   el('coachEnabled').closest('label')!.classList.toggle('hidden', screen !== 'game');
   el('coachLevel').value = settings.coachLevel;
   for (const k of ['coachThreats', 'coachHanging', 'coachBest', 'coachEval'] as const) el(k).checked = settings[k];
+  dlg.returnValue = '';
   dlg.onclose = () => {
     if (dlg.returnValue !== 'ok') return;
     settings = {
@@ -1036,19 +1136,21 @@ function setCoach(on: boolean) {
 
 function renderMoves() {
   const box = $('moves');
-  const firstBlack = new Chess(startFen).turn() === 'b';
-  const startNum = Number(startFen.split(' ')[5]) || 1;
-  let html = '';
-  for (let i = 0; i < moves.length; i++) {
-    const black = (i % 2 === 1) !== firstBlack;
-    if (!black || i === 0) html += `<span class="num">${startNum + Math.floor((i + (firstBlack ? 1 : 0)) / 2)}.${black ? '…' : ''}</span>`;
-    const r = reviewOf(i);
-    const sym = r ? JUDGEMENT_INFO[r.judgement].symbol : '';
-    const color = r && r.judgement !== 'good' && r.judgement !== 'best' ? `style="color:${JUDGEMENT_INFO[r.judgement].color}"` : '';
-    html += `<span class="mv${cursor === i + 1 ? ' cur' : ''}" data-ply="${i + 1}" ${color}>${moves[i].san}${sym === '★' ? '' : sym}</span>`;
-  }
+  const review = mode === 'review';
+  let html = movesHtml(
+    tree,
+    node,
+    (n) => {
+      const r = reviewOf(n);
+      if (!r) return null;
+      const info = JUDGEMENT_INFO[r.judgement];
+      return { symbol: info.symbol, color: r.judgement !== 'good' && r.judgement !== 'best' ? info.color : undefined };
+    },
+    review,
+  );
   if (resultText()) html += `<span class="res">${resultText()}</span>`;
   box.innerHTML = html;
+  box.classList.toggle('wrap', review && [...tree.nodes()].some((n) => n.children.length > 1));
   // 只滚动着法框内部，避免 scrollIntoView 带动整个页面跳动
   const cur = box.querySelector<HTMLElement>('.cur');
   if (cur) {
@@ -1059,18 +1161,15 @@ function renderMoves() {
     if (c.left < b.left) box.scrollLeft += c.left - b.left - 24;
     else if (c.right > b.right) box.scrollLeft += c.right - b.right + 24;
   } else {
-    box.scrollTop = cursor === 0 ? 0 : box.scrollHeight;
-    box.scrollLeft = cursor === 0 ? 0 : box.scrollWidth;
+    box.scrollTop = node === tree.root ? 0 : box.scrollHeight;
+    box.scrollLeft = node === tree.root ? 0 : box.scrollWidth;
   }
 }
 
-const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
-const PIECE_GLYPH: Record<string, string> = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛' };
-
 /** Captured pieces (shown next to the capturer) and material lead for `color`. */
-function material(color: Color): { html: string; diff: number } {
+function material(n: Node, color: Color): { html: string; diff: number } {
   const count: Record<Color, Record<string, number>> = { w: { p: 0, n: 0, b: 0, r: 0, q: 0 }, b: { p: 0, n: 0, b: 0, r: 0, q: 0 } };
-  for (const row of chessAt(cursor).board()) for (const sq of row) if (sq && sq.type !== 'k') count[sq.color][sq.type]++;
+  for (const row of chessOf(n).board()) for (const sq of row) if (sq && sq.type !== 'k') count[sq.color][sq.type]++;
   const full: Record<string, number> = { p: 8, n: 2, b: 2, r: 2, q: 1 };
   const opp: Color = color === 'w' ? 'b' : 'w';
   let html = '';
@@ -1085,27 +1184,32 @@ function material(color: Color): { html: string; diff: number } {
 
 function renderPlayers() {
   const model = MODELS[settings.model].label.split('（')[0];
-  const bottomIsUser = !flipped;
   const oppColor: Color = userColor === 'w' ? 'b' : 'w';
-  const turn = chessAt(cursor).turn();
   const card = (who: 'me' | 'maia') => {
     const color = who === 'me' ? userColor : oppColor;
-    const m = material(color);
-    const name = who === 'me' ? '我' : model;
-    const avatar = who === 'me' ? '<div class="avatar me">♙</div>' : '<div class="avatar bot">♞</div>';
+    const m = material(node, color);
+    let name = who === 'me' ? '我' : model;
+    let elo = `(${gameElo ?? settings.elo})`;
+    if (imported) {
+      name = escapeHtml((color === 'w' ? headers?.White : headers?.Black) || (color === 'w' ? '白方' : '黑方'));
+      const e = color === 'w' ? headers?.WhiteElo : headers?.BlackElo;
+      elo = e ? `(${escapeHtml(e)})` : '';
+    }
+    const avatar = who === 'me' && !imported ? '<div class="avatar me">♙</div>' : '<div class="avatar bot">♞</div>';
     const thinking = who === 'maia' && maiaThinking ? '<span class="dots"><i></i><i></i><i></i></span>' : '';
+    const v = clockView(color);
     return (
-      `${avatar}<div class="pinfo"><div class="pname">${name} <span class="elo">(${settings.elo})</span>${thinking}</div>` +
+      `${avatar}<div class="pinfo"><div class="pname">${name} <span class="elo">${elo}</span>${thinking}</div>` +
       `<div class="caps ${color === 'w' ? 'by-w' : 'by-b'}">${m.html}${m.diff > 0 ? `<span class="adv">+${m.diff}</span>` : ''}</div></div>` +
-      `<div class="clock${turn === color && result === '' ? ' active' : ''}">${color === 'w' ? '白' : '黑'}</div>`
+      `<div class="clock${v.active ? ' active' : ''}${v.low ? ' low' : ''}${clock || node.clock ? ' timed' : ''}" data-clock="${color}">${v.text}</div>`
     );
   };
-  $('player-top').innerHTML = card(bottomIsUser ? 'maia' : 'me');
-  $('player-bottom').innerHTML = card(bottomIsUser ? 'me' : 'maia');
+  $('player-top').innerHTML = card(flipped ? 'me' : 'maia');
+  $('player-bottom').innerHTML = card(flipped ? 'maia' : 'me');
 }
 
 function renderEvalBar() {
-  const e = liveOn && liveLines[0] ? posEvalFrom(cursor, liveLines, liveLines[0].pv[0]) : evals[cursor];
+  const e = liveOn && liveLines[0] ? posEvalFrom(node, liveLines, liveLines[0].pv[0]) : node.a.eval;
   const bar = $('evalbar');
   bar.classList.toggle('hidden', mode !== 'review' && !(coachOn && settings.coachEval));
   const white = e ? e.white : 50;
@@ -1120,11 +1224,12 @@ function renderPlayInfo() {
   if (result) box.textContent = `对局结束：${resultText()}`;
   else if (coachState === 'paused') box.textContent = '';
   else if (maiaThinking) box.textContent = 'Maia 思考中…';
-  else if (cursor !== fens.length - 1) box.textContent = '正在查看历史局面';
-  else box.textContent = chessAt(cursor).turn() === userColor ? '轮到你走' : '等待 Maia';
+  else if (node !== tip()) box.textContent = '正在查看历史局面';
+  else box.textContent = turnOf(node.fen) === userColor ? (cg.state.premovable.current ? '轮到你走（已预走）' : '轮到你走') : '等待 Maia';
 }
 
 function update() {
+  syncClock();
   renderBoard();
   renderMoves();
   renderPlayers();
@@ -1133,6 +1238,7 @@ function update() {
   renderGraph();
   renderSummary();
   renderCoach();
+  renderVarActions();
   renderCoachLive();
   renderLines();
   checkResult();
@@ -1152,8 +1258,8 @@ function checkResult() {
 
 function showScreen(s: 'home' | 'game', push = true) {
   screen = s;
-  if (push && s === 'game' && location.hash !== '#game') history.pushState(null, '', '#game');
-  if (push && s === 'home' && location.hash === '#game') history.back();
+  if (push && s === 'game' && location.hash !== '#game') history_.pushState(null, '', '#game');
+  if (push && s === 'home' && location.hash === '#game') history_.back();
   $('home').classList.toggle('active', s === 'home');
   $('game').classList.toggle('active', s === 'game');
   if (s === 'home') {
@@ -1163,6 +1269,8 @@ function showScreen(s: 'home' | 'game', push = true) {
     prep = null;
     if (coachState === 'checking') coachReset();
     setLive(false);
+    syncClock();
+    saveGame();
     renderHome();
   } else {
     requestAnimationFrame(() => {
@@ -1173,21 +1281,29 @@ function showScreen(s: 'home' | 'game', push = true) {
   }
 }
 
-function goto(ply: number) {
-  const p = Math.max(0, Math.min(fens.length - 1, ply));
-  if (p === cursor) return;
-  cursor = p;
+const history_ = window.history;
+
+function goto(n: Node | null | undefined) {
+  if (!n || n === node) return;
+  node = n;
   hintShapes = [];
   update();
   if (liveOn) void runLive();
 }
 
+function lastOfLine(): Node {
+  const l = currentLine();
+  return l[l.length - 1];
+}
+
 function setMode(m: 'play' | 'review') {
   mode = m;
+  if (m === 'play' && !tree.isMainline(node)) node = tip();
   $('game').dataset.mode = m;
   document.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === m));
   $('tab-play').classList.toggle('hidden', m !== 'play');
   $('tab-review').classList.toggle('hidden', m !== 'review');
+  cg.cancelPremove();
   if (m === 'play') {
     setLive(false);
     batchCtrl?.abort();
@@ -1218,10 +1334,13 @@ function openSettings() {
   };
   f.oninput = outs;
   outs();
+  const sf = engines.sf;
   $('env-info').innerHTML =
     `跨源隔离：${self.crossOriginIsolated ? '✅（多线程可用）' : '❌（单线程）'}<br>` +
     `WebGPU：${'gpu' in navigator ? '✅' : '❌'}　CPU 核心：${navigator.hardwareConcurrency || '?'}<br>` +
-    `Stockfish：${sf ? (sf.multiThreaded ? sf.threads + ' 线程' : '单线程') : '未加载'}　Maia：${maia ? maia.model : '未加载'}`;
+    `Stockfish：${sf ? (sf.multiThreaded ? sf.threads + ' 线程' : '单线程') : '未加载'}　Maia：${engines.maia ? engines.maia.model : '未加载'}<br>` +
+    `版本：${__APP_VERSION__}`;
+  dlg.returnValue = '';
   dlg.onclose = () => {
     if (dlg.returnValue !== 'ok') return;
     const old = settings;
@@ -1239,161 +1358,150 @@ function openSettings() {
       sfThreads: Math.max(1, num('sfThreads') || 1),
       sfHash: Math.max(16, num('sfHash') || 64),
       lowMemory: el('lowMemory').checked,
-      warmup: old.warmup,
+      sound: el('sound').checked,
+      haptics: el('haptics').checked,
+      premove: el('premove').checked,
     };
-    saveSettings(settings);
-    if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash) unloadSf();
-    if (old.model !== settings.model || old.backend !== settings.backend) unloadMaia();
-    if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) human = [];
-    if (old.sfMovetime !== settings.sfMovetime) evals = [];
-    update();
-    renderHome();
+    applySettings(old);
   };
   dlg.showModal();
 }
 
-// ---------- engine manager ----------
-
-const downloads = new Map<PackageId, AbortController>();
-
-async function warmup() {
-  try {
-    await getMaia();
-    // in low-memory mode both engines can't be resident; keep the one needed to play
-    if (!settings.lowMemory) await getSf();
-    setStatus(settings.lowMemory ? `${MODELS[settings.model].label} 已预加载` : 'Maia 与 Stockfish 已预加载');
-  } catch (err) {
-    console.warn('预加载失败', err);
-  }
-}
-
-async function renderPackages() {
-  const list = $('pkg-list');
-  if (!(await loadPrecache()) || !('caches' in self)) {
-    list.innerHTML = '<p class="muted">引擎管理仅在生产构建（npm run build + preview / 部署）下可用。</p>';
-    $<HTMLButtonElement>('btn-dl-rec').disabled = true;
-    return;
-  }
-  const pkgs = await listPackages();
-  list.replaceChildren(
-    ...pkgs.map((p) => {
-      const row = document.createElement('div');
-      row.className = 'pkg';
-      row.dataset.id = p.id;
-      const done = isComplete(p);
-      const busy = downloads.has(p.id);
-      const using = p.id === `maia-${settings.model}` ? '（当前）' : '';
-      row.innerHTML =
-        `<div class="pkg-main"><b>${p.label}${using}</b><span class="muted">${p.desc} · ${fmtMB(p.size)}</span>` +
-        `<div class="progress${busy ? '' : ' hidden'}"><div></div></div>` +
-        `<span class="pkg-state">${done ? '✅ 已下载' : busy ? '下载中…' : p.cached ? `部分（${p.cached}/${p.files.length}）` : '未下载'}</span></div>`;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.textContent = busy ? '取消' : done ? '删除' : '下载';
-      btn.onclick = async () => {
-        if (busy) downloads.get(p.id)!.abort();
-        else if (done) {
-          if (p.id === 'core' && !confirm('删除应用本体后需联网才能打开，确定？')) return;
-          await deletePackage(p);
-        } else void startDownload(p);
-        await renderPackages();
-      };
-      row.append(btn);
-      return row;
-    }),
-  );
-  const info = await storageInfo();
-  if (info)
-    $('storage-info').textContent =
-      `已用存储 ${fmtMB(info.usage)} / 配额 ${fmtMB(info.quota)}　持久化：${info.persisted ? '✅' : '❌（系统空间不足时可能被清理）'}`;
-}
-
-function pkgRow(id: PackageId) {
-  return document.querySelector<HTMLElement>(`#pkg-list .pkg[data-id="${id}"]`);
-}
-
-async function startDownload(p: Package) {
-  if (downloads.has(p.id)) return;
-  const ctrl = new AbortController();
-  downloads.set(p.id, ctrl);
-  void requestPersistence();
-  try {
-    await downloadPackage(p, ctrl.signal, (l, t) => {
-      const row = pkgRow(p.id);
-      if (!row) return;
-      row.querySelector<HTMLElement>('.progress')?.classList.remove('hidden');
-      const bar = row.querySelector<HTMLElement>('.progress > div');
-      if (bar) bar.style.width = `${t ? (l / t) * 100 : 0}%`;
-      const st = row.querySelector('.pkg-state');
-      if (st) st.textContent = `下载中 ${fmtMB(l)} / ${fmtMB(t)}`;
-    });
-    setStatus(`${p.label} 已下载`);
-  } catch (err) {
-    if (!ctrl.signal.aborted) setStatus(`${p.label} 下载失败：${(err as Error).message}`);
-  } finally {
-    downloads.delete(p.id);
-    if ($<HTMLDialogElement>('dlg-engines').open) await renderPackages();
-  }
-}
-
-async function downloadRecommended() {
-  const pkgs = await listPackages();
-  const want: PackageId[] = ['core', 'stockfish', `maia-${settings.model}`];
-  // sequential: parallel downloads would only compete for bandwidth
-  for (const id of want) {
-    const p = pkgs.find((x) => x.id === id);
-    if (p && !isComplete(p)) await startDownload(p);
-  }
-  if (settings.warmup) void warmup();
-}
-
-function openEngines() {
-  const dlg = $<HTMLDialogElement>('dlg-engines');
-  const chk = $<HTMLInputElement>('chk-warm');
-  chk.checked = settings.warmup;
-  chk.onchange = () => {
-    settings = { ...settings, warmup: chk.checked };
-    saveSettings(settings);
-  };
-  $('btn-dl-rec').onclick = () => void downloadRecommended();
-  $('btn-warm').onclick = () => void warmup();
-  void loadPrecache().then((ok) => (ok ? pruneStale() : 0));
-  void renderPackages();
-  dlg.showModal();
+function applySettings(old: Settings) {
+  saveSettings(settings);
+  configureSound(settings.sound, settings.haptics);
+  if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash) engines.unloadSf();
+  if (old.model !== settings.model || old.backend !== settings.backend) engines.unloadMaia();
+  if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) clearAnn('human');
+  if (old.sfMovetime !== settings.sfMovetime) clearAnn('eval', 'threat');
+  if (!settings.premove) cg.cancelPremove();
+  update();
+  renderHome();
 }
 
 // ---------- PGN ----------
 
-function exportPgn(): string {
-  const c = new Chess(startFen);
-  const white = userColor === 'w' ? '我' : `Maia-3 ${settings.model} (${settings.elo})`;
-  const black = userColor === 'b' ? '我' : `Maia-3 ${settings.model} (${settings.elo})`;
-  c.setHeader('Event', 'Maia 教练对局');
-  c.setHeader('Date', new Date().toISOString().slice(0, 10).replace(/-/g, '.'));
-  c.setHeader('White', white);
-  c.setHeader('Black', black);
-  for (const m of moves) c.move(toMove(m.uci));
-  c.setHeader('Result', result || '*');
-  return c.pgn();
+const JUDGE_NAG: Partial<Record<Judgement, number>> = { inaccuracy: 6, mistake: 2, blunder: 4 };
+
+function gameHeaders(): Record<string, string> {
+  const d = new Date(gameDate);
+  const p = (n: number) => String(n).padStart(2, '0');
+  if (imported && headers) return { ...headers, Result: result || '*' };
+  const elo = String(gameElo ?? settings.elo);
+  const name = `Maia-3 ${gameModel}`;
+  const h: Record<string, string> = {
+    Event: coachOn ? 'Maia 教练对局' : 'Maia 对局',
+    Site: 'Maia Coach',
+    Date: `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`,
+    White: userColor === 'w' ? '我' : name,
+    Black: userColor === 'b' ? '我' : name,
+    Result: result || '*',
+  };
+  h[userColor === 'w' ? 'BlackElo' : 'WhiteElo'] = elo;
+  h.TimeControl = pgnTimeControl(clock?.tc ?? null);
+  h.Termination = !result ? 'Unterminated' : reason === 'timeout' ? 'Time forfeit' : 'Normal';
+  return h;
 }
 
-function importText(text: string): boolean {
-  const t = text.trim();
-  if (!t) return false;
-  const c = new Chess();
-  try {
-    c.loadPgn(t);
-  } catch {
-    try {
-      const f = new Chess(t);
-      return loadGame({ startFen: f.fen(), moves: [], userColor: f.turn(), result: '' });
-    } catch {
-      return false;
-    }
+function annotate(n: Node): Annotation | undefined {
+  const out: Annotation = {};
+  const l = n.a.eval?.lines[0];
+  if (l) {
+    const sign = turnOf(n.fen) === 'w' ? 1 : -1;
+    out.commands = [l.mate !== undefined ? `[%eval #${sign * l.mate}]` : `[%eval ${((sign * (l.cp ?? 0)) / 100).toFixed(2)}]`];
   }
-  const hist = c.history({ verbose: true });
-  const first = hist[0]?.before ?? c.fen();
-  return loadGame({ startFen: first, moves: hist.map(uciOf), userColor: 'w', result: c.getHeaders().Result ?? '' });
+  const r = reviewOf(n);
+  const nag = r && JUDGE_NAG[r.judgement];
+  if (nag && !n.nags?.length) out.nags = [nag];
+  return out;
+}
+
+function exportPgn(): string {
+  return treeToPgn(tree, gameHeaders(), annotate);
+}
+
+interface Parsed {
+  tree: GameTree<Ann>;
+  headers: Record<string, string>;
+  result: string;
+}
+
+function parseInput(text: string): Parsed | string {
+  const t = text.trim();
+  if (!t) return '内容为空';
+  try {
+    return { tree: new GameTree<Ann>(new Chess(t).fen()), headers: {}, result: '*' };
+  } catch {
+    /* not a FEN */
+  }
+  try {
+    const p = parsePgn<Ann>(t);
+    return { tree: p.tree, headers: p.headers, result: p.result };
+  } catch (err) {
+    return (err as Error).message;
+  }
+}
+
+function loadImported(p: Parsed) {
+  tree = p.tree;
+  node = tree.root;
+  gameId = newGameId();
+  gameDate = Date.now();
+  gameElo = undefined;
+  userColor = 'w';
+  result = p.result === '*' ? '' : p.result;
+  reason = undefined;
+  if (!result) {
+    const end = terminalOf(fensTo(tip()));
+    if (end) ({ result, reason } = end);
+  }
+  imported = true;
+  headers = Object.keys(p.headers).length ? p.headers : undefined;
+  coachOn = false;
+  tcId = 'none';
+  clock = null;
+  flipped = false;
+  resetTransient();
+}
+
+/** Starts a new game against Maia from `fen`; the user takes `color` (default: side to move). */
+function playFrom(fens: string[], color?: Color) {
+  const fen = fens[fens.length - 1];
+  if (terminalOf(fens)) {
+    setStatus('该局面对局已结束，无法继续对弈');
+    return false;
+  }
+  newGame(fen, color ?? turnOf(fen));
+  return true;
+}
+
+function openPgnImport() {
+  const dlg = $<HTMLDialogElement>('dlg-pgn');
+  const f = dlg.querySelector('form')!;
+  dlg.returnValue = '';
+  dlg.onclose = () => {
+    const v = dlg.returnValue;
+    if (v !== 'ok' && v !== 'play') return;
+    const p = parseInput((f.elements.namedItem('pgn') as HTMLTextAreaElement).value);
+    if (typeof p === 'string') {
+      setStatus('无法解析 PGN/FEN：' + p);
+      return;
+    }
+    gameToken++;
+    maiaThinking = false;
+    batchCtrl?.abort();
+    if (v === 'play') {
+      const side = (f.elements.namedItem('playAs') as HTMLSelectElement).value;
+      const end = p.tree.mainline();
+      if (playFrom(end.map((n) => n.fen), side === 'w' || side === 'b' ? side : undefined)) showScreen('game');
+      return;
+    }
+    loadImported(p);
+    saveGame();
+    setMode('review');
+    showScreen('game');
+  };
+  dlg.showModal();
 }
 
 // ---------- home ----------
@@ -1406,42 +1514,58 @@ function renderHome() {
   $('home-elo-val').textContent = String(settings.elo);
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => b.classList.toggle('active', b.dataset.color === settings.color));
   document.querySelectorAll<HTMLButtonElement>('#home-type button').forEach((b) => b.classList.toggle('active', b.dataset.type === settings.gameType));
+  $<HTMLSelectElement>('home-tc').value = settings.timeControl;
   $('home-coach-desc').textContent = settings.gameType === 'coach' ? '走出' + JUDGEMENT_INFO[settings.coachLevel].label + '时暂停讲解，可重走' : '无提示，自由对弈';
-  const has = moves.length > 0;
+  const t = tip();
+  const has = t !== tree.root;
   const btn = $<HTMLButtonElement>('btn-continue');
   btn.disabled = !has;
   $('continue-title').textContent = has && result === '' ? '继续对局' : '上一局';
-  $('continue-sub').textContent = has ? `${coachOn ? '教练 · ' : ''}${Math.ceil(moves.length / 2)} 回合 · ${result || '进行中'}` : '暂无';
-  homeCg?.set({ fen: fens[fens.length - 1], orientation: userColor === 'w' ? 'white' : 'black', lastMove: undefined });
+  const tc = clock ? `${tcId} · ` : '';
+  $('continue-sub').textContent = has ? `${coachOn ? '教练 · ' : ''}${tc}${Math.ceil(t.ply / 2)} 回合 · ${result || '进行中'}` : '暂无';
+  const s = computeStats(history).all;
+  $('history-sub').textContent = history.length ? `${history.length} 局${s.games ? ` · 得分 ${s.score.toFixed(0)}%` : ''}` : '暂无';
+  homeCg?.set({ fen: t.fen, orientation: userColor === 'w' ? 'white' : 'black', lastMove: undefined });
 }
 
 function saveHomeSettings(patch: Partial<Settings>) {
   const old = settings;
   settings = { ...settings, ...patch };
-  saveSettings(settings);
-  if (old.elo !== settings.elo) human = [];
-  renderHome();
+  applySettings(old);
 }
 
-function openPgnImport() {
-  const dlg = $<HTMLDialogElement>('dlg-pgn');
-  const f = dlg.querySelector('form')!;
-  dlg.onclose = () => {
-    if (dlg.returnValue !== 'ok') return;
-    gameToken++;
-    maiaThinking = false;
-    batchCtrl?.abort();
-    if (!importText((f.elements.namedItem('pgn') as HTMLTextAreaElement).value)) {
-      setStatus('无法解析 PGN/FEN');
-      return;
-    }
-    cursor = 0;
-    flipped = false;
-    saveGame();
-    setMode('review');
-    showScreen('game');
-  };
-  dlg.showModal();
+function showHistory(tab: 'list' | 'stats' = 'list') {
+  openHistory(
+    {
+      games: () => history,
+      open: (g) => {
+        if (result === '' && tip() !== tree.root && !imported && g.id !== gameId && !confirm('当前对局还没下完，打开记录会替换它。继续吗？')) return;
+        gameToken++;
+        maiaThinking = false;
+        batchCtrl?.abort();
+        if (!loadGame(g)) {
+          setStatus('无法打开这局记录');
+          return;
+        }
+        flipped = false;
+        node = tree.root;
+        saveGame();
+        setMode('review');
+        showScreen('game');
+      },
+      remove: (id) => {
+        history = history.filter((x) => x.id !== id);
+        saveHistory(history);
+        renderHome();
+      },
+      clear: () => {
+        history = [];
+        saveHistory(history);
+        renderHome();
+      },
+    },
+    tab,
+  );
 }
 
 // ---------- init ----------
@@ -1450,7 +1574,7 @@ function bind() {
   document.querySelectorAll<HTMLButtonElement>('[data-nav]').forEach((b) => {
     b.onclick = () => {
       const nav = b.dataset.nav;
-      goto(nav === 'first' ? 0 : nav === 'prev' ? cursor - 1 : nav === 'next' ? cursor + 1 : fens.length - 1);
+      goto(nav === 'first' ? tree.root : nav === 'prev' ? node.parent : nav === 'next' ? node.children[0] : lastOfLine());
     };
   });
   document.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) => {
@@ -1471,15 +1595,21 @@ function bind() {
     fn();
   };
 
+  const tcSel = $<HTMLSelectElement>('home-tc');
+  tcSel.innerHTML = TIME_CONTROLS.map((t) => `<option value="${t.id}">${t.label}</option>`).join('');
+  tcSel.onchange = () => saveHomeSettings({ timeControl: tcSel.value });
+
   $('btn-play').onclick = () => {
+    unlockAudio();
     newGame();
     showScreen('game');
   };
   $('btn-continue').onclick = () => {
-    setMode(result === '' ? 'play' : 'review');
+    setMode(result === '' && !imported ? 'play' : 'review');
     showScreen('game');
   };
   $('btn-home-import').onclick = openPgnImport;
+  $('btn-history').onclick = () => showHistory('list');
   $<HTMLInputElement>('home-elo').oninput = (e) => {
     $('home-elo-val').textContent = (e.target as HTMLInputElement).value;
   };
@@ -1497,26 +1627,49 @@ function bind() {
     if (act === 'retry') coachRetry();
     else if (act === 'go') coachContinue();
   };
+  $('var-actions').onclick = (e) => {
+    const act = (e.target as HTMLElement).closest<HTMLElement>('[data-va]')?.dataset.va;
+    if (act) varAction(act);
+  };
   $('btn-back').onclick = () => showScreen('home');
   $('btn-flip').onclick = () => {
     flipped = !flipped;
     update();
   };
-  $('btn-menu').onclick = () => menu.showModal();
-  $('btn-new').onclick = fromMenu(newGame);
+  $('btn-menu').onclick = () => {
+    const live = mode === 'play' && result === '' && !imported && tip() !== tree.root;
+    $<HTMLButtonElement>('btn-resign').disabled = !live;
+    $<HTMLButtonElement>('btn-draw').disabled = !live;
+    menu.showModal();
+  };
+  $('btn-new').onclick = fromMenu(() => newGame());
   $('btn-resign').onclick = fromMenu(() => {
-    if (result === '' && moves.length && confirm('确定认输？')) resign();
+    if (result === '' && confirm('确定认输？')) resign();
   });
+  $('btn-draw').onclick = fromMenu(() => void offerDraw());
+  $('btn-play-here').onclick = fromMenu(() => {
+    if (result === '' && !imported && tip() !== tree.root && mode === 'play' && !confirm('从当前局面开始新对局？当前对局会被替换。')) return;
+    playFrom(fensTo(node));
+  });
+  $('btn-menu-history').onclick = fromMenu(() => showHistory('list'));
   $('btn-menu-settings').onclick = fromMenu(openSettings);
   $('btn-undo').onclick = undo;
   $('btn-hint').onclick = () => void hint();
   $('btn-analyse').onclick = () => void analyseGame();
   $('btn-live').onclick = () => setLive(!liveOn);
   $('btn-settings').onclick = openSettings;
-  $('btn-engines').onclick = openEngines;
+  $('btn-engines').onclick = () =>
+    openEngines({
+      settings: () => settings,
+      patchSettings: (patch) => {
+        settings = { ...settings, ...patch };
+        saveSettings(settings);
+      },
+      warmup: () => engines.warmup(),
+    });
   $('btn-result-review').onclick = () => {
     $<HTMLDialogElement>('dlg-result').close();
-    cursor = 0;
+    node = tree.root;
     setMode('review');
     void analyseGame();
   };
@@ -1525,12 +1678,13 @@ function bind() {
     newGame();
   };
   $('moves').onclick = (e) => {
-    const ply = (e.target as HTMLElement).dataset.ply;
-    if (ply) goto(Number(ply));
+    const id = (e.target as HTMLElement).closest<HTMLElement>('.mv')?.dataset.id;
+    if (id) goto(findNode(tree, Number(id)));
   };
   $('graph').onclick = (e) => {
     const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
-    goto(Math.round(((e.clientX - rect.left) / rect.width) * (fens.length - 1)));
+    const l = currentLine();
+    goto(l[Math.round(((e.clientX - rect.left) / rect.width) * (l.length - 1))]);
   };
   $('btn-pgn-copy').onclick = fromMenu(async () => {
     const pgn = exportPgn();
@@ -1542,22 +1696,56 @@ function bind() {
     }
   });
   $('btn-pgn-import').onclick = fromMenu(openPgnImport);
+  $('update-bar').onclick = () => {
+    saveGame();
+    location.reload();
+  };
   document.addEventListener('keydown', (e) => {
     if (screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
-    if (e.key === 'ArrowLeft') goto(cursor - 1);
-    else if (e.key === 'ArrowRight') goto(cursor + 1);
-    else if (e.key === 'Home') goto(0);
-    else if (e.key === 'End') goto(fens.length - 1);
+    if (e.key === 'ArrowLeft') goto(node.parent);
+    else if (e.key === 'ArrowRight') goto(node.children[0]);
+    else if (e.key === 'Home') goto(tree.root);
+    else if (e.key === 'End') goto(lastOfLine());
+  });
+  // iOS only allows audio after a user gesture
+  document.addEventListener('pointerdown', () => unlockAudio(), { once: true, capture: true });
+  document.addEventListener('visibilitychange', () => {
+    syncClock();
+    renderClocks();
+    if (document.hidden) saveGame();
+  });
+  window.addEventListener('pagehide', () => saveGame());
+}
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return;
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  // a new deployment's SW took over: the running page is the old version
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController) $('update-bar').classList.remove('hidden');
+  });
+  navigator.serviceWorker.register('./sw.js').then((reg) => {
+    // first visit: reload once so the SW can add COOP/COEP headers (enables multi-threading)
+    if (!self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded')) {
+      navigator.serviceWorker.ready.then(() => {
+        sessionStorage.setItem('coi-reloaded', '1');
+        location.reload();
+      });
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) reg.update().catch(() => {});
+    });
   });
 }
 
 function init() {
+  configureSound(settings.sound, settings.haptics);
   cg = Chessground($('board'), {
     animation: { duration: 180 },
     ranksPosition: 'left',
     highlight: { lastMove: true, check: true },
-    movable: { free: false, showDests: true, events: { after: (o, d) => void onUserMove(o, d) } },
-    premovable: { enabled: false },
+    movable: { free: false, showDests: true, events: { after: (o, d, meta) => void onUserMove(o, d, meta) } },
+    premovable: { enabled: false, showDests: true, events: { set: () => renderPlayInfo(), unset: () => renderPlayInfo() } },
     drawable: { enabled: true },
   });
   homeCg = Chessground($('home-board'), { viewOnly: true, coordinates: false, animation: { enabled: false } });
@@ -1567,9 +1755,16 @@ function init() {
   for (const ev of ['touchstart', 'mousedown']) $('board').addEventListener(ev, freshBounds, { capture: true, passive: true });
   bind();
   const saved = localStorage.getItem(GAME_KEY);
-  if (!saved || !loadGame(JSON.parse(saved) as SavedGame)) userColor = settings.color === 'b' ? 'b' : 'w';
-  update();
+  let ok = false;
+  try {
+    ok = Boolean(saved) && loadGame(JSON.parse(saved!) as StoredGame | LegacyGame);
+  } catch {
+    ok = false;
+  }
+  if (!ok) userColor = settings.color === 'b' ? 'b' : 'w';
+  setMode(result === '' && !imported ? 'play' : 'review');
   renderHome();
+  setInterval(tickClock, 100);
   // 系统返回键/手势回到主页
   window.addEventListener('popstate', () => {
     if (screen === 'game' && location.hash !== '#game') showScreen('home', false);
@@ -1577,25 +1772,13 @@ function init() {
   });
   if (location.hash === '#game') showScreen('game', false);
   setStatus(self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
-  void maiaTurn();
 
   const willReload = import.meta.env.PROD && 'serviceWorker' in navigator && !self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded');
   if (settings.warmup && !willReload) {
     const idle = (cb: () => void) => ('requestIdleCallback' in self ? requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));
-    idle(() => void warmup());
+    idle(() => void engines.warmup());
   }
-
-  if ('serviceWorker' in navigator && import.meta.env.PROD) {
-    navigator.serviceWorker.register('./sw.js').then(() => {
-      // first visit: reload once so the SW can add COOP/COEP headers (enables multi-threading)
-      if (!self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded')) {
-        navigator.serviceWorker.ready.then(() => {
-          sessionStorage.setItem('coi-reloaded', '1');
-          location.reload();
-        });
-      }
-    });
-  }
+  registerServiceWorker();
 }
 
 init();

@@ -46,6 +46,7 @@
               <button data-color="random"><span class="pc r">?</span>随机</button>
               <button data-color="b"><span class="pc b">♚</span>执黑</button>
             </div>
+            <label class="setup-tc"><span>用时</span><select id="home-tc"></select></label>
           </div>
 
           <button id="btn-play" class="primary big">开始对局</button>
@@ -58,6 +59,10 @@
             <button id="btn-home-import" class="tile">
               <svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6" /></svg>
               <span><b>导入复盘</b><small>PGN / FEN</small></span>
+            </button>
+            <button id="btn-history" class="tile">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+              <span><b>历史与统计</b><small id="history-sub"></small></span>
             </button>
           </div>
 
@@ -99,6 +104,7 @@
                 <div class="progress hidden" id="analyse-progress"><div></div></div>
                 <svg id="graph" class="graph" viewBox="0 0 100 40" preserveAspectRatio="none"></svg>
                 <div class="summary" id="summary"></div>
+                <div class="var-actions" id="var-actions"></div>
                 <div class="coach" id="coach-box"></div>
                 <div class="lines" id="sf-lines"></div>
               </div>
@@ -119,6 +125,7 @@
       </section>
 
       <div id="status" class="toast"></div>
+      <button id="update-bar" class="update-bar hidden">有新版本，点此刷新</button>
     </div>
 
     <dialog id="dlg-menu" class="sheet">
@@ -126,6 +133,9 @@
       <div class="menu-list">
         <button id="btn-new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>新对局</button>
         <button id="btn-resign"><svg viewBox="0 0 24 24"><path d="M5 21V4m0 0h11l-2 4 2 4H5" /></svg>认输</button>
+        <button id="btn-draw"><svg viewBox="0 0 24 24"><path d="M7 11l3-3 3 2 4-4M4 14l4 4 3-2 3 3 6-6" /></svg>提和</button>
+        <button id="btn-play-here"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>从当前局面对弈</button>
+        <button id="btn-menu-history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>历史与统计</button>
         <button id="btn-pgn-copy"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>复制 PGN</button>
         <button id="btn-pgn-import"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>导入 PGN / FEN</button>
         <button id="btn-menu-settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" /></svg>设置</button>
@@ -177,6 +187,9 @@
         </label>
         <label class="check"><input type="checkbox" name="useHistory" /> 向 Maia 输入对局历史（可能导致模仿重复走子，默认关闭）</label>
         <label class="check"><input type="checkbox" name="thinkDelay" /> 模拟人类思考时间</label>
+        <label class="check"><input type="checkbox" name="premove" /> 允许预走（对手思考时先排好下一步）</label>
+        <label class="check"><input type="checkbox" name="sound" /> 音效</label>
+        <label class="check"><input type="checkbox" name="haptics" /> 震动反馈</label>
         <label>Stockfish 每步分析时间（毫秒）
           <input type="number" name="sfMovetime" min="100" max="20000" step="100" />
         </label>
@@ -235,6 +248,21 @@
       </form>
     </dialog>
 
+    <dialog id="dlg-history">
+      <form method="dialog">
+        <h3>历史与统计</h3>
+        <div class="seg" id="history-tabs">
+          <button type="button" data-htab="list">对局</button>
+          <button type="button" data-htab="stats">统计</button>
+        </div>
+        <div class="history-body" id="history-body"></div>
+        <div class="row">
+          <button type="button" id="btn-history-clear">清空</button>
+          <button value="close" class="primary">关闭</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="dlg-promo">
       <div class="promo" id="promo-choices"></div>
     </dialog>
@@ -242,9 +270,17 @@
     <dialog id="dlg-pgn">
       <form method="dialog">
         <h3>导入 PGN</h3>
-        <textarea name="pgn" rows="10" placeholder="粘贴 PGN 或 FEN"></textarea>
+        <textarea name="pgn" rows="10" placeholder="粘贴 PGN（支持变着与注释）或 FEN"></textarea>
+        <label>从末尾局面对弈时我执
+          <select name="playAs">
+            <option value="">轮到走棋的一方</option>
+            <option value="w">白棋</option>
+            <option value="b">黑棋</option>
+          </select>
+        </label>
         <div class="row">
           <button value="cancel">取消</button>
+          <button value="play">从此局面对弈</button>
           <button value="ok" class="primary">导入并复盘</button>
         </div>
       </form>

@@ -1,16 +1,43 @@
 // Offline cache + cross-origin isolation headers (needed for SharedArrayBuffer on static hosts
 // such as GitHub Pages, which cannot set COOP/COEP themselves).
+// Cache name stays fixed so downloaded models survive updates; stale files are pruned per build instead.
 const CACHE = 'maia-coach-v1';
+// replaced with the build id by vite.config.ts, so every deployment is a byte-different worker
+const VERSION = '__BUILD__';
 
 self.addEventListener('install', () => self.skipWaiting());
+
+/** Deletes cached files that the new deployment's precache.json no longer lists (old hashed bundles). */
+async function pruneStale() {
+  let manifest;
+  try {
+    const res = await fetch(new URL('precache.json', self.registration.scope).href, { cache: 'no-store' });
+    if (!res.ok) return;
+    manifest = await res.json();
+  } catch {
+    return;
+  }
+  const keep = new Set(manifest.files.map((f) => new URL(f.url, self.registration.scope).href));
+  const cache = await caches.open(CACHE);
+  for (const req of await cache.keys()) {
+    const href = req.url.split('?')[0];
+    if (href.endsWith('precache.json')) continue;
+    if (!keep.has(href)) await cache.delete(req);
+  }
+}
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     (async () => {
       for (const k of await caches.keys()) if (k !== CACHE) await caches.delete(k);
       await self.clients.claim();
+      await pruneStale();
     })(),
   );
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data === 'version') e.source?.postMessage({ version: VERSION });
 });
 
 function isolate(res) {

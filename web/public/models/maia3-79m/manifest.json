@@ -1,0 +1,16 @@
+{
+ "size": 311886007,
+ "sha256": "7238be83a64ab34fea8f9106e6310fe6320710b7d6f6cc115ffde6fc8f63b2df",
+ "parts": [
+  "part00.bin",
+  "part01.bin",
+  "part02.bin",
+  "part03.bin",
+  "part04.bin",
+  "part05.bin",
+  "part06.bin",
+  "part07.bin",
+  "part08.bin",
+  "part09.bin"
+ ]
+}

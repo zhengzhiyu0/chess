@@ -1,0 +1,26 @@
+{
+  "name": "maia-coach",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "prepare-assets": "node scripts/copy-assets.mjs",
+    "dev": "npm run prepare-assets && vite",
+    "build": "npm run prepare-assets && tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lichess-org/chessground": "10.4.2",
+    "chess.js": "1.4.0",
+    "onnxruntime-web": "1.30.0",
+    "stockfish": "19.0.1"
+  },
+  "devDependencies": {
+    "onnxruntime-node": "1.30.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}

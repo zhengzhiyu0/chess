@@ -1,0 +1,23 @@
+web/src/main.ts
+  s_0b179aa3e30472::t_61737938918bef 359-363,374,448,511,810,821
+web/src/settings.ts
+  s_0b179aa3e30472::t_751e7f462a1b19 8-9,31
+web/index.html
+  s_0b179aa3e30472::t_1775e0673eafd3 114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5dcef610cf93569dc35fc3c3b4762e953889a9c4",
+  "prompts": {},
+  "sessions": {
+    "s_0b179aa3e30472": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "160bc11c-6abf-4d2b-82ba-551adf392525",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -603,13 +603,13 @@ function renderGraph() {
     }
   }
   const cx = n > 1 ? (cursor / (n - 1)) * 100 : 0;
-  const area = pts.length ? `<polygon points="0,40 ${pts.join(' ')} ${pts[pts.length - 1].split(',')[0]},40" fill="#ddd" opacity="0.85"/>` : '';
+  const area = pts.length ? `<polygon points="0,40 ${pts.join(' ')} ${pts[pts.length - 1].split(',')[0]},40" fill="#e8ecf4" opacity="0.92"/>` : '';
   svg.innerHTML =
-    `<rect width="100" height="40" fill="#333"/>${area}` +
-    `<line x1="0" y1="20" x2="100" y2="20" stroke="#888" stroke-width="0.2"/>` +
-    (pts.length ? `<polyline points="${pts.join(' ')}" fill="none" stroke="#e6b422" stroke-width="0.4"/>` : '') +
+    `<rect width="100" height="40" fill="#1c212b"/>${area}` +
+    `<line x1="0" y1="20" x2="100" y2="20" stroke="#5b6475" stroke-width="0.2" stroke-dasharray="1 1"/>` +
+    (pts.length ? `<polyline points="${pts.join(' ')}" fill="none" stroke="#f5b942" stroke-width="2" vector-effect="non-scaling-stroke"/>` : '') +
     dots.join('') +
-    `<line x1="${cx}" y1="0" x2="${cx}" y2="40" stroke="#4a90d9" stroke-width="0.4"/>`;
+    `<line x1="${cx}" y1="0" x2="${cx}" y2="40" stroke="#5b8cff" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
 }
 
 function renderSummary() {

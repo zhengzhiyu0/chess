@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-    <meta name="theme-color" content="#161512" />
+    <meta name="theme-color" content="#0f1115" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -16,10 +16,14 @@
   <body>
     <div id="app">
       <header>
-        <div class="title">♞ Maia 教练</div>
+        <div class="title"><span class="logo">♞</span><span>Maia 教练</span></div>
         <div class="status" id="status">准备中…</div>
-        <button id="btn-engines" class="icon" title="引擎管理">⬇</button>
-        <button id="btn-settings" class="icon" title="设置">⚙</button>
+        <button id="btn-engines" class="icon" title="引擎管理" aria-label="引擎管理">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+        </button>
+        <button id="btn-settings" class="icon" title="设置" aria-label="设置">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
+        </button>
       </header>
 
       <main>
@@ -31,11 +35,11 @@
           </div>
           <div class="player bottom" id="player-bottom"></div>
           <div class="nav">
-            <button data-nav="first">⏮</button>
-            <button data-nav="prev">◀</button>
-            <button data-nav="next">▶</button>
-            <button data-nav="last">⏭</button>
-            <button id="btn-flip" title="翻转棋盘">⇅</button>
+            <button data-nav="first" title="开局" aria-label="开局"><svg viewBox="0 0 24 24"><path d="M6 5v14M18 6l-8 6 8 6z" /></svg></button>
+            <button data-nav="prev" title="上一步" aria-label="上一步"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg></button>
+            <button data-nav="next" title="下一步" aria-label="下一步"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg></button>
+            <button data-nav="last" title="最新" aria-label="最新"><svg viewBox="0 0 24 24"><path d="M18 5v14M6 6l8 6-8 6z" /></svg></button>
+            <button id="btn-flip" title="翻转棋盘" aria-label="翻转棋盘"><svg viewBox="0 0 24 24"><path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3" /></svg></button>
           </div>
         </section>
 

@@ -963,7 +963,11 @@ dialog {
   width: min(92vw, 420px);
   max-height: 86dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+dialog h3:focus {
+  outline: none;
 }
 dialog[open] {
   animation: pop 0.2s ease-out;
@@ -1000,7 +1004,17 @@ dialog label output {
 dialog label.check {
   flex-direction: row;
   align-items: center;
+  align-self: flex-start;
   gap: 10px;
+  min-height: 36px;
+  touch-action: manipulation;
+}
+dialog label.check input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--green);
 }
 dialog select,
 dialog input[type='number'],

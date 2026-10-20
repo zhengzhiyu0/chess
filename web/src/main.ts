@@ -1423,12 +1423,16 @@ function openSettings() {
     prevBoard = boardSel.value;
     look();
   };
+  let shownSet = '';
   const look = () => {
     $('look-custom').hidden = boardSel.value !== 'custom';
     const c = boardColors(boardSel.value, el('customLight').value, el('customDark').value);
     const pv = $('look-preview');
     pv.style.setProperty('--light-sq', c.light);
     pv.style.setProperty('--dark-sq', c.dark);
+    // 只在棋子样式变化时重建预览，避免拖动滑块时反复重绘 SVG
+    if (shownSet === pieceSel.value) return;
+    shownSet = pieceSel.value;
     const pieces: [Color, string][] = [['b', 'r'], ['b', 'n'], ['b', 'b'], ['b', 'q'], ['b', 'k'], ['b', 'p'], ['w', 'p'], ['w', 'k'], ['w', 'q'], ['w', 'b'], ['w', 'n'], ['w', 'r']];
     pv.innerHTML = pieces.map(([col, r]) => `<span style="background-image:url('${pieceUrl(pieceSel.value, col, r)}')"></span>`).join('');
   };
@@ -1817,6 +1821,12 @@ function bind() {
     else if (e.key === 'ArrowRight') goto(mainChild(node));
     else if (e.key === 'Home') goto(tree.root);
     else if (e.key === 'End') goto(lastOfLine());
+  });
+  // 对话框里点击包着下拉框/滑块的标签文字时不要激活控件（iOS 会直接弹出选择器）
+  document.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    const lab = t.closest('dialog label:not(.check)');
+    if (lab && !t.closest('input, select, textarea, button')) e.preventDefault();
   });
   // iOS only allows audio after a user gesture
   document.addEventListener('pointerdown', () => unlockAudio(), { once: true, capture: true });

@@ -1443,6 +1443,7 @@ function openSettings() {
     `跨源隔离：${self.crossOriginIsolated ? '✅（多线程可用）' : '❌（单线程）'}<br>` +
     `WebGPU：${'gpu' in navigator ? '✅' : '❌'}　CPU 核心：${navigator.hardwareConcurrency || '?'}<br>` +
     `Stockfish：${sf ? (sf.multiThreaded ? sf.threads + ' 线程' : '单线程') : '未加载'}　Maia：${engines.maia ? engines.maia.model : '未加载'}<br>` +
+    `视口：${innerWidth}×${innerHeight}　屏幕：${window.screen.width}×${window.screen.height}${document.documentElement.classList.contains('letterbox') ? '（底部已补偿）' : ''}<br>` +
     `版本：${__APP_VERSION__}`;
   dlg.returnValue = '';
   dlg.onclose = () => {
@@ -1849,22 +1850,27 @@ function registerServiceWorker() {
 }
 
 /**
- * iOS 主屏幕 App（standalone）下 100dvh / innerHeight 常常比屏幕短一截，底部留下空白。
- * 全屏运行时直接用屏幕尺寸作为 App 高度，把内容铺满到 Home 指示条。
+ * iOS 主屏幕 App（standalone）在部分系统版本上，网页视口比屏幕短一截（WebKit bug 313800），
+ * 底部那条区域网页无法布局，Home 指示条就落在其中。此时：
+ * - 不再额外预留 safe-area-inset-bottom（否则会在视口内再空出一截）；
+ * - 把 html 背景设为工具栏颜色，让那条区域与工具栏连成一体。
  */
 function fitStandalone() {
   const standalone = (navigator as { standalone?: boolean }).standalone === true || matchMedia('(display-mode: standalone)').matches;
   if (!standalone) return;
   const root = document.documentElement;
   root.classList.add('standalone');
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom)';
+  document.body.appendChild(probe);
   const fit = () => {
-    const { width: w, height: hh } = window.screen;
+    const { width: w, height: h } = window.screen;
     const landscape = innerWidth > innerHeight;
-    const sw = landscape ? Math.max(w, hh) : Math.min(w, hh);
-    const sh = landscape ? Math.min(w, hh) : Math.max(w, hh);
-    // 仅在占满整屏宽度时使用屏幕高度（排除 iPad 分屏等情况）
-    const h = Math.abs(innerWidth - sw) <= 1 ? Math.max(sh, innerHeight) : innerHeight;
-    root.style.setProperty('--app-h', `${h}px`);
+    const sw = landscape ? Math.max(w, h) : Math.min(w, h);
+    const sh = landscape ? Math.min(w, h) : Math.max(w, h);
+    const gap = Math.abs(innerWidth - sw) <= 1 ? sh - innerHeight : 0;
+    const safeB = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+    root.classList.toggle('letterbox', gap > 8 && safeB > 0);
   };
   fit();
   addEventListener('resize', fit);

@@ -17,7 +17,7 @@
   --dark-sq: #739552;
   --safe-t: env(safe-area-inset-top);
   --safe-b: env(safe-area-inset-bottom);
-  /* 实际可用高度；iOS 主屏幕 App 模式下由 JS 用屏幕高度覆盖 */
+  /* 实际可用高度 */
   --app-h: 100dvh;
   color-scheme: dark;
 }
@@ -46,10 +46,17 @@ body {
   inset: 0;
   overflow: hidden;
 }
+/* 主屏幕 App：视口外露出的底部区域由 html 背景填充，与工具栏同色 */
+html.standalone,
+html.standalone body {
+  background: var(--bg-dark);
+}
 html.standalone #app {
-  bottom: auto;
-  height: var(--app-h);
   background: var(--bg);
+}
+/* Home 指示条已在视口之外，无需再预留安全区 */
+html.letterbox {
+  --safe-b: 0px;
 }
 
 ::-webkit-scrollbar {

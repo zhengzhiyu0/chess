@@ -4,7 +4,6 @@ import type { Api } from '@lichess-org/chessground/api';
 import type { Key } from '@lichess-org/chessground/types';
 import type { DrawShape } from '@lichess-org/chessground/draw';
 import '@lichess-org/chessground/assets/chessground.base.css';
-import '@lichess-org/chessground/assets/chessground.brown.css';
 import '@lichess-org/chessground/assets/chessground.cburnett.css';
 import './style.css';
 
@@ -69,6 +68,8 @@ let liveOn = false;
 let liveCtrl: AbortController | null = null;
 let liveLines: SfLine[] = [];
 let batchCtrl: AbortController | null = null;
+let screen: 'home' | 'game' = 'home';
+let shownResult = '';
 
 let maia: Maia | null = null;
 let maiaLoading: Promise<Maia> | null = null;
@@ -79,8 +80,15 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getEleme
 
 // ---------- engines ----------
 
+let toastTimer = 0;
+
 function setStatus(text: string) {
-  $('status').textContent = text;
+  const t = $('status');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => t.classList.remove('show'), 2600);
+  $('home-env').textContent = text;
 }
 
 function unloadMaia() {
@@ -227,6 +235,7 @@ function loadGame(g: SavedGame): boolean {
     fens = fs;
     userColor = g.userColor;
     result = g.result || terminalResult(c);
+    shownResult = result;
     cursor = fens.length - 1;
     evals = [];
     human = [];
@@ -363,7 +372,7 @@ function maiaFens(ply: number): string[] {
 
 async function maiaTurn() {
   const tip = fens.length - 1;
-  if (mode !== 'play' || result !== '' || chessAt(tip).turn() === userColor) return;
+  if (screen !== 'game' || mode !== 'play' || result !== '' || chessAt(tip).turn() === userColor) return;
   const token = ++gameToken;
   maiaThinking = true;
   update();
@@ -406,6 +415,7 @@ function newGame() {
   evals = [];
   human = [];
   hintShapes = [];
+  shownResult = '';
   $('hint-box').textContent = '';
   setMode('play');
   saveGame();
@@ -544,7 +554,7 @@ function reviewOf(i: number): MoveReview | null {
 
 function setLive(on: boolean) {
   liveOn = on;
-  $('btn-live').textContent = `实时分析：${on ? '开' : '关'}`;
+  $('btn-live').classList.toggle('on', on);
   if (!on) {
     liveCtrl?.abort();
     liveLines = [];
@@ -608,13 +618,13 @@ function renderGraph() {
     }
   }
   const cx = n > 1 ? (cursor / (n - 1)) * 100 : 0;
-  const area = pts.length ? `<polygon points="0,40 ${pts.join(' ')} ${pts[pts.length - 1].split(',')[0]},40" fill="#e8ecf4" opacity="0.92"/>` : '';
+  const area = pts.length ? `<polygon points="0,40 ${pts.join(' ')} ${pts[pts.length - 1].split(',')[0]},40" fill="#ffffff" opacity="0.95"/>` : '';
   svg.innerHTML =
-    `<rect width="100" height="40" fill="#1c212b"/>${area}` +
-    `<line x1="0" y1="20" x2="100" y2="20" stroke="#5b6475" stroke-width="0.2" stroke-dasharray="1 1"/>` +
-    (pts.length ? `<polyline points="${pts.join(' ')}" fill="none" stroke="#f5b942" stroke-width="2" vector-effect="non-scaling-stroke"/>` : '') +
+    `<rect width="100" height="40" fill="#403e3b"/>${area}` +
+    `<line x1="0" y1="20" x2="100" y2="20" stroke="#8b8987" stroke-width="0.2" stroke-dasharray="1 1"/>` +
+    (pts.length ? `<polyline points="${pts.join(' ')}" fill="none" stroke="#81b64c" stroke-width="2" vector-effect="non-scaling-stroke"/>` : '') +
     dots.join('') +
-    `<line x1="${cx}" y1="0" x2="${cx}" y2="40" stroke="#5b8cff" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
+    `<line x1="${cx}" y1="0" x2="${cx}" y2="40" stroke="#f7c045" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
 }
 
 function renderSummary() {
@@ -706,19 +716,52 @@ function renderMoves() {
     const c = cur.getBoundingClientRect();
     if (c.top < b.top) box.scrollTop += c.top - b.top;
     else if (c.bottom > b.bottom) box.scrollTop += c.bottom - b.bottom;
+    if (c.left < b.left) box.scrollLeft += c.left - b.left - 24;
+    else if (c.right > b.right) box.scrollLeft += c.right - b.right + 24;
   } else {
-    box.scrollTop = box.scrollHeight;
+    box.scrollTop = cursor === 0 ? 0 : box.scrollHeight;
+    box.scrollLeft = cursor === 0 ? 0 : box.scrollWidth;
   }
 }
 
+const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
+const PIECE_GLYPH: Record<string, string> = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛' };
+
+/** Captured pieces (shown next to the capturer) and material lead for `color`. */
+function material(color: Color): { html: string; diff: number } {
+  const count: Record<Color, Record<string, number>> = { w: { p: 0, n: 0, b: 0, r: 0, q: 0 }, b: { p: 0, n: 0, b: 0, r: 0, q: 0 } };
+  for (const row of chessAt(cursor).board()) for (const sq of row) if (sq && sq.type !== 'k') count[sq.color][sq.type]++;
+  const full: Record<string, number> = { p: 8, n: 2, b: 2, r: 2, q: 1 };
+  const opp: Color = color === 'w' ? 'b' : 'w';
+  let html = '';
+  let score = 0;
+  for (const t of ['p', 'n', 'b', 'r', 'q']) {
+    const taken = Math.max(0, full[t] - count[opp][t]);
+    html += PIECE_GLYPH[t].repeat(taken);
+    score += PIECE_VALUE[t] * (count[color][t] - count[opp][t]);
+  }
+  return { html, diff: score };
+}
+
 function renderPlayers() {
-  const maiaName = `🤖 ${MODELS[settings.model].label.split('（')[0]} · ${settings.elo}`;
-  const me = `🙂 我 · ${settings.elo}`;
+  const model = MODELS[settings.model].label.split('（')[0];
   const bottomIsUser = !flipped;
-  $('player-top').textContent = bottomIsUser ? maiaName : me;
-  $('player-bottom').textContent = bottomIsUser ? me : maiaName;
-  $('player-top').classList.toggle('thinking', maiaThinking && bottomIsUser);
-  $('player-bottom').classList.toggle('thinking', maiaThinking && !bottomIsUser);
+  const oppColor: Color = userColor === 'w' ? 'b' : 'w';
+  const turn = chessAt(cursor).turn();
+  const card = (who: 'me' | 'maia') => {
+    const color = who === 'me' ? userColor : oppColor;
+    const m = material(color);
+    const name = who === 'me' ? '我' : model;
+    const avatar = who === 'me' ? '<div class="avatar me">♙</div>' : '<div class="avatar bot">♞</div>';
+    const thinking = who === 'maia' && maiaThinking ? '<span class="dots"><i></i><i></i><i></i></span>' : '';
+    return (
+      `${avatar}<div class="pinfo"><div class="pname">${name} <span class="elo">(${settings.elo})</span>${thinking}</div>` +
+      `<div class="caps ${color === 'w' ? 'by-w' : 'by-b'}">${m.html}${m.diff > 0 ? `<span class="adv">+${m.diff}</span>` : ''}</div></div>` +
+      `<div class="clock${turn === color && result === '' ? ' active' : ''}">${color === 'w' ? '白' : '黑'}</div>`
+    );
+  };
+  $('player-top').innerHTML = card(bottomIsUser ? 'maia' : 'me');
+  $('player-bottom').innerHTML = card(bottomIsUser ? 'me' : 'maia');
 }
 
 function renderEvalBar() {
@@ -750,6 +793,39 @@ function update() {
   renderSummary();
   renderCoach();
   renderLines();
+  checkResult();
+}
+
+function checkResult() {
+  if (result === '' || result === shownResult || mode !== 'play' || screen !== 'game') return;
+  shownResult = result;
+  const win = (result === '1-0' && userColor === 'w') || (result === '0-1' && userColor === 'b');
+  const draw = result === '1/2-1/2';
+  $('result-icon').textContent = draw ? '½' : win ? '♔' : '♚';
+  $('result-icon').className = `result-icon ${draw ? 'draw' : win ? 'win' : 'loss'}`;
+  $('result-title').textContent = draw ? '和棋' : win ? '你赢了！' : 'Maia 获胜';
+  $('result-sub').textContent = resultText();
+  setTimeout(() => $<HTMLDialogElement>('dlg-result').showModal(), 450);
+}
+
+function showScreen(s: 'home' | 'game', push = true) {
+  screen = s;
+  if (push && s === 'game' && location.hash !== '#game') history.pushState(null, '', '#game');
+  if (push && s === 'home' && location.hash === '#game') history.back();
+  $('home').classList.toggle('active', s === 'home');
+  $('game').classList.toggle('active', s === 'game');
+  if (s === 'home') {
+    gameToken++;
+    maiaThinking = false;
+    setLive(false);
+    renderHome();
+  } else {
+    requestAnimationFrame(() => {
+      cg.redrawAll();
+      update();
+      void maiaTurn();
+    });
+  }
 }
 
 function goto(ply: number) {
@@ -763,6 +839,7 @@ function goto(ply: number) {
 
 function setMode(m: 'play' | 'review') {
   mode = m;
+  $('game').dataset.mode = m;
   document.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === m));
   $('tab-play').classList.toggle('hidden', m !== 'play');
   $('tab-review').classList.toggle('hidden', m !== 'review');
@@ -821,6 +898,7 @@ function openSettings() {
     if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) human = [];
     if (old.sfMovetime !== settings.sfMovetime) evals = [];
     update();
+    renderHome();
   };
   dlg.showModal();
 }
@@ -969,6 +1047,52 @@ function importText(text: string): boolean {
   return loadGame({ startFen: first, moves: hist.map(uciOf), userColor: 'w', result: c.getHeaders().Result ?? '' });
 }
 
+// ---------- home ----------
+
+let homeCg: Api;
+
+function renderHome() {
+  const elo = $<HTMLInputElement>('home-elo');
+  elo.value = String(settings.elo);
+  $('home-elo-val').textContent = String(settings.elo);
+  document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => b.classList.toggle('active', b.dataset.color === settings.color));
+  const has = moves.length > 0;
+  const btn = $<HTMLButtonElement>('btn-continue');
+  btn.disabled = !has;
+  $('continue-title').textContent = has && result === '' ? '继续对局' : '上一局';
+  $('continue-sub').textContent = has ? `${Math.ceil(moves.length / 2)} 回合 · ${result || '进行中'}` : '暂无';
+  homeCg?.set({ fen: fens[fens.length - 1], orientation: userColor === 'w' ? 'white' : 'black', lastMove: undefined });
+}
+
+function saveHomeSettings(patch: Partial<Settings>) {
+  const old = settings;
+  settings = { ...settings, ...patch };
+  saveSettings(settings);
+  if (old.elo !== settings.elo) human = [];
+  renderHome();
+}
+
+function openPgnImport() {
+  const dlg = $<HTMLDialogElement>('dlg-pgn');
+  const f = dlg.querySelector('form')!;
+  dlg.onclose = () => {
+    if (dlg.returnValue !== 'ok') return;
+    gameToken++;
+    maiaThinking = false;
+    batchCtrl?.abort();
+    if (!importText((f.elements.namedItem('pgn') as HTMLTextAreaElement).value)) {
+      setStatus('无法解析 PGN/FEN');
+      return;
+    }
+    cursor = 0;
+    flipped = false;
+    saveGame();
+    setMode('review');
+    showScreen('game');
+  };
+  dlg.showModal();
+}
+
 // ---------- init ----------
 
 function bind() {
@@ -981,18 +1105,64 @@ function bind() {
   document.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) => {
     b.onclick = () => setMode(b.dataset.tab as 'play' | 'review');
   });
+  document.querySelectorAll<HTMLButtonElement>('dialog [data-close]').forEach((b) => {
+    b.onclick = () => b.closest('dialog')!.close();
+  });
+  // tap outside a dialog's box closes it
+  document.querySelectorAll<HTMLDialogElement>('dialog').forEach((d) => {
+    d.addEventListener('click', (e) => {
+      if (e.target === d && d.id !== 'dlg-promo') d.close();
+    });
+  });
+  const menu = $<HTMLDialogElement>('dlg-menu');
+  const fromMenu = (fn: () => void) => () => {
+    menu.close();
+    fn();
+  };
+
+  $('btn-play').onclick = () => {
+    newGame();
+    showScreen('game');
+  };
+  $('btn-continue').onclick = () => {
+    setMode(result === '' ? 'play' : 'review');
+    showScreen('game');
+  };
+  $('btn-home-import').onclick = openPgnImport;
+  $<HTMLInputElement>('home-elo').oninput = (e) => {
+    $('home-elo-val').textContent = (e.target as HTMLInputElement).value;
+  };
+  $<HTMLInputElement>('home-elo').onchange = (e) => saveHomeSettings({ elo: Number((e.target as HTMLInputElement).value) });
+  document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => {
+    b.onclick = () => saveHomeSettings({ color: b.dataset.color as Settings['color'] });
+  });
+  $('btn-back').onclick = () => showScreen('home');
   $('btn-flip').onclick = () => {
     flipped = !flipped;
     update();
   };
-  $('btn-new').onclick = newGame;
+  $('btn-menu').onclick = () => menu.showModal();
+  $('btn-new').onclick = fromMenu(newGame);
+  $('btn-resign').onclick = fromMenu(() => {
+    if (result === '' && moves.length && confirm('确定认输？')) resign();
+  });
+  $('btn-menu-settings').onclick = fromMenu(openSettings);
   $('btn-undo').onclick = undo;
   $('btn-hint').onclick = () => void hint();
-  $('btn-resign').onclick = resign;
   $('btn-analyse').onclick = () => void analyseGame();
   $('btn-live').onclick = () => setLive(!liveOn);
   $('btn-settings').onclick = openSettings;
   $('btn-engines').onclick = openEngines;
+  $('btn-result-review').onclick = () => {
+    $<HTMLDialogElement>('dlg-result').close();
+    cursor = 0;
+    setMode('review');
+    void analyseGame();
+  };
+  $('btn-result-new').onclick = () => {
+    $<HTMLDialogElement>('dlg-result').close();
+    newGame();
+  };
   $('moves').onclick = (e) => {
     const ply = (e.target as HTMLElement).dataset.ply;
     if (ply) goto(Number(ply));
@@ -1001,7 +1171,7 @@ function bind() {
     const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
     goto(Math.round(((e.clientX - rect.left) / rect.width) * (fens.length - 1)));
   };
-  $('btn-pgn-copy').onclick = async () => {
+  $('btn-pgn-copy').onclick = fromMenu(async () => {
     const pgn = exportPgn();
     try {
       await navigator.clipboard.writeText(pgn);
@@ -1009,27 +1179,10 @@ function bind() {
     } catch {
       prompt('复制 PGN：', pgn);
     }
-  };
-  $('btn-pgn-import').onclick = () => {
-    const dlg = $<HTMLDialogElement>('dlg-pgn');
-    const f = dlg.querySelector('form')!;
-    dlg.onclose = () => {
-      if (dlg.returnValue !== 'ok') return;
-      gameToken++;
-      maiaThinking = false;
-      batchCtrl?.abort();
-      if (!importText((f.elements.namedItem('pgn') as HTMLTextAreaElement).value)) {
-        setStatus('无法解析 PGN/FEN');
-        return;
-      }
-      cursor = 0;
-      saveGame();
-      setMode('review');
-    };
-    dlg.showModal();
-  };
+  });
+  $('btn-pgn-import').onclick = fromMenu(openPgnImport);
   document.addEventListener('keydown', (e) => {
-    if ((e.target as HTMLElement).closest('dialog')) return;
+    if (screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
     if (e.key === 'ArrowLeft') goto(cursor - 1);
     else if (e.key === 'ArrowRight') goto(cursor + 1);
     else if (e.key === 'Home') goto(0);
@@ -1040,15 +1193,24 @@ function bind() {
 function init() {
   cg = Chessground($('board'), {
     animation: { duration: 180 },
+    ranksPosition: 'left',
     highlight: { lastMove: true, check: true },
     movable: { free: false, showDests: true, events: { after: (o, d) => void onUserMove(o, d) } },
     premovable: { enabled: false },
     drawable: { enabled: true },
   });
+  homeCg = Chessground($('home-board'), { viewOnly: true, coordinates: false, animation: { enabled: false } });
   bind();
   const saved = localStorage.getItem(GAME_KEY);
   if (!saved || !loadGame(JSON.parse(saved) as SavedGame)) userColor = settings.color === 'b' ? 'b' : 'w';
   update();
+  renderHome();
+  // 系统返回键/手势回到主页
+  window.addEventListener('popstate', () => {
+    if (screen === 'game' && location.hash !== '#game') showScreen('home', false);
+    else if (screen === 'home' && location.hash === '#game') showScreen('game', false);
+  });
+  if (location.hash === '#game') showScreen('game', false);
   setStatus(self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
   void maiaTurn();
 

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-    <meta name="theme-color" content="#0f1115" />
+    <meta name="theme-color" content="#262421" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -15,74 +15,131 @@
   </head>
   <body>
     <div id="app">
-      <header>
-        <div class="title"><span class="logo">♞</span><span>Maia 教练</span></div>
-        <div class="status" id="status">准备中…</div>
-        <button id="btn-engines" class="icon" title="引擎管理" aria-label="引擎管理">
-          <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
-        </button>
-        <button id="btn-settings" class="icon" title="设置" aria-label="设置">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
-        </button>
-      </header>
+      <!-- ========== 主页 ========== -->
+      <section id="home" class="screen active">
+        <header class="appbar">
+          <div class="brand"><span class="logo">♞</span><span>Maia 教练</span></div>
+          <button id="btn-engines" class="icon" title="引擎管理" aria-label="引擎管理">
+            <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+          </button>
+          <button id="btn-settings" class="icon" title="设置" aria-label="设置">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
+          </button>
+        </header>
 
-      <main>
-        <section class="board-area">
-          <div class="player top" id="player-top"></div>
-          <div class="board-wrap">
-            <div class="evalbar" id="evalbar"><div class="fill" id="evalbar-fill"></div><span id="evalbar-text"></span></div>
-            <div class="board-box"><div id="board" class="cg-wrap"></div></div>
-          </div>
-          <div class="player bottom" id="player-bottom"></div>
-          <div class="nav">
-            <button data-nav="first" title="开局" aria-label="开局"><svg viewBox="0 0 24 24"><path d="M6 5v14M18 6l-8 6 8 6z" /></svg></button>
-            <button data-nav="prev" title="上一步" aria-label="上一步"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg></button>
-            <button data-nav="next" title="下一步" aria-label="下一步"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg></button>
-            <button data-nav="last" title="最新" aria-label="最新"><svg viewBox="0 0 24 24"><path d="M18 5v14M6 6l8 6-8 6z" /></svg></button>
-            <button id="btn-flip" title="翻转棋盘" aria-label="翻转棋盘"><svg viewBox="0 0 24 24"><path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3" /></svg></button>
-          </div>
-        </section>
+        <div class="home-body">
+          <div class="hero"><div class="hero-board"><div id="home-board" class="cg-wrap"></div></div></div>
 
-        <section class="side">
+          <div class="card setup">
+            <div class="setup-head">
+              <span>对手水平</span>
+              <b id="home-elo-val"></b>
+            </div>
+            <input type="range" id="home-elo" min="0" max="2600" step="50" />
+            <div class="seg" id="home-color">
+              <button data-color="w"><span class="pc w">♚</span>执白</button>
+              <button data-color="random"><span class="pc r">?</span>随机</button>
+              <button data-color="b"><span class="pc b">♚</span>执黑</button>
+            </div>
+          </div>
+
+          <button id="btn-play" class="primary big">开始对局</button>
+
+          <div class="home-actions">
+            <button id="btn-continue" class="tile">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              <span><b id="continue-title">继续对局</b><small id="continue-sub"></small></span>
+            </button>
+            <button id="btn-home-import" class="tile">
+              <svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6" /></svg>
+              <span><b>导入复盘</b><small>PGN / FEN</small></span>
+            </button>
+          </div>
+
+          <div class="home-foot" id="home-env"></div>
+        </div>
+      </section>
+
+      <!-- ========== 对局页 ========== -->
+      <section id="game" class="screen" data-mode="play">
+        <header class="appbar">
+          <button id="btn-back" class="icon" title="返回主页" aria-label="返回主页"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg></button>
           <div class="tabs">
             <button data-tab="play" class="active">对弈</button>
             <button data-tab="review">复盘</button>
           </div>
+          <button id="btn-flip" class="icon" title="翻转棋盘" aria-label="翻转棋盘"><svg viewBox="0 0 24 24"><path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3" /></svg></button>
+        </header>
 
-          <div class="tab" id="tab-play">
-            <div class="row">
-              <button id="btn-new" class="primary">新对局</button>
-              <button id="btn-undo">悔棋</button>
-              <button id="btn-hint">提示</button>
-              <button id="btn-resign">认输</button>
+        <div class="game-main">
+          <div class="board-col">
+            <div class="player top" id="player-top"></div>
+            <div class="board-wrap">
+              <div class="evalbar" id="evalbar"><div class="fill" id="evalbar-fill"></div><span id="evalbar-text"></span></div>
+              <div class="board-box"><div id="board" class="cg-wrap"></div></div>
             </div>
-            <div class="info" id="play-info"></div>
-            <div class="hint" id="hint-box"></div>
+            <div class="player bottom" id="player-bottom"></div>
           </div>
 
-          <div class="tab hidden" id="tab-review">
-            <div class="row">
-              <button id="btn-analyse" class="primary">分析整局</button>
-              <button id="btn-live">实时分析：关</button>
+          <section class="side">
+            <div class="moves" id="moves"></div>
+
+            <div class="panel">
+              <div class="tab" id="tab-play">
+                <div class="info" id="play-info"></div>
+                <div class="hint" id="hint-box"></div>
+              </div>
+              <div class="tab hidden" id="tab-review">
+                <div class="progress hidden" id="analyse-progress"><div></div></div>
+                <svg id="graph" class="graph" viewBox="0 0 100 40" preserveAspectRatio="none"></svg>
+                <div class="summary" id="summary"></div>
+                <div class="coach" id="coach-box"></div>
+                <div class="lines" id="sf-lines"></div>
+              </div>
             </div>
-            <div class="progress hidden" id="analyse-progress"><div></div></div>
-            <svg id="graph" class="graph" viewBox="0 0 100 40" preserveAspectRatio="none"></svg>
-            <div class="summary" id="summary"></div>
-            <div class="coach" id="coach-box"></div>
-            <div class="lines" id="sf-lines"></div>
-          </div>
 
-          <div class="moves" id="moves"></div>
+            <nav class="toolbar">
+              <button id="btn-menu" class="tool"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg><span>菜单</span></button>
+              <button id="btn-hint" class="tool only-play"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" /></svg><span>提示</span></button>
+              <button id="btn-undo" class="tool only-play"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg><span>悔棋</span></button>
+              <button id="btn-analyse" class="tool only-review"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6" /></svg><span>分析整局</span></button>
+              <button id="btn-live" class="tool only-review"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg><span>实时分析</span></button>
+              <button data-nav="prev" class="tool" aria-label="上一步"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg><span>后退</span></button>
+              <button data-nav="next" class="tool" aria-label="下一步"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg><span>前进</span></button>
+            </nav>
+          </section>
+        </div>
+      </section>
 
-          <div class="row small">
-            <button id="btn-pgn-copy">复制 PGN</button>
-            <button id="btn-pgn-import">导入 PGN</button>
-          </div>
-        </section>
-      </main>
+      <div id="status" class="toast"></div>
     </div>
 
-    <dialog id="dlg-settings">
+    <dialog id="dlg-menu" class="sheet">
+      <div class="sheet-grip"></div>
+      <div class="menu-list">
+        <button id="btn-new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>新对局</button>
+        <button id="btn-resign"><svg viewBox="0 0 24 24"><path d="M5 21V4m0 0h11l-2 4 2 4H5" /></svg>认输</button>
+        <button id="btn-pgn-copy"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>复制 PGN</button>
+        <button id="btn-pgn-import"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" /></svg>导入 PGN / FEN</button>
+        <button id="btn-menu-settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" /></svg>设置</button>
+      </div>
+      <button class="sheet-cancel" data-close>取消</button>
+    </dialog>
+
+    <dialog id="dlg-result">
+      <div class="result">
+        <div class="result-icon" id="result-icon"></div>
+        <h3 id="result-title"></h3>
+        <p class="muted" id="result-sub"></p>
+        <button id="btn-result-review" class="primary big">复盘这局</button>
+        <div class="row">
+          <button id="btn-result-new">新对局</button>
+          <button data-close>关闭</button>
+        </div>
+      </div>
+    </dialog>
+
+        <dialog id="dlg-settings">
       <form method="dialog">
         <h3>设置</h3>
         <label>Maia 模型
@@ -131,7 +188,9 @@
       </form>
     </dialog>
 
-    <dialog id="dlg-engines">
+
+
+        <dialog id="dlg-engines">
       <form method="dialog">
         <h3>引擎管理</h3>
         <p class="muted">把引擎和模型下载到本机，之后完全离线、秒开。</p>
@@ -164,3 +223,5 @@
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>
+
+

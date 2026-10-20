@@ -11,6 +11,8 @@ export interface Settings {
   sfThreads: number;
   sfHash: number;
   lowMemory: boolean;
+  /** load the selected Maia model + Stockfish in the background on startup */
+  warmup: boolean;
 }
 
 const KEY = 'maia-coach.settings';
@@ -30,6 +32,7 @@ export function defaultSettings(): Settings {
     sfThreads: Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1)),
     sfHash: isIOS ? 32 : 128,
     lowMemory: isIOS,
+    warmup: !isIOS,
   };
 }
 

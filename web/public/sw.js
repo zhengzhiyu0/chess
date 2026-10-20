@@ -47,6 +47,11 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
+  // the in-app download manager writes to the cache itself
+  if (req.cache === 'no-store') {
+    e.respondWith(fetch(req).then(isolate));
+    return;
+  }
   const shell = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html') || url.pathname.endsWith('.webmanifest') || url.pathname.endsWith('manifest.json');
   e.respondWith((shell ? networkFirst(req) : cacheFirst(req)).then(isolate));
 });

@@ -13,6 +13,19 @@ import { sampleMove } from './maia/sample';
 import { Stockfish, type SfLine } from './engine/stockfish';
 import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, type Judgement } from './coach/coach';
 import { loadSettings, saveSettings, type Color, type Settings } from './settings';
+import {
+  deletePackage,
+  downloadPackage,
+  fmtMB,
+  isComplete,
+  listPackages,
+  loadPrecache,
+  pruneStale,
+  requestPersistence,
+  storageInfo,
+  type Package,
+  type PackageId,
+} from './offline';
 
 // ---------- state ----------
 
@@ -794,6 +807,7 @@ function openSettings() {
       sfThreads: Math.max(1, num('sfThreads') || 1),
       sfHash: Math.max(16, num('sfHash') || 64),
       lowMemory: el('lowMemory').checked,
+      warmup: old.warmup,
     };
     saveSettings(settings);
     if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash) unloadSf();
@@ -802,6 +816,116 @@ function openSettings() {
     if (old.sfMovetime !== settings.sfMovetime) evals = [];
     update();
   };
+  dlg.showModal();
+}
+
+// ---------- engine manager ----------
+
+const downloads = new Map<PackageId, AbortController>();
+
+async function warmup() {
+  try {
+    await getMaia();
+    // in low-memory mode both engines can't be resident; keep the one needed to play
+    if (!settings.lowMemory) await getSf();
+    setStatus(settings.lowMemory ? `${MODELS[settings.model].label} 已预加载` : 'Maia 与 Stockfish 已预加载');
+  } catch (err) {
+    console.warn('预加载失败', err);
+  }
+}
+
+async function renderPackages() {
+  const list = $('pkg-list');
+  if (!(await loadPrecache()) || !('caches' in self)) {
+    list.innerHTML = '<p class="muted">引擎管理仅在生产构建（npm run build + preview / 部署）下可用。</p>';
+    $<HTMLButtonElement>('btn-dl-rec').disabled = true;
+    return;
+  }
+  const pkgs = await listPackages();
+  list.replaceChildren(
+    ...pkgs.map((p) => {
+      const row = document.createElement('div');
+      row.className = 'pkg';
+      row.dataset.id = p.id;
+      const done = isComplete(p);
+      const busy = downloads.has(p.id);
+      const using = p.id === `maia-${settings.model}` ? '（当前）' : '';
+      row.innerHTML =
+        `<div class="pkg-main"><b>${p.label}${using}</b><span class="muted">${p.desc} · ${fmtMB(p.size)}</span>` +
+        `<div class="progress${busy ? '' : ' hidden'}"><div></div></div>` +
+        `<span class="pkg-state">${done ? '✅ 已下载' : busy ? '下载中…' : p.cached ? `部分（${p.cached}/${p.files.length}）` : '未下载'}</span></div>`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = busy ? '取消' : done ? '删除' : '下载';
+      btn.onclick = async () => {
+        if (busy) downloads.get(p.id)!.abort();
+        else if (done) {
+          if (p.id === 'core' && !confirm('删除应用本体后需联网才能打开，确定？')) return;
+          await deletePackage(p);
+        } else void startDownload(p);
+        await renderPackages();
+      };
+      row.append(btn);
+      return row;
+    }),
+  );
+  const info = await storageInfo();
+  if (info)
+    $('storage-info').textContent =
+      `已用存储 ${fmtMB(info.usage)} / 配额 ${fmtMB(info.quota)}　持久化：${info.persisted ? '✅' : '❌（系统空间不足时可能被清理）'}`;
+}
+
+function pkgRow(id: PackageId) {
+  return document.querySelector<HTMLElement>(`#pkg-list .pkg[data-id="${id}"]`);
+}
+
+async function startDownload(p: Package) {
+  if (downloads.has(p.id)) return;
+  const ctrl = new AbortController();
+  downloads.set(p.id, ctrl);
+  void requestPersistence();
+  try {
+    await downloadPackage(p, ctrl.signal, (l, t) => {
+      const row = pkgRow(p.id);
+      if (!row) return;
+      row.querySelector<HTMLElement>('.progress')?.classList.remove('hidden');
+      const bar = row.querySelector<HTMLElement>('.progress > div');
+      if (bar) bar.style.width = `${t ? (l / t) * 100 : 0}%`;
+      const st = row.querySelector('.pkg-state');
+      if (st) st.textContent = `下载中 ${fmtMB(l)} / ${fmtMB(t)}`;
+    });
+    setStatus(`${p.label} 已下载`);
+  } catch (err) {
+    if (!ctrl.signal.aborted) setStatus(`${p.label} 下载失败：${(err as Error).message}`);
+  } finally {
+    downloads.delete(p.id);
+    if ($<HTMLDialogElement>('dlg-engines').open) await renderPackages();
+  }
+}
+
+async function downloadRecommended() {
+  const pkgs = await listPackages();
+  const want: PackageId[] = ['core', 'stockfish', `maia-${settings.model}`];
+  // sequential: parallel downloads would only compete for bandwidth
+  for (const id of want) {
+    const p = pkgs.find((x) => x.id === id);
+    if (p && !isComplete(p)) await startDownload(p);
+  }
+  if (settings.warmup) void warmup();
+}
+
+function openEngines() {
+  const dlg = $<HTMLDialogElement>('dlg-engines');
+  const chk = $<HTMLInputElement>('chk-warm');
+  chk.checked = settings.warmup;
+  chk.onchange = () => {
+    settings = { ...settings, warmup: chk.checked };
+    saveSettings(settings);
+  };
+  $('btn-dl-rec').onclick = () => void downloadRecommended();
+  $('btn-warm').onclick = () => void warmup();
+  void loadPrecache().then((ok) => (ok ? pruneStale() : 0));
+  void renderPackages();
   dlg.showModal();
 }
 
@@ -862,6 +986,7 @@ function bind() {
   $('btn-analyse').onclick = () => void analyseGame();
   $('btn-live').onclick = () => setLive(!liveOn);
   $('btn-settings').onclick = openSettings;
+  $('btn-engines').onclick = openEngines;
   $('moves').onclick = (e) => {
     const ply = (e.target as HTMLElement).dataset.ply;
     if (ply) goto(Number(ply));
@@ -920,6 +1045,12 @@ function init() {
   update();
   setStatus(self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
   void maiaTurn();
+
+  const willReload = import.meta.env.PROD && 'serviceWorker' in navigator && !self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded');
+  if (settings.warmup && !willReload) {
+    const idle = (cb: () => void) => ('requestIdleCallback' in self ? requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));
+    idle(() => void warmup());
+  }
 
   if ('serviceWorker' in navigator && import.meta.env.PROD) {
     navigator.serviceWorker.register('./sw.js').then(() => {

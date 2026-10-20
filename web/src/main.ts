@@ -356,6 +356,11 @@ async function onUserMove(orig: Key, dest: Key) {
 
 // ---------- play ----------
 
+/** Positions fed to Maia for `ply`; without history the current position is repeated (official UCI default). */
+function maiaFens(ply: number): string[] {
+  return settings.useHistory ? fens.slice(0, ply + 1) : [fens[ply]];
+}
+
 async function maiaTurn() {
   const tip = fens.length - 1;
   if (mode !== 'play' || result !== '' || chessAt(tip).turn() === userColor) return;
@@ -366,7 +371,7 @@ async function maiaTurn() {
     const m = await getMaia();
     const t0 = performance.now();
     const c = chessAt(tip);
-    const res = await m.evaluate(c, fens.slice(0, tip + 1), settings.elo, settings.elo);
+    const res = await m.evaluate(c, maiaFens(tip), settings.elo, settings.elo);
     if (token !== gameToken) return;
     const pick = sampleMove(res.moves, settings.temperature, 1);
     if (settings.thinkDelay) {
@@ -440,7 +445,7 @@ async function hint() {
     let text = best ? `Stockfish 推荐：${sanOf(fens[ply], best)}（${r.lines[0] ? evalText(r.lines[0], turn) : ''}）` : '';
     if (!settings.lowMemory) {
       const m = await getMaia();
-      const h = await m.evaluate(chessAt(ply), fens.slice(0, ply + 1), settings.elo, settings.elo);
+      const h = await m.evaluate(chessAt(ply), maiaFens(ply), settings.elo, settings.elo);
       if (ply !== fens.length - 1) return;
       const top = h.moves[0];
       if (top.uci !== best) hintShapes.push({ orig: top.uci.slice(0, 2) as Key, dest: top.uci.slice(2, 4) as Key, brush: 'blue' });
@@ -503,7 +508,7 @@ async function analyseGame() {
     for (let i = 0; i < n - 1; i++) {
       if (ctrl.signal.aborted) return;
       if (!human[i]) {
-        human[i] = await m.evaluate(chessAt(i), fens.slice(0, i + 1), settings.elo, settings.elo);
+        human[i] = await m.evaluate(chessAt(i), maiaFens(i), settings.elo, settings.elo);
       }
       const base = settings.lowMemory ? 50 : 70;
       fill.style.width = `${base + ((i + 1) / (n - 1)) * (100 - base)}%`;
@@ -802,6 +807,7 @@ function openSettings() {
       color: el('color').value as Settings['color'],
       temperature: num('temperature'),
       backend: el('backend').value as Settings['backend'],
+      useHistory: el('useHistory').checked,
       thinkDelay: el('thinkDelay').checked,
       sfMovetime: Math.max(100, num('sfMovetime') || 1000),
       sfThreads: Math.max(1, num('sfThreads') || 1),
@@ -812,7 +818,7 @@ function openSettings() {
     saveSettings(settings);
     if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash) unloadSf();
     if (old.model !== settings.model || old.backend !== settings.backend) unloadMaia();
-    if (old.elo !== settings.elo || old.model !== settings.model) human = [];
+    if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) human = [];
     if (old.sfMovetime !== settings.sfMovetime) evals = [];
     update();
   };

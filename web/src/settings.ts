@@ -5,6 +5,8 @@ export interface Settings {
   elo: number;
   color: Color | 'random';
   temperature: number;
+  /** feed real game history to Maia (official UCI default is off: current position repeated) */
+  useHistory: boolean;
   backend: 'wasm' | 'webgpu';
   thinkDelay: boolean;
   sfMovetime: number;
@@ -26,6 +28,7 @@ export function defaultSettings(): Settings {
     elo: 1500,
     color: 'w',
     temperature: 1,
+    useHistory: false,
     backend: 'wasm',
     thinkDelay: true,
     sfMovetime: 1000,

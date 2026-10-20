@@ -625,6 +625,7 @@ input[type='checkbox'] {
   border-radius: 6px;
   padding: 8px 10px;
 }
+.info:empty,
 .hint:empty,
 .coach:empty,
 .summary:empty,
@@ -724,6 +725,129 @@ input[type='checkbox'] {
 }
 #game[data-mode='play'] .evalbar {
   display: none;
+}
+#game.show-eval[data-mode='play'] .evalbar {
+  display: flex;
+}
+
+/* 对局类型与教练 */
+.seg.type button {
+  font-size: 15px;
+  padding: 10px 4px;
+}
+.coach-line {
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: left;
+}
+.coach-line:hover {
+  background: none;
+}
+.coach-line:active {
+  transform: none;
+}
+.coach-line .link {
+  color: var(--green);
+  font-weight: 700;
+  white-space: nowrap;
+}
+#home:has(#home-type [data-type='normal'].active) .coach-line .link {
+  visibility: hidden;
+}
+.coach-live {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+.coach-live:empty {
+  display: none;
+}
+.cl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel2);
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+.cl-row.warn {
+  border-left: 3px solid #d9443a;
+}
+.cl-row .dots {
+  margin: 0;
+}
+.tag {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #fff;
+  background: var(--panel3);
+}
+.tag.bad {
+  background: #d9443a;
+}
+.tag.good {
+  background: var(--green);
+}
+.coach-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel2);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.cc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cc-title {
+  font-weight: 900;
+  font-size: 16px;
+}
+.cc-win {
+  color: var(--text2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.cc-why {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+}
+.cc-why .tag {
+  align-self: center;
+}
+.cc-pv {
+  font-size: 12px;
+  color: var(--muted);
+  padding-left: 30px;
+  margin-top: -4px;
+}
+.cc-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+.cc-actions button {
+  flex: 1;
+  padding: 10px;
 }
 
 /* 提示条 */

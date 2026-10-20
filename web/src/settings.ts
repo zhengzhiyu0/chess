@@ -15,6 +15,17 @@ export interface Settings {
   lowMemory: boolean;
   /** load the selected Maia model + Stockfish in the background on startup */
   warmup: boolean;
+  /** home page choice: free play or coached game */
+  gameType: 'normal' | 'coach';
+  /** pause and explain moves at or worse than this level */
+  coachLevel: 'inaccuracy' | 'mistake' | 'blunder';
+  /** arrow for what the opponent threatens if you ignore it */
+  coachThreats: boolean;
+  /** circle your attacked, under-defended pieces */
+  coachHanging: boolean;
+  /** always show the engine's best move on your turn */
+  coachBest: boolean;
+  coachEval: boolean;
 }
 
 const KEY = 'maia-coach.settings';
@@ -36,6 +47,12 @@ export function defaultSettings(): Settings {
     sfHash: isIOS ? 32 : 128,
     lowMemory: isIOS,
     warmup: !isIOS,
+    gameType: 'coach',
+    coachLevel: 'mistake',
+    coachThreats: true,
+    coachHanging: true,
+    coachBest: false,
+    coachEval: false,
   };
 }
 

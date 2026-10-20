@@ -10,7 +10,7 @@ import './style.css';
 import { Maia, MODELS, type MaiaResult } from './maia/maia';
 import { sampleMove } from './maia/sample';
 import { Stockfish, type SfLine } from './engine/stockfish';
-import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, type Judgement } from './coach/coach';
+import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
 import { loadSettings, saveSettings, type Color, type Settings } from './settings';
 import {
   deletePackage,
@@ -40,11 +40,17 @@ interface PosEval {
   text: string;
 }
 
+interface Threat {
+  uci: string;
+  text: string;
+}
+
 interface SavedGame {
   startFen: string;
   moves: string[];
   userColor: Color;
   result: string;
+  coach?: boolean;
 }
 
 const START_FEN = new Chess().fen();
@@ -70,6 +76,11 @@ let liveLines: SfLine[] = [];
 let batchCtrl: AbortController | null = null;
 let screen: 'home' | 'game' = 'home';
 let shownResult = '';
+let coachOn = false;
+let coachState: 'idle' | 'checking' | 'paused' = 'idle';
+let coachCtrl: AbortController | null = null;
+let coachPly = -1;
+let threats: (Threat | null | undefined)[] = [];
 
 let maia: Maia | null = null;
 let maiaLoading: Promise<Maia> | null = null;
@@ -216,7 +227,7 @@ function resultText(): string {
 }
 
 function saveGame() {
-  const g: SavedGame = { startFen, moves: moves.map((m) => m.uci), userColor, result };
+  const g: SavedGame = { startFen, moves: moves.map((m) => m.uci), userColor, result, coach: coachOn };
   localStorage.setItem(GAME_KEY, JSON.stringify(g));
 }
 
@@ -239,6 +250,9 @@ function loadGame(g: SavedGame): boolean {
     cursor = fens.length - 1;
     evals = [];
     human = [];
+    threats = [];
+    coachOn = Boolean(g.coach);
+    coachReset();
     return true;
   } catch {
     return false;
@@ -250,6 +264,7 @@ function truncate(ply: number) {
   fens = fens.slice(0, ply + 1);
   evals = evals.slice(0, ply);
   human = human.slice(0, ply);
+  threats = threats.slice(0, ply);
   result = '';
 }
 
@@ -288,11 +303,11 @@ function dests(c: Chess): Map<Key, Key[]> {
 function canUserMove(): boolean {
   const atTip = cursor === fens.length - 1;
   if (mode === 'review') return result === '' || !atTip;
-  return atTip && result === '' && !maiaThinking && chessAt(cursor).turn() === userColor;
+  return atTip && result === '' && !maiaThinking && coachState === 'idle' && chessAt(cursor).turn() === userColor;
 }
 
 function arrows(): DrawShape[] {
-  const shapes: DrawShape[] = [...hintShapes];
+  const shapes: DrawShape[] = [...hintShapes, ...coachShapes()];
   if (mode === 'review') {
     const best = liveOn && liveLines[0]?.pv[0] ? liveLines[0].pv[0] : evals[cursor]?.best;
     if (best) shapes.push({ orig: best.slice(0, 2) as Key, dest: best.slice(2, 4) as Key, brush: 'green' });
@@ -360,7 +375,9 @@ async function onUserMove(orig: Key, dest: Key) {
     return;
   }
   update();
-  if (mode === 'play') void maiaTurn();
+  if (mode !== 'play') return;
+  if (coachOn && result === '') void coachCheck(fens.length - 2);
+  else void maiaTurn();
 }
 
 // ---------- play ----------
@@ -372,7 +389,7 @@ function maiaFens(ply: number): string[] {
 
 async function maiaTurn() {
   const tip = fens.length - 1;
-  if (screen !== 'game' || mode !== 'play' || result !== '' || chessAt(tip).turn() === userColor) return;
+  if (screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle' || chessAt(tip).turn() === userColor) return;
   const token = ++gameToken;
   maiaThinking = true;
   update();
@@ -398,6 +415,7 @@ async function maiaTurn() {
   } finally {
     if (token === gameToken) maiaThinking = false;
     update();
+    void coachTurn();
   }
 }
 
@@ -416,11 +434,15 @@ function newGame() {
   human = [];
   hintShapes = [];
   shownResult = '';
+  threats = [];
+  coachOn = settings.gameType === 'coach';
+  coachReset();
   $('hint-box').textContent = '';
   setMode('play');
   saveGame();
   update();
   void maiaTurn();
+  void coachTurn();
 }
 
 function undo() {
@@ -431,6 +453,7 @@ function undo() {
   do ply--;
   while (ply > 0 && new Chess(fens[ply]).turn() !== userColor);
   if (new Chess(fens[ply]).turn() !== userColor) ply = 0;
+  coachReset();
   truncate(ply);
   cursor = ply;
   hintShapes = [];
@@ -438,6 +461,7 @@ function undo() {
   saveGame();
   update();
   void maiaTurn();
+  void coachTurn();
 }
 
 async function hint() {
@@ -472,6 +496,7 @@ function resign() {
   if (result !== '' || moves.length === 0) return;
   gameToken++;
   maiaThinking = false;
+  coachReset();
   result = userColor === 'w' ? '0-1' : '1-0';
   saveGame();
   update();
@@ -692,6 +717,308 @@ function renderCoach() {
   box.innerHTML = parts.join('');
 }
 
+// ---------- coach ----------
+
+const PIECE_NAME: Record<string, string> = { p: '兵', n: '马', b: '象', r: '车', q: '后', k: '王' };
+const SEVERITY: Record<Judgement, number> = { best: 0, good: 0, inaccuracy: 1, mistake: 2, blunder: 3 };
+
+let prepCtrl: AbortController | null = null;
+let prep: { ply: number; p: Promise<void> } | null = null;
+let coachNote = '';
+
+function coachReset() {
+  coachCtrl?.abort();
+  prepCtrl?.abort();
+  coachCtrl = null;
+  prepCtrl = null;
+  prep = null;
+  coachState = 'idle';
+  coachPly = -1;
+  coachNote = '';
+}
+
+async function evalPly(s: Stockfish, i: number, signal: AbortSignal) {
+  if (evals[i]) return;
+  const r = await s.analyse(startFen, { moves: moves.slice(0, i).map((m) => m.uci), movetime: settings.sfMovetime, signal });
+  if (!signal.aborted && i < fens.length) evals[i] = posEvalFrom(i, r.lines, r.bestmove);
+}
+
+/** Same position with the opponent to move: its best move is what they threaten. */
+function nullMoveFen(fen: string): string | null {
+  if (new Chess(fen).inCheck()) return null;
+  const p = fen.split(' ');
+  p[1] = p[1] === 'w' ? 'b' : 'w';
+  p[3] = '-';
+  try {
+    return new Chess(p.join(' ')).fen();
+  } catch {
+    return null;
+  }
+}
+
+async function computeThreat(s: Stockfish, ply: number, signal: AbortSignal) {
+  if (threats[ply] !== undefined) return;
+  const nf = nullMoveFen(fens[ply]);
+  const e = evals[ply];
+  if (!nf || !e) {
+    threats[ply] = null;
+    return;
+  }
+  const r = await s.analyse(nf, { movetime: Math.min(settings.sfMovetime, 600), signal });
+  if (signal.aborted || ply >= fens.length) return;
+  const line = r.lines[0];
+  if (!r.bestmove || !line) {
+    threats[ply] = null;
+    return;
+  }
+  const oppNow = chessAt(ply).turn() === 'w' ? 100 - e.white : e.white;
+  const oppThreat = line.mate !== undefined ? (line.mate > 0 ? 100 : 0) : winPct(line.cp ?? 0);
+  if (oppThreat - oppNow < 12) {
+    threats[ply] = null;
+    return;
+  }
+  const mv = new Chess(nf).move(toMove(r.bestmove));
+  let text = `对手威胁 <b>${mv.san}</b>`;
+  if (line.mate !== undefined && line.mate > 0) text += `，${line.mate} 步杀`;
+  else if (mv.captured) text += `，吃掉你的${PIECE_NAME[mv.captured]}`;
+  threats[ply] = { uci: r.bestmove, text };
+}
+
+/** Pre-analyse the position on the user's turn (evaluation + opponent threat). */
+function coachTurn() {
+  const tip = fens.length - 1;
+  if (!coachOn || screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle') return;
+  if (chessAt(tip).turn() !== userColor || prep?.ply === tip) return;
+  prepCtrl?.abort();
+  const ctrl = new AbortController();
+  prepCtrl = ctrl;
+  const p = (async () => {
+    try {
+      const s = await getSf();
+      await evalPly(s, tip, ctrl.signal);
+      if (ctrl.signal.aborted) return;
+      update();
+      await computeThreat(s, tip, ctrl.signal);
+      if (!ctrl.signal.aborted) update();
+    } catch (err) {
+      console.error(err);
+    }
+  })();
+  prep = { ply: tip, p };
+}
+
+/** After the user's move from `ply`: judge it and pause the game if it was bad enough. */
+async function coachCheck(ply: number) {
+  coachCtrl?.abort();
+  const ctrl = new AbortController();
+  coachCtrl = ctrl;
+  coachState = 'checking';
+  coachPly = ply;
+  coachNote = '';
+  update();
+  try {
+    if (prep?.ply === ply) await prep.p;
+    const s = await getSf();
+    await evalPly(s, ply, ctrl.signal);
+    await evalPly(s, ply + 1, ctrl.signal);
+    if (ctrl.signal.aborted) return;
+    const r = reviewOf(ply);
+    coachState = r && SEVERITY[r.judgement] >= SEVERITY[settings.coachLevel] ? 'paused' : 'idle';
+  } catch (err) {
+    console.error(err);
+    if (ctrl.signal.aborted) return;
+    coachState = 'idle';
+  } finally {
+    if (coachCtrl === ctrl) coachCtrl = null;
+  }
+  update();
+  if (coachState === 'idle') void maiaTurn();
+}
+
+function coachRetry() {
+  const ply = coachPly;
+  if (coachState !== 'paused' || ply < 0) return;
+  gameToken++;
+  maiaThinking = false;
+  const e = evals[ply];
+  const t = threats[ply];
+  coachReset();
+  truncate(ply);
+  evals[ply] = e;
+  threats[ply] = t;
+  cursor = ply;
+  hintShapes = [];
+  coachNote = '再想一想，找一步更好的棋。';
+  $('hint-box').textContent = '';
+  saveGame();
+  update();
+  coachTurn();
+}
+
+/** On entering the game: review an unjudged last user move before Maia replies. */
+function resumeCoach() {
+  const tip = fens.length - 1;
+  if (coachOn && mode === 'play' && result === '' && coachState === 'idle' && tip > 0 && chessAt(tip).turn() !== userColor && !reviewOf(tip - 1)) {
+    void coachCheck(tip - 1);
+    return;
+  }
+  void maiaTurn();
+  coachTurn();
+}
+
+function coachContinue() {
+  coachState = 'idle';
+  coachPly = -1;
+  update();
+  void maiaTurn();
+}
+
+/** User pieces that are attacked and either undefended or attacked by something cheaper. */
+function hangingSquares(): Square[] {
+  const c = chessAt(cursor);
+  const opp: Color = userColor === 'w' ? 'b' : 'w';
+  const out: Square[] = [];
+  for (const row of c.board())
+    for (const sq of row) {
+      if (!sq || sq.color !== userColor || sq.type === 'k') continue;
+      const atk = c.attackers(sq.square, opp);
+      if (!atk.length) continue;
+      const cheapest = Math.min(...atk.map((a) => (c.get(a)?.type === 'k' ? 100 : PIECE_VALUE[c.get(a)!.type])));
+      if (!c.attackers(sq.square, userColor).length || cheapest < PIECE_VALUE[sq.type]) out.push(sq.square);
+    }
+  return out;
+}
+
+function coachShapes(): DrawShape[] {
+  const tip = fens.length - 1;
+  if (!coachOn || mode !== 'play' || cursor !== tip || result !== '') return [];
+  const arrow = (u: string, brush: string): DrawShape => ({ orig: u.slice(0, 2) as Key, dest: u.slice(2, 4) as Key, brush });
+  if (coachState === 'paused') {
+    const out: DrawShape[] = [];
+    const ref = evals[coachPly + 1]?.best;
+    if (ref) out.push(arrow(ref, 'red'));
+    const better = evals[coachPly]?.best;
+    if (better && better !== moves[coachPly]?.uci) out.push({ ...arrow(better, 'green'), modifiers: { lineWidth: 8 } });
+    return out;
+  }
+  if (coachState !== 'idle' || chessAt(tip).turn() !== userColor) return [];
+  const out: DrawShape[] = [];
+  if (settings.coachBest && evals[tip]?.best) out.push(arrow(evals[tip]!.best!, 'green'));
+  const t = threats[tip];
+  if (settings.coachThreats && t) out.push(arrow(t.uci, 'red'));
+  if (settings.coachHanging) for (const sq of hangingSquares()) out.push({ orig: sq as Key, brush: 'red' });
+  return out;
+}
+
+function explainMistake(ply: number): string {
+  const r = reviewOf(ply);
+  const before = evals[ply];
+  const after = evals[ply + 1];
+  if (!r || !before || !after) return '';
+  const info = JUDGEMENT_INFO[r.judgement];
+  const num = chessAt(ply).fen().split(' ')[5];
+  const parts = [
+    `<div class="cc-head"><span class="cc-title" style="color:${info.color}">${num}${chessAt(ply).turn() === 'w' ? '.' : '…'} ${moves[ply].san}${info.symbol} ${info.label}</span>` +
+      `<span class="cc-win">胜率 ${r.before.toFixed(0)}% → <b style="color:${info.color}">${r.after.toFixed(0)}%</b></span></div>`,
+  ];
+  if (after.best) {
+    const mv = chessAt(ply + 1).move(toMove(after.best));
+    const l = after.lines[0];
+    let why: string;
+    if (l?.mate !== undefined && l.mate > 0) why = `对手有 ${l.mate} 步杀：${pvToSan(fens[ply + 1], l.pv, 6)}`;
+    else if (mv.captured) why = `对手可以 <b>${mv.san}</b> 吃掉你的${PIECE_NAME[mv.captured]}`;
+    else why = `对手的最佳应对是 <b>${mv.san}</b>：${pvToSan(fens[ply + 1], l?.pv ?? [], 6)}`;
+    parts.push(`<div class="cc-why"><span class="tag bad">问题</span><span>${why}</span></div>`);
+  }
+  if (before.best && before.best !== moves[ply].uci) {
+    const mv = chessAt(ply).move(toMove(before.best));
+    const l = before.lines[0];
+    let why = '';
+    if (l?.mate !== undefined && l.mate > 0) why = `，${l.mate} 步杀`;
+    else if (mv.captured) why = `，吃掉对方的${PIECE_NAME[mv.captured]}`;
+    else if (mv.san.includes('+')) why = '，并将军';
+    parts.push(
+      `<div class="cc-why"><span class="tag good">更好</span><span><b>${mv.san}</b>（${before.text}）${why}</span></div>`,
+      `<div class="cc-pv">${pvToSan(fens[ply], l?.pv ?? [], 5)}</div>`,
+    );
+  }
+  return parts.join('');
+}
+
+function renderCoachLive() {
+  const box = $('coach-live');
+  $('game').classList.toggle('show-eval', coachOn && settings.coachEval);
+  if (!coachOn || mode !== 'play') {
+    box.innerHTML = '';
+    return;
+  }
+  const tip = fens.length - 1;
+  if (coachState === 'checking') {
+    box.innerHTML = '<div class="cl-row muted"><span class="dots"><i></i><i></i><i></i></span>教练正在看你这步…</div>';
+    return;
+  }
+  if (coachState === 'paused') {
+    box.innerHTML =
+      `<div class="coach-card">${explainMistake(coachPly)}` +
+      `<div class="cc-actions"><button class="primary" data-act="retry">重走这步</button><button data-act="go">继续对局</button></div></div>`;
+    return;
+  }
+  const parts: string[] = [];
+  if (coachNote) parts.push(`<div class="cl-row">${coachNote}</div>`);
+  let last = tip - 1;
+  while (last >= 0 && chessAt(last).turn() !== userColor) last--;
+  const r = last >= 0 && !coachNote ? reviewOf(last) : null;
+  if (r) {
+    const info = JUDGEMENT_INFO[r.judgement];
+    const ok = SEVERITY[r.judgement] === 0;
+    parts.push(`<div class="cl-row"><span class="tag" style="background:${info.color}">${ok ? '✓' : info.symbol}</span><span>${moves[last].san} ${info.label}</span></div>`);
+  }
+  if (result === '' && cursor === tip && chessAt(tip).turn() === userColor) {
+    const t = threats[tip];
+    if (settings.coachThreats && t) parts.push(`<div class="cl-row warn"><span class="tag bad">!</span><span>${t.text}</span></div>`);
+    if (settings.coachHanging) {
+      const h = hangingSquares();
+      if (h.length) parts.push(`<div class="cl-row warn"><span class="tag bad">!</span><span>保护不足：${h.map((q) => PIECE_NAME[chessAt(tip).get(q)!.type] + q).join('、')}</span></div>`);
+    }
+    const e = evals[tip];
+    if (settings.coachBest && e?.best) parts.push(`<div class="cl-row"><span class="tag good">★</span><span>推荐 <b>${sanOf(fens[tip], e.best)}</b>（${e.text}）</span></div>`);
+  }
+  box.innerHTML = parts.join('');
+}
+
+function openCoachSettings() {
+  const dlg = $<HTMLDialogElement>('dlg-coach');
+  const f = dlg.querySelector('form')!;
+  const el = (n: string) => f.elements.namedItem(n) as HTMLInputElement;
+  el('coachEnabled').checked = coachOn;
+  el('coachEnabled').closest('label')!.classList.toggle('hidden', screen !== 'game');
+  el('coachLevel').value = settings.coachLevel;
+  for (const k of ['coachThreats', 'coachHanging', 'coachBest', 'coachEval'] as const) el(k).checked = settings[k];
+  dlg.onclose = () => {
+    if (dlg.returnValue !== 'ok') return;
+    settings = {
+      ...settings,
+      coachLevel: el('coachLevel').value as Settings['coachLevel'],
+      coachThreats: el('coachThreats').checked,
+      coachHanging: el('coachHanging').checked,
+      coachBest: el('coachBest').checked,
+      coachEval: el('coachEval').checked,
+    };
+    saveSettings(settings);
+    if (screen === 'game' && el('coachEnabled').checked !== coachOn) setCoach(el('coachEnabled').checked);
+    else update();
+  };
+  dlg.showModal();
+}
+
+function setCoach(on: boolean) {
+  coachOn = on;
+  if (!on) coachReset();
+  saveGame();
+  update();
+  resumeCoach();
+}
+
 // ---------- rendering ----------
 
 function renderMoves() {
@@ -767,7 +1094,7 @@ function renderPlayers() {
 function renderEvalBar() {
   const e = liveOn && liveLines[0] ? posEvalFrom(cursor, liveLines, liveLines[0].pv[0]) : evals[cursor];
   const bar = $('evalbar');
-  bar.classList.toggle('hidden', mode !== 'review');
+  bar.classList.toggle('hidden', mode !== 'review' && !(coachOn && settings.coachEval));
   const white = e ? e.white : 50;
   const whiteAtBottom = (userColor === 'w') !== flipped;
   bar.classList.toggle('flip', !whiteAtBottom);
@@ -778,6 +1105,7 @@ function renderEvalBar() {
 function renderPlayInfo() {
   const box = $('play-info');
   if (result) box.textContent = `对局结束：${resultText()}`;
+  else if (coachState === 'paused') box.textContent = '';
   else if (maiaThinking) box.textContent = 'Maia 思考中…';
   else if (cursor !== fens.length - 1) box.textContent = '正在查看历史局面';
   else box.textContent = chessAt(cursor).turn() === userColor ? '轮到你走' : '等待 Maia';
@@ -792,6 +1120,7 @@ function update() {
   renderGraph();
   renderSummary();
   renderCoach();
+  renderCoachLive();
   renderLines();
   checkResult();
 }
@@ -817,13 +1146,16 @@ function showScreen(s: 'home' | 'game', push = true) {
   if (s === 'home') {
     gameToken++;
     maiaThinking = false;
+    prepCtrl?.abort();
+    prep = null;
+    if (coachState === 'checking') coachReset();
     setLive(false);
     renderHome();
   } else {
     requestAnimationFrame(() => {
       cg.redrawAll();
       update();
-      void maiaTurn();
+      resumeCoach();
     });
   }
 }
@@ -846,9 +1178,12 @@ function setMode(m: 'play' | 'review') {
   if (m === 'play') {
     setLive(false);
     batchCtrl?.abort();
-  }
+  } else if (coachState !== 'idle') coachReset();
   update();
-  if (m === 'play') void maiaTurn();
+  if (m === 'play') {
+    void maiaTurn();
+    coachTurn();
+  }
 }
 
 // ---------- settings dialog ----------
@@ -879,6 +1214,7 @@ function openSettings() {
     const old = settings;
     const num = (n: string) => Number(el(n).value);
     settings = {
+      ...old,
       model: el('model').value as Settings['model'],
       elo: num('elo'),
       color: el('color').value as Settings['color'],
@@ -1056,11 +1392,13 @@ function renderHome() {
   elo.value = String(settings.elo);
   $('home-elo-val').textContent = String(settings.elo);
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => b.classList.toggle('active', b.dataset.color === settings.color));
+  document.querySelectorAll<HTMLButtonElement>('#home-type button').forEach((b) => b.classList.toggle('active', b.dataset.type === settings.gameType));
+  $('home-coach-desc').textContent = settings.gameType === 'coach' ? '走出' + JUDGEMENT_INFO[settings.coachLevel].label + '时暂停讲解，可重走' : '无提示，自由对弈';
   const has = moves.length > 0;
   const btn = $<HTMLButtonElement>('btn-continue');
   btn.disabled = !has;
   $('continue-title').textContent = has && result === '' ? '继续对局' : '上一局';
-  $('continue-sub').textContent = has ? `${Math.ceil(moves.length / 2)} 回合 · ${result || '进行中'}` : '暂无';
+  $('continue-sub').textContent = has ? `${coachOn ? '教练 · ' : ''}${Math.ceil(moves.length / 2)} 回合 · ${result || '进行中'}` : '暂无';
   homeCg?.set({ fen: fens[fens.length - 1], orientation: userColor === 'w' ? 'white' : 'black', lastMove: undefined });
 }
 
@@ -1136,6 +1474,16 @@ function bind() {
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => {
     b.onclick = () => saveHomeSettings({ color: b.dataset.color as Settings['color'] });
   });
+  document.querySelectorAll<HTMLButtonElement>('#home-type button').forEach((b) => {
+    b.onclick = () => saveHomeSettings({ gameType: b.dataset.type as Settings['gameType'] });
+  });
+  $('btn-home-coach').onclick = openCoachSettings;
+  $('btn-coach').onclick = openCoachSettings;
+  $('coach-live').onclick = (e) => {
+    const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
+    if (act === 'retry') coachRetry();
+    else if (act === 'go') coachContinue();
+  };
   $('btn-back').onclick = () => showScreen('home');
   $('btn-flip').onclick = () => {
     flipped = !flipped;

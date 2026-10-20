@@ -681,7 +681,16 @@ function renderMoves() {
   }
   if (resultText()) html += `<span class="res">${resultText()}</span>`;
   box.innerHTML = html;
-  box.querySelector('.cur')?.scrollIntoView({ block: 'nearest' });
+  // 只滚动着法框内部，避免 scrollIntoView 带动整个页面跳动
+  const cur = box.querySelector<HTMLElement>('.cur');
+  if (cur) {
+    const b = box.getBoundingClientRect();
+    const c = cur.getBoundingClientRect();
+    if (c.top < b.top) box.scrollTop += c.top - b.top;
+    else if (c.bottom > b.bottom) box.scrollTop += c.bottom - b.bottom;
+  } else {
+    box.scrollTop = box.scrollHeight;
+  }
 }
 
 function renderPlayers() {

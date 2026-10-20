@@ -1,0 +1,81 @@
+tools/make_golden.py
+  s_cee21cb6fc873a::t_5656995d62e267 1-94
+web/.gitignore
+  s_cee21cb6fc873a::t_4d574e86c7017e 1-4
+web/package-lock.json
+  s_cee21cb6fc873a::t_8b32c4747aeece 1-1498
+web/package.json
+  s_77a5c4f1b9cb30::t_3052a4af390ae8 1-26
+web/public/models/maia3-23m/manifest.json
+  s_cee21cb6fc873a::t_1a3b5a33eb2f7e 1-9
+web/public/models/maia3-5m/manifest.json
+  s_cee21cb6fc873a::t_aeb7ac8d9afd5a 1-7
+web/public/models/maia3-79m/manifest.json
+  s_cee21cb6fc873a::t_6fcd209d29668f 1-16
+web/scripts/copy-assets.mjs
+  s_cee21cb6fc873a::t_a1eff611418dd8 1-23
+web/src/maia/maia.ts
+  s_cee21cb6fc873a::t_54cee1d9d2dd46 1-95
+web/test/golden.json
+  s_cee21cb6fc873a::t_16ceb27e98024b 1-6336
+web/tsconfig.json
+  s_cee21cb6fc873a::t_8e965f85e1631e 1-15
+web/vite.config.ts
+  s_cee21cb6fc873a::t_aaabafb8ea1ba0 1-18
+.github/workflows/deploy.yml
+  s_cee21cb6fc873a::t_216974ddf1a6d5 1-45
+.gitignore
+  s_cee21cb6fc873a::t_06700a70458e31 1-4
+README.md
+  s_cee21cb6fc873a::t_37f7fe940b9e8b 1-70
+tools/export_onnx.py
+  s_cee21cb6fc873a::t_81ac1bae985e4d 1-142
+web/index.html
+  s_cee21cb6fc873a::t_b40aea0a36d022 1-145
+web/public/manifest.webmanifest
+  s_cee21cb6fc873a::t_046199925e9b5d 1-16
+web/public/sw.js
+  s_cee21cb6fc873a::t_e5c116fe485d30 1-52
+web/src/coach/coach.ts
+  s_cee21cb6fc873a::t_0e17d238d275d6 1-51
+web/src/engine/stockfish.ts
+  s_cee21cb6fc873a::t_f4e961bfd8460e 1-170
+web/src/maia/encode.ts
+  s_cee21cb6fc873a::t_54c5e2b3f932be 1-100
+web/src/maia/sample.ts
+  s_cee21cb6fc873a::t_bf11c37a34997b 1-41
+web/src/maia/worker.ts
+  s_cee21cb6fc873a::t_1b366557e0ee10 1-82
+web/src/main.ts
+  s_cee21cb6fc873a::t_8b7ebb512041d7 1-928
+web/src/settings.ts
+  s_cee21cb6fc873a::t_f911a171b41e6d 1-51
+web/src/style.css
+  s_cee21cb6fc873a::t_2a73317471cadd 1-355
+web/test/maia.test.ts
+  s_cee21cb6fc873a::t_d03755754e69f0 1-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bc0f9b9884b0499ffb3c420c1bab0f6e77340505",
+  "prompts": {},
+  "sessions": {
+    "s_77a5c4f1b9cb30": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "e06f3c0b-cd78-48e0-9d97-687543c887d8",
+        "model": "customendpoint/ufosaga/claude-opus-5.5"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_cee21cb6fc873a": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "9a8df138-4488-418c-8fa5-b9b5035a9b9f",
+        "model": "customendpoint/ufosaga/claude-opus-5.5"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

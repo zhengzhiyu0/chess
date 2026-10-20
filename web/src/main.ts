@@ -20,7 +20,7 @@ import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAu
 import { $, escapeHtml, setStatus } from './app/dom';
 import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from './app/appearance';
 import { Engines } from './app/engines';
-import { openEngines } from './app/engines-ui';
+import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { findNode, movesHtml } from './app/moves-ui';
 import { openHistory } from './app/history-ui';
 
@@ -103,6 +103,14 @@ const engines = new Engines(
 );
 const getMaia = () => engines.getMaia();
 const getSf = () => engines.getSf();
+const enginesCtx: EnginesCtx = {
+  settings: () => settings,
+  patchSettings: (patch) => {
+    settings = { ...settings, ...patch };
+    saveSettings(settings);
+  },
+  warmup: () => engines.warmup(),
+};
 
 // ---------- game helpers ----------
 
@@ -1781,15 +1789,7 @@ function bind() {
   $('btn-analyse').onclick = () => void analyseGame();
   $('btn-live').onclick = () => setLive(!liveOn);
   $('btn-settings').onclick = openSettings;
-  $('btn-engines').onclick = () =>
-    openEngines({
-      settings: () => settings,
-      patchSettings: (patch) => {
-        settings = { ...settings, ...patch };
-        saveSettings(settings);
-      },
-      warmup: () => engines.warmup(),
-    });
+  $('btn-engines').onclick = () => openEngines(enginesCtx);
   $('btn-result-review').onclick = () => {
     $<HTMLDialogElement>('dlg-result').close();
     node = tree.root;
@@ -1933,9 +1933,13 @@ function init() {
   setStatus(self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
 
   const willReload = import.meta.env.PROD && 'serviceWorker' in navigator && !self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded');
-  if (settings.warmup && !willReload) {
-    const idle = (cb: () => void) => ('requestIdleCallback' in self ? requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));
-    idle(() => void engines.warmup());
+  const idle = (cb: () => void) => ('requestIdleCallback' in self ? requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));
+  if (!willReload) {
+    idle(async () => {
+      // download first so warmup reads from the local cache instead of fetching the same files twice
+      if (settings.autoOffline && import.meta.env.PROD) await autoOffline(enginesCtx).catch(() => false);
+      if (settings.warmup) void engines.warmup();
+    });
   }
   registerServiceWorker();
 }

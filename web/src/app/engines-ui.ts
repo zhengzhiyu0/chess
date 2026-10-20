@@ -67,13 +67,14 @@ function pkgRow(id: PackageId) {
   return document.querySelector<HTMLElement>(`#pkg-list .pkg[data-id="${id}"]`);
 }
 
-async function startDownload(ctx: EnginesCtx, p: Package) {
-  if (downloads.has(p.id)) return;
+async function startDownload(ctx: EnginesCtx, p: Package, onProgress?: (loaded: number) => void): Promise<boolean> {
+  if (downloads.has(p.id)) return false;
   const ctrl = new AbortController();
   downloads.set(p.id, ctrl);
   void requestPersistence();
   try {
     await downloadPackage(p, ctrl.signal, (l, t) => {
+      onProgress?.(l);
       const row = pkgRow(p.id);
       if (!row) return;
       row.querySelector<HTMLElement>('.progress')?.classList.remove('hidden');
@@ -83,8 +84,10 @@ async function startDownload(ctx: EnginesCtx, p: Package) {
       if (st) st.textContent = `下载中 ${fmtMB(l)} / ${fmtMB(t)}`;
     });
     setStatus(`${p.label} 已下载`);
+    return true;
   } catch (err) {
     if (!ctrl.signal.aborted) setStatus(`${p.label} 下载失败：${(err as Error).message}`);
+    return false;
   } finally {
     downloads.delete(p.id);
     if ($<HTMLDialogElement>('dlg-engines').open) await renderPackages(ctx);
@@ -102,11 +105,49 @@ async function downloadRecommended(ctx: EnginesCtx) {
   if (ctx.settings().warmup) void ctx.warmup();
 }
 
+/**
+ * Startup: silently fetch everything needed to run fully offline (app shell, Stockfish, current Maia model),
+ * like installing a native app. Shows a small progress bar; tap it to open the engine manager.
+ * Returns true if anything was downloaded.
+ */
+export async function autoOffline(ctx: EnginesCtx): Promise<boolean> {
+  if (!('caches' in self) || !(await loadPrecache())) return false;
+  await pruneStale();
+  const pkgs = await listPackages();
+  const want: PackageId[] = ['core', 'stockfish', `maia-${ctx.settings().model}`];
+  const todo = pkgs.filter((p) => want.includes(p.id) && !isComplete(p));
+  if (!todo.length) return false;
+  const total = todo.reduce((a, p) => a + p.size, 0);
+  const bar = $('offline-bar');
+  const text = bar.querySelector('span')!;
+  const fill = bar.querySelector<HTMLElement>('.progress > div')!;
+  bar.onclick = () => openEngines(ctx);
+  bar.classList.remove('hidden');
+  let done = 0;
+  let ok = true;
+  for (const p of todo) {
+    const show = (l: number) => {
+      const now = done + l;
+      text.textContent = `正在下载离线包 ${fmtMB(now)} / ${fmtMB(total)}`;
+      fill.style.width = `${total ? (now / total) * 100 : 0}%`;
+    };
+    show(0);
+    ok = (await startDownload(ctx, p, show)) && ok;
+    done += p.size;
+  }
+  bar.classList.add('hidden');
+  setStatus(ok ? '离线包已就绪，可断网使用' : '部分离线包下载失败，可在「引擎管理」中重试');
+  return true;
+}
+
 export function openEngines(ctx: EnginesCtx) {
   const dlg = $<HTMLDialogElement>('dlg-engines');
   const chk = $<HTMLInputElement>('chk-warm');
   chk.checked = ctx.settings().warmup;
   chk.onchange = () => ctx.patchSettings({ warmup: chk.checked });
+  const auto = $<HTMLInputElement>('chk-auto-offline');
+  auto.checked = ctx.settings().autoOffline;
+  auto.onchange = () => ctx.patchSettings({ autoOffline: auto.checked });
   $('btn-dl-rec').onclick = () => void downloadRecommended(ctx);
   $('btn-warm').onclick = () => void ctx.warmup();
   void loadPrecache().then((ok) => (ok ? pruneStale() : 0));

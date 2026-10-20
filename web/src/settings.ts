@@ -15,6 +15,8 @@ export interface Settings {
   lowMemory: boolean;
   /** load the selected Maia model + Stockfish in the background on startup */
   warmup: boolean;
+  /** on startup, download app + Stockfish + selected Maia model into the offline cache */
+  autoOffline: boolean;
   /** home page choice: free play or coached game */
   gameType: 'normal' | 'coach';
   /** pause and explain moves at or worse than this level */
@@ -61,6 +63,7 @@ export function defaultSettings(): Settings {
     sfHash: isIOS ? 32 : 128,
     lowMemory: isIOS,
     warmup: !isIOS,
+    autoOffline: true,
     gameType: 'coach',
     coachLevel: 'mistake',
     coachThreats: true,

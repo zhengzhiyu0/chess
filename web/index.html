@@ -127,6 +127,7 @@
 
       <div id="status" class="toast"></div>
       <button id="update-bar" class="update-bar hidden">有新版本，点此刷新</button>
+      <button id="offline-bar" class="offline-bar hidden" type="button"><span></span><div class="progress"><div></div></div></button>
     </div>
 
     <dialog id="dlg-menu" class="sheet">
@@ -231,6 +232,7 @@
         <p class="muted">把引擎和模型下载到本机，之后完全离线、秒开。</p>
         <div id="pkg-list" class="pkg-list"></div>
         <div class="env" id="storage-info"></div>
+        <label class="check"><input type="checkbox" id="chk-auto-offline" /> 启动时自动下载离线包（应用本体 + Stockfish + 当前模型）</label>
         <label class="check"><input type="checkbox" id="chk-warm" /> 启动时在后台预加载当前模型与 Stockfish</label>
         <div class="row">
           <button type="button" id="btn-dl-rec" class="primary">下载推荐组合</button>

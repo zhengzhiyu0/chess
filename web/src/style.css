@@ -1405,6 +1405,25 @@ dialog input[type='color'] {
   font-weight: 700;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 }
+.offline-bar {
+  position: fixed;
+  left: 50%;
+  top: calc(env(safe-area-inset-top) + 8px);
+  transform: translateX(-50%);
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 12px;
+}
+.offline-bar .progress {
+  width: 100%;
+}
 #history-tabs {
   margin-bottom: 2px;
 }

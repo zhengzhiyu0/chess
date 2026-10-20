@@ -17,8 +17,9 @@
   --dark-sq: #739552;
   --safe-t: env(safe-area-inset-top);
   --safe-b: env(safe-area-inset-bottom);
+  --viewport-gap: 0px;
   /* 实际可用高度 */
-  --app-h: 100dvh;
+  --app-h: calc(100dvh + var(--viewport-gap));
   color-scheme: dark;
 }
 
@@ -53,10 +54,9 @@ html.standalone body {
 }
 html.standalone #app {
   background: var(--bg);
-}
-/* Home 指示条已在视口之外，无需再预留安全区 */
-html.letterbox {
-  --safe-b: 0px;
+  top: 0;
+  bottom: auto;
+  height: var(--app-h);
 }
 
 ::-webkit-scrollbar {

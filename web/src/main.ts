@@ -1869,9 +1869,8 @@ function registerServiceWorker() {
 
 /**
  * iOS 主屏幕 App（standalone）在部分系统版本上，网页视口比屏幕短一截（WebKit bug 313800），
- * 底部那条区域网页无法布局，Home 指示条就落在其中。此时：
- * - 不再额外预留 safe-area-inset-bottom（否则会在视口内再空出一截）；
- * - 把 html 背景设为工具栏颜色，让那条区域与工具栏连成一体。
+ * 导致固定定位的应用容器和工具栏停在屏幕底部上方。此时扩展容器以覆盖视口差值，
+ * 同时保留 safe-area-inset-bottom，让工具栏按钮避开 Home 指示条。
  */
 function fitStandalone() {
   const standalone = (navigator as { standalone?: boolean }).standalone === true || matchMedia('(display-mode: standalone)').matches;
@@ -1888,7 +1887,9 @@ function fitStandalone() {
     const sh = landscape ? Math.min(w, h) : Math.max(w, h);
     const gap = Math.abs(innerWidth - sw) <= 1 ? sh - innerHeight : 0;
     const safeB = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
-    root.classList.toggle('letterbox', gap > 8 && safeB > 0);
+    const viewportGap = gap > 8 && safeB > 0 ? gap : 0;
+    root.style.setProperty('--viewport-gap', `${viewportGap}px`);
+    root.classList.toggle('letterbox', viewportGap > 0);
   };
   fit();
   addEventListener('resize', fit);

@@ -17,6 +17,8 @@
   --dark-sq: #739552;
   --safe-t: env(safe-area-inset-top);
   --safe-b: env(safe-area-inset-bottom);
+  /* 实际可用高度；iOS 主屏幕 App 模式下由 JS 用屏幕高度覆盖 */
+  --app-h: 100dvh;
   color-scheme: dark;
 }
 
@@ -43,6 +45,11 @@ body {
   position: fixed;
   inset: 0;
   overflow: hidden;
+}
+html.standalone #app {
+  bottom: auto;
+  height: var(--app-h);
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar {
@@ -170,6 +177,10 @@ button svg {
 }
 #home:not(.active) {
   transform: translateX(-24px);
+}
+/* 对局页底部由工具栏自身延伸到 Home 指示条区域 */
+#game {
+  padding-bottom: 0;
 }
 
 .appbar {
@@ -385,7 +396,7 @@ input[type='checkbox'] {
   flex-direction: column;
   align-self: center;
   /* 正方形棋盘：按可用宽度和高度二者取小 */
-  width: min(100vw, calc(100dvh - var(--safe-t) - var(--safe-b) - 52px - 2 * 46px - 190px));
+  width: min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 2 * 46px - 190px));
   min-width: 240px;
 }
 
@@ -698,7 +709,7 @@ input[type='checkbox'] {
   flex: none;
   display: flex;
   background: var(--bg-dark);
-  padding: 4px 4px calc(4px + var(--safe-b) * 0);
+  padding: 4px 4px calc(4px + var(--safe-b));
 }
 .tool {
   flex: 1;
@@ -880,7 +891,9 @@ input[type='checkbox'] {
 /* ---------- 棋盘（绿白） ---------- */
 cg-board {
   background-color: var(--light-sq);
-  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCA4IDgnIHNoYXBlLXJlbmRlcmluZz0nY3Jpc3BFZGdlcyc+PHJlY3Qgd2lkdGg9JzgnIGhlaWdodD0nOCcgZmlsbD0nI2ViZWNkMCcvPjxwYXRoIGZpbGw9JyM3Mzk1NTInIGQ9J00xIDBoMXYxaC0xek0zIDBoMXYxaC0xek01IDBoMXYxaC0xek03IDBoMXYxaC0xek0wIDFoMXYxaC0xek0yIDFoMXYxaC0xek00IDFoMXYxaC0xek02IDFoMXYxaC0xek0xIDJoMXYxaC0xek0zIDJoMXYxaC0xek01IDJoMXYxaC0xek03IDJoMXYxaC0xek0wIDNoMXYxaC0xek0yIDNoMXYxaC0xek00IDNoMXYxaC0xek02IDNoMXYxaC0xek0xIDRoMXYxaC0xek0zIDRoMXYxaC0xek01IDRoMXYxaC0xek03IDRoMXYxaC0xek0wIDVoMXYxaC0xek0yIDVoMXYxaC0xek00IDVoMXYxaC0xek02IDVoMXYxaC0xek0xIDZoMXYxaC0xek0zIDZoMXYxaC0xek01IDZoMXYxaC0xek03IDZoMXYxaC0xek0wIDdoMXYxaC0xek0yIDdoMXYxaC0xek00IDdoMXYxaC0xek02IDdoMXYxaC0xeicvPjwvc3ZnPg==');
+  /* 2x2 格为一个图块：左上浅、右上深、左下深、右下浅（a1 为深色格） */
+  background-image: conic-gradient(var(--dark-sq) 0 25%, var(--light-sq) 0 50%, var(--dark-sq) 0 75%, var(--light-sq) 0);
+  background-size: 25% 25%;
 }
 cg-board square.last-move {
   background-color: rgba(255, 255, 51, 0.5);
@@ -1142,9 +1155,43 @@ dialog.sheet[open] {
   width: 64px;
   height: 64px;
   padding: 0;
-  font-size: 42px;
-  background: var(--light-sq);
-  color: #262421;
+  background: var(--light-sq) center / 88% no-repeat;
+}
+
+/* 外观预览 */
+.look-preview {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.look-preview span {
+  aspect-ratio: 1;
+  background: var(--light-sq) center / cover no-repeat;
+}
+.look-preview span:nth-child(-n + 6):nth-child(even),
+.look-preview span:nth-child(n + 7):nth-child(odd) {
+  background-color: var(--dark-sq);
+}
+.look-custom {
+  display: flex;
+  gap: 16px;
+}
+.look-custom[hidden] {
+  display: none;
+}
+.look-custom label {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+dialog input[type='color'] {
+  width: 44px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--panel3);
+  border-radius: 6px;
+  background: none;
 }
 
 /* ---------- 宽屏：棋盘左、面板右 ---------- */
@@ -1157,7 +1204,7 @@ dialog.sheet[open] {
   }
   .board-col {
     align-self: flex-start;
-    width: min(calc(100vw - 32px - 16px - 360px), calc(100dvh - var(--safe-t) - var(--safe-b) - 52px - 24px - 2 * 46px));
+    width: min(calc(100vw - 32px - 16px - 360px), calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 24px - 2 * 46px));
   }
   .side {
     flex: none;
@@ -1284,6 +1331,42 @@ dialog.sheet[open] {
 .var-actions button {
   padding: 5px 10px;
   font-size: 13px;
+}
+.var-actions {
+  flex-wrap: wrap;
+}
+.arrow-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 13px;
+}
+.arrow-legend:empty {
+  display: none;
+}
+.arrow-legend .lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.arrow-legend .lg i {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* analysis arrows: more opaque than chessground's default 0.6 */
+.cg-wrap .cg-shapes {
+  opacity: 0.85;
+}
+.moves .mv.x {
+  font-style: italic;
 }
 .coach .note {
   color: var(--yellow);

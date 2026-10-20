@@ -67,6 +67,8 @@ export function exportPgn<A extends object>(tree: GameTree<A>, headers: Headers,
     if (text) out.push(`{ ${text} }`);
     return Boolean(text);
   };
+  // analysis explorations are scratch work, not part of the exported record
+  const real = (ns: GNode<A>[]) => ns.filter((c) => !c.x);
   const emitLine = (from: GNode<A>, first: GNode<A>, needNum: boolean) => {
     let n: GNode<A> | undefined = first;
     let parent = from;
@@ -74,7 +76,7 @@ export function exportPgn<A extends object>(tree: GameTree<A>, headers: Headers,
     while (n) {
       let interrupted = emitMove(n, need);
       // sibling variations are emitted once, right after the main move they replace
-      const alts = parent.children[0] === n ? parent.children.slice(1) : [];
+      const alts = parent.children[0] === n ? real(parent.children).slice(1) : [];
       for (const v of alts) {
         out.push('(');
         emitLine(parent, v, true);
@@ -83,12 +85,12 @@ export function exportPgn<A extends object>(tree: GameTree<A>, headers: Headers,
       }
       need = interrupted;
       parent = n;
-      n = n.children[0];
+      n = real(n.children)[0];
     }
   };
   const rootNote = commentOf(tree.root, null).text;
   if (rootNote) out.push(`{ ${rootNote} }`);
-  const first = tree.root.children[0];
+  const first = real(tree.root.children)[0];
   if (first) emitLine(tree.root, first, true);
   out.push(h.Result);
   return `${head}\n\n${wrap(out.join(' ').replace(/\( /g, '(').replace(/ \)/g, ')'))}\n`;

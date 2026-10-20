@@ -2,9 +2,8 @@ import { Chess, type Square } from 'chess.js';
 import { Chessground } from '@lichess-org/chessground';
 import type { Api } from '@lichess-org/chessground/api';
 import type { Key, MoveMetadata } from '@lichess-org/chessground/types';
-import type { DrawShape } from '@lichess-org/chessground/draw';
+import type { DrawBrushes, DrawShape } from '@lichess-org/chessground/draw';
 import '@lichess-org/chessground/assets/chessground.base.css';
-import '@lichess-org/chessground/assets/chessground.cburnett.css';
 import './style.css';
 
 import { MODELS, type MaiaResult } from './maia/maia';
@@ -12,13 +11,14 @@ import { sampleMove } from './maia/sample';
 import type { Stockfish, SfLine } from './engine/stockfish';
 import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
 import { loadSettings, saveSettings, type Settings } from './settings';
-import { GameTree, type GNode } from './game/tree';
+import { GameTree, mainChild, type GNode } from './game/tree';
 import { END_REASON_TEXT, START_FEN, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
 import { exportPgn as treeToPgn, parsePgn, type Annotation } from './game/pgn';
 import { ChessClock, TIME_CONTROLS, fmtClockShort, pgnTimeControl, thinkBudget, timeControlOf } from './game/clock';
 import { computeStats, loadHistory, newGameId, saveHistory, upsert, type StoredGame } from './game/history';
-import { configureSound, play, soundForSan, unlockAudio } from './audio/sound';
+import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio } from './audio/sound';
 import { $, escapeHtml, setStatus } from './app/dom';
+import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from './app/appearance';
 import { Engines } from './app/engines';
 import { openEngines } from './app/engines-ui';
 import { findNode, movesHtml } from './app/moves-ui';
@@ -108,14 +108,23 @@ const getSf = () => engines.getSf();
 
 function tip(): Node {
   let n = tree.root;
-  while (n.children[0]) n = n.children[0];
+  for (let c = mainChild(n); c; c = mainChild(c)) n = c;
   return n;
+}
+
+/** Nearest position of `n` that belongs to the game record (not an analysis exploration). */
+function realOf(n: Node): Node {
+  let a = n;
+  while (a.x && a.parent) a = a.parent;
+  return a;
 }
 
 const fensTo = (n: Node) => tree.pathTo(n).map((x) => x.fen);
 const movesTo = (n: Node) => tree.pathTo(n).slice(1).map((x) => x.uci);
 const chessOf = (n: Node) => new Chess(n.fen);
 const currentLine = () => tree.lineThrough(node);
+/** the recorded game line through the current position, ignoring explorations (graph, summary, batch analysis) */
+const gameLine = () => tree.lineThrough(realOf(node));
 const arrow = (u: string, brush: string): DrawShape => ({ orig: u.slice(0, 2) as Key, dest: u.slice(2, 4) as Key, brush });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -239,15 +248,59 @@ function canPremove(): boolean {
   return mode === 'play' && settings.premove && node === tip() && result === '' && coachState === 'idle' && turnOf(node.fen) !== userColor;
 }
 
+/** Custom arrow brushes for analysis (brighter and thicker than chessground's defaults). */
+const BRUSHES = {
+  best: { key: 'kb', color: '#2fa84f', opacity: 1, lineWidth: 13 },
+  human: { key: 'kh', color: '#2f7fe0', opacity: 1, lineWidth: 9 },
+  bad: { key: 'kr', color: '#e0342b', opacity: 1, lineWidth: 11 },
+  meh: { key: 'ky', color: '#f2b705', opacity: 1, lineWidth: 11 },
+};
+const LABEL_FILL: Record<string, string> = { best: '#1f7a39', human: '#1d5fae', bad: '#a8221b', meh: '#a87e00' };
+
+interface ReviewArrow {
+  uci: string;
+  kind: keyof typeof BRUSHES;
+  label: string;
+  text: string;
+}
+
+/** Arrows shown in review for the current position: the move actually played, engine best, typical human move. */
+function reviewArrows(): ReviewArrow[] {
+  const out: ReviewArrow[] = [];
+  const best = liveOn && liveLines[0]?.pv[0] ? liveLines[0].pv[0] : node.a.eval?.best;
+  // the game move from this position (explorations are not "played")
+  const played = node.x ? undefined : mainChild(node);
+  if (played) {
+    const r = reviewOf(played);
+    const j = r?.judgement;
+    const bad = j === 'mistake' || j === 'blunder';
+    const what = j ? JUDGEMENT_INFO[j].label : '未分析';
+    if (played.uci === best) out.push({ uci: played.uci, kind: 'best', label: '实', text: `实战 ${played.san}（就是最佳）` });
+    else out.push({ uci: played.uci, kind: bad ? 'bad' : 'meh', label: '实', text: `实战 ${played.san}（${what}）` });
+  }
+  if (best && best !== played?.uci) out.push({ uci: best, kind: 'best', label: '最', text: `最佳 ${sanOf(node.fen, best)}` });
+  const h = node.a.human?.moves[0];
+  if (h && h.uci !== best && h.uci !== played?.uci)
+    out.push({ uci: h.uci, kind: 'human', label: '人', text: `${settings.elo} 分常走 ${sanOf(node.fen, h.uci)}（${(h.p * 100).toFixed(0)}%）` });
+  return out;
+}
+
 function arrows(): DrawShape[] {
   const shapes: DrawShape[] = [...hintShapes, ...coachShapes()];
-  if (mode === 'review') {
-    const best = liveOn && liveLines[0]?.pv[0] ? liveLines[0].pv[0] : node.a.eval?.best;
-    if (best) shapes.push(arrow(best, 'green'));
-    const h = node.a.human?.moves[0];
-    if (h && h.uci !== best) shapes.push(arrow(h.uci, 'blue'));
-  }
+  if (mode === 'review')
+    for (const a of reviewArrows()) shapes.push({ ...arrow(a.uci, a.kind), label: { text: a.label, fill: LABEL_FILL[a.kind] } });
   return shapes;
+}
+
+function renderLegend() {
+  const box = $('arrow-legend');
+  if (mode !== 'review') {
+    box.innerHTML = '';
+    return;
+  }
+  box.innerHTML = reviewArrows()
+    .map((a) => `<span class="lg"><i style="background:${BRUSHES[a.kind].color}">${a.label}</i>${escapeHtml(a.text)}</span>`)
+    .join('');
 }
 
 function renderBoard() {
@@ -275,12 +328,12 @@ function renderBoard() {
 function askPromotion(color: Color): Promise<string> {
   const dlg = $<HTMLDialogElement>('dlg-promo');
   const box = $('promo-choices');
-  const glyph: Record<string, string> = color === 'w' ? { q: '♕', r: '♖', b: '♗', n: '♘' } : { q: '♛', r: '♜', b: '♝', n: '♞' };
   return new Promise((resolve) => {
     box.innerHTML = '';
     for (const p of 'qrbn') {
       const b = document.createElement('button');
-      b.textContent = glyph[p];
+      b.style.backgroundImage = `url('${pieceUrl(settings.pieceSet, color, p)}')`;
+      b.setAttribute('aria-label', p);
       b.onclick = () => {
         dlg.close();
         resolve(p);
@@ -311,8 +364,8 @@ async function onUserMove(orig: Key, dest: Key, meta?: MoveMetadata) {
     else void maiaTurn();
     return;
   }
-  // review: explore freely, new moves become variations
-  const next = tree.add(from, uci);
+  // review: explore freely; explorations never change the game record
+  const next = tree.add(from, uci, true);
   if (!next) {
     play('illegal');
     renderBoard();
@@ -622,7 +675,7 @@ async function analyseGame() {
   const bar = $('analyse-progress');
   bar.classList.remove('hidden');
   const fill = bar.firstElementChild as HTMLElement;
-  const nodes = currentLine();
+  const nodes = gameLine();
   const n = nodes.length;
   const sfShare = settings.lowMemory ? 50 : 70;
   try {
@@ -701,6 +754,7 @@ async function runLive() {
         renderLines();
         renderEvalBar();
         cg.setAutoShapes(arrows());
+        renderLegend();
       },
     });
   } catch (err) {
@@ -717,7 +771,7 @@ function renderLines() {
 
 function renderGraph() {
   const svg = $('graph');
-  const nodes = currentLine();
+  const nodes = gameLine();
   const n = nodes.length;
   const pts: string[] = [];
   const dots: string[] = [];
@@ -732,7 +786,7 @@ function renderGraph() {
       dots.push(`<circle cx="${x}" cy="${y}" r="0.9" fill="${JUDGEMENT_INFO[r.judgement].color}"/>`);
     }
   }
-  const cx = n > 1 ? (node.ply / (n - 1)) * 100 : 0;
+  const cx = n > 1 ? (realOf(node).ply / (n - 1)) * 100 : 0;
   const area = pts.length ? `<polygon points="0,40 ${pts.join(' ')} ${pts[pts.length - 1].split(',')[0]},40" fill="#ffffff" opacity="0.95"/>` : '';
   svg.innerHTML =
     `<rect width="100" height="40" fill="#403e3b"/>${area}` +
@@ -745,7 +799,7 @@ function renderGraph() {
 function renderSummary() {
   const box = $('summary');
   const stats = { w: { acc: [] as number[], c: {} as Record<string, number> }, b: { acc: [] as number[], c: {} as Record<string, number> } };
-  for (const n of currentLine()) {
+  for (const n of gameLine()) {
     const r = reviewOf(n);
     if (!r) continue;
     const s = stats[turnOf(n.parent!.fen)];
@@ -802,7 +856,7 @@ function renderCoach() {
   const e = node.a.eval;
   if (e && !node.children.length && e.best) parts.push(`<div>当前最佳：<b>${sanOf(node.fen, e.best)}</b>（${e.text}）</div>`);
   if (node.comment) parts.push(`<div class="note">${escapeHtml(node.comment)}</div>`);
-  if (!parts.length && mode === 'review') parts.push('<div class="muted">点击“分析整局”，Stockfish 会逐步评估，Maia 会告诉你同水平的人通常怎么走。在棋盘上走子可以添加变着。</div>');
+  if (!parts.length && mode === 'review') parts.push('<div class="muted">点击“分析整局”，Stockfish 会逐步评估，Maia 会告诉你同水平的人通常怎么走。在棋盘上走子是“试走”，不会改动对局记录，可随时“回到对局”。</div>');
   box.innerHTML = parts.join('');
 }
 
@@ -812,15 +866,29 @@ function renderVarActions() {
     box.innerHTML = '';
     return;
   }
-  box.innerHTML = '<span class="muted">变着</span><button data-va="main">设为主线</button><button data-va="del">删除变着</button>';
+  if (node.x) {
+    const at = realOf(node);
+    const where = at === tree.root ? '开局' : `${at.san} 之后`;
+    box.innerHTML = `<span class="muted">试走中（从 ${escapeHtml(where)}），不影响对局记录</span><button class="primary" data-va="back">回到对局</button><button data-va="del">删除试走</button>`;
+    return;
+  }
+  box.innerHTML = '<span class="muted">变着</span><button data-va="back">回到主线</button><button data-va="main">设为主线</button><button data-va="del">删除变着</button>';
 }
 
 function varAction(act: string) {
+  if (act === 'back') {
+    // back to the game position where the exploration / variation branched off
+    let v = node;
+    while (v.parent && !tree.isMainline(v)) v = v.parent;
+    goto(v);
+    return;
+  }
   if (act === 'main') tree.makeMainline(node);
   else if (act === 'del') {
-    // remove the innermost variation that contains the current position
     let v = node;
-    while (v.parent && v.parent.children[0] === v) v = v.parent;
+    if (v.x) while (v.parent?.x) v = v.parent;
+    // remove the innermost variation that contains the current position
+    else while (v.parent && v.parent.children[0] === v) v = v.parent;
     if (!v.parent) return;
     const back = v.parent;
     tree.remove(v);
@@ -1239,6 +1307,7 @@ function update() {
   renderSummary();
   renderCoach();
   renderVarActions();
+  renderLegend();
   renderCoachLive();
   renderLines();
   checkResult();
@@ -1321,6 +1390,17 @@ function openSettings() {
   const dlg = $<HTMLDialogElement>('dlg-settings');
   const f = dlg.querySelector('form')!;
   const el = (n: string) => f.elements.namedItem(n) as HTMLInputElement;
+  const themeSel = $<HTMLSelectElement>('sound-theme');
+  if (!themeSel.options.length)
+    for (const [id, th] of Object.entries(SOUND_THEMES)) themeSel.add(new Option(th.label, id));
+  themeSel.onchange = () => previewTheme(themeSel.value);
+  const boardSel = $<HTMLSelectElement>('board-theme');
+  const pieceSel = $<HTMLSelectElement>('piece-set');
+  if (!boardSel.options.length) {
+    for (const [id, th] of Object.entries(BOARD_THEMES)) boardSel.add(new Option(th.label, id));
+    boardSel.add(new Option('自定义颜色…', 'custom'));
+    for (const [id, label] of Object.entries(PIECE_SETS)) pieceSel.add(new Option(label, id));
+  }
   for (const [k, v] of Object.entries(settings)) {
     const input = el(k);
     if (!input) continue;
@@ -1332,8 +1412,32 @@ function openSettings() {
     (f.elements.namedItem('eloOut') as HTMLOutputElement).value = v < 600 ? `${v}（低于 600 为模型外推）` : String(v);
     (f.elements.namedItem('tempOut') as HTMLOutputElement).value = el('temperature').value;
   };
-  f.oninput = outs;
+  let prevBoard = settings.boardTheme;
+  boardSel.onchange = () => {
+    // 切到自定义时，以刚才选中的预设颜色为起点
+    if (boardSel.value === 'custom' && prevBoard !== 'custom') {
+      const c = boardColors(prevBoard, '', '');
+      el('customLight').value = c.light;
+      el('customDark').value = c.dark;
+    }
+    prevBoard = boardSel.value;
+    look();
+  };
+  const look = () => {
+    $('look-custom').hidden = boardSel.value !== 'custom';
+    const c = boardColors(boardSel.value, el('customLight').value, el('customDark').value);
+    const pv = $('look-preview');
+    pv.style.setProperty('--light-sq', c.light);
+    pv.style.setProperty('--dark-sq', c.dark);
+    const pieces: [Color, string][] = [['b', 'r'], ['b', 'n'], ['b', 'b'], ['b', 'q'], ['b', 'k'], ['b', 'p'], ['w', 'p'], ['w', 'k'], ['w', 'q'], ['w', 'b'], ['w', 'n'], ['w', 'r']];
+    pv.innerHTML = pieces.map(([col, r]) => `<span style="background-image:url('${pieceUrl(pieceSel.value, col, r)}')"></span>`).join('');
+  };
+  f.oninput = () => {
+    outs();
+    look();
+  };
   outs();
+  look();
   const sf = engines.sf;
   $('env-info').innerHTML =
     `跨源隔离：${self.crossOriginIsolated ? '✅（多线程可用）' : '❌（单线程）'}<br>` +
@@ -1359,7 +1463,12 @@ function openSettings() {
       sfHash: Math.max(16, num('sfHash') || 64),
       lowMemory: el('lowMemory').checked,
       sound: el('sound').checked,
+      soundTheme: el('soundTheme').value,
       haptics: el('haptics').checked,
+      boardTheme: el('boardTheme').value,
+      customLight: el('customLight').value,
+      customDark: el('customDark').value,
+      pieceSet: el('pieceSet').value,
       premove: el('premove').checked,
     };
     applySettings(old);
@@ -1369,7 +1478,8 @@ function openSettings() {
 
 function applySettings(old: Settings) {
   saveSettings(settings);
-  configureSound(settings.sound, settings.haptics);
+  configureSound(settings.sound, settings.haptics, settings.soundTheme);
+  applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);
   if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash) engines.unloadSf();
   if (old.model !== settings.model || old.backend !== settings.backend) engines.unloadMaia();
   if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) clearAnn('human');
@@ -1574,7 +1684,7 @@ function bind() {
   document.querySelectorAll<HTMLButtonElement>('[data-nav]').forEach((b) => {
     b.onclick = () => {
       const nav = b.dataset.nav;
-      goto(nav === 'first' ? tree.root : nav === 'prev' ? node.parent : nav === 'next' ? node.children[0] : lastOfLine());
+      goto(nav === 'first' ? tree.root : nav === 'prev' ? node.parent : nav === 'next' ? mainChild(node) : lastOfLine());
     };
   });
   document.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) => {
@@ -1703,7 +1813,7 @@ function bind() {
   document.addEventListener('keydown', (e) => {
     if (screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
     if (e.key === 'ArrowLeft') goto(node.parent);
-    else if (e.key === 'ArrowRight') goto(node.children[0]);
+    else if (e.key === 'ArrowRight') goto(mainChild(node));
     else if (e.key === 'Home') goto(tree.root);
     else if (e.key === 'End') goto(lastOfLine());
   });
@@ -1738,15 +1848,40 @@ function registerServiceWorker() {
   });
 }
 
+/**
+ * iOS 主屏幕 App（standalone）下 100dvh / innerHeight 常常比屏幕短一截，底部留下空白。
+ * 全屏运行时直接用屏幕尺寸作为 App 高度，把内容铺满到 Home 指示条。
+ */
+function fitStandalone() {
+  const standalone = (navigator as { standalone?: boolean }).standalone === true || matchMedia('(display-mode: standalone)').matches;
+  if (!standalone) return;
+  const root = document.documentElement;
+  root.classList.add('standalone');
+  const fit = () => {
+    const { width: w, height: hh } = window.screen;
+    const landscape = innerWidth > innerHeight;
+    const sw = landscape ? Math.max(w, hh) : Math.min(w, hh);
+    const sh = landscape ? Math.min(w, hh) : Math.max(w, hh);
+    // 仅在占满整屏宽度时使用屏幕高度（排除 iPad 分屏等情况）
+    const h = Math.abs(innerWidth - sw) <= 1 ? Math.max(sh, innerHeight) : innerHeight;
+    root.style.setProperty('--app-h', `${h}px`);
+  };
+  fit();
+  addEventListener('resize', fit);
+  addEventListener('orientationchange', () => setTimeout(fit, 300));
+}
+
 function init() {
-  configureSound(settings.sound, settings.haptics);
+  fitStandalone();
+  configureSound(settings.sound, settings.haptics, settings.soundTheme);
+  applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);
   cg = Chessground($('board'), {
     animation: { duration: 180 },
     ranksPosition: 'left',
     highlight: { lastMove: true, check: true },
     movable: { free: false, showDests: true, events: { after: (o, d, meta) => void onUserMove(o, d, meta) } },
     premovable: { enabled: false, showDests: true, events: { set: () => renderPlayInfo(), unset: () => renderPlayInfo() } },
-    drawable: { enabled: true },
+    drawable: { enabled: true, brushes: { ...BRUSHES } as unknown as DrawBrushes },
   });
   homeCg = Chessground($('home-board'), { viewOnly: true, coordinates: false, animation: { enabled: false } });
   // chessground caches the board rect and only refreshes it on scroll/resize; layout shifts without a

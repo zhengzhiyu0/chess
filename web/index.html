@@ -105,6 +105,7 @@
                 <svg id="graph" class="graph" viewBox="0 0 100 40" preserveAspectRatio="none"></svg>
                 <div class="summary" id="summary"></div>
                 <div class="var-actions" id="var-actions"></div>
+                <div class="arrow-legend" id="arrow-legend"></div>
                 <div class="coach" id="coach-box"></div>
                 <div class="lines" id="sf-lines"></div>
               </div>
@@ -189,7 +190,21 @@
         <label class="check"><input type="checkbox" name="thinkDelay" /> 模拟人类思考时间</label>
         <label class="check"><input type="checkbox" name="premove" /> 允许预走（对手思考时先排好下一步）</label>
         <label class="check"><input type="checkbox" name="sound" /> 音效</label>
+        <label>走棋音效（选择即可试听）
+          <select name="soundTheme" id="sound-theme"></select>
+        </label>
         <label class="check"><input type="checkbox" name="haptics" /> 震动反馈</label>
+        <label>棋盘
+          <select name="boardTheme" id="board-theme"></select>
+        </label>
+        <div class="look-custom" id="look-custom">
+          <label>浅色格 <input type="color" name="customLight" /></label>
+          <label>深色格 <input type="color" name="customDark" /></label>
+        </div>
+        <label>棋子
+          <select name="pieceSet" id="piece-set"></select>
+        </label>
+        <div class="look-preview" id="look-preview"></div>
         <label>Stockfish 每步分析时间（毫秒）
           <input type="number" name="sfMovetime" min="100" max="20000" step="100" />
         </label>

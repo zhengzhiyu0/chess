@@ -1,4 +1,4 @@
-import type { GameTree, GNode } from '../game/tree';
+import { mainChild, type GameTree, type GNode } from '../game/tree';
 import { moveNumberOf, turnOf } from '../game/rules';
 import { NAG_SYMBOL } from '../game/pgn';
 
@@ -23,9 +23,10 @@ export function movesHtml<A extends object>(tree: GameTree<A>, cur: GNode<A>, ma
     const nag = n.nags?.map((g) => NAG_SYMBOL[g] ?? '').join('') ?? '';
     const sym = m && m.symbol && m.symbol !== '★' ? m.symbol : nag;
     const style = m?.color ? ` style="color:${m.color}"` : '';
-    const cls = `mv${n === cur ? ' cur' : ''}${mainIds.has(n.id) ? '' : ' side'}${n.comment ? ' noted' : ''}`;
+    const cls = `mv${n === cur ? ' cur' : ''}${mainIds.has(n.id) ? '' : ' side'}${n.x ? ' x' : ''}${n.comment ? ' noted' : ''}`;
     return html + `<span class="${cls}" data-id="${n.id}"${style}>${n.san}${sym}</span>`;
   };
+  const vars = (parent: GNode<A>, alts: GNode<A>[]) => alts.map((v) => `<span class="var">${line(parent, v, true)}</span>`).join('');
   const line = (from: GNode<A>, first: GNode<A>, needNum: boolean): string => {
     let html = '';
     let parent = from;
@@ -35,17 +36,20 @@ export function movesHtml<A extends object>(tree: GameTree<A>, cur: GNode<A>, ma
       html += move(n, need);
       need = false;
       const alts = showVariations && parent.children[0] === n ? parent.children.slice(1) : [];
-      for (const v of alts) {
-        html += `<span class="var">${line(parent, v, true)}</span>`;
+      if (alts.length) {
+        html += vars(parent, alts);
         need = true;
       }
       parent = n;
-      n = n.children[0];
+      n = mainChild(n);
     }
+    // explorations hanging off the end of a real line
+    if (showVariations && parent.children.length) html += vars(parent, parent.children);
     return html;
   };
-  const first = tree.root.children[0];
-  return first ? line(tree.root, first, true) : '';
+  const first = mainChild(tree.root);
+  if (first) return line(tree.root, first, true);
+  return showVariations ? vars(tree.root, tree.root.children) : '';
 }
 
 export function findNode<A extends object>(tree: GameTree<A>, id: number): GNode<A> | null {

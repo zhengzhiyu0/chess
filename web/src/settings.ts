@@ -29,7 +29,15 @@ export interface Settings {
   /** time control id, see TIME_CONTROLS ('none' = untimed) */
   timeControl: string;
   sound: boolean;
+  /** move sound style, see SOUND_THEMES */
+  soundTheme: string;
   haptics: boolean;
+  /** board colour preset id (see BOARD_THEMES) or 'custom' */
+  boardTheme: string;
+  customLight: string;
+  customDark: string;
+  /** piece set id, see PIECE_SETS */
+  pieceSet: string;
   /** queue a move while the opponent is thinking */
   premove: boolean;
 }
@@ -61,7 +69,12 @@ export function defaultSettings(): Settings {
     coachEval: false,
     timeControl: 'none',
     sound: true,
+    soundTheme: 'wood',
     haptics: true,
+    boardTheme: 'green',
+    customLight: '#ebecd0',
+    customDark: '#739552',
+    pieceSet: 'cburnett',
     premove: true,
   };
 }

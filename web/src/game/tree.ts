@@ -1,13 +1,14 @@
 import { Chess } from 'chess.js';
 import { toMove } from './rules';
 
-/** Serialized node: uci, children, comment, NAGs, clock snapshot [white ms, black ms]. */
+/** Serialized node: uci, children, comment, NAGs, clock snapshot [white ms, black ms], exploration flag. */
 export interface SNode {
   u?: string;
   c?: SNode[];
   t?: string;
   n?: number[];
   k?: [number, number];
+  x?: 1;
 }
 
 export interface GNode<A extends object = object> {
@@ -18,14 +19,22 @@ export interface GNode<A extends object = object> {
   uci: string;
   san: string;
   parent: GNode<A> | null;
-  /** children[0] is the main continuation, the rest are variations */
+  /** children[0] is the main continuation, the rest are variations; exploration children always come last */
   children: GNode<A>[];
   comment?: string;
   nags?: number[];
   /** remaining clock times [white, black] in ms right after this position arose */
   clock?: [number, number];
+  /** added while exploring in analysis: never part of the game record */
+  x?: boolean;
   /** analysis cache, never serialized */
   a: Partial<A>;
+}
+
+/** Main continuation of `n`; a real position never continues into an exploration. */
+export function mainChild<A extends object>(n: GNode<A>): GNode<A> | undefined {
+  const c = n.children[0];
+  return c && (!c.x || n.x) ? c : undefined;
 }
 
 export class GameTree<A extends object = object> {
@@ -36,10 +45,21 @@ export class GameTree<A extends object = object> {
     this.root = { id: 0, ply: 0, fen: new Chess(startFen).fen(), uci: '', san: '', parent: null, children: [], a: {} };
   }
 
-  /** Plays `uci` from `parent`; reuses an existing child with the same move. Returns null if illegal. */
-  add(parent: GNode<A>, uci: string): GNode<A> | null {
-    const same = parent.children.find((c) => c.uci === uci);
-    if (same) return same;
+  /**
+   * Plays `uci` from `parent`; reuses an existing child with the same move. Returns null if illegal.
+   * `explore` marks new nodes as analysis explorations; real moves are kept ahead of them.
+   */
+  add(parent: GNode<A>, uci: string, explore = false): GNode<A> | null {
+    const sib = parent.children;
+    const same = sib.find((c) => c.uci === uci);
+    if (same) {
+      if (!explore && same.x) {
+        same.x = false;
+        sib.splice(sib.indexOf(same), 1);
+        this.insertReal(sib, same);
+      }
+      return same;
+    }
     const c = new Chess(parent.fen);
     let m;
     try {
@@ -48,8 +68,17 @@ export class GameTree<A extends object = object> {
       return null;
     }
     const node: GNode<A> = { id: this.nextId++, ply: parent.ply + 1, fen: c.fen(), uci, san: m.san, parent, children: [], a: {} };
-    parent.children.push(node);
+    if (explore || parent.x) {
+      node.x = true;
+      sib.push(node);
+    } else this.insertReal(sib, node);
     return node;
+  }
+
+  private insertReal(sib: GNode<A>[], n: GNode<A>) {
+    const i = sib.findIndex((c) => c.x);
+    if (i < 0) sib.push(n);
+    else sib.splice(i, 0, n);
   }
 
   /** root … node */
@@ -62,22 +91,25 @@ export class GameTree<A extends object = object> {
   /** root … node, then node's main continuation to the end */
   lineThrough(node: GNode<A>): GNode<A>[] {
     const out = this.pathTo(node);
-    for (let n = node.children[0]; n; n = n.children[0]) out.push(n);
+    for (let n = mainChild(node); n; n = mainChild(n)) out.push(n);
     return out;
   }
 
+  /** the game record: never contains explorations */
   mainline(): GNode<A>[] {
     return this.lineThrough(this.root);
   }
 
   isMainline(node: GNode<A>): boolean {
-    for (let n = node; n.parent; n = n.parent) if (n.parent.children[0] !== n) return false;
+    for (let n = node; n.parent; n = n.parent) if (n.x || n.parent.children[0] !== n) return false;
     return true;
   }
 
-  /** Moves `node`'s branch up so that it becomes the main line. */
+  /** Moves `node`'s branch up so that it becomes the main line (explorations on it become real moves). */
   makeMainline(node: GNode<A>) {
+    for (let n = node.children[0]; n; n = n.children[0]) n.x = false;
     for (let n = node; n.parent; n = n.parent) {
+      n.x = false;
       const sib = n.parent.children;
       const i = sib.indexOf(n);
       if (i > 0) {
@@ -105,6 +137,7 @@ export class GameTree<A extends object = object> {
     if (node.comment) s.t = node.comment;
     if (node.nags?.length) s.n = node.nags;
     if (node.clock) s.k = node.clock;
+    if (node.x) s.x = 1;
     return s;
   }
 
@@ -115,7 +148,7 @@ export class GameTree<A extends object = object> {
       if (sn.n?.length) node.nags = sn.n;
       if (sn.k) node.clock = sn.k;
       for (const c of sn.c ?? []) {
-        const child = c.u ? tree.add(node, c.u) : null;
+        const child = c.u ? tree.add(node, c.u, Boolean(c.x)) : null;
         if (!child) throw new Error(`非法着法：${c.u}`);
         fill(child, c);
       }

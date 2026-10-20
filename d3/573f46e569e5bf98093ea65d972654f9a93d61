@@ -1,0 +1,21 @@
+web/src/style.css
+  s_e991c37ee621d1::t_09d04f0b9ac950 20,22,57-59
+web/src/main.ts
+  s_e991c37ee621d1::t_09d04f0b9ac950 1872-1873,1890-1892
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d3573f46e569e5bf98093ea65d972654f9a93d61",
+  "prompts": {},
+  "sessions": {
+    "s_e991c37ee621d1": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "f6c14dc0-afa5-4949-8221-b2406cb8e541",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

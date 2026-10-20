@@ -72,8 +72,18 @@ export class Stockfish {
       for (const h of [...this.listeners]) h(e.data);
     };
     this.worker.onerror = (e) => {
-      this.failed?.(new Error(e.message || 'Stockfish worker error'));
+      const err = new Error(e.message || 'Stockfish worker error');
+      if (this.failed) this.failed(err);
+      else {
+        console.error(err);
+        this.terminate();
+      }
     };
+  }
+
+  /** false once terminated or crashed; callers should create a new instance */
+  get alive() {
+    return !this.dead;
   }
 
   static async create(threads: number, hash: number): Promise<Stockfish> {
@@ -93,6 +103,7 @@ export class Stockfish {
     try {
       await new Promise<void>((resolve, reject) => {
         sf.failed = reject;
+        setTimeout(() => reject(new Error('Stockfish 启动超时')), 30000);
         sf.waitFor('uci', (l) => l === 'uciok').then(resolve, reject);
       });
       sf.failed = null;
@@ -136,6 +147,19 @@ export class Stockfish {
         const sorted = () => [...lines.values()].sort((a, b) => a.multipv - b.multipv);
         const onAbort = () => this.send('stop');
         opts.signal?.addEventListener('abort', onAbort, { once: true });
+        // watchdog: an overrunning search gets "stop"; an engine that ignores it is killed,
+        // which resolves this and every queued search instead of hanging forever
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const arm = (ms: number, fn: () => void) => {
+          timer = setTimeout(() => (document.hidden ? arm(ms, fn) : fn()), ms);
+        };
+        arm(opts.depth ? 120000 : (opts.movetime ?? 1000) + 4000, () => {
+          this.send('stop');
+          arm(4000, () => {
+            console.warn('Stockfish 无响应，已重启');
+            this.terminate();
+          });
+        });
         const h = (l: string) => {
           const info = parseInfo(l);
           if (info) {
@@ -144,6 +168,7 @@ export class Stockfish {
             return;
           }
           if (l.startsWith('bestmove')) {
+            clearTimeout(timer);
             this.listeners.delete(h);
             opts.signal?.removeEventListener('abort', onAbort);
             const bm = l.split(' ')[1];
@@ -161,6 +186,7 @@ export class Stockfish {
   }
 
   terminate() {
+    if (this.dead) return;
     this.dead = true;
     this.worker.terminate();
     // flush pending searches so awaiting callers resolve instead of hanging

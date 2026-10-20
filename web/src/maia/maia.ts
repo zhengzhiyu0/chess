@@ -25,6 +25,7 @@ export class Maia {
   private worker: Worker;
   private pending = new Map<number, Pending>();
   private nextId = 1;
+  private dead = false;
   onProgress: ((loaded: number, total: number) => void) | null = null;
 
   private constructor(readonly model: ModelId, readonly backend: 'wasm' | 'webgpu') {
@@ -41,17 +42,36 @@ export class Maia {
       if (msg.type === 'error') p.reject(new Error(msg.message));
       else p.resolve(msg);
     };
-    this.worker.onerror = (e) => {
-      for (const p of this.pending.values()) p.reject(new Error(e.message || 'Maia worker error'));
-      this.pending.clear();
-    };
+    // a crashed worker (e.g. killed for memory on iOS) never answers again
+    this.worker.onerror = (e) => this.fail(e.message || 'Maia worker error');
   }
 
-  private call(msg: Req): Promise<WorkerOut> {
+  /** false once disposed or crashed; callers should create a new instance */
+  get alive() {
+    return !this.dead;
+  }
+
+  private fail(message: string) {
+    this.dead = true;
+    this.worker.terminate();
+    for (const p of this.pending.values()) p.reject(new Error(message));
+    this.pending.clear();
+  }
+
+  private call(msg: Req, timeout = 0): Promise<WorkerOut> {
+    if (this.dead) return Promise.reject(new Error('Maia 已卸载'));
     const reqId = this.nextId++;
     return new Promise((resolve, reject) => {
       this.pending.set(reqId, { resolve, reject });
       this.worker.postMessage({ ...msg, reqId });
+      if (!timeout) return;
+      const check = () => {
+        if (!this.pending.has(reqId)) return;
+        // the page may be suspended in the background; only count visible time
+        if (document.hidden) setTimeout(check, timeout);
+        else this.fail('Maia 无响应');
+      };
+      setTimeout(check, timeout);
     });
   }
 
@@ -60,10 +80,11 @@ export class Maia {
     backend: 'wasm' | 'webgpu',
     onProgress?: (loaded: number, total: number) => void,
     lean = false,
+    threads?: number,
   ): Promise<Maia> {
     const m = new Maia(model, backend);
     m.onProgress = onProgress ?? null;
-    const numThreads = self.crossOriginIsolated ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1)) : 1;
+    const numThreads = threads ?? (self.crossOriginIsolated ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1)) : 1);
     try {
       await m.call({
         type: 'load',
@@ -83,15 +104,13 @@ export class Maia {
   async evaluate(chess: Chess, fens: string[], selfElo: number, oppoElo: number): Promise<MaiaResult> {
     const legal = legalMoveIndices(chess);
     if (legal.length === 0) return { moves: [], wdl: [0, 1, 0], ms: 0 };
-    const res = await this.call({ type: 'eval', fens, indices: legal.map((l) => l.index), selfElo, oppoElo });
+    const res = await this.call({ type: 'eval', fens, indices: legal.map((l) => l.index), selfElo, oppoElo }, 20000);
     if (res.type !== 'result') throw new Error('unexpected worker reply');
     const moves = softmaxMoves(legal.map((l, i) => ({ uci: l.uci, logit: res.logits[i] })));
     return { moves, wdl: res.wdl, ms: res.ms };
   }
 
   dispose() {
-    this.worker.terminate();
-    for (const p of this.pending.values()) p.reject(new Error('Maia 已卸载'));
-    this.pending.clear();
+    this.fail('Maia 已卸载');
   }
 }

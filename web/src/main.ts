@@ -448,12 +448,13 @@ function flag(color: Color) {
   update();
 }
 
-async function maiaTurn() {
+async function maiaTurn(attempt = 0) {
   const t = tip();
   if (screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle' || turnOf(t.fen) === userColor) return;
   const token = ++gameToken;
   maiaThinking = true;
   update();
+  let retry = false;
   try {
     const t0 = performance.now();
     const res = await maiaEval(t);
@@ -473,11 +474,15 @@ async function maiaTurn() {
     if (playMove(pick.uci) && settings.premove) cg.playPremove();
   } catch (err) {
     console.error(err);
+    // a crashed / hung worker is replaced by getMaia() on the next call
+    retry = token === gameToken && attempt < 2;
+    if (token === gameToken) setStatus(retry ? 'Maia 无响应，正在重启…' : 'Maia 出错：' + (err as Error).message);
   } finally {
     if (token === gameToken) {
       maiaThinking = false;
       update();
-      void coachTurn();
+      if (retry) void maiaTurn(attempt + 1);
+      else void coachTurn();
     }
   }
 }
@@ -664,7 +669,10 @@ function posEvalFrom(n: Node, lines: SfLine[], best: string | null): PosEval {
 async function evalNode(s: Stockfish, n: Node, signal: AbortSignal) {
   if (n.a.eval) return;
   const r = await s.analyse(tree.root.fen, { moves: movesTo(n), movetime: settings.sfMovetime, signal });
-  if (!signal.aborted) n.a.eval = posEvalFrom(n, r.lines, r.bestmove);
+  if (signal.aborted) return;
+  // no bestmove on a live position means the engine died mid-search; don't cache a fake "½"
+  if (!r.bestmove && !chessOf(n).isGameOver()) return;
+  n.a.eval = posEvalFrom(n, r.lines, r.bestmove);
 }
 
 async function analyseGame() {

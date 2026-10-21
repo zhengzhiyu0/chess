@@ -257,14 +257,16 @@ function canPremove(): boolean {
   return mode === 'play' && settings.premove && node === tip() && result === '' && coachState === 'idle' && turnOf(node.fen) !== userColor;
 }
 
-/** Arrow brushes for review: green = engine best / the move you should have played, blue = what players at your rating usually play. */
+/** Arrow brushes for review: green = engine best, blue = what players at your rating usually play, amber = what the previous (bad) move should have been. */
 const BRUSHES = {
   best: { key: 'kb', color: '#5fa83f', opacity: 0.85, lineWidth: 7 },
   human: { key: 'kh', color: '#3b82d6', opacity: 0.8, lineWidth: 5 },
+  /** after a bad move: what should have been played in the previous position */
+  should: { key: 'ks', color: '#d9a43a', opacity: 0.75, lineWidth: 6 },
   /** opponent's threat (coach) */
   threat: { key: 'kt', color: '#e8402f', opacity: 0.75, lineWidth: 6 },
 };
-const LEGEND_TEXT: Record<string, string> = { best: '最佳', human: '常见' };
+const LEGEND_TEXT: Record<string, string> = { best: '最佳', human: '常见', should: '上一步应走' };
 
 interface ReviewArrow {
   uci: string;
@@ -280,14 +282,13 @@ function showMove(n: Node): boolean {
 /** Whether suggestions for the side to move in `n` are shown. */
 const showSide = (n: Node) => settings.reviewOpponent || imported || turnOf(n.fen) === userColor;
 
-/** Review arrows, chess.com style: after a bad move, the move that should have been played; otherwise the best (and typical human) move here. */
+/** Review arrows: after a bad move, the move that should have been played; plus the best (and typical human) move for the side to move now. */
 function reviewArrows(): ReviewArrow[] {
   const out: ReviewArrow[] = [];
   const p = node.parent;
   const r = p && showMove(node) ? reviewOf(node) : null;
   if (p && r && SEVERITY[r.judgement] > 0 && p.a.eval?.best) {
-    out.push({ uci: p.a.eval.best, kind: 'best', text: `应走 ${sanOf(p.fen, p.a.eval.best)}` });
-    return out;
+    out.push({ uci: p.a.eval.best, kind: 'should', text: `上一步应走 ${sanOf(p.fen, p.a.eval.best)}` });
   }
   if (!showSide(node)) return out;
   const best = liveOn && liveLines[0]?.pv[0] ? liveLines[0].pv[0] : node.a.eval?.best;

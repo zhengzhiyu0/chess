@@ -1492,6 +1492,19 @@ dialog input[type='color'] {
   align-items: center;
   font-weight: 700;
 }
+.review-nav {
+  display: flex;
+  gap: 8px;
+}
+.review-nav.hidden {
+  display: none;
+}
+.review-nav button {
+  flex: 1;
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
 .cg-wrap .cg-custom-svgs {
   z-index: 12;
 }

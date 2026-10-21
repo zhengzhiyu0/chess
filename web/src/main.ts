@@ -865,6 +865,36 @@ function renderSummary() {
       setStatus(`${side}：${JUDGEMENT_INFO[judgement].label} ${button.lastElementChild?.textContent ?? 0} 次`);
     };
   });
+  renderReviewNav();
+}
+
+function reviewIssues(): Node[] {
+  return gameLine().filter((n) => {
+    const r = showMove(n) ? reviewOf(n) : null;
+    return r && SEVERITY[r.judgement] > 0;
+  });
+}
+
+function jumpReviewIssue(direction: -1 | 1) {
+  const issues = reviewIssues();
+  if (!issues.length) {
+    setStatus('还没有可跳转的问题着法');
+    return;
+  }
+  let target: Node | undefined;
+  if (direction > 0) target = issues.find((n) => n.ply > realOf(node).ply);
+  else target = [...issues].reverse().find((n) => n.ply < realOf(node).ply);
+  target ??= direction > 0 ? issues[0] : issues[issues.length - 1];
+  goto(target);
+}
+
+function renderReviewNav() {
+  const bar = $('review-nav');
+  const issues = reviewIssues();
+  bar.classList.toggle('hidden', mode !== 'review' || issues.length === 0);
+  bar.querySelectorAll<HTMLButtonElement>('[data-review-nav]').forEach((button) => {
+    button.onclick = () => jumpReviewIssue(button.dataset.reviewNav === 'next' ? 1 : -1);
+  });
 }
 
 function renderCoach() {
@@ -1908,6 +1938,8 @@ function bind() {
     else if (e.key === 'ArrowRight') goto(mainChild(node));
     else if (e.key === 'Home') goto(tree.root);
     else if (e.key === 'End') goto(lastOfLine());
+    else if (mode === 'review' && e.key === '[') jumpReviewIssue(-1);
+    else if (mode === 'review' && e.key === ']') jumpReviewIssue(1);
   });
   // 对话框里点击包着下拉框/滑块的标签文字时不要激活控件（iOS 会直接弹出选择器）
   document.addEventListener('click', (e) => {

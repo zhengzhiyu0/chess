@@ -54,12 +54,9 @@ html.standalone body {
 html.standalone #app {
   background: var(--bg);
 }
-/* 视口比屏幕短：整个应用向下延伸到屏幕底边（视口外仍会绘制），安全区照常预留给 Home 指示条 */
+/* Home 指示条已在视口之外，无需再预留安全区 */
 html.letterbox {
-  --app-h: calc(100dvh + var(--lb-gap, 0px));
-}
-html.letterbox #app {
-  bottom: calc(-1 * var(--lb-gap, 0px));
+  --safe-b: 0px;
 }
 
 ::-webkit-scrollbar {

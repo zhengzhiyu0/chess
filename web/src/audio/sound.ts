@@ -1,4 +1,4 @@
-/** Synthesized move sounds (Web Audio, no asset files) plus haptic feedback where supported. */
+/** Sounds: recorded Lichess sets (sample playback) or synthesized themes (Web Audio), plus haptics. */
 
 export type SoundKind = 'move' | 'capture' | 'check' | 'castle' | 'promote' | 'illegal' | 'start' | 'end' | 'lowtime';
 
@@ -19,7 +19,24 @@ interface Theme {
   bell: OscillatorType;
 }
 
-export const SOUND_THEMES = {
+/** Recorded sound sets from Lichess (public/sounds/<id>/, AGPLv3+ by Enigmahack). */
+const SAMPLE_FILES = ['Move', 'Capture', 'Check', 'GenericNotify', 'Victory', 'Defeat', 'Draw', 'LowTime'] as const;
+type SampleFile = (typeof SAMPLE_FILES)[number];
+
+export const SAMPLE_THEMES = {
+  sfx: 'Lichess 音效',
+  piano: 'Lichess 钢琴',
+  nes: 'Lichess 8 位',
+  futuristic: 'Lichess 未来',
+} as const;
+type SampleThemeId = keyof typeof SAMPLE_THEMES;
+
+const isSampleTheme = (id: string): id is SampleThemeId => id in SAMPLE_THEMES;
+
+/** How a game ended, from the player's point of view; picks Victory / Defeat / Draw. */
+export type EndKind = 'win' | 'loss' | 'draw';
+
+export const SYNTH_THEMES = {
   wood: {
     label: '经典木质',
     hit: {
@@ -79,22 +96,57 @@ export const SOUND_THEMES = {
   },
 } satisfies Record<string, Theme>;
 
-export type SoundTheme = keyof typeof SOUND_THEMES;
+type SynthThemeId = keyof typeof SYNTH_THEMES;
+
+/** All selectable themes (id → label), recorded Lichess sets first. */
+export const SOUND_THEMES: Record<string, { label: string }> = {
+  ...Object.fromEntries(Object.entries(SAMPLE_THEMES).map(([id, label]) => [id, { label }])),
+  ...SYNTH_THEMES,
+};
+
+export const DEFAULT_SOUND_THEME: SampleThemeId = 'sfx';
 
 let ctx: AudioContext | null = null;
 let out: AudioNode | null = null;
 let noiseBuf: AudioBuffer | null = null;
-let pendingSounds: SoundKind[] = [];
+let pendingSounds: [SoundKind, EndKind | undefined][] = [];
 let resumePending = false;
 let lastMoveAt = 0;
 let enabled = true;
 let hapticsOn = true;
-let theme: Theme = SOUND_THEMES.wood;
+let themeId: string = DEFAULT_SOUND_THEME;
 
-export function configureSound(sound: boolean, haptics: boolean, themeId: string = 'wood') {
+const synthOf = (id: string): Theme => SYNTH_THEMES[id as SynthThemeId] ?? SYNTH_THEMES.wood;
+
+// decoded samples per theme; a failed load falls back to the synthesized wood theme
+const samples = new Map<SampleThemeId, Promise<Partial<Record<SampleFile, AudioBuffer>>>>();
+
+function loadSamples(a: AudioContext, id: SampleThemeId) {
+  let p = samples.get(id);
+  if (!p) {
+    p = Promise.all(
+      SAMPLE_FILES.map(async (f) => {
+        try {
+          const res = await fetch(new URL(`sounds/${id}/${f}.mp3`, document.baseURI).href);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return [f, await a.decodeAudioData(await res.arrayBuffer())] as const;
+        } catch (err) {
+          console.warn(`音效 ${id}/${f} 加载失败`, err);
+          return [f, undefined] as const;
+        }
+      }),
+    ).then((list) => Object.fromEntries(list.filter(([, b]) => b)) as Partial<Record<SampleFile, AudioBuffer>>);
+    samples.set(id, p);
+  }
+  return p;
+}
+
+export function configureSound(sound: boolean, haptics: boolean, theme: string = DEFAULT_SOUND_THEME) {
   enabled = sound;
   hapticsOn = haptics;
-  theme = SOUND_THEMES[themeId as SoundTheme] ?? SOUND_THEMES.wood;
+  themeId = theme in SOUND_THEMES ? theme : DEFAULT_SOUND_THEME;
+  // decode ahead so the first move isn't silent; needs an AudioContext, which exists after the first tap
+  if (ctx && isSampleTheme(themeId)) void loadSamples(ctx, themeId);
 }
 
 function audio(force = false): AudioContext | null {
@@ -111,6 +163,7 @@ function audio(force = false): AudioContext | null {
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
       const d = noiseBuf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      if (isSampleTheme(themeId)) void loadSamples(ctx, themeId);
     }
     return ctx;
   } catch {
@@ -127,7 +180,7 @@ export function unlockAudio() {
     if (a.state !== 'running') return;
     const sounds = pendingSounds;
     pendingSounds = [];
-    for (const kind of sounds) render(a, kind);
+    for (const [kind, end] of sounds) void render(a, kind, themeId, 0, end);
   };
   if (a.state === 'running') {
     flush();
@@ -208,7 +261,7 @@ const VIBRATE: Partial<Record<SoundKind, number | number[]>> = {
   lowtime: 12,
 };
 
-function render(a: AudioContext, kind: SoundKind, th: Theme = theme, delay = 0) {
+function synth(a: AudioContext, kind: SoundKind, th: Theme, delay = 0) {
   const t = a.currentTime + 0.005 + delay;
   const h = th.hit;
   const tone = (_: AudioContext, at: number, freq: number, len: number, gain?: number, type: OscillatorType = th.bell) =>
@@ -253,7 +306,47 @@ function render(a: AudioContext, kind: SoundKind, th: Theme = theme, delay = 0) 
   }
 }
 
-export function play(kind: SoundKind) {
+/** Which recorded file plays for each event; promote/castle reuse Move like Lichess does. */
+function sampleFor(kind: SoundKind, end?: EndKind): SampleFile | null {
+  switch (kind) {
+    case 'move':
+    case 'castle':
+    case 'promote':
+      return 'Move';
+    case 'capture':
+      return 'Capture';
+    case 'check':
+      return 'Check';
+    case 'start':
+      return 'GenericNotify';
+    case 'end':
+      return end === 'win' ? 'Victory' : end === 'loss' ? 'Defeat' : 'Draw';
+    case 'lowtime':
+      return 'LowTime';
+    case 'illegal':
+      return null;
+  }
+}
+
+async function render(a: AudioContext, kind: SoundKind, id: string, delay = 0, end?: EndKind) {
+  if (!isSampleTheme(id)) {
+    synth(a, kind, synthOf(id), delay);
+    return;
+  }
+  const file = sampleFor(kind, end);
+  // Lichess has no "illegal move" sound; keep the short synthesized buzz
+  const buf = file ? (await loadSamples(a, id))[file] : undefined;
+  if (!buf) {
+    synth(a, kind, SYNTH_THEMES.wood, delay);
+    return;
+  }
+  const src = a.createBufferSource();
+  src.buffer = buf;
+  src.connect(out!);
+  src.start(a.currentTime + 0.005 + delay);
+}
+
+export function play(kind: SoundKind, end?: EndKind) {
   if (hapticsOn && VIBRATE[kind] !== undefined) navigator.vibrate?.(VIBRATE[kind]!);
   const a = audio();
   if (!a) return;
@@ -263,20 +356,20 @@ export function play(kind: SoundKind) {
     lastMoveAt = now;
   }
   if (a.state === 'running') {
-    render(a, kind);
+    void render(a, kind, themeId, 0, end);
     return;
   }
-  pendingSounds.push(kind);
+  pendingSounds.push([kind, end]);
   if (pendingSounds.length > 4) pendingSounds.shift();
 }
 
 /** Plays a short sample (move, then capture) of a theme, even when sound is switched off. */
-export function previewTheme(themeId: string) {
+export function previewTheme(id: string) {
   const a = audio(true);
   if (!a) return;
-  const th = SOUND_THEMES[themeId as SoundTheme] ?? SOUND_THEMES.wood;
-  render(a, 'move', th);
-  render(a, 'capture', th, 0.35);
+  if (a.state !== 'running') void a.resume();
+  void render(a, 'move', id);
+  void render(a, 'capture', id, 0.45);
 }
 
 /** Picks the sound for a move from its SAN. */

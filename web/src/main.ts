@@ -18,7 +18,7 @@ import { END_REASON_TEXT, START_FEN, moveNumberOf, pvToSan, sanOf, terminalOf, t
 import { exportPgn as treeToPgn, parsePgn, type Annotation } from './game/pgn';
 import { ChessClock, TIME_CONTROLS, fmtClockShort, pgnTimeControl, thinkBudget, timeControlOf } from './game/clock';
 import { computeStats, loadHistory, newGameId, saveHistory, upsert, type StoredGame } from './game/history';
-import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio } from './audio/sound';
+import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio, type EndKind } from './audio/sound';
 import { $, escapeHtml, setStatus } from './app/dom';
 import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from './app/appearance';
 import { Engines } from './app/engines';
@@ -477,7 +477,9 @@ function endGame(res: string, why: EndReason) {
   clock?.stop(performance.now());
   cg.cancelPremove();
   coachReset();
-  setTimeout(() => play('end'), 250);
+  // imported/review games have no "me": treat any decisive end as neutral
+  const end: EndKind = res === '1/2-1/2' || imported ? 'draw' : (res === '1-0') === (userColor === 'w') ? 'win' : 'loss';
+  setTimeout(() => play('end', end), 250);
   rateGame();
   saveGame();
 }

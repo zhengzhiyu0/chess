@@ -23,11 +23,11 @@ export const SOUND_THEMES = {
   wood: {
     label: '经典木质',
     hit: {
-      body: { f: 190, f2: 120, type: 'sine', gain: 0.5, decay: 0.06 },
-      noise: { type: 'bandpass', f: 1900, q: 0.9, gain: 0.75, len: 0.05 },
+      body: { f: 205, f2: 118, type: 'sine', gain: 0.42, decay: 0.075 },
+      noise: { type: 'bandpass', f: 1450, q: 0.75, gain: 0.24, len: 0.032 },
       modes: [
-        [1150, 0.22, 0.045],
-        [2650, 0.1, 0.03],
+        [470, 0.095, 0.085],
+        [920, 0.035, 0.055],
       ],
     },
     bell: 'triangle',
@@ -84,6 +84,9 @@ export type SoundTheme = keyof typeof SOUND_THEMES;
 let ctx: AudioContext | null = null;
 let out: AudioNode | null = null;
 let noiseBuf: AudioBuffer | null = null;
+let pendingSounds: SoundKind[] = [];
+let resumePending = false;
+let lastMoveAt = 0;
 let enabled = true;
 let hapticsOn = true;
 let theme: Theme = SOUND_THEMES.wood;
@@ -109,7 +112,6 @@ function audio(force = false): AudioContext | null {
       const d = noiseBuf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (ctx.state === 'suspended') void ctx.resume();
     return ctx;
   } catch {
     return null;
@@ -120,6 +122,20 @@ function audio(force = false): AudioContext | null {
 export function unlockAudio() {
   const a = audio();
   if (!a) return;
+  const flush = () => {
+    resumePending = false;
+    if (a.state !== 'running') return;
+    const sounds = pendingSounds;
+    pendingSounds = [];
+    for (const kind of sounds) render(a, kind);
+  };
+  if (a.state === 'running') {
+    flush();
+    return;
+  }
+  if (resumePending) return;
+  resumePending = true;
+  void a.resume().then(flush, () => { resumePending = false; });
   const s = a.createBufferSource();
   s.buffer = a.createBuffer(1, 1, 22050);
   s.connect(a.destination);
@@ -240,7 +256,18 @@ function render(a: AudioContext, kind: SoundKind, th: Theme = theme, delay = 0) 
 export function play(kind: SoundKind) {
   if (hapticsOn && VIBRATE[kind] !== undefined) navigator.vibrate?.(VIBRATE[kind]!);
   const a = audio();
-  if (a) render(a, kind);
+  if (!a) return;
+  const now = performance.now();
+  if (kind === 'move' || kind === 'capture' || kind === 'castle' || kind === 'check' || kind === 'promote') {
+    if (now - lastMoveAt < 70) return;
+    lastMoveAt = now;
+  }
+  if (a.state === 'running') {
+    render(a, kind);
+    return;
+  }
+  pendingSounds.push(kind);
+  if (pendingSounds.length > 4) pendingSounds.shift();
 }
 
 /** Plays a short sample (move, then capture) of a theme, even when sound is switched off. */

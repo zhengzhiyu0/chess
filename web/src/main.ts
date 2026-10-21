@@ -1868,8 +1868,10 @@ function bind() {
     const lab = t.closest('dialog label:not(.check)');
     if (lab && !t.closest('input, select, textarea, button')) e.preventDefault();
   });
-  // iOS only allows audio after a user gesture
-  document.addEventListener('pointerdown', () => unlockAudio(), { once: true, capture: true });
+  // iOS may suspend audio again after returning from the background; retry on every gesture.
+  for (const event of ['pointerdown', 'touchend', 'keydown']) {
+    document.addEventListener(event, () => unlockAudio(), { capture: true, passive: true });
+  }
   document.addEventListener('visibilitychange', () => {
     syncClock();
     renderClocks();

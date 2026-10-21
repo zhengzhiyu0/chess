@@ -23,6 +23,7 @@ import { $, escapeHtml, setStatus } from './app/dom';
 import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from './app/appearance';
 import { Engines } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
+import { AVATAR_PRESETS, avatarFromFile, avatarHtml } from './app/avatar';
 import { findNode, movesHtml } from './app/moves-ui';
 import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
 import { openHistory } from './app/history-ui';
@@ -1538,7 +1539,7 @@ function renderPlayers() {
       const e = color === 'w' ? headers?.WhiteElo : headers?.BlackElo;
       elo = e ? `(${escapeHtml(e)})` : '';
     }
-    const avatar = who === 'me' && !imported ? '<div class="avatar me">♙</div>' : '<div class="avatar bot">♞</div>';
+    const avatar = who === 'me' && !imported ? avatarHtml(settings.avatar, 'pick') : '<div class="avatar bot">♞</div>';
     const thinking = who === 'maia' && maiaThinking ? '<span class="dots"><i></i><i></i><i></i></span>' : '';
     const v = clockView(color);
     return (
@@ -1671,6 +1672,48 @@ function setMode(m: 'play' | 'review') {
   } else startReview();
 }
 
+// ---------- avatar ----------
+
+function openAvatar() {
+  const dlg = $<HTMLDialogElement>('dlg-avatar');
+  let pick = settings.avatar;
+  const draw = () => {
+    $('avatar-current').innerHTML = avatarHtml(pick, 'big');
+    $('avatar-grid').innerHTML = AVATAR_PRESETS.map(
+      (v, i) => `<button type="button" data-i="${i}" class="${v === pick ? 'on' : ''}" aria-label="头像 ${i + 1}">${avatarHtml(v)}</button>`,
+    ).join('');
+  };
+  $('avatar-grid').onclick = (e) => {
+    const i = (e.target as HTMLElement).closest<HTMLElement>('[data-i]')?.dataset.i;
+    if (i === undefined) return;
+    pick = AVATAR_PRESETS[Number(i)];
+    draw();
+  };
+  const file = $<HTMLInputElement>('avatar-file');
+  $('btn-avatar-photo').onclick = () => file.click();
+  file.onchange = async () => {
+    const f = file.files?.[0];
+    file.value = '';
+    if (!f) return;
+    try {
+      pick = await avatarFromFile(f);
+      draw();
+    } catch (err) {
+      setStatus(`图片读取失败：${(err as Error).message}`);
+    }
+  };
+  draw();
+  dlg.returnValue = '';
+  dlg.onclose = () => {
+    if (dlg.returnValue !== 'ok' || pick === settings.avatar) return;
+    settings = { ...settings, avatar: pick };
+    saveSettings(settings);
+    renderPlayers();
+    $('set-avatar').innerHTML = avatarHtml(settings.avatar);
+  };
+  dlg.showModal();
+}
+
 // ---------- settings dialog ----------
 
 function openSettings() {
@@ -1729,6 +1772,8 @@ function openSettings() {
   };
   outs();
   look();
+  $('set-avatar').innerHTML = avatarHtml(settings.avatar);
+  $('btn-set-avatar').onclick = openAvatar;
   const sf = engines.sf;
   $('env-info').innerHTML =
     `跨源隔离：${self.crossOriginIsolated ? '✅（多线程可用）' : '❌（单线程）'}<br>` +
@@ -1757,8 +1802,9 @@ function openSettings() {
       sfMovetime: Math.max(100, num('sfMovetime') || 1000),
       sfThreads: Math.max(1, num('sfThreads') || 1),
       sfHash: Math.max(16, num('sfHash') || 64),
-      sfLite: el('sfLite').checked,
+      sfLite: el('sfLite').value === 'true',
       lowMemory: el('lowMemory').checked,
+      warmup: el('warmup').checked,
       sound: el('sound').checked,
       soundTheme: el('soundTheme').value,
       haptics: el('haptics').checked,
@@ -2076,6 +2122,10 @@ function bind() {
   $('btn-undo-m').onclick = undo;
   $('btn-hint-m').onclick = () => void hint();
   $('btn-coach-m').onclick = openCoachSettings;
+  for (const id of ['player-top', 'player-bottom'])
+    $(id).addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('.avatar.pick')) openAvatar();
+    });
   $('btn-settings').onclick = openSettings;
   $('btn-engines').onclick = () => openEngines(enginesCtx);
   $('btn-result-review').onclick = () => {
@@ -2237,7 +2287,7 @@ function fitStandalone() {
 }
 
 function init() {
-  if (!isNative) document.documentElement.classList.add('web');
+  document.documentElement.classList.add(isNative ? 'native' : 'web');
   fitStandalone();
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);

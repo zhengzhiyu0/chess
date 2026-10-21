@@ -432,6 +432,84 @@ input[type='checkbox'] {
   background: #8b8987;
   color: #262421;
 }
+.avatar.default {
+  background: #5a5856;
+  color: #a8a6a4;
+}
+.avatar.default svg {
+  width: 28px;
+  height: 28px;
+  margin-top: 6px;
+}
+.avatar.glyph {
+  font-size: 22px;
+}
+.avatar.img {
+  background-size: cover;
+  background-position: center;
+}
+.avatar.pick {
+  cursor: pointer;
+}
+.avatar.big {
+  width: 88px;
+  height: 88px;
+  border-radius: 12px;
+  font-size: 54px;
+}
+.avatar.big svg {
+  width: 68px;
+  height: 68px;
+  margin-top: 16px;
+}
+.avatar-current {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.avatar-grid button {
+  padding: 6px;
+  background: transparent;
+  box-shadow: none;
+  border: 2px solid transparent;
+  border-radius: 10px;
+}
+.avatar-grid button.on {
+  border-color: var(--green);
+}
+.avatar-grid .avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  font-size: 32px;
+}
+.avatar-grid .avatar.default svg {
+  width: 40px;
+  height: 40px;
+  margin-top: 10px;
+}
+.avatar-row {
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 6px 8px;
+  background: var(--panel2);
+  box-shadow: none;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+}
+.avatar-row .link {
+  margin-left: auto;
+  color: var(--green);
+}
+html.native .web-only {
+  display: none;
+}
 .pinfo {
   flex: 1;
   min-width: 0;
@@ -778,17 +856,17 @@ input[type='checkbox'] {
 #game[data-mode='review'] .side {
   padding-bottom: var(--safe-b);
 }
-/* 网站（非 iOS App）对弈：空间更小，菜单移到顶部，提示/悔棋/教练放进“我”的信息栏，底部工具栏让给讲解区 */
-html.web #game .toolbar {
+/* 对弈（手机，网站与 App 相同）：空间更小，菜单移到顶部，提示/悔棋/教练放进“我”的信息栏，底部工具栏让给讲解区 */
+#game .toolbar {
   display: none;
 }
-html.web #game[data-mode='play'] .menu-top {
+#game[data-mode='play'] .menu-top {
   display: inline-flex;
 }
-html.web #game .side {
+#game .side {
   padding-bottom: var(--safe-b);
 }
-html.web #game[data-mode='play'] .my-actions {
+#game[data-mode='play'] .my-actions {
   display: flex;
   gap: 4px;
   flex: none;
@@ -1359,19 +1437,19 @@ dialog input[type='color'] {
     display: flex;
   }
   #game[data-mode='review'] .toolbar,
-  html.web #game .toolbar,
+  #game .toolbar,
   .toolbar .only-wide {
     display: flex;
   }
-  html.web #game[data-mode='play'] .my-actions {
+  #game[data-mode='play'] .my-actions {
     display: none;
   }
-  html.web #game .side,
+  #game .side,
   #game[data-mode='review'] .side {
     padding-bottom: 0;
   }
   #game[data-mode='review'] .menu-top,
-  html.web #game[data-mode='play'] .menu-top,
+  #game[data-mode='play'] .menu-top,
   .move-bar .nav {
     display: none;
   }

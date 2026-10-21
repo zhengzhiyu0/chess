@@ -20,7 +20,7 @@
       <section id="home" class="screen active">
         <header class="appbar">
           <div class="brand"><span class="logo">♞</span><span>Maia 教练</span></div>
-          <button id="btn-engines" class="icon" title="引擎管理" aria-label="引擎管理">
+          <button id="btn-engines" class="icon web-only" title="引擎管理" aria-label="引擎管理">
             <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
           </button>
           <button id="btn-settings" class="icon" title="设置" aria-label="设置">
@@ -181,6 +181,7 @@
         <dialog id="dlg-settings">
       <form method="dialog">
         <h3 tabindex="-1" autofocus>设置</h3>
+        <button type="button" class="avatar-row" id="btn-set-avatar"><span id="set-avatar"></span><span>我的头像</span><span class="link">更换 ›</span></button>
         <label>Maia 模型
           <select name="model">
             <option value="5m">Maia-3 5M（21MB，最快）</option>
@@ -236,8 +237,14 @@
         <label>Stockfish Hash（MB）
           <input type="number" name="sfHash" min="16" max="1024" step="16" />
         </label>
-        <label class="check"><input type="checkbox" name="sfLite" /> Stockfish 轻量版（2MB 小网络，秒开、省内存，棋力略低；iPhone 推荐）</label>
+        <label>Stockfish 版本
+          <select name="sfLite">
+            <option value="false">满血版（完整 NNUE 网络，棋力最强）</option>
+            <option value="true">轻量版（小网络，秒开、省内存，棋力略低）</option>
+          </select>
+        </label>
         <label class="check"><input type="checkbox" name="lowMemory" /> 省内存模式（切换对弈/复盘时卸载另一个引擎，iPhone 推荐）</label>
+        <label class="check"><input type="checkbox" name="warmup" /> 启动时在后台预加载当前模型与 Stockfish</label>
         <label class="check"><input type="checkbox" name="reviewOpponent" /> 复盘时也分析对手的着法（默认只看自己的）</label>
         <div class="env" id="env-info"></div>
         <div class="row">
@@ -252,15 +259,31 @@
         <dialog id="dlg-engines">
       <form method="dialog">
         <h3>引擎管理</h3>
-        <p class="muted">把引擎和模型下载到本机，之后完全离线、秒开。</p>
+        <p class="muted web-only">把引擎和模型下载到本机，之后完全离线、秒开。</p>
         <div id="pkg-list" class="pkg-list"></div>
-        <div class="env" id="storage-info"></div>
-        <label class="check"><input type="checkbox" id="chk-auto-offline" /> 启动时自动下载离线包（应用本体 + Stockfish + 当前模型）</label>
+        <div class="env web-only" id="storage-info"></div>
+        <label class="check web-only"><input type="checkbox" id="chk-auto-offline" /> 启动时自动下载离线包（应用本体 + Stockfish + 当前模型）</label>
         <label class="check"><input type="checkbox" id="chk-warm" /> 启动时在后台预加载当前模型与 Stockfish</label>
         <div class="row">
-          <button type="button" id="btn-dl-rec" class="primary">下载推荐组合</button>
+          <button type="button" id="btn-dl-rec" class="primary web-only">下载推荐组合</button>
           <button type="button" id="btn-warm">立即预加载</button>
           <button value="close">关闭</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-avatar">
+      <form method="dialog">
+        <h3>我的头像</h3>
+        <div class="avatar-current" id="avatar-current"></div>
+        <div class="avatar-grid" id="avatar-grid"></div>
+        <div class="row">
+          <button type="button" id="btn-avatar-photo">从相册选择照片</button>
+        </div>
+        <input type="file" id="avatar-file" accept="image/*" hidden />
+        <div class="row">
+          <button value="cancel">取消</button>
+          <button value="ok" class="primary">保存</button>
         </div>
       </form>
     </dialog>

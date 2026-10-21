@@ -77,7 +77,8 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 说明：
 
 - 免费 Apple ID 签名的 App **7 天后过期**，需要重新签名（棋局和设置保留）。AltStore 可以在同一 Wi-Fi 下自动续签。
-- App 内置 Stockfish 单线程版（轻量版和完整版）以及 Maia 5M/23M 模型，无需下载，完全离线可用。WKWebView 不支持 `SharedArrayBuffer`，因此没有多线程版；79M 模型内存占用过大，未打包。
+- App 预装 Stockfish 19 **满血版**（完整 NNUE）和**轻量版**（小网络）两个单线程版本，以及 Maia 5M/23M 模型，无需下载，完全离线可用；App 内没有下载按钮和离线包管理，在「设置 → Stockfish 版本」中切换满血/轻量。WKWebView 不支持 `SharedArrayBuffer`，因此没有多线程版；79M 模型内存占用过大，未打包。
+- App 的对弈界面与手机网页版一致：菜单在顶部，提示/悔棋/教练在“我”的信息栏里。点自己的头像（或「设置 → 我的头像」）可换成预设头像或相册照片。
 - 本地准备 iOS 工程：`cd web && npm run build:native`，依次执行构建、生成 `dist-native/`（[prepare-native.mjs](web/scripts/prepare-native.mjs)）、`cap sync ios`。Xcode 工程位于 `web/ios/`。
 - 私有仓库使用 macOS runner 会按 10 倍分钟数计费，公开仓库免费。
 

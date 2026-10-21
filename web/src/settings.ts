@@ -52,6 +52,8 @@ export interface Settings {
   premove: boolean;
   /** review: also judge the opponent's moves (default: only mine) */
   reviewOpponent: boolean;
+  /** my avatar, see app/avatar.ts ('' = default) */
+  avatar: string;
 }
 
 const KEY = 'maia-coach.settings';
@@ -93,6 +95,7 @@ export function defaultSettings(): Settings {
     pieceSet: 'cburnett',
     premove: true,
     reviewOpponent: false,
+    avatar: '',
   };
 }
 

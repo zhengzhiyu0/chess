@@ -1,0 +1,35 @@
+web/src/style.css
+  s_9e17f67b5ed7d5::t_bd8baa4b382ddd 1191-1200
+README.md
+  s_9e17f67b5ed7d5::t_6cf36d8f51da6f 3
+web/src/app/history-ui.ts
+  s_9e17f67b5ed7d5::t_99f0d1a6e9dbf0 41
+web/src/settings.ts
+  s_9e17f67b5ed7d5::t_2512d8a7fa5c36 6-9,64-65,110-121
+web/test/game.test.ts
+  s_9e17f67b5ed7d5::t_8b8f7216ff9155 6,228
+  s_9e17f67b5ed7d5::t_ac4a5b437af3b5 227,229-236
+web/src/main.ts
+  s_9e17f67b5ed7d5::t_4ded2074f96019 1600-1605,1743-1745,1854,1918,2024
+  s_9e17f67b5ed7d5::t_5d301b60de1225 14,70,166,228,479,483-498,555
+web/src/game/history.ts
+  s_9e17f67b5ed7d5::t_af7f4b221f0bb2 16-17
+web/index.html
+  s_9e17f67b5ed7d5::t_e4bffff9860b2f 167,186,189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6b4f2f3812f1fcd0a30dbf1b83d913ed0033b09d",
+  "prompts": {},
+  "sessions": {
+    "s_9e17f67b5ed7d5": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "47447792-7a9f-4129-b31a-b15b2bf39b43",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

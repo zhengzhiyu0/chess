@@ -29,7 +29,7 @@ async function renderPackages(ctx: EnginesCtx) {
     $<HTMLButtonElement>('btn-dl-rec').disabled = true;
     return;
   }
-  const pkgs = await listPackages();
+  const pkgs = await listPackages(ctx.settings().sfLite);
   list.replaceChildren(
     ...pkgs.map((p) => {
       const row = document.createElement('div');
@@ -95,7 +95,7 @@ async function startDownload(ctx: EnginesCtx, p: Package, onProgress?: (loaded: 
 }
 
 async function downloadRecommended(ctx: EnginesCtx) {
-  const pkgs = await listPackages();
+  const pkgs = await listPackages(ctx.settings().sfLite);
   const want: PackageId[] = ['core', 'stockfish', `maia-${ctx.settings().model}`];
   // sequential: parallel downloads would only compete for bandwidth
   for (const id of want) {
@@ -113,7 +113,7 @@ async function downloadRecommended(ctx: EnginesCtx) {
 export async function autoOffline(ctx: EnginesCtx): Promise<boolean> {
   if (!('caches' in self) || !(await loadPrecache())) return false;
   await pruneStale();
-  const pkgs = await listPackages();
+  const pkgs = await listPackages(ctx.settings().sfLite);
   const want: PackageId[] = ['core', 'stockfish', `maia-${ctx.settings().model}`];
   const todo = pkgs.filter((p) => want.includes(p.id) && !isComplete(p));
   if (!todo.length) return false;

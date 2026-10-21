@@ -1,5 +1,5 @@
 import * as ort from 'onnxruntime-web';
-import { buildTokens, FEAT } from './encode';
+import { buildTokens, FEAT, NUM_MOVES, uciToIndex } from './encode';
 
 export type WorkerIn =
   | { type: 'load'; reqId: number; modelBase: string; backend: 'wasm' | 'webgpu'; numThreads: number; lean: boolean }
@@ -18,6 +18,21 @@ const ctx = self as unknown as {
 
 let session: ort.InferenceSession | null = null;
 let envConfigured = false;
+
+const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+// the 20 legal moves of the start position, as move-vocabulary indices
+const START_LEGAL = ['a2a3', 'a2a4', 'b2b3', 'b2b4', 'c2c3', 'c2c4', 'd2d3', 'd2d4', 'e2e3', 'e2e4', 'f2f3', 'f2f4', 'g2g3', 'g2g4', 'h2h3', 'h2h4', 'b1a3', 'b1c3', 'g1f3', 'g1h3'].map(uciToIndex);
+const START_TOP = new Set(['e2e4', 'd2d4', 'c2c4', 'g1f3'].map(uciToIndex));
+
+/** Every Maia size at 1500 puts a mainstream first move on top with real confidence. */
+function plausibleStart(logits: Float32Array): boolean {
+  if (logits.length !== NUM_MOVES || !logits.every(Number.isFinite)) return false;
+  const l = START_LEGAL.map((i) => logits[i]);
+  const max = Math.max(...l);
+  const top = START_LEGAL[l.indexOf(max)];
+  const p = 1 / l.reduce((a, x) => a + Math.exp(x - max), 0);
+  return START_TOP.has(top) && p > 0.2;
+}
 
 async function fetchModel(base: string): Promise<Uint8Array> {
   const manifest = (await (await fetch(base + 'manifest.json')).json()) as { size: number; parts: string[] };
@@ -46,6 +61,7 @@ if (!self.name?.startsWith('em-pthread')) ctx.onmessage = async (e) => {
     if (msg.type === 'load') {
       if (!envConfigured) {
         ort.env.wasm.numThreads = msg.numThreads;
+        ort.env.webgpu.powerPreference = 'high-performance';
         envConfigured = true;
       }
       if (session) {
@@ -63,21 +79,18 @@ if (!self.name?.startsWith('em-pthread')) ctx.onmessage = async (e) => {
         ...lean,
       });
       bytes = null;
-      // ORT's WebGPU EP can silently return an all-zero move head (seen with ORT 1.30), which
-      // makes every legal move equally likely; reject it so the caller falls back to WASM
-      if (msg.backend === 'webgpu') {
-        const start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-        const probe = await session.run({
-          tokens: new ort.Tensor('float32', buildTokens([start]), [1, 64, FEAT]),
-          self_elo: new ort.Tensor('float32', Float32Array.of(1500), [1]),
-          oppo_elo: new ort.Tensor('float32', Float32Array.of(1500), [1]),
-        });
-        const d = probe.logits_move.data as Float32Array;
-        if (!d.every(Number.isFinite) || Math.max(...d) === Math.min(...d)) {
-          await session.release();
-          session = null;
-          throw new Error('WebGPU 推理结果异常');
-        }
+      // Doubles as warm-up (the first run is several times slower) and as a sanity check: a broken
+      // backend (e.g. a WebGPU shader that failed to compile) returns zero/garbage logits, which
+      // makes Maia play random moves; reject it so the caller falls back to WASM.
+      const probe = await session.run({
+        tokens: new ort.Tensor('float32', buildTokens([START]), [1, 64, FEAT]),
+        self_elo: new ort.Tensor('float32', Float32Array.of(1500), [1]),
+        oppo_elo: new ort.Tensor('float32', Float32Array.of(1500), [1]),
+      });
+      if (!plausibleStart(probe.logits_move.data as Float32Array)) {
+        await session.release();
+        session = null;
+        throw new Error(`${msg.backend === 'webgpu' ? 'WebGPU' : 'WASM'} 推理结果异常`);
       }
       ctx.postMessage({ type: 'loaded', reqId: msg.reqId, backend: msg.backend });
     } else if (msg.type === 'eval') {

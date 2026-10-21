@@ -1504,6 +1504,7 @@ function openSettings() {
       sfMovetime: Math.max(100, num('sfMovetime') || 1000),
       sfThreads: Math.max(1, num('sfThreads') || 1),
       sfHash: Math.max(16, num('sfHash') || 64),
+      sfLite: el('sfLite').checked,
       lowMemory: el('lowMemory').checked,
       sound: el('sound').checked,
       soundTheme: el('soundTheme').value,
@@ -1524,10 +1525,10 @@ function applySettings(old: Settings) {
   saveSettings(settings);
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);
-  if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash) engines.unloadSf();
+  if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash || old.sfLite !== settings.sfLite) engines.unloadSf();
   if (old.model !== settings.model || old.backend !== settings.backend) engines.unloadMaia();
   if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) clearAnn('human');
-  if (old.sfMovetime !== settings.sfMovetime) clearAnn('eval', 'threat');
+  if (old.sfMovetime !== settings.sfMovetime || old.sfLite !== settings.sfLite) clearAnn('eval', 'threat');
   if (!settings.premove) cg.cancelPremove();
   if (old.reviewOpponent !== settings.reviewOpponent && mode === 'review' && screen === 'game') void analyseGame();
   update();

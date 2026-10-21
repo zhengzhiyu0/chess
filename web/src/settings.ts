@@ -12,6 +12,8 @@ export interface Settings {
   sfMovetime: number;
   sfThreads: number;
   sfHash: number;
+  /** Stockfish lite build (small NNUE, ~2MB): loads in a second and uses far less memory */
+  sfLite: boolean;
   lowMemory: boolean;
   /** load the selected Maia model + Stockfish in the background on startup */
   warmup: boolean;
@@ -63,6 +65,7 @@ export function defaultSettings(): Settings {
     sfMovetime: 1000,
     sfThreads: Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1)),
     sfHash: isIOS ? 32 : 128,
+    sfLite: isIOS,
     lowMemory: isIOS,
     warmup: !isIOS,
     autoOffline: true,

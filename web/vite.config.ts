@@ -49,6 +49,12 @@ function precacheManifest(): Plugin {
     writeBundle() {
       const sw = join(outDir, 'sw.js');
       writeFileSync(sw, readFileSync(sw, 'utf8').replace('__BUILD__', BUILD_ID));
+      // CSS is post-processed after generateBundle; take the final sizes from disk so the
+      // download manager's completeness check doesn't reject them
+      const pc = join(outDir, 'precache.json');
+      const m = JSON.parse(readFileSync(pc, 'utf8')) as { files: { url: string; size: number }[] };
+      for (const f of m.files) if (f.size) f.size = statSync(join(outDir, f.url)).size;
+      writeFileSync(pc, JSON.stringify(m));
     },
   };
 }

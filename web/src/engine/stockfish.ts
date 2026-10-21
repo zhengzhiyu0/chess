@@ -65,7 +65,7 @@ export class Stockfish {
   private failed: ((e: Error) => void) | null = null;
   private dead = false;
 
-  private constructor(url: string, readonly multiThreaded: boolean, readonly threads: number) {
+  private constructor(url: string, readonly multiThreaded: boolean, readonly threads: number, readonly lite: boolean) {
     this.worker = new Worker(url);
     this.worker.onmessage = (e: MessageEvent) => {
       if (typeof e.data !== 'string') return;
@@ -86,24 +86,33 @@ export class Stockfish {
     return !this.dead;
   }
 
-  static async create(threads: number, hash: number): Promise<Stockfish> {
+  static async create(threads: number, hash: number, lite = false): Promise<Stockfish> {
     const multi = self.crossOriginIsolated && typeof SharedArrayBuffer !== 'undefined';
     try {
-      return await Stockfish.boot(multi, threads, hash);
+      return await Stockfish.boot(multi, threads, hash, lite);
     } catch (err) {
       if (!multi) throw err;
       console.warn('多线程 Stockfish 启动失败，改用单线程', err);
-      return Stockfish.boot(false, 1, hash);
+      return Stockfish.boot(false, 1, hash, lite);
     }
   }
 
-  private static async boot(multi: boolean, threads: number, hash: number): Promise<Stockfish> {
-    const file = multi ? 'engines/stockfish-19.js' : 'engines/stockfish-19-single.js';
-    const sf = new Stockfish(new URL(file, document.baseURI).href, multi, multi ? threads : 1);
+  private static async boot(multi: boolean, threads: number, hash: number, lite: boolean): Promise<Stockfish> {
+    const file = `engines/stockfish-19${lite ? '-lite' : ''}${multi ? '' : '-single'}.js`;
+    const sf = new Stockfish(new URL(file, document.baseURI).href, multi, multi ? threads : 1, lite);
     try {
       await new Promise<void>((resolve, reject) => {
         sf.failed = reject;
-        setTimeout(() => reject(new Error('Stockfish 启动超时')), 30000);
+        // compiling the ~100MB NNUE build takes 5-20s in Firefox / on phones (longer while Maia loads);
+        // only count time the page is visible, since background tabs are throttled
+        let left = 90000;
+        const tick = () => {
+          if (!sf.failed || sf.dead) return;
+          if (!document.hidden) left -= 1000;
+          if (left <= 0) reject(new Error('Stockfish 启动超时'));
+          else setTimeout(tick, 1000);
+        };
+        setTimeout(tick, 1000);
         sf.waitFor('uci', (l) => l === 'uciok').then(resolve, reject);
       });
       sf.failed = null;

@@ -19,6 +19,15 @@ export class Engines {
     private beforeSfUnload: () => void,
   ) {}
 
+  /**
+   * Low-memory mode normally keeps only one engine resident, but swapping reloads the other one
+   * every time (seconds on a phone). The lite Stockfish is small enough to always keep both.
+   */
+  private exclusive() {
+    const st = this.settings();
+    return st.lowMemory && !st.sfLite && !this.needBoth();
+  }
+
   unloadMaia() {
     this.maia?.dispose();
     this.maia = null;
@@ -41,7 +50,7 @@ export class Engines {
     }
     this.unloadMaia();
     this.maiaWanted = st.backend;
-    if (st.lowMemory && !this.needBoth()) this.unloadSf();
+    if (this.exclusive()) this.unloadSf();
     const model = st.model;
     const lean = st.lowMemory;
     const progress = (l: number, t: number) => setStatus(`加载 Maia ${((l / t) * 100).toFixed(0)}%（${(t / 1048576).toFixed(0)}MB）`);
@@ -82,12 +91,12 @@ export class Engines {
     }
     if (this.sfLoading) return this.sfLoading;
     const st = this.settings();
-    if (st.lowMemory && !this.needBoth()) this.unloadMaia();
-    setStatus('加载 Stockfish 19…');
-    this.sfLoading = Stockfish.create(st.sfThreads, st.sfHash)
+    if (this.exclusive()) this.unloadMaia();
+    setStatus(`加载 Stockfish 19${st.sfLite ? ' 轻量版' : ''}…`);
+    this.sfLoading = Stockfish.create(st.sfThreads, st.sfHash, st.sfLite)
       .then((s) => {
         this.sf = s;
-        setStatus(`Stockfish 19 就绪（${s.multiThreaded ? s.threads + ' 线程' : '单线程'}）`);
+        setStatus(`Stockfish 19${s.lite ? ' 轻量版' : ''} 就绪（${s.multiThreaded ? s.threads + ' 线程' : '单线程'}）`);
         return s;
       })
       .catch((err) => {
@@ -102,9 +111,9 @@ export class Engines {
     const st = this.settings();
     try {
       await this.getMaia();
-      // in low-memory mode both engines can't be resident; keep the one needed to play
-      if (!st.lowMemory) await this.getSf();
-      setStatus(st.lowMemory ? `${MODELS[st.model].label} 已预加载` : 'Maia 与 Stockfish 已预加载');
+      // in exclusive low-memory mode both engines can't be resident; keep the one needed to play
+      if (!this.exclusive()) await this.getSf();
+      setStatus(this.exclusive() ? `${MODELS[st.model].label} 已预加载` : 'Maia 与 Stockfish 已预加载');
     } catch (err) {
       console.warn('预加载失败', err);
     }

@@ -39,13 +39,13 @@ function abs(url: string) {
   return new URL(url, document.baseURI).href;
 }
 
-/** Multi-threaded build needs cross-origin isolation; otherwise the single-threaded one is used. */
-function stockfishVariant(url: string) {
-  const single = url.includes('stockfish-19-single');
-  return self.crossOriginIsolated ? !single : single;
+/** Only the Stockfish build this browser will actually run: (lite | full) × (multi | single-threaded). */
+function stockfishVariant(url: string, lite: boolean) {
+  const single = url.includes('-single');
+  return url.includes('-lite') === lite && (self.crossOriginIsolated ? !single : single);
 }
 
-export async function listPackages(): Promise<Package[]> {
+export async function listPackages(sfLite: boolean): Promise<Package[]> {
   if (!manifest) return [];
   const cache = await caches.open(CACHE_NAME);
   const have = new Set((await cache.keys()).map((r) => r.url));
@@ -54,12 +54,15 @@ export async function listPackages(): Promise<Package[]> {
     const m = /^models\/maia3-(\w+)\//.exec(f.url);
     if (m) groups[`maia-${m[1]}`]?.push(f);
     else if (f.url.startsWith('engines/')) {
-      if (stockfishVariant(f.url)) groups.stockfish.push(f);
+      if (stockfishVariant(f.url, sfLite)) groups.stockfish.push(f);
     } else groups.core.push(f);
   }
   const meta: Record<string, { label: string; desc: string }> = {
     core: { label: '应用本体', desc: '界面 + Maia 推理运行时（离线必需）' },
-    stockfish: { label: 'Stockfish 19', desc: self.crossOriginIsolated ? '完整 NNUE，多线程版' : '完整 NNUE，单线程版' },
+    stockfish: {
+      label: sfLite ? 'Stockfish 19 轻量版' : 'Stockfish 19',
+      desc: `${sfLite ? '小型 NNUE' : '完整 NNUE'}，${self.crossOriginIsolated ? '多线程版' : '单线程版'}`,
+    },
   };
   for (const id of Object.keys(MODELS) as ModelId[]) {
     meta[`maia-${id}`] = { label: MODELS[id].label, desc: '拟人化对手 / 人类着法预测' };

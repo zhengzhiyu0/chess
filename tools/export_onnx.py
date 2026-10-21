@@ -5,6 +5,7 @@ Usage:
 """
 
 import argparse
+import math
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,14 +21,38 @@ from maia3.models import MAIA3Model  # noqa: E402
 
 
 class ExportWrapper(torch.nn.Module):
-    """Elo is passed as float so the web side doesn't need int64 tensors."""
+    """Elo is passed as float so the web side doesn't need int64 tensors.
+
+    Re-implements MAIA3Model.forward with the promotion head vectorized: the original builds
+    256 slices and concatenates them, which exports as a 257-input Concat whose WGSL shader
+    exceeds WebGPU's nesting limit (ORT's WebGPU EP then returns all-zero move logits)."""
 
     def __init__(self, model):
         super().__init__()
         self.model = model
 
     def forward(self, tokens, self_elo, oppo_elo):
-        move, value, _ = self.model(tokens, self_elo, oppo_elo)
+        m = self.model
+        cfg = m.cfg
+        keep = 12 * cfg.history + (3 if cfg.include_time_info else 0)
+        tokens = tokens[:, :, :keep]
+        s = m.interpolate_elo(self_elo).unsqueeze(1).expand(-1, 64, -1)
+        o = m.interpolate_elo(oppo_elo).unsqueeze(1).expand(-1, 64, -1)
+        x = m.token_projection(torch.cat([tokens, s, o], dim=-1))
+        if hasattr(m, "abs_pe"):
+            x = m.abs_pe(x)
+        x = m.transformer(x)
+
+        sq_from = m.proj_sq_from(x)
+        sq_to = m.proj_sq_to(x)
+        scores = torch.matmul(sq_from, sq_to.transpose(1, 2)) / math.sqrt(cfg.head_hid_dim)  # (B, 64, 64)
+        # promotions: from rank 7 (squares 48-55) to rank 8 (56-63), order [from_file][to_file][q,r,b,n]
+        promo_bias = m.promo_bias_proj(sq_to[:, 56:64, :]) * math.sqrt(cfg.head_hid_dim)  # (B, 8, 4)
+        promo = scores[:, 48:56, 56:64].unsqueeze(-1) + promo_bias.unsqueeze(1)  # (B, 8, 8, 4)
+        move = torch.cat([scores.flatten(1), promo.flatten(1)], dim=1)  # (B, 4352)
+
+        v = m.last_ln(x.mean(dim=1))
+        value = m.fc_value(torch.relu(m.fc_value_hid(v)))
         return move, value
 
 
@@ -76,13 +101,15 @@ def split_for_web(onnx_path: Path, dest_dir: Path, chunk_mb: int = 32):
             f.unlink()
     dest_dir.mkdir(parents=True, exist_ok=True)
     data = onnx_path.read_bytes()
+    digest = hashlib.sha256(data).hexdigest()
     step = chunk_mb * 1024 * 1024
     parts = []
     for i in range(0, len(data), step):
-        name = f"part{len(parts):02d}.bin"
+        # content hash in the name: the service worker caches parts cache-first by URL
+        name = f"part{len(parts):02d}-{digest[:8]}.bin"
         (dest_dir / name).write_bytes(data[i:i + step])
         parts.append(name)
-    manifest = {"size": len(data), "sha256": hashlib.sha256(data).hexdigest(), "parts": parts}
+    manifest = {"size": len(data), "sha256": digest, "parts": parts}
     (dest_dir / "manifest.json").write_text(json.dumps(manifest, indent=1))
 
 

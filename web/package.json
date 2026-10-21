@@ -9,15 +9,20 @@
     "dev": "npm run prepare-assets && vite",
     "build": "npm run prepare-assets && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:native": "npm run build && node scripts/prepare-native.mjs && cap sync ios"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
+    "@capacitor/status-bar": "^8.0.4",
     "@lichess-org/chessground": "10.4.2",
     "chess.js": "1.4.0",
     "onnxruntime-web": "1.30.0",
     "stockfish": "19.0.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "fzstd": "^0.1.1",
     "onnxruntime-node": "1.30.0",
     "typescript": "5.9.3",

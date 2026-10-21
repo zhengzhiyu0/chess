@@ -13,6 +13,7 @@ import {
   type PackageId,
 } from '../offline';
 import type { Settings } from '../settings';
+import { isNative } from '../native';
 
 export interface EnginesCtx {
   settings(): Settings;
@@ -24,6 +25,11 @@ const downloads = new Map<PackageId, AbortController>();
 
 async function renderPackages(ctx: EnginesCtx) {
   const list = $('pkg-list');
+  if (isNative) {
+    list.innerHTML = '<p class="muted">App 版已内置 Stockfish 轻量版/完整版（单线程）与 Maia 5M/23M，无需下载。</p>';
+    $<HTMLButtonElement>('btn-dl-rec').disabled = true;
+    return;
+  }
   if (!(await loadPrecache()) || !('caches' in self)) {
     list.innerHTML = '<p class="muted">引擎管理仅在生产构建（npm run build + preview / 部署）下可用。</p>';
     $<HTMLButtonElement>('btn-dl-rec').disabled = true;
@@ -111,7 +117,7 @@ async function downloadRecommended(ctx: EnginesCtx) {
  * Returns true if anything was downloaded.
  */
 export async function autoOffline(ctx: EnginesCtx): Promise<boolean> {
-  if (!('caches' in self) || !(await loadPrecache())) return false;
+  if (isNative || !('caches' in self) || !(await loadPrecache())) return false;
   await pruneStale();
   const pkgs = await listPackages(ctx.settings().sfLite);
   const want: PackageId[] = ['core', 'stockfish', `maia-${ctx.settings().model}`];

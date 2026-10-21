@@ -12,6 +12,7 @@ import type { Stockfish, SfLine } from './engine/stockfish';
 import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, plainEval, type MoveInsight, type Sides } from './coach/explain';
 import { ELO_MAX, ELO_MIN, eloDelta, loadSettings, saveSettings, type Settings } from './settings';
+import { isNative } from './native';
 import { GameTree, mainChild, type GNode } from './game/tree';
 import { END_REASON_TEXT, START_FEN, moveNumberOf, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
 import { exportPgn as treeToPgn, parsePgn, type Annotation } from './game/pgn';
@@ -2159,7 +2160,7 @@ function bind() {
 }
 
 function registerServiceWorker() {
-  if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return;
+  if (!('serviceWorker' in navigator) || !import.meta.env.PROD || isNative) return;
   const hadController = Boolean(navigator.serviceWorker.controller);
   // a new deployment's SW took over: the running page is the old version
   navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -2265,7 +2266,8 @@ function init() {
   if (location.hash === '#game') showScreen('game', false);
   setStatus(self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
 
-  const willReload = import.meta.env.PROD && 'serviceWorker' in navigator && !self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded');
+  if (isNative) document.querySelector<HTMLOptionElement>('#model option[value="79m"]')?.remove();
+  const willReload = import.meta.env.PROD && !isNative && 'serviceWorker' in navigator && !self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded');
   const idle = (cb: () => void) => ('requestIdleCallback' in self ? requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));
   if (!willReload) {
     idle(async () => {

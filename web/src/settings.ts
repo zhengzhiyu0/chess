@@ -1,3 +1,5 @@
+import { isNative } from './native';
+
 export type Color = 'w' | 'b';
 
 export interface Settings {
@@ -101,6 +103,7 @@ export function loadSettings(): Settings {
     if (saved.elo === undefined && typeof saved.maiaElo === 'number') saved.elo = saved.maiaElo;
     delete saved.maiaElo;
     delete saved.myElo;
+    if (isNative && saved.model === '79m') saved.model = '23m';
     return { ...defaultSettings(), ...saved };
   } catch {
     return defaultSettings();

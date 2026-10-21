@@ -65,6 +65,22 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 - 79M 模型（312MB）在 iPhone 上可能因内存不足被系统终止，请谨慎使用。
 - iOS 可能清理长期未使用的 PWA 缓存，清理后联网打开一次即可恢复。
 
+## 打包为 iOS App（免费 Apple ID 自签）
+
+不需要 Mac 和付费开发者账号：由 GitHub Actions 的 macOS runner 编译未签名 IPA，再在 Windows 上签名安装。
+
+1. 在 GitHub 仓库的 Actions 页面运行 **Build iOS (unsigned IPA)**（[ios.yml](.github/workflows/ios.yml)），也可以推送 `ios-v*` 标签触发。
+2. 运行完成后下载 artifact `MaiaCoach-ipa`，解压得到 `MaiaCoach.ipa`。
+3. 用 [Sideloadly](https://sideloadly.io/)（或 AltStore）连接 iPhone，使用自己的 Apple ID 签名并安装。
+4. iPhone 上打开「设置 → 通用 → VPN 与设备管理」，信任该开发者；iOS 16 及以上还需开启「设置 → 隐私与安全性 → 开发者模式」。
+
+说明：
+
+- 免费 Apple ID 签名的 App **7 天后过期**，需要重新签名（棋局和设置保留）。AltStore 可以在同一 Wi-Fi 下自动续签。
+- App 内置 Stockfish 单线程版（轻量版和完整版）以及 Maia 5M/23M 模型，无需下载，完全离线可用。WKWebView 不支持 `SharedArrayBuffer`，因此没有多线程版；79M 模型内存占用过大，未打包。
+- 本地准备 iOS 工程：`cd web && npm run build:native`，依次执行构建、生成 `dist-native/`（[prepare-native.mjs](web/scripts/prepare-native.mjs)）、`cap sync ios`。Xcode 工程位于 `web/ios/`。
+- 私有仓库使用 macOS runner 会按 10 倍分钟数计费，公开仓库免费。
+
 ## 许可证
 
 本项目仅供个人使用，包含以下组件：

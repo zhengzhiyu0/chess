@@ -13,7 +13,13 @@ export interface MoveMark {
  * Move list HTML: the main line with variations inline in parentheses, like a PGN viewer.
  * Each move is a `.mv` span carrying `data-id` (the tree node id).
  */
-export function movesHtml<A extends object>(tree: GameTree<A>, cur: GNode<A>, mark: (n: GNode<A>) => MoveMark | null, showVariations: boolean): string {
+export function movesHtml<A extends object>(
+  tree: GameTree<A>,
+  cur: GNode<A>,
+  mark: (n: GNode<A>) => MoveMark | null,
+  showVariations: boolean,
+  layout: 'tree' | 'line' = 'tree',
+): string {
   const mainIds = new Set(tree.mainline().map((n) => n.id));
   const move = (n: GNode<A>, needNum: boolean) => {
     const fen = n.parent!.fen;
@@ -25,9 +31,23 @@ export function movesHtml<A extends object>(tree: GameTree<A>, cur: GNode<A>, ma
     const nag = n.nags?.map((g) => NAG_SYMBOL[g] ?? '').join('') ?? '';
     const sym = m?.icon ? '' : m && m.symbol && m.symbol !== '★' ? m.symbol : nag;
     const style = m?.color ? ` style="color:${m.color}"` : '';
-    const cls = `mv${n === cur ? ' cur' : ''}${mainIds.has(n.id) ? '' : ' side'}${n.x ? ' x' : ''}${n.comment ? ' noted' : ''}`;
+    const cls = `mv${n === cur ? ' cur' : ''}${mainIds.has(n.id) ? '' : ' alt'}${n.x ? ' x' : ''}${n.comment ? ' noted' : ''}`;
     return html + `<span class="${cls}" data-id="${n.id}"${style}>${m?.icon ?? ''}${n.san}${sym}</span>`;
   };
+  if (layout === 'line') {
+    // 只显示当前所在的这条线；有分支的着法带一个角标，点开再选
+    let html = '';
+    let need = true;
+    for (const n of tree.lineThrough(cur).slice(1)) {
+      html += move(n, need);
+      need = false;
+      const alts = showVariations ? n.parent!.children.length - 1 : 0;
+      if (alts > 0) {
+        html += `<span class="br" data-branch="${n.parent!.id}" title="其他着法">+${alts}</span>`;
+      }
+    }
+    return html;
+  }
   const vars = (parent: GNode<A>, alts: GNode<A>[]) => alts.map((v) => `<span class="var">${line(parent, v, true)}</span>`).join('');
   const line = (from: GNode<A>, first: GNode<A>, needNum: boolean): string => {
     let html = '';

@@ -12,7 +12,7 @@ import type { Stockfish, SfLine } from './engine/stockfish';
 import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
 import { loadSettings, saveSettings, type Settings } from './settings';
 import { GameTree, mainChild, type GNode } from './game/tree';
-import { END_REASON_TEXT, START_FEN, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
+import { END_REASON_TEXT, START_FEN, moveNumberOf, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
 import { exportPgn as treeToPgn, parsePgn, type Annotation } from './game/pgn';
 import { ChessClock, TIME_CONTROLS, fmtClockShort, pgnTimeControl, thinkBudget, timeControlOf } from './game/clock';
 import { computeStats, loadHistory, newGameId, saveHistory, upsert, type StoredGame } from './game/history';
@@ -1238,6 +1238,31 @@ function setCoach(on: boolean) {
 
 // ---------- rendering ----------
 
+/** 与 style.css 中宽屏布局的媒体查询保持一致：宽屏显示整棵着法树，窄屏只显示当前线 */
+const WIDE = matchMedia('(min-aspect-ratio: 1/1) and (min-width: 720px)');
+
+function openBranches(parent: Node) {
+  const title = $('branch-title');
+  const list = $('branch-list');
+  const num = moveNumberOf(parent.fen);
+  const prefix = turnOf(parent.fen) === 'w' ? `${num}.` : `${num}…`;
+  title.textContent = `${prefix} 的其他着法`;
+  list.innerHTML = parent.children
+    .map((c, i) => {
+      const tag = c.x ? '试走' : i === 0 ? '主线' : '变着';
+      return `<button data-id="${c.id}"${tree.pathTo(node).includes(c) ? ' class="on"' : ''}><b>${prefix}${escapeHtml(c.san)}</b><span class="muted">${tag}</span></button>`;
+    })
+    .join('');
+  const dlg = $<HTMLDialogElement>('dlg-branch');
+  list.onclick = (e) => {
+    const id = (e.target as HTMLElement).closest<HTMLElement>('button')?.dataset.id;
+    if (!id) return;
+    dlg.close();
+    goto(findNode(tree, Number(id)));
+  };
+  dlg.showModal();
+}
+
 function renderMoves() {
   const box = $('moves');
   const review = mode === 'review';
@@ -1253,6 +1278,7 @@ function renderMoves() {
       return { symbol: '', color: j === 'best' ? undefined : judgeColor(j), icon: judgeIcon(j) };
     },
     review,
+    WIDE.matches ? 'tree' : 'line',
   );
   if (resultText()) html += `<span class="res">${resultText()}</span>`;
   box.innerHTML = html;
@@ -1824,9 +1850,19 @@ function bind() {
     newGame();
   };
   $('moves').onclick = (e) => {
-    const id = (e.target as HTMLElement).closest<HTMLElement>('.mv')?.dataset.id;
+    const t = e.target as HTMLElement;
+    const br = t.closest<HTMLElement>('.br')?.dataset.branch;
+    if (br) {
+      const p = findNode(tree, Number(br));
+      if (p) openBranches(p);
+      return;
+    }
+    const id = t.closest<HTMLElement>('.mv')?.dataset.id;
     if (id) goto(findNode(tree, Number(id)));
   };
+  WIDE.addEventListener('change', () => {
+    if (screen === 'game') renderMoves();
+  });
   $('graph').onclick = (e) => {
     const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
     const l = currentLine();

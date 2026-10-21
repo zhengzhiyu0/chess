@@ -616,6 +616,9 @@ input[type='checkbox'] {
   color: var(--muted);
   font-weight: 400;
 }
+.moves > * {
+  flex: none;
+}
 .moves .num {
   color: var(--muted);
   margin: 0 2px 0 8px;
@@ -1295,6 +1298,9 @@ dialog input[type='color'] {
     padding: 8px;
     line-height: 2;
   }
+  .moves > * {
+    flex: 0 1 auto;
+  }
   .side {
     flex: none;
     width: 360px;
@@ -1361,7 +1367,7 @@ dialog input[type='color'] {
   background: #e05a47;
   color: #fff;
 }
-.moves .mv.side {
+.moves .mv.alt {
   color: var(--muted);
   font-weight: 400;
 }
@@ -1381,6 +1387,46 @@ dialog input[type='color'] {
 .moves .var::after {
   content: ')';
   margin-right: 4px;
+}
+/* 窄屏横条上的分支角标 */
+.moves .br {
+  margin: 0 4px 0 1px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--panel3);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  cursor: pointer;
+}
+/* 宽屏：变着另起一行缩进显示（媒体查询与 main.ts 的 WIDE 一致） */
+@media (min-aspect-ratio: 1/1) and (min-width: 720px) {
+  .moves .var {
+    flex: 1 0 100%;
+    display: block;
+    margin: 2px 0 2px 6px;
+    padding-left: 8px;
+    border-left: 2px solid var(--panel3);
+    line-height: 1.8;
+  }
+  .moves .var .var {
+    margin-left: 4px;
+  }
+  .moves .var::before,
+  .moves .var::after {
+    content: none;
+  }
+}
+.branch-title {
+  font-size: 13px;
+  padding: 0 10px 4px;
+}
+#branch-list button {
+  justify-content: space-between;
+}
+#branch-list button.on {
+  background: rgba(255, 255, 255, 0.08);
 }
 .var-actions {
   display: flex;

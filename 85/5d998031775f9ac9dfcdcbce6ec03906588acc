@@ -1,0 +1,21 @@
+web/src/main.ts
+  s_8553c7329c0f51::t_1a74ba6fc05cf5 2205-2207,2224
+web/src/style.css
+  s_8553c7329c0f51::t_c1efa3fd5bd0a6 57,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "855d998031775f9ac9dfcdcbce6ec03906588acc",
+  "prompts": {},
+  "sessions": {
+    "s_8553c7329c0f51": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "2878906d-f334-4e79-ad10-4be852ab7bb5",
+        "model": "customendpoint/ufosaga/claude-opus-5.5"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

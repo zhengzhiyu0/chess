@@ -1,0 +1,65 @@
+README.md
+  s_2694b6c38eb2b3::t_82621eb7f474ba 7-8
+web/package.json
+  s_2694b6c38eb2b3::t_08d64edc789f58 21
+web/test/explain.test.ts
+  s_2694b6c38eb2b3::t_6440d97ef4b713 38
+  s_2694b6c38eb2b3::t_ba0507458975ce 35-37,41-42,46-47,51-54,134-144
+  s_2694b6c38eb2b3::t_7260b3df5dbc5d 31-34,39-40,43-45,48-50,55-57,145-147
+web/src/coach/explain.ts
+  s_2694b6c38eb2b3::t_f9d585cc96d64c 231-233,236
+  s_2694b6c38eb2b3::t_c70a738661e262 223-224,244,247
+  s_2694b6c38eb2b3::t_e7f60879439d53 75-92,104-112,312-313
+  s_2694b6c38eb2b3::t_466914823a38bb 36-37,277,279,281
+  s_2694b6c38eb2b3::t_a2ee7081fd5807 227-229,234
+  s_2694b6c38eb2b3::t_d8701e36871af7 16-29,34-35,40,56-74,93-103,113-163,182-184,186-188,190-193,200-201,208-209,211,214,216,222,225-226,230,237-243,245-246,248-250,253-254,263-264,271-273,276,280,282-284,288-311,315,317,322,329-330,363-365,370,372-373,376,378,380,384-389,391,409,413-426,428,437-443,445-446
+  s_2694b6c38eb2b3::t_1a71d7770824bf 235
+  s_2694b6c38eb2b3::t_dcc8256aa21123 285-287
+  s_2694b6c38eb2b3::t_677f029c032cf8 367-368,518-522,535-538,552-555
+  s_2694b6c38eb2b3::t_3160ad4f5deb75 366,427,429-436,444
+  s_2694b6c38eb2b3::t_0fc8b62972bd72 404,406-407
+  s_2694b6c38eb2b3::t_701d4aaa5b9f0d 195-197,199
+  s_2694b6c38eb2b3::t_0b8ab68a95e2a7 274-275,278
+web/test/puzzle-bench.test.ts
+  s_2694b6c38eb2b3::t_d8240aef9203c8 35-46
+  s_2694b6c38eb2b3::t_8ec0c75a4d165d 4,58,60-64
+  s_2694b6c38eb2b3::t_7a66c14cfbb6ff 53,55-56,59,65-66,68-70
+  s_2694b6c38eb2b3::t_b91512c41ae01a 1-3,5-7,15-19,21-22,24-25,27,30-33,49,51-52,54,67,71,73-81,83-88,90-110
+  s_2694b6c38eb2b3::t_76083976ea0d6a 8-10,12-14
+  s_2694b6c38eb2b3::t_fba11457bb8d19 20
+  s_2694b6c38eb2b3::t_2de0f11fd14e4a 23
+  s_2694b6c38eb2b3::t_0e0a8303dfb9e6 26
+  s_2694b6c38eb2b3::t_6b032ed1f3737b 28-29
+  s_2694b6c38eb2b3::t_2f058d8c0b3260 34
+  s_2694b6c38eb2b3::t_a6bfad11090ce2 47-48
+  s_2694b6c38eb2b3::t_fe4a05f0a3a3e8 50
+  s_2694b6c38eb2b3::t_c881a4d0397674 57
+  s_2694b6c38eb2b3::t_db7f90caa713a0 72
+  s_2694b6c38eb2b3::t_72b1f4513c9ee8 82
+  s_2694b6c38eb2b3::t_701c9644f8d5eb 89
+  s_2694b6c38eb2b3::t_6edf013ba12ab4 11
+web/scripts/build-puzzles.mjs
+  s_2694b6c38eb2b3::t_6191a294fca91e 1-62
+web/test/fixtures/puzzles.json
+  s_2694b6c38eb2b3::t_08cba9a511b12d 1-3061
+web/src/main.ts
+  s_2694b6c38eb2b3::t_5a023659ea76b0 1289,1291-1292
+web/package-lock.json
+  s_2694b6c38eb2b3::t_36c71495a907e8 18,648-654
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c85aed719ef2b8d6b672399ea1055439a528215",
+  "prompts": {},
+  "sessions": {
+    "s_2694b6c38eb2b3": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "191c71be-e6ac-40ef-9b52-745fc52c7b26",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

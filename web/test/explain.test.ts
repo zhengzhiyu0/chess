@@ -28,6 +28,33 @@ describe('detectMotifs', () => {
     expect(kinds('4k3/8/8/3q4/4P3/8/8/4K3 w - - 0 1', 'e4d5')).toContain('trade-up');
     expect(kinds('6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1', 'a1a8')[0]).toBe('mate');
   });
+
+  it('uses exchange evaluation: a defended piece is not free, a pinned defender does not count', () => {
+    // d5 马有 e6 兵保护：不算白吃
+    expect(kinds('4k3/8/4p3/3n4/8/8/8/3RK3 w - - 0 1', 'd1d5')).not.toContain('free');
+    // 保护 e5 兵的 c6 马被 a4 象牵制在王前，不能回吃
+    const ms = detectMotifs('4k3/8/2n5/4p3/B7/8/8/4R2K w - - 0 1', 'e1e5');
+    expect(ms.find((m) => m.kind === 'pin')?.text).toContain('不能回吃');
+    expect(hangingSquares('4k3/8/2n5/4p3/B7/8/8/4R2K b - - 0 1', 'b')).toEqual(['c6', 'e5']);
+  });
+
+  it('does not call attacking a pawn a fork', () => {
+    expect(kinds('b3k3/1p6/8/8/2N5/8/8/4K3 w - - 0 1', 'c4d6')).not.toContain('fork');
+  });
+
+  it('finds a double check', () => {
+    expect(kinds('4k3/8/8/8/4N3/8/8/4R2K w - - 0 1', 'e4f6')).toContain('double-check');
+    expect(kinds('4k3/8/8/8/4N3/8/8/4R2K w - - 0 1', 'e4c5')).not.toContain('double-check');
+  });
+
+  it('finds removing the defender, a trapped piece and a mate threat', () => {
+    // 车吃掉保护 e5 马的 d6 象，e5 马就保不住了
+    expect(kinds('6k1/8/3b4/4n3/8/8/3R4/4R2K w - - 0 1', 'd2d6')).toContain('remove-defender');
+    // b4 兵攻击 a5 象，象无路可逃
+    expect(kinds('4k3/8/1p6/b7/8/2P5/1P6/4K3 w - - 0 1', 'b2b4')).toContain('trapped');
+    // Qh5 威胁 Qxf7#
+    expect(kinds('r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/8/PPPP1PPP/RNBQK1NR w KQkq - 2 3', 'd1h5')).toContain('mate-threat');
+  });
 });
 
 describe('material and words', () => {
@@ -101,6 +128,20 @@ describe('explainMove', () => {
       bad: false,
       sides: S,
     });
+    expect(r.praise).toContain('捉双');
+  });
+
+  it('praises a sacrifice that sets up a fork later in the line', () => {
+    // Rxf8+ Kxf8 Nd7+ 捉双王后
+    const r = explainMove({
+      fen: '1q3rk1/6pp/8/4N3/8/8/6PP/5R1K w - - 0 1',
+      uci: 'f1f8',
+      best: 'f1f8',
+      replyLine: { multipv: 1, depth: 10, cp: -600, pv: ['g8f8', 'e5d7', 'f8e7', 'd7b8'] },
+      bad: false,
+      sides: S,
+    });
+    expect(r.praise).toContain('接着 <b>Nd7+</b>');
     expect(r.praise).toContain('捉双');
   });
 

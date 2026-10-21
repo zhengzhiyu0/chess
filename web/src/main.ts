@@ -1286,8 +1286,10 @@ function coachContinue() {
 }
 
 /** User pieces that are attacked and either undefended or attacked by something cheaper. */
+let hangingMemo: { fen: string; color: Color; out: Square[] } | null = null;
 function hangingSquares(n: Node): Square[] {
-  return hangingOf(n.fen, userColor);
+  if (hangingMemo?.fen !== n.fen || hangingMemo.color !== userColor) hangingMemo = { fen: n.fen, color: userColor, out: hangingOf(n.fen, userColor) };
+  return hangingMemo.out;
 }
 
 function coachShapes(): DrawShape[] {

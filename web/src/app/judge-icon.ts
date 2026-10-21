@@ -1,25 +1,34 @@
 import { JUDGEMENT_INFO, type Judgement } from '../coach/coach';
 
 const ICON_COLOR: Record<Judgement, string> = {
-  best: '#81b64c',
-  good: '#95b776',
-  inaccuracy: '#f7c045',
-  mistake: '#e58f2a',
-  blunder: '#ca3431',
+  best: '#5fae3e',
+  good: '#8db86b',
+  inaccuracy: '#f2b630',
+  mistake: '#ec8a24',
+  blunder: '#d93c34',
 };
 
-/** Badge centred on (0,0) with radius 20. */
+// Glyphs are drawn as paths (not <text>) so they render identically regardless of installed fonts.
+const qmark = (x: number, s: number) =>
+  `<g transform="translate(${x} -.5) scale(${s})"><path d="M-5.2-4.6a5.4 5.4 0 1 1 7.6 4.9c-1.7.8-2.4 1.9-2.4 3.6" fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><circle cy="10" r="2.9" fill="#fff"/></g>`;
+const emark = (x: number, s: number) =>
+  `<g transform="translate(${x} -.5) scale(${s})"><path d="M0-10.5V3" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cy="10" r="2.9" fill="#fff"/></g>`;
+
+const GLYPH: Record<Judgement, string> = {
+  best: '<path d="M0-11.5 3.4-4.4 11.2-3.5 5.5 1.9 7 9.6 0 5.8-7 9.6-5.5 1.9-11.2-3.5-3.4-4.4z" fill="#fff" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>',
+  good: '<path d="M-8 .5l5 5L8.5-6" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>',
+  inaccuracy: qmark(-4.6, 0.86) + emark(6.4, 0.86),
+  mistake: qmark(0, 1.05),
+  blunder: qmark(-5.4, 0.84) + qmark(5.8, 0.84),
+};
+
+/** Badge centred on (0,0), radius ≈ 20 incl. drop shadow. */
 function badge(j: Judgement): string {
-  let glyph: string;
-  if (j === 'best')
-    glyph = '<path d="M0-12 3.5-4.3 12-3.7 5.6 2 7.4 10.3 0 6-7.4 10.3-5.6 2-12-3.7-3.5-4.3z" fill="#fff"/>';
-  else if (j === 'good')
-    glyph = '<path d="M-8.5 0.5l5.5 5.5 11.5-12" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>';
-  else {
-    const sym = JUDGEMENT_INFO[j].symbol;
-    glyph = `<text y="1.5" text-anchor="middle" dominant-baseline="central" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="${sym.length > 1 ? 19 : 25}" letter-spacing="-1" fill="#fff">${sym}</text>`;
-  }
-  return `<circle cy="1.5" r="19" fill="rgba(0,0,0,.3)"/><circle r="19" fill="${ICON_COLOR[j]}" stroke="#fff" stroke-width="2"/>${glyph}`;
+  return (
+    `<circle cy="1.6" r="18.5" fill="rgba(0,0,0,.35)"/><circle r="18.5" fill="${ICON_COLOR[j]}"/>` +
+    '<path d="M-15.6-6.5A17 17 0 0 1 15.6-6.5 30 30 0 0 0-15.6-6.5z" fill="#fff" opacity=".18"/>' +
+    `<circle r="17.6" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.8"/>${GLYPH[j]}`
+  );
 }
 
 /** Inline icon for HTML (move list, summary, notes). */
@@ -41,5 +50,5 @@ export const HANGING_GLOW =
 
 /** Small warning badge on the bottom-left corner of a threatened piece. */
 export const HANGING_BADGE =
-  '<g transform="translate(16 84) scale(0.62)"><circle cy="1.5" r="19" fill="rgba(0,0,0,.3)"/><circle r="19" fill="#e8402f" stroke="#fff" stroke-width="2"/>' +
-  '<path d="M0-10v11" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cy="9" r="3" fill="#fff"/></g>';
+  '<g transform="translate(16 84) scale(0.62)"><circle cy="1.6" r="18.5" fill="rgba(0,0,0,.35)"/><circle r="18.5" fill="#e8402f"/><circle r="17.6" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.8"/>' +
+  `${emark(0, 1.05)}</g>`;

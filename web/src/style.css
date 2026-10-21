@@ -770,12 +770,44 @@ input[type='checkbox'] {
 /* 复盘精简（手机）：不显示双方信息栏，菜单移到顶部，棋盘更大 */
 #game[data-mode='review'] .player,
 #game[data-mode='review'] .toolbar,
-#game[data-mode='play'] .menu-top,
 .only-wide {
   display: none;
 }
-#game[data-mode='review'] .side {
+/* 对弈（手机）：菜单移到顶部，提示/悔棋/教练放进“我”的信息栏，底部工具栏让给讲解区 */
+#game .toolbar {
+  display: none;
+}
+#game .side {
   padding-bottom: var(--safe-b);
+}
+.my-actions {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+#game[data-mode='review'] .my-actions {
+  display: none;
+}
+.my-actions .mini {
+  flex-direction: column;
+  gap: 1px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text2);
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 6px;
+}
+.my-actions .mini svg {
+  width: 20px;
+  height: 20px;
+}
+.my-actions .mini:active {
+  transform: none;
+  background: rgba(255, 255, 255, 0.06);
 }
 #game[data-mode='review'] .board-col {
   width: min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 190px));
@@ -1322,13 +1354,18 @@ dialog input[type='color'] {
     display: flex;
   }
   #game[data-mode='review'] .toolbar,
+  #game .toolbar,
   .toolbar .only-wide {
     display: flex;
   }
+  #game .my-actions {
+    display: none;
+  }
+  #game .side,
   #game[data-mode='review'] .side {
     padding-bottom: 0;
   }
-  #game[data-mode='review'] .menu-top,
+  #game .menu-top,
   .move-bar .nav {
     display: none;
   }

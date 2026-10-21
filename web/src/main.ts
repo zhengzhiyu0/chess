@@ -1547,8 +1547,12 @@ function renderPlayers() {
       `<div class="clock${v.active ? ' active' : ''}${v.low ? ' low' : ''}${clock || node.clock ? ' timed' : ''}" data-clock="${color}">${v.text}</div>`
     );
   };
+  const actions = $('my-actions');
   $('player-top').innerHTML = card(flipped ? 'me' : 'maia');
   $('player-bottom').innerHTML = card(flipped ? 'maia' : 'me');
+  // 手机对弈：提示/悔棋/教练放在“我”的信息栏里（时钟左侧）
+  const mine = $(flipped ? 'player-top' : 'player-bottom');
+  mine.insertBefore(actions, mine.querySelector('.clock'));
 }
 
 function renderEvalBar() {
@@ -2069,6 +2073,9 @@ function bind() {
   $('btn-menu-settings').onclick = fromMenu(openSettings);
   $('btn-undo').onclick = undo;
   $('btn-hint').onclick = () => void hint();
+  $('btn-undo-m').onclick = undo;
+  $('btn-hint-m').onclick = () => void hint();
+  $('btn-coach-m').onclick = openCoachSettings;
   $('btn-settings').onclick = openSettings;
   $('btn-engines').onclick = () => openEngines(enginesCtx);
   $('btn-result-review').onclick = () => {

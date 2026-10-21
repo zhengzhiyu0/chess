@@ -231,7 +231,7 @@
         <label>Stockfish 每步分析时间（毫秒）
           <input type="number" name="sfMovetime" min="100" max="20000" step="100" />
         </label>
-        <label>Stockfish 线程数<span class="web-only">（多线程需跨源隔离）</span>
+        <label>Stockfish 线程数<span class="web-only">（多线程需跨源隔离）</span><span class="native-only">（iPhone 建议 2：只用性能核，更凉快）</span>
           <input type="number" name="sfThreads" min="1" max="16" />
         </label>
         <label>Stockfish Hash（MB）
@@ -244,6 +244,7 @@
           </select>
         </label>
         <label class="check web-only"><input type="checkbox" name="lowMemory" /> 省内存模式（切换对弈/复盘时卸载另一个引擎，iPhone 推荐）</label>
+        <label class="check"><input type="checkbox" name="ecoAnalysis" /> 节能分析（达到足够深度即停止，复盘实时分析最长 15 秒；手机明显降温，评判结果基本不变）</label>
         <label class="check"><input type="checkbox" name="warmup" /> 启动时在后台预加载当前模型与 Stockfish</label>
         <label class="check"><input type="checkbox" name="reviewOpponent" /> 复盘时也分析对手的着法（默认只看自己的）</label>
         <div class="env" id="env-info"></div>

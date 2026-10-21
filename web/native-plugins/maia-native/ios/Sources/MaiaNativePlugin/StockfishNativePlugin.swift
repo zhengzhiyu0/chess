@@ -18,7 +18,7 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
 
     private static let nets = ["full": "nn-1a298aa575a0", "lite": "nn-61e7af4bb97d"]
 
-    /// Engine output is coalesced and flushed at most every 50ms so a deep search's info stream
+    /// Engine output is coalesced and flushed at most every 150ms so a deep search's info stream
     /// doesn't flood the JS bridge; terminal lines (bestmove/readyok/uciok) flush immediately.
     final class Outbox {
         let flavour: String
@@ -39,7 +39,7 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
             if urgent {
                 flush()
             } else if schedule {
-                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + .milliseconds(50)) { [weak self] in
+                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + .milliseconds(150)) { [weak self] in
                     self?.flush()
                 }
             }

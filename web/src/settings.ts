@@ -20,6 +20,8 @@ export interface Settings {
   sfHash: number;
   /** Stockfish lite build (small NNUE, ~2MB): loads in a second and uses far less memory */
   sfLite: boolean;
+  /** stop searches once a sufficient depth is reached instead of always using the full time */
+  ecoAnalysis: boolean;
   lowMemory: boolean;
   /** load the selected Maia model + Stockfish in the background on startup */
   warmup: boolean;
@@ -79,9 +81,11 @@ export function defaultSettings(): Settings {
     backend: 'wasm',
     thinkDelay: true,
     sfMovetime: 1000,
-    sfThreads: isNative ? Math.max(1, Math.min(6, cores - 1)) : Math.max(1, Math.min(4, cores - 1)),
+    // iPhones have 2 performance cores; spilling the search onto the efficiency cores mostly adds heat
+    sfThreads: isNative ? 2 : Math.max(1, Math.min(4, cores - 1)),
     sfHash: isNative ? 128 : isIOS ? 32 : 128,
     sfLite: isNative ? false : isIOS,
+    ecoAnalysis: true,
     lowMemory: isIOS && !isNative,
     warmup: isNative || !isIOS,
     autoOffline: true,
@@ -121,6 +125,11 @@ export function loadSettings(): Settings {
     if (isNative && saved.engineGen !== 2) {
       const d = defaultSettings();
       Object.assign(saved, { sfThreads: d.sfThreads, sfHash: d.sfHash, lowMemory: d.lowMemory, warmup: d.warmup, engineGen: 2 });
+    }
+    // gen 2 defaulted to cores-1 threads (5 on most iPhones), which ran hot; cap it at the performance cores
+    if (isNative && saved.engineGen === 2) {
+      if (typeof saved.sfThreads === 'number' && saved.sfThreads > 2) saved.sfThreads = 2;
+      saved.engineGen = 3;
     }
     return { ...defaultSettings(), ...saved };
   } catch {

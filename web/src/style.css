@@ -507,7 +507,8 @@ input[type='checkbox'] {
   margin-left: auto;
   color: var(--green);
 }
-html.native .web-only {
+html.native .web-only,
+html:not(.native) .native-only {
   display: none;
 }
 .pinfo {

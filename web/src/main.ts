@@ -12,7 +12,7 @@ import type { Stockfish, SfLine } from './engine/stockfish';
 import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, plainEval, type MoveInsight, type Sides } from './coach/explain';
 import { ELO_MAX, ELO_MIN, eloDelta, loadSettings, saveSettings, type Settings } from './settings';
-import { isNative } from './native';
+import { isNative, thermalState } from './native';
 import { GameTree, mainChild, type GNode } from './game/tree';
 import { END_REASON_TEXT, START_FEN, moveNumberOf, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
 import { exportPgn as treeToPgn, parsePgn, type Annotation } from './game/pgn';
@@ -607,7 +607,7 @@ async function hint() {
   box.textContent = '思考中…';
   try {
     const s = await getSf();
-    const r = await s.analyse(tree.root.fen, { moves: movesTo(t), movetime: settings.sfMovetime, multipv: 1 });
+    const r = await s.analyse(tree.root.fen, { moves: movesTo(t), movetime: settings.sfMovetime, depth: depthCap('hint'), multipv: 1 });
     if (t !== tip()) return;
     const best = r.bestmove;
     hintShapes = best ? [arrow(best, 'green')] : [];
@@ -725,9 +725,22 @@ function posEvalFrom(n: Node, lines: SfLine[], best: string | null): PosEval {
   return { lines, best, white: whiteWinPct(lines[0], turn), text: evalText(lines[0], turn) };
 }
 
+/**
+ * Depth at which a search is good enough to stop early (eco mode). Judging moves and explaining
+ * them to a club player gains nothing past these depths, while running the full movetime on every
+ * position (and an open-ended live search in review) keeps all cores busy and heats the phone.
+ */
+const DEPTH_CAP = { eval: 18, threat: 14, hint: 20, live: 24 } as const;
+
+function depthCap(kind: keyof typeof DEPTH_CAP): number | undefined {
+  // the phone is already throttling: back off further so it can cool down
+  if (thermalState >= 2) return DEPTH_CAP[kind] - 4;
+  return settings.ecoAnalysis ? DEPTH_CAP[kind] : undefined;
+}
+
 async function evalNode(s: Stockfish, n: Node, signal: AbortSignal) {
   if (n.a.eval) return;
-  const r = await s.analyse(tree.root.fen, { moves: movesTo(n), movetime: settings.sfMovetime, signal });
+  const r = await s.analyse(tree.root.fen, { moves: movesTo(n), movetime: settings.sfMovetime, depth: depthCap('eval'), signal });
   if (signal.aborted) return;
   // no bestmove on a live position means the engine died mid-search; don't cache a fake "½"
   if (!r.bestmove && !chessOf(n).isGameOver()) return;
@@ -813,27 +826,42 @@ async function runLive() {
   liveCtrl?.abort();
   liveLines = [];
   renderLines();
-  if (!liveOn || mode !== 'review' || (batchCtrl && !batchCtrl.signal.aborted)) return;
+  if (!liveOn || mode !== 'review' || document.hidden || (batchCtrl && !batchCtrl.signal.aborted)) return;
   const ctrl = new AbortController();
   liveCtrl = ctrl;
   const n = node;
+  // engine output arrives every ~50ms; re-rendering PV text + arrows that often costs more than it shows
+  let pending: SfLine[] | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const flush = () => {
+    timer = null;
+    if (!pending || ctrl.signal.aborted || n !== node) return;
+    liveLines = pending;
+    pending = null;
+    renderLines();
+    renderEvalBar();
+    cg.setAutoShapes(arrows());
+    renderLegend();
+  };
   try {
     const s = await getSf();
     if (ctrl.signal.aborted) return;
     await s.analyse(tree.root.fen, {
       moves: movesTo(n),
-      movetime: 60000,
+      // eco: the position is settled long before a minute; stop at the depth cap or after 15s
+      movetime: settings.ecoAnalysis || thermalState >= 2 ? 15000 : 60000,
+      depth: depthCap('live'),
       multipv: 3,
       signal: ctrl.signal,
       onInfo: (lines) => {
         if (ctrl.signal.aborted || n !== node) return;
-        liveLines = lines;
-        renderLines();
-        renderEvalBar();
-        cg.setAutoShapes(arrows());
-        renderLegend();
+        pending = lines;
+        if (liveLines.length === 0) flush();
+        else timer ??= setTimeout(flush, 250);
       },
     });
+    if (timer) clearTimeout(timer);
+    flush();
   } catch (err) {
     console.error(err);
   }
@@ -1200,7 +1228,7 @@ async function computeThreat(s: Stockfish, n: Node, signal: AbortSignal) {
     n.a.threat = null;
     return;
   }
-  const r = await s.analyse(nf, { movetime: Math.min(settings.sfMovetime, 600), signal });
+  const r = await s.analyse(nf, { movetime: Math.min(settings.sfMovetime, 600), depth: depthCap('threat'), signal });
   if (signal.aborted) return;
   const line = r.lines[0];
   if (!r.bestmove || !line) {
@@ -1809,6 +1837,7 @@ function openSettings() {
       sfThreads: Math.max(1, num('sfThreads') || 1),
       sfHash: Math.max(16, num('sfHash') || 64),
       sfLite: el('sfLite').value === 'true',
+      ecoAnalysis: el('ecoAnalysis').checked,
       lowMemory: el('lowMemory').checked,
       warmup: el('warmup').checked,
       sound: el('sound').checked,
@@ -1833,7 +1862,7 @@ function applySettings(old: Settings) {
   if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash || old.sfLite !== settings.sfLite) engines.unloadSf();
   if (old.model !== settings.model || old.backend !== settings.backend) engines.unloadMaia();
   if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) clearAnn('human');
-  if (old.sfMovetime !== settings.sfMovetime || old.sfLite !== settings.sfLite) clearAnn('eval', 'threat');
+  if (old.sfMovetime !== settings.sfMovetime || old.sfLite !== settings.sfLite || old.ecoAnalysis !== settings.ecoAnalysis) clearAnn('eval', 'threat');
   if (!settings.premove) cg.cancelPremove();
   if (old.reviewOpponent !== settings.reviewOpponent && mode === 'review' && screen === 'game') void analyseGame();
   update();
@@ -2218,6 +2247,10 @@ function bind() {
     syncClock();
     renderClocks();
     if (document.hidden) saveGame();
+    // native engine threads keep running while the app is in the background; don't let the
+    // open-ended live search burn battery there
+    if (document.hidden) liveCtrl?.abort();
+    else if (liveOn) void runLive();
   });
   window.addEventListener('pagehide', () => saveGame());
 }

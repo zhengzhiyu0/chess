@@ -17,6 +17,7 @@ export interface SfResult {
 }
 
 export interface AnalyseOpts {
+  /** with `depth` too, the search stops at whichever limit comes first */
   movetime?: number;
   depth?: number;
   multipv?: number;
@@ -238,7 +239,7 @@ export class Stockfish {
         const arm = (ms: number, fn: () => void) => {
           timer = setTimeout(() => (document.hidden ? arm(ms, fn) : fn()), ms);
         };
-        arm(opts.depth ? 120000 : (opts.movetime ?? 1000) + 4000, () => {
+        arm(opts.depth && !opts.movetime ? 120000 : (opts.movetime ?? 1000) + 4000, () => {
           this.send('stop');
           arm(4000, () => {
             console.warn('Stockfish 无响应，已重启');
@@ -263,7 +264,9 @@ export class Stockfish {
         this.listeners.add(h);
         this.send(`setoption name MultiPV value ${opts.multipv ?? 1}`);
         this.send(`position fen ${fen}${opts.moves?.length ? ' moves ' + opts.moves.join(' ') : ''}`);
-        this.send(opts.depth ? `go depth ${opts.depth}` : `go movetime ${opts.movetime ?? 1000}`);
+        // both limits may be given: the search ends at whichever is reached first
+        const limits = [opts.depth ? `depth ${opts.depth}` : '', opts.movetime || !opts.depth ? `movetime ${opts.movetime ?? 1000}` : ''];
+        this.send(`go ${limits.filter(Boolean).join(' ')}`);
       });
     const p = this.queue.then(run, run);
     this.queue = p.catch(() => undefined);

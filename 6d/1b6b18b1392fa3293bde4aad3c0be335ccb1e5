@@ -1,0 +1,53 @@
+web/src/settings.ts
+  s_779a31b81d1ede::t_847433b7a4f337 15-16,68
+web/src/maia/worker.ts
+  s_779a31b81d1ede::t_ab8124a71e0334 2,22-36,64,82-93
+web/public/models/maia3-5m/manifest.json
+  s_779a31b81d1ede::t_7b7ad92de8fd01 2-3
+  s_779a31b81d1ede::t_24b15c97994fcd 5
+web/scripts/copy-assets.mjs
+  s_779a31b81d1ede::t_a686959704235c 10
+web/src/offline.ts
+  s_779a31b81d1ede::t_56cc3ea7f20aba 42-45,48,57,62-65
+web/vite.config.ts
+  s_779a31b81d1ede::t_7b30431fadc1ec 52-57
+web/src/engine/stockfish.ts
+  s_779a31b81d1ede::t_c42b06d75b1a63 68,102,110
+  s_779a31b81d1ede::t_43ff9b1fcfa759 89,92,96,100-101,106-109,111-115
+web/src/app/engines-ui.ts
+  s_779a31b81d1ede::t_e987f9f413c85e 32,98,116
+web/index.html
+  s_779a31b81d1ede::t_e887cc6af355ec 220
+tools/export_onnx.py
+  s_779a31b81d1ede::t_7010730d986cac 8,24-28,35-55
+  s_779a31b81d1ede::t_14d5c94cbab208 104,108-109,112
+web/src/main.ts
+  s_779a31b81d1ede::t_5f030c3ed3d23c 1507,1528,1531
+web/public/models/maia3-23m/manifest.json
+  s_779a31b81d1ede::t_7b7ad92de8fd01 2-3
+  s_779a31b81d1ede::t_24b15c97994fcd 5-7
+web/src/app/engines.ts
+  s_779a31b81d1ede::t_43d6c7a3e17a88 95-96,99
+  s_779a31b81d1ede::t_5574fa3f0c58fb 22-30,53,94,114-116
+web/public/models/maia3-79m/manifest.json
+  s_779a31b81d1ede::t_7b7ad92de8fd01 2-3
+  s_779a31b81d1ede::t_24b15c97994fcd 5-14
+README.md
+  s_779a31b81d1ede::t_011477111f444c 4,61-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6d1b6b18b1392fa3293bde4aad3c0be335ccb1e5",
+  "prompts": {},
+  "sessions": {
+    "s_779a31b81d1ede": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "dd1ffc0b-618f-44ac-946f-366203766f12",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+web/index.html
+  s_b7f87d2d7cddd3::t_7eb411ed6295dd 12-14
+web/public/icons/icon.svg
+  s_b7f87d2d7cddd3::t_222d3106537a22 1-25
+web/src/app/judge-icon.ts
+  s_b7f87d2d7cddd3::t_345a232bf71ef4 53-54
+  s_b7f87d2d7cddd3::t_4bb9591ca7177c 4-8,11-25,27-31
+web/public/manifest.webmanifest
+  s_b7f87d2d7cddd3::t_faf66e35d13454 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5c9b91135b86ab6769363628b0e388f98ea5f2d8",
+  "prompts": {},
+  "sessions": {
+    "s_b7f87d2d7cddd3": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "2d5ef69f-047e-4ff4-a214-323f763ee3ea",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

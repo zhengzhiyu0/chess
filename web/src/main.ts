@@ -849,12 +849,22 @@ function renderSummary() {
     if (!s.acc.length) return '';
     const avg = s.acc.reduce((a, b) => a + b, 0) / s.acc.length;
     const counts = (['inaccuracy', 'mistake', 'blunder'] as Judgement[])
-      .map((j) => `<span class="cnt" title="${JUDGEMENT_INFO[j].label}">${judgeIcon(j)}${s.c[j] ?? 0}</span>`)
+      .map((j) => {
+        const count = s.c[j] ?? 0;
+        return `<button class="cnt" type="button" data-judgement="${j}" aria-label="${name}${JUDGEMENT_INFO[j].label}${count}次"><span>${judgeIcon(j)}</span><span>${count}</span></button>`;
+      })
       .join('');
     return `<div class="sum-row"><b>${name}</b><span>准确率 ${avg.toFixed(1)}%</span>${counts}</div>`;
   };
   const who = (c: Color) => (imported ? (c === 'w' ? '白' : '黑') : `${c === 'w' ? '白' : '黑'}（${userColor === c ? '我' : 'Maia'}）`);
   box.innerHTML = row('w', who('w')) + row('b', who('b'));
+  box.querySelectorAll<HTMLButtonElement>('.cnt').forEach((button) => {
+    button.onclick = () => {
+      const judgement = button.dataset.judgement as Judgement;
+      const side = button.closest<HTMLElement>('.sum-row')?.querySelector('b')?.textContent ?? '';
+      setStatus(`${side}：${JUDGEMENT_INFO[judgement].label} ${button.lastElementChild?.textContent ?? 0} 次`);
+    };
+  });
 }
 
 function renderCoach() {

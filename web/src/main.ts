@@ -10,6 +10,7 @@ import { MODELS, type MaiaResult } from './maia/maia';
 import { sampleMove } from './maia/sample';
 import type { Stockfish, SfLine } from './engine/stockfish';
 import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
+import { PIECE_NAME, detectMotifs, explainMove, hangingSquares as hangingOf, plainEval, type MoveInsight, type Sides } from './coach/explain';
 import { loadSettings, saveSettings, type Settings } from './settings';
 import { GameTree, mainChild, type GNode } from './game/tree';
 import { END_REASON_TEXT, START_FEN, moveNumberOf, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
@@ -265,6 +266,8 @@ const BRUSHES = {
   should: { key: 'ks', color: '#d9a43a', opacity: 0.75, lineWidth: 6 },
   /** opponent's threat (coach) */
   threat: { key: 'kt', color: '#e8402f', opacity: 0.75, lineWidth: 6 },
+  /** next move while stepping through a line */
+  demo: { key: 'kd', color: '#8a5cd6', opacity: 0.8, lineWidth: 7 },
 };
 const LEGEND_TEXT: Record<string, string> = { best: '最佳', human: '常见', should: '上一步应走' };
 
@@ -320,6 +323,21 @@ function renderLegend() {
 }
 
 function renderBoard() {
+  const df = demoFen();
+  if (df && demo) {
+    const last = demo.idx > 0 ? demo.pv[demo.idx - 1] : null;
+    const next = demo.pv[demo.idx];
+    cg.set({
+      fen: df,
+      turnColor: turnOf(df) === 'w' ? 'white' : 'black',
+      lastMove: last ? [last.slice(0, 2) as Key, last.slice(2, 4) as Key] : undefined,
+      check: new Chess(df).inCheck(),
+      movable: { color: undefined, dests: new Map() },
+      premovable: { enabled: false },
+    });
+    cg.setAutoShapes(next ? [arrow(next, 'demo')] : []);
+    return;
+  }
   const c = chessOf(node);
   const movable = canUserMove();
   const pre = !movable && canPremove();
@@ -907,12 +925,26 @@ function renderCoach() {
     const num = `${Number(p.fen.split(' ')[5])}${turnOf(p.fen) === 'w' ? '.' : '…'}`;
     if (r && prev) {
       const info = JUDGEMENT_INFO[r.judgement];
+      const ins = insightOf(node);
       parts.push(
         `<div class="j" style="color:${judgeColor(r.judgement)}">${judgeIcon(r.judgement)}${num} ${node.san} ${info.label}</div>`,
-        `<div>行棋方胜率 ${r.before.toFixed(0)}% → ${r.after.toFixed(0)}%</div>`,
+        `<div title="胜率：按引擎评估估算的获胜机会">行棋方胜率 ${r.before.toFixed(0)}% → ${r.after.toFixed(0)}%${plainOf(node) ? `；${plainOf(node)}` : ''}</div>`,
       );
+      if (ins?.praise) parts.push(`<div class="praise">★ ${ins.praise}</div>`);
+      if (ins?.problem.length) {
+        const l = node.a.eval?.lines[0];
+        parts.push(
+          `<div class="cc-why"><span class="tag bad">问题</span><span>${ins.problem.join('；')}</span></div>`,
+          `<div class="cc-pv">${demoControls(node.fen, l?.pv ?? [], `bad:${node.id}`, `演示：${pvToSan(node.fen, l?.pv ?? [], 6)}`)}</div>`,
+        );
+      }
       if (prev.best && prev.best !== node.uci) {
-        parts.push(`<div>更好的是 <b>${sanOf(p.fen, prev.best)}</b>（${prev.text}）：${pvToSan(p.fen, prev.lines[0]?.pv ?? [])}</div>`);
+        const pv = prev.lines[0]?.pv ?? [];
+        const why = ins?.better.length ? `：${ins.better.join('，')}` : '';
+        parts.push(
+          `<div class="cc-why"><span class="tag good">更好</span><span><b>${sanOf(p.fen, prev.best)}</b>${why}（${prev.text}）</span></div>`,
+          `<div class="cc-pv">${demoControls(p.fen, pv, `good:${node.id}`, `演示：${pvToSan(p.fen, pv)}`)}</div>`,
+        );
       }
     }
     const h = p.a.human;
@@ -978,10 +1010,134 @@ function varAction(act: string) {
 
 // ---------- coach ----------
 
-const PIECE_NAME: Record<string, string> = { p: '兵', n: '马', b: '象', r: '车', q: '后', k: '王' };
 const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
 const PIECE_GLYPH: Record<string, string> = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛' };
 const SEVERITY: Record<Judgement, number> = { best: 0, good: 0, inaccuracy: 1, mistake: 2, blunder: 3 };
+
+/** 讲解中双方的称呼：`mover` 是走这步棋的一方。 */
+function sidesFor(mover: Color): Sides {
+  if (imported) return mover === 'w' ? { me: '白方', opp: '黑方' } : { me: '黑方', opp: '白方' };
+  return mover === userColor ? { me: '你', opp: '对手' } : { me: 'Maia', opp: '你' };
+}
+
+const povSides = (): Sides => (imported ? { me: '白方', opp: '黑方' } : { me: '你', opp: 'Maia' });
+const povColor = (): Color => (imported ? 'w' : userColor);
+
+/** 当前局面形势的大白话。 */
+function plainOf(n: Node): string {
+  const l = n.a.eval?.lines[0];
+  if (!l) {
+    const c = chessOf(n);
+    if (c.isCheckmate()) return turnOf(n.fen) === povColor() ? `${povSides().opp}将杀` : `${povSides().me}将杀`;
+    return c.isGameOver() ? '和棋' : '';
+  }
+  return plainEval(l, turnOf(n.fen), povColor(), povSides());
+}
+
+const insightCache = new WeakMap<Node, { ins: MoveInsight; a: PosEval; b: PosEval; who: string }>();
+
+/** 走到 `n` 的那步棋的新手讲解（需要前后两个局面的评估）。 */
+function insightOf(n: Node): MoveInsight | null {
+  const p = n.parent;
+  const r = reviewOf(n);
+  if (!p || !r || !n.uci) return null;
+  const a = p.a.eval!;
+  const b = n.a.eval!;
+  const sides = sidesFor(turnOf(p.fen));
+  const hit = insightCache.get(n);
+  if (hit && hit.a === a && hit.b === b && hit.who === sides.me) return hit.ins;
+  const ins = explainMove({
+    fen: p.fen,
+    uci: n.uci,
+    best: a.best,
+    bestLine: a.lines[0],
+    replyLine: b.lines[0],
+    bad: SEVERITY[r.judgement] > 0,
+    sides,
+  });
+  insightCache.set(n, { ins, a, b, who: sides.me });
+  return ins;
+}
+
+// ---------- 变化逐步演示 ----------
+
+/** 在棋盘上逐步播放一条引擎变化；`key` 标识是哪张卡片发起的。 */
+let demo: { fen: string; pv: string[]; idx: number; key: string; anchor: Node; state: string; mode: string } | null = null;
+
+function demoFen(): string | null {
+  return demo ? fenAt(demo.fen, demo.pv, demo.idx) : null;
+}
+
+function startDemo(fen: string, pv: string[], key: string) {
+  const c = new Chess(fen);
+  const ok: string[] = [];
+  for (const u of pv.slice(0, 10)) {
+    try {
+      c.move(toMove(u));
+      ok.push(u);
+    } catch {
+      break;
+    }
+  }
+  if (!ok.length) return;
+  cg.cancelPremove();
+  demo = { fen, pv: ok, idx: 0, key, anchor: node, state: coachState, mode };
+  stepDemo(1);
+}
+
+/** 离开发起演示的局面、切换模式或教练状态变化后，演示自动结束。 */
+function validateDemo() {
+  if (demo && (demo.anchor !== node || demo.state !== coachState || demo.mode !== mode || screen !== 'game')) demo = null;
+}
+
+function stepDemo(d: number) {
+  if (!demo) return;
+  const idx = Math.max(0, Math.min(demo.pv.length, demo.idx + d));
+  if (idx === demo.idx) return;
+  demo.idx = idx;
+  if (idx > 0 && d > 0) play(soundForSan(sanOf(fenAt(demo.fen, demo.pv, idx - 1), demo.pv[idx - 1])));
+  update();
+}
+
+function fenAt(fen: string, pv: string[], n: number): string {
+  const c = new Chess(fen);
+  for (const u of pv.slice(0, n)) c.move(toMove(u));
+  return c.fen();
+}
+
+function stopDemo() {
+  if (!demo) return;
+  demo = null;
+  update();
+}
+
+/** 卡片里的“演示”按钮，或正在演示时的控制条。 */
+function demoControls(fen: string, pv: string[], key: string, label: string): string {
+  if (!pv.length) return '';
+  if (demo?.key !== key) {
+    return `<button type="button" class="demo-btn" data-demo="start" data-key="${escapeHtml(key)}" data-fen="${escapeHtml(fen)}" data-pv="${pv.join(' ')}">▶ ${label}</button>`;
+  }
+  const san = demo.idx > 0 ? sanOf(fenAt(demo.fen, demo.pv, demo.idx - 1), demo.pv[demo.idx - 1]) : '起始局面';
+  return (
+    `<div class="demo-bar"><button type="button" data-demo="first" aria-label="回到起点">⏮</button>` +
+    `<button type="button" data-demo="prev" aria-label="上一步">‹</button>` +
+    `<span class="demo-pos">${demo.idx}/${demo.pv.length} <b>${san}</b></span>` +
+    `<button type="button" data-demo="next" aria-label="下一步">›</button>` +
+    `<button type="button" data-demo="stop" aria-label="结束演示">✕</button></div>`
+  );
+}
+
+function onDemoClick(e: Event): boolean {
+  const b = (e.target as HTMLElement).closest<HTMLElement>('[data-demo]');
+  if (!b) return false;
+  const act = b.dataset.demo;
+  if (act === 'start') startDemo(b.dataset.fen!, b.dataset.pv!.split(' '), b.dataset.key!);
+  else if (act === 'first') stepDemo(-99);
+  else if (act === 'prev') stepDemo(-1);
+  else if (act === 'next') stepDemo(1);
+  else if (act === 'stop') stopDemo();
+  return true;
+}
 
 let prepCtrl: AbortController | null = null;
 let prep: { node: Node; p: Promise<void> } | null = null;
@@ -1034,7 +1190,9 @@ async function computeThreat(s: Stockfish, n: Node, signal: AbortSignal) {
   }
   const mv = new Chess(nf).move(toMove(r.bestmove));
   let text = `对手威胁 <b>${mv.san}</b>`;
+  const motif = detectMotifs(nf, r.bestmove, '你的')[0];
   if (line.mate !== undefined && line.mate > 0) text += `，${line.mate} 步杀`;
+  else if (motif) text += `：${motif.text}`;
   else if (mv.captured) text += `，吃掉你的${PIECE_NAME[mv.captured]}`;
   n.a.threat = { uci: r.bestmove, text };
 }
@@ -1129,18 +1287,7 @@ function coachContinue() {
 
 /** User pieces that are attacked and either undefended or attacked by something cheaper. */
 function hangingSquares(n: Node): Square[] {
-  const c = chessOf(n);
-  const opp: Color = userColor === 'w' ? 'b' : 'w';
-  const out: Square[] = [];
-  for (const row of c.board())
-    for (const sq of row) {
-      if (!sq || sq.color !== userColor || sq.type === 'k') continue;
-      const atk = c.attackers(sq.square, opp);
-      if (!atk.length) continue;
-      const cheapest = Math.min(...atk.map((a) => (c.get(a)?.type === 'k' ? 100 : PIECE_VALUE[c.get(a)!.type])));
-      if (!c.attackers(sq.square, userColor).length || cheapest < PIECE_VALUE[sq.type]) out.push(sq.square);
-    }
-  return out;
+  return hangingOf(n.fen, userColor);
 }
 
 function coachShapes(): DrawShape[] {
@@ -1173,29 +1320,26 @@ function explainMistake(from: Node): string {
   if (!mv || !r || !before || !after) return '';
   const info = JUDGEMENT_INFO[r.judgement];
   const num = from.fen.split(' ')[5];
+  const ins = insightOf(mv);
   const parts = [
     `<div class="cc-head"><span class="cc-title" style="color:${info.color}">${num}${turnOf(from.fen) === 'w' ? '.' : '…'} ${mv.san}${info.symbol} ${info.label}</span>` +
-      `<span class="cc-win">胜率 ${r.before.toFixed(0)}% → <b style="color:${info.color}">${r.after.toFixed(0)}%</b></span></div>`,
+      `<span class="cc-win" title="胜率：按引擎评估估算的获胜机会">胜率 ${r.before.toFixed(0)}% → <b style="color:${info.color}">${r.after.toFixed(0)}%</b></span></div>`,
+    `<div class="cc-plain">走完这步后：${plainOf(mv)}</div>`,
   ];
-  if (after.best) {
-    const reply = chessOf(mv).move(toMove(after.best));
-    const l = after.lines[0];
-    let why: string;
-    if (l?.mate !== undefined && l.mate > 0) why = `对手有 ${l.mate} 步杀：${pvToSan(mv.fen, l.pv, 6)}`;
-    else if (reply.captured) why = `对手可以 <b>${reply.san}</b> 吃掉你的${PIECE_NAME[reply.captured]}`;
-    else why = `对手的最佳应对是 <b>${reply.san}</b>：${pvToSan(mv.fen, l?.pv ?? [], 6)}`;
-    parts.push(`<div class="cc-why"><span class="tag bad">问题</span><span>${why}</span></div>`);
+  const l = after.lines[0];
+  if (after.best && ins?.problem.length) {
+    parts.push(
+      `<div class="cc-why"><span class="tag bad">问题</span><span>${ins.problem.join('；')}</span></div>`,
+      `<div class="cc-pv">${demoControls(mv.fen, l?.pv ?? [], 'bad', `演示对手的应对：${pvToSan(mv.fen, l?.pv ?? [], 6)}`)}</div>`,
+    );
   }
   if (before.best && before.best !== mv.uci) {
-    const good = chessOf(from).move(toMove(before.best));
-    const l = before.lines[0];
-    let why = '';
-    if (l?.mate !== undefined && l.mate > 0) why = `，${l.mate} 步杀`;
-    else if (good.captured) why = `，吃掉对方的${PIECE_NAME[good.captured]}`;
-    else if (good.san.includes('+')) why = '，并将军';
+    const good = sanOf(from.fen, before.best);
+    const bl = before.lines[0];
+    const why = ins?.better.length ? `：${ins.better.join('，')}` : '';
     parts.push(
-      `<div class="cc-why"><span class="tag good">更好</span><span><b>${good.san}</b>（${before.text}）${why}</span></div>`,
-      `<div class="cc-pv">${pvToSan(from.fen, l?.pv ?? [], 5)}</div>`,
+      `<div class="cc-why"><span class="tag good">更好</span><span><b>${good}</b>${why}（走它的话：${plainOf(from)}）</span></div>`,
+      `<div class="cc-pv">${demoControls(from.fen, bl?.pv ?? [], 'good', `演示更好的走法：${pvToSan(from.fen, bl?.pv ?? [], 5)}`)}</div>`,
     );
   }
   return parts.join('');
@@ -1228,9 +1372,12 @@ function renderCoachLive() {
   if (r && last) {
     const info = JUDGEMENT_INFO[r.judgement];
     const ok = SEVERITY[r.judgement] === 0;
-    parts.push(`<div class="cl-row"><span class="tag" style="background:${info.color}">${ok ? '✓' : info.symbol}</span><span>${last.san} ${info.label}</span></div>`);
+    const praise = ok ? insightOf(last)?.praise : null;
+    if (praise) parts.push(`<div class="cl-row praise"><span class="tag good">★</span><span><b>${last.san}</b> ${praise}</span></div>`);
+    else parts.push(`<div class="cl-row"><span class="tag" style="background:${info.color}">${ok ? '✓' : info.symbol}</span><span>${last.san} ${info.label}</span></div>`);
   }
   if (result === '' && node === t && turnOf(t.fen) === userColor) {
+    if (settings.coachEval && t.a.eval) parts.push(`<div class="cl-row muted"><span class="tag">≈</span><span>形势：${plainOf(t)}</span></div>`);
     if (settings.coachThreats && t.a.threat) parts.push(`<div class="cl-row warn"><span class="tag bad">!</span><span>${t.a.threat.text}</span></div>`);
     if (settings.coachHanging) {
       const h = hangingSquares(t);
@@ -1401,6 +1548,7 @@ function renderPlayInfo() {
 }
 
 function update() {
+  validateDemo();
   syncClock();
   renderBoard();
   renderMoves();
@@ -1797,6 +1945,10 @@ function bind() {
   document.querySelectorAll<HTMLButtonElement>('[data-nav]').forEach((b) => {
     b.onclick = () => {
       const nav = b.dataset.nav;
+      if (demo) {
+        stepDemo(nav === 'first' ? -99 : nav === 'prev' ? -1 : nav === 'next' ? 1 : 99);
+        return;
+      }
       goto(nav === 'first' ? tree.root : nav === 'prev' ? node.parent : nav === 'next' ? mainChild(node) : lastOfLine());
     };
   });
@@ -1846,10 +1998,13 @@ function bind() {
   $('btn-home-coach').onclick = openCoachSettings;
   $('btn-coach').onclick = openCoachSettings;
   $('coach-live').onclick = (e) => {
+    if (onDemoClick(e)) return;
     const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
+    demo = null;
     if (act === 'retry') coachRetry();
     else if (act === 'go') coachContinue();
   };
+  $('coach-box').onclick = (e) => void onDemoClick(e);
   $('var-actions').onclick = (e) => {
     const act = (e.target as HTMLElement).closest<HTMLElement>('[data-va]')?.dataset.va;
     if (act) varAction(act);
@@ -1934,6 +2089,16 @@ function bind() {
   reloadBtn.addEventListener('touchend', reloadForUpdate);
   document.addEventListener('keydown', (e) => {
     if (screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
+    if (demo) {
+      if (e.key === 'ArrowLeft') stepDemo(-1);
+      else if (e.key === 'ArrowRight') stepDemo(1);
+      else if (e.key === 'Home') stepDemo(-99);
+      else if (e.key === 'End') stepDemo(99);
+      else if (e.key === 'Escape') stopDemo();
+      else return;
+      e.preventDefault();
+      return;
+    }
     if (e.key === 'ArrowLeft') goto(node.parent);
     else if (e.key === 'ArrowRight') goto(mainChild(node));
     else if (e.key === 'Home') goto(tree.root);

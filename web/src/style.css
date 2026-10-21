@@ -897,6 +897,45 @@ input[type='checkbox'] {
   padding-left: 30px;
   margin-top: -4px;
 }
+.cc-plain {
+  font-size: 13px;
+  color: var(--text2);
+}
+.demo-btn {
+  display: inline;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: #a684e6;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.demo-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.demo-bar button {
+  min-width: 32px;
+  padding: 4px 8px;
+}
+.demo-pos {
+  flex: 1;
+  text-align: center;
+  color: var(--text2);
+}
+.cl-row.praise {
+  border-left: 3px solid var(--green);
+}
+.coach .praise {
+  color: var(--green);
+  font-weight: 700;
+}
+.coach .cc-why {
+  margin-top: 4px;
+}
 .cc-actions {
   display: flex;
   gap: 8px;

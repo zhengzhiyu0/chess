@@ -164,6 +164,7 @@
         <div class="result-icon" id="result-icon"></div>
         <h3 id="result-title"></h3>
         <p class="muted" id="result-sub"></p>
+        <p class="result-elo" id="result-elo" hidden></p>
         <button id="btn-result-review" class="primary big">复盘这局</button>
         <div class="row">
           <button id="btn-result-new">新对局</button>
@@ -182,9 +183,10 @@
             <option value="79m">Maia-3 79M（312MB，最准）</option>
           </select>
         </label>
-        <label>等级分（Maia 与我相同） <output name="eloOut"></output>
+        <label>等级分（Maia 与我相同；开启自动调整时为初始分） <output name="eloOut"></output>
           <input type="range" name="elo" min="0" max="2600" step="50" />
         </label>
+        <label class="check"><input type="checkbox" name="autoElo" /> 根据胜负自动调整等级分（赢升、输降，前几局幅度更大）</label>
         <label>我执
           <select name="color">
             <option value="w">白棋</option>

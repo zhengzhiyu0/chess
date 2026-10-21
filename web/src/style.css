@@ -1188,6 +1188,16 @@ dialog.sheet[open] {
 .result .row {
   width: 100%;
 }
+.result-elo {
+  margin: 0;
+  font-size: 14px;
+}
+.result-elo b.win {
+  color: var(--green);
+}
+.result-elo b.loss {
+  color: #e0574c;
+}
 .result-icon {
   display: grid;
   place-items: center;

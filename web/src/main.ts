@@ -11,7 +11,7 @@ import { sampleMove } from './maia/sample';
 import type { Stockfish, SfLine } from './engine/stockfish';
 import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, plainEval, type MoveInsight, type Sides } from './coach/explain';
-import { loadSettings, saveSettings, type Settings } from './settings';
+import { ELO_MAX, ELO_MIN, eloDelta, loadSettings, saveSettings, type Settings } from './settings';
 import { GameTree, mainChild, type GNode } from './game/tree';
 import { END_REASON_TEXT, START_FEN, moveNumberOf, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
 import { exportPgn as treeToPgn, parsePgn, type Annotation } from './game/pgn';
@@ -67,6 +67,7 @@ let node: Node = tree.root;
 let gameId = newGameId();
 let gameDate = Date.now();
 let gameElo: number | undefined = settings.elo;
+let eloAfter: number | undefined;
 let gameModel: string = settings.model;
 let userColor: Color = 'w';
 let result = '';
@@ -162,6 +163,7 @@ function stored(): StoredGame {
     reason,
     coach: coachOn,
     elo: imported ? undefined : gameElo,
+    eloAfter,
     model: imported ? undefined : gameModel,
     tc: tcId,
     clock: clock && !result ? clock.snapshot(performance.now()) : undefined,
@@ -223,6 +225,7 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     headers = g.headers;
     coachOn = Boolean(g.coach);
     gameElo = g.elo ?? (imported ? undefined : settings.elo);
+    eloAfter = g.eloAfter;
     gameModel = g.model ?? settings.model;
     tcId = g.tc ?? 'none';
     const tc = timeControlOf(tcId);
@@ -473,7 +476,24 @@ function endGame(res: string, why: EndReason) {
   cg.cancelPremove();
   coachReset();
   setTimeout(() => play('end'), 250);
+  rateGame();
   saveGame();
+}
+
+/** Automatic rating: move the shared Maia/player rating up or down after a finished game. */
+function rateGame() {
+  eloAfter = undefined;
+  // only real games from the standard start in which the user actually moved
+  if (!settings.autoElo || imported || gameElo === undefined || tree.root.fen !== START_FEN) return;
+  let userMoves = 0;
+  for (let n = mainChild(tree.root); n; n = mainChild(n)) if (n.parent && turnOf(n.parent.fen) === userColor) userMoves++;
+  if (userMoves < 3) return;
+  const score = result === '1/2-1/2' ? 0.5 : (result === '1-0') === (userColor === 'w') ? 1 : 0;
+  const next = Math.max(ELO_MIN, Math.min(ELO_MAX, settings.elo + eloDelta(score, settings.ratedGames)));
+  eloAfter = next;
+  settings = { ...settings, elo: next, ratedGames: settings.ratedGames + 1 };
+  saveSettings(settings);
+  clearAnn('human');
 }
 
 function flag(color: Color) {
@@ -532,6 +552,7 @@ function newGame(fen = START_FEN, color?: Color) {
   gameId = newGameId();
   gameDate = Date.now();
   gameElo = settings.elo;
+  eloAfter = undefined;
   gameModel = settings.model;
   result = '';
   reason = undefined;
@@ -1576,6 +1597,12 @@ function checkResult() {
   $('result-icon').className = `result-icon ${draw ? 'draw' : win ? 'win' : 'loss'}`;
   $('result-title').textContent = draw ? '和棋' : win ? '你赢了！' : 'Maia 获胜';
   $('result-sub').textContent = resultText();
+  const rating = $('result-elo');
+  if (eloAfter !== undefined && gameElo !== undefined) {
+    const d = eloAfter - gameElo;
+    rating.innerHTML = `等级分 ${gameElo} → <b class="${d > 0 ? 'win' : d < 0 ? 'loss' : ''}">${eloAfter}</b>（${d > 0 ? '+' : ''}${d}），下一局 Maia 将按新分数对弈`;
+    rating.hidden = false;
+  } else rating.hidden = true;
   setTimeout(() => $<HTMLDialogElement>('dlg-result').showModal(), 450);
 }
 
@@ -1713,6 +1740,9 @@ function openSettings() {
       ...old,
       model: el('model').value as Settings['model'],
       elo: num('elo'),
+      autoElo: el('autoElo').checked,
+      // a manually chosen rating restarts the fast early calibration
+      ratedGames: num('elo') !== old.elo ? 0 : old.ratedGames,
       color: el('color').value as Settings['color'],
       temperature: num('temperature'),
       backend: el('backend').value as Settings['backend'],
@@ -1821,6 +1851,7 @@ function loadImported(p: Parsed) {
   gameId = newGameId();
   gameDate = Date.now();
   gameElo = undefined;
+  eloAfter = undefined;
   userColor = 'w';
   result = p.result === '*' ? '' : p.result;
   reason = undefined;
@@ -1884,7 +1915,7 @@ let homeCg: Api;
 function renderHome() {
   const elo = $<HTMLInputElement>('home-elo');
   elo.value = String(settings.elo);
-  $('home-elo-val').textContent = String(settings.elo);
+  $('home-elo-val').textContent = settings.autoElo ? `${settings.elo} · 自动` : String(settings.elo);
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => b.classList.toggle('active', b.dataset.color === settings.color));
   document.querySelectorAll<HTMLButtonElement>('#home-type button').forEach((b) => b.classList.toggle('active', b.dataset.type === settings.gameType));
   $<HTMLSelectElement>('home-tc').value = settings.timeControl;
@@ -1990,7 +2021,7 @@ function bind() {
   $<HTMLInputElement>('home-elo').oninput = (e) => {
     $('home-elo-val').textContent = (e.target as HTMLInputElement).value;
   };
-  $<HTMLInputElement>('home-elo').onchange = (e) => saveHomeSettings({ elo: Number((e.target as HTMLInputElement).value) });
+  $<HTMLInputElement>('home-elo').onchange = (e) => saveHomeSettings({ elo: Number((e.target as HTMLInputElement).value), ratedGames: 0 });
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => {
     b.onclick = () => saveHomeSettings({ color: b.dataset.color as Settings['color'] });
   });

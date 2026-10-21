@@ -3,6 +3,10 @@ export type Color = 'w' | 'b';
 export interface Settings {
   model: '5m' | '23m' | '79m';
   elo: number;
+  /** adjust `elo` after each finished game according to the result */
+  autoElo: boolean;
+  /** number of games rated so far (larger early adjustments) */
+  ratedGames: number;
   color: Color | 'random';
   temperature: number;
   /** feed real game history to Maia (official UCI default is off: current position repeated) */
@@ -57,6 +61,8 @@ export function defaultSettings(): Settings {
   return {
     model: isIOS ? '5m' : '23m',
     elo: 1500,
+    autoElo: true,
+    ratedGames: 0,
     color: 'w',
     temperature: 1,
     useHistory: false,
@@ -99,6 +105,18 @@ export function loadSettings(): Settings {
   } catch {
     return defaultSettings();
   }
+}
+
+export const ELO_MIN = 0;
+export const ELO_MAX = 2600;
+
+/**
+ * Rating change after a game against an equally rated Maia (expected score 0.5).
+ * K is large for the first games so a new player quickly finds their level.
+ */
+export function eloDelta(score: number, ratedGames: number): number {
+  const k = ratedGames < 5 ? 100 : ratedGames < 15 ? 60 : 40;
+  return Math.round((k * (score - 0.5)) / 10) * 10;
 }
 
 export function saveSettings(s: Settings) {

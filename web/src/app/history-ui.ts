@@ -38,6 +38,7 @@ function listHtml(games: StoredGame[]) {
         g.reason ? END_REASON_TEXT[g.reason] : '',
         tc ?? '',
         g.coach ? '教练' : '',
+        g.eloAfter !== undefined && g.elo !== undefined ? `等级分 ${g.eloAfter - g.elo >= 0 ? '+' : ''}${g.eloAfter - g.elo}` : '',
       ].filter(Boolean);
       return (
         `<div class="hg" data-id="${g.id}">` +

@@ -13,6 +13,8 @@ export interface StoredGame {
   reason?: EndReason;
   coach?: boolean;
   elo?: number;
+  /** player's rating after this game when automatic rating adjustment was on */
+  eloAfter?: number;
   model?: string;
   /** time control id, see TIME_CONTROLS */
   tc?: string;

@@ -1,0 +1,74 @@
+README.md
+  s_3ce749e80efed9::t_258a4dce6953fd 68-83
+web/scripts/prepare-native.mjs
+  s_3ce749e80efed9::t_fb41a3496a2cf8 1-31
+web/ios/App/App/Info.plist
+  s_3ce749e80efed9::t_d02302abd7abe6 1-68
+web/src/app/engines-ui.ts
+  s_3ce749e80efed9::t_adf953adf053fe 120
+  s_3ce749e80efed9::t_4512986bfb8686 16,28-32
+web/src/main.ts
+  s_3ce749e80efed9::t_73e1195b58a159 15,2163,2269-2270
+web/ios/App/App.xcodeproj/project.pbxproj
+  s_3ce749e80efed9::t_d02302abd7abe6 1-380
+web/capacitor.config.ts
+  s_3ce749e80efed9::t_960282661c0350 1-21
+web/ios/App/CapApp-SPM/Package.swift
+  s_3ce749e80efed9::t_d02302abd7abe6 1-27
+web/src/native.ts
+  s_3ce749e80efed9::t_58f33c77c9c571 1-4
+web/src/settings.ts
+  s_3ce749e80efed9::t_2e16452f31b69a 1,106
+  s_3ce749e80efed9::t_038ffd77f1db27 2
+web/package.json
+  s_3ce749e80efed9::t_761205a2c856d8 12-13
+  s_3ce749e80efed9::t_1b144d34876d47 16-18,25
+.github/workflows/ios.yml
+  s_3ce749e80efed9::t_70bf3a362b729a 1-51
+web/.gitignore
+  s_3ce749e80efed9::t_761205a2c856d8 5
+web/ios/.gitignore
+  s_3ce749e80efed9::t_35a6ea901e1119 1-13
+web/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+  s_3ce749e80efed9::t_1ec5a0349297b0 1-8
+web/ios/App/App/AppDelegate.swift
+  s_3ce749e80efed9::t_6666fd4b78fffc 1-44
+web/ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json
+  s_3ce749e80efed9::t_cb58c48a0ee876 1-14
+web/ios/App/App/Assets.xcassets/Contents.json
+  s_3ce749e80efed9::t_ca1c3c85c64170 1-6
+web/ios/App/App/Assets.xcassets/Splash.imageset/Contents.json
+  s_3ce749e80efed9::t_613ef10ae4bfc4 1-23
+web/ios/App/App/Base.lproj/LaunchScreen.storyboard
+  s_3ce749e80efed9::t_c0755067439048 1-32
+web/ios/App/App/Base.lproj/Main.storyboard
+  s_3ce749e80efed9::t_7d0f85f53bcc23 1-19
+web/ios/App/App/SceneDelegate.swift
+  s_3ce749e80efed9::t_199c1a27f788ae 1-24
+web/ios/App/CapApp-SPM/.gitignore
+  s_3ce749e80efed9::t_9ba3946e09f33d 1-9
+web/ios/App/CapApp-SPM/README.md
+  s_3ce749e80efed9::t_f03de6ffde7587 1-5
+web/ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift
+  s_3ce749e80efed9::t_f5ecd458b6ad07 1
+web/ios/debug.xcconfig
+  s_3ce749e80efed9::t_5df8a73d12709f 1
+web/package-lock.json
+  s_3ce749e80efed9::t_55d27435c6a57c 12-14,21,29-250,646-655,665-671,710-719,730-755,766-872,889-961,980-989,1018-1047,1108-1117,1142-1156,1179-1196,1243-1249,1269-1354,1622-1631,1658-1703,1723-1748,1811-1869,1896-1910,1940-1963,1987-2021,2056-2083,2113-2192,2203-2212,2229-2303,2341-2356,2390-2427,2589-2604,2617-2703
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a610515456bf0de0d1c563b57f0468d9132b06fc",
+  "prompts": {},
+  "sessions": {
+    "s_3ce749e80efed9": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "a7329e4d-57d0-49ce-8685-412b0d3b4f70",
+        "model": "customendpoint/ufosaga/claude-opus-5.5"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

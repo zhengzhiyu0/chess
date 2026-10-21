@@ -2237,6 +2237,7 @@ function fitStandalone() {
 }
 
 function init() {
+  if (!isNative) document.documentElement.classList.add('web');
   fitStandalone();
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);

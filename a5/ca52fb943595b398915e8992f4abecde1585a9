@@ -1,0 +1,30 @@
+web/src/style.css
+  s_daf6235c71c9cd::t_b4d1d14f5f2973 1370,1430
+  s_daf6235c71c9cd::t_a1ee8a6f30f59c 1301-1303
+  s_daf6235c71c9cd::t_b380fac47a609c 1391-1429
+  s_daf6235c71c9cd::t_36ddd10675ed92 619-621
+web/src/main.ts
+  s_daf6235c71c9cd::t_0510ad6cabb3ea 15,1241-1252,1254-1265,1281,1853-1860,1863-1865
+  s_daf6235c71c9cd::t_deeff7166bdd81 1253
+web/index.html
+  s_daf6235c71c9cd::t_68121b43b46c53 150-156
+web/src/app/moves-ui.ts
+  s_daf6235c71c9cd::t_1623664a2cf787 16-22,37-50
+  s_daf6235c71c9cd::t_e242c7a22815c1 34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a5ca52fb943595b398915e8992f4abecde1585a9",
+  "prompts": {},
+  "sessions": {
+    "s_daf6235c71c9cd": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "320a4f82-3e3e-47d2-b5ec-b847ea933ca4",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

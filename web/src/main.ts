@@ -1730,6 +1730,7 @@ function openSettings() {
     `WebGPU：${'gpu' in navigator ? '✅' : '❌'}　CPU 核心：${navigator.hardwareConcurrency || '?'}<br>` +
     `Stockfish：${sf ? (sf.multiThreaded ? sf.threads + ' 线程' : '单线程') : '未加载'}　Maia：${engines.maia ? engines.maia.model : '未加载'}<br>` +
     `视口：${innerWidth}×${innerHeight}　屏幕：${window.screen.width}×${window.screen.height}${document.documentElement.classList.contains('letterbox') ? '（底部已补偿）' : ''}<br>` +
+    `${layoutDiag()}<br>` +
     `版本：${__APP_VERSION__}`;
   dlg.returnValue = '';
   dlg.onclose = () => {
@@ -2178,6 +2179,25 @@ function registerServiceWorker() {
       if (!document.hidden) reg.update().catch(() => {});
     });
   });
+}
+
+/** 布局诊断：各容器的 top/bottom，用于排查实机上的底部空白 */
+function layoutDiag(): string {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;visibility:hidden;height:100dvh;width:0;padding-bottom:env(safe-area-inset-bottom)';
+  document.body.appendChild(probe);
+  const dvh = probe.offsetHeight;
+  const safeB = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+  probe.remove();
+  const rect = (s: string) => {
+    const b = document.querySelector(s)?.getBoundingClientRect();
+    return b ? `${s} ${Math.round(b.top)}–${Math.round(b.bottom)}` : `${s} ?`;
+  };
+  const vv = window.visualViewport;
+  return (
+    `dvh+safeB：${dvh}　safeB：${safeB}　vv：${vv ? `${Math.round(vv.height)}@${Math.round(vv.offsetTop)}` : '?'}　html：${document.documentElement.clientHeight}<br>` +
+    ['#app', '#game', '.board-col', '.side', '.toolbar'].map(rect).join('　')
+  );
 }
 
 /**

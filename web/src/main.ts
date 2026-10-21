@@ -2202,9 +2202,8 @@ function layoutDiag(): string {
 
 /**
  * iOS 主屏幕 App（standalone）在部分系统版本上，网页视口比屏幕短一截（WebKit bug 313800），
- * 底部那条区域网页无法布局，Home 指示条就落在其中。此时：
- * - 不再额外预留 safe-area-inset-bottom（否则会在视口内再空出一截）；
- * - 把 html 背景设为工具栏颜色，让那条区域与工具栏连成一体。
+ * 但视口外那条区域仍会绘制（html 背景能铺满）。此时把 #app 向下延伸 gap，让工具栏画到屏幕真正的底边，
+ * 并照常预留 safe-area-inset-bottom 给 Home 指示条；html 背景设为工具栏颜色作兜底。
  */
 function fitStandalone() {
   const standalone = (navigator as { standalone?: boolean }).standalone === true || matchMedia('(display-mode: standalone)').matches;
@@ -2221,7 +2220,9 @@ function fitStandalone() {
     const sh = landscape ? Math.min(w, h) : Math.max(w, h);
     const gap = Math.abs(innerWidth - sw) <= 1 ? sh - innerHeight : 0;
     const safeB = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
-    root.classList.toggle('letterbox', gap > 8 && safeB > 0);
+    const letterbox = gap > 8 && safeB > 0;
+    root.classList.toggle('letterbox', letterbox);
+    root.style.setProperty('--lb-gap', `${letterbox ? gap : 0}px`);
   };
   fit();
   addEventListener('resize', fit);

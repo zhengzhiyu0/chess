@@ -18,6 +18,8 @@ export type MotifKind = 'mate' | 'fork' | 'discovered' | 'pin' | 'skewer' | 'tra
 export interface Motif {
   kind: MotifKind;
   text: string;
+  /** 战术针对的对方棋子类型（不含王），用于在引擎变化里验证是否真的得子 */
+  targets?: string[];
 }
 
 const PRIORITY: MotifKind[] = ['mate', 'fork', 'discovered', 'pin', 'skewer', 'trade-up', 'free', 'promote', 'check'];
@@ -71,7 +73,7 @@ export function detectMotifs(fen: string, uci: string, victim = '对方的'): Mo
   );
   if (targets.length >= 2 && !after.isCheckmate()) {
     const ts = targets.map((s) => after.get(s)!.type).sort((a, b) => VALUE[b] - VALUE[a]);
-    out.push({ kind: 'fork', text: `${PIECE_NAME[type]}捉双：同时攻击${victim}${names(ts)}` });
+    out.push({ kind: 'fork', text: `${PIECE_NAME[type]}捉双：同时攻击${victim}${names(ts)}`, targets: ts.filter((t) => t !== 'k') });
   }
 
   // 闪击：走开的棋子让己方另一个子打开了攻击线
@@ -86,6 +88,8 @@ export function detectMotifs(fen: string, uci: string, victim = '对方的'): Mo
       out.push({
         kind: 'discovered',
         text: tt === 'k' ? `闪将：${PIECE_NAME[m.piece]}让开后，${byName}将军` : `闪击：${PIECE_NAME[m.piece]}让开后，${byName}攻击${victim}${PIECE_NAME[tt]}`,
+        // 闪将得的往往是别的子，只验证得子
+        targets: tt === 'k' ? undefined : [tt],
       });
       break;
     }
@@ -105,15 +109,15 @@ export function detectMotifs(fen: string, uci: string, victim = '对方的'): Mo
       const [a, b] = hit.map((s) => after.get(s)!);
       if (a.color !== enemy || b.color !== enemy) continue;
       if (b.type === 'k' && a.type !== 'p') {
-        out.push({ kind: 'pin', text: `牵制${victim}${PIECE_NAME[a.type]}：它身后是王，不能走开` });
+        out.push({ kind: 'pin', text: `牵制${victim}${PIECE_NAME[a.type]}：它身后是王，不能走开`, targets: [a.type] });
         break;
       }
       if (b.type !== 'k' && a.type !== 'p' && VALUE[b.type] > VALUE[a.type] && VALUE[b.type] > VALUE[type]) {
-        out.push({ kind: 'pin', text: `牵制${victim}${PIECE_NAME[a.type]}：它一走开，身后的${PIECE_NAME[b.type]}就会被吃` });
+        out.push({ kind: 'pin', text: `牵制${victim}${PIECE_NAME[a.type]}：它一走开，身后的${PIECE_NAME[b.type]}就会被吃`, targets: [a.type, b.type] });
         break;
       }
       if (VALUE[a.type] > VALUE[b.type] && (a.type === 'k' || a.type === 'q') && (VALUE[b.type] >= 3 || !after.attackers(hit[1], enemy).length)) {
-        out.push({ kind: 'skewer', text: `串击：${victim}${PIECE_NAME[a.type]}被迫躲开后，身后的${PIECE_NAME[b.type]}会被吃` });
+        out.push({ kind: 'skewer', text: `串击：${victim}${PIECE_NAME[a.type]}被迫躲开后，身后的${PIECE_NAME[b.type]}会被吃`, targets: a.type === 'k' ? [b.type] : [a.type, b.type] });
         break;
       }
     }
@@ -174,6 +178,60 @@ export function pvMaterialSwing(fen: string, pv: string[], maxPly = 8): number {
 }
 
 const TACTICAL: MotifKind[] = ['mate', 'fork', 'discovered', 'pin', 'skewer', 'trade-up', 'free'];
+/** 只靠局面本身就能确定、不需要验证的事实 */
+const FACTUAL: MotifKind[] = ['mate', 'promote', 'check'];
+
+/** 沿着变化走，统计走棋方（`fen` 中轮到的一方）吃掉的棋子类型。 */
+function capturesBy(fen: string, line: string[], maxPly = 8): string[] {
+  const c = new Chess(fen);
+  const me = c.turn();
+  const out: string[] = [];
+  for (const u of line.slice(0, maxPly)) {
+    try {
+      const m = c.move(toMove(u));
+      if (m.color === me && m.captured) out.push(m.captured);
+    } catch {
+      break;
+    }
+  }
+  return out;
+}
+
+/**
+ * 只保留引擎变化里真正兑现了的战术：`line` 以要讲解的着法开头，后面是引擎主变。
+ * 得子类战术要求走棋方最终净得子力，并且吃到了战术针对的棋子；
+ * 变化导向将杀（`mates`）时也算兑现。验证不了的就不说，宁可少说也不说错。
+ */
+export function confirmedMotifs(fen: string, line: string[], victim = '对方的', mates = false): Motif[] {
+  if (!line.length) return [];
+  const all = detectMotifs(fen, line[0], victim);
+  const gain = pvMaterialSwing(fen, line);
+  const caps = capturesBy(fen, line);
+  return all.filter((x) => {
+    if (FACTUAL.includes(x.kind)) return true;
+    if (line.length < 2 && x.kind !== 'free' && x.kind !== 'trade-up') return false;
+    if (mates && x.kind !== 'free' && x.kind !== 'trade-up') return true;
+    if (gain < 1) return false;
+    return !x.targets?.length || x.targets.some((t) => caps.includes(t));
+  });
+}
+
+/** 对方在变化里是否吃掉了 `sq` 上的那个子（在它离开 `sq` 之前）。 */
+function capturedOn(fen: string, line: string[], sq: string, maxPly = 6): boolean {
+  const c = new Chess(fen);
+  const opp = c.turn();
+  for (const u of line.slice(0, maxPly)) {
+    let m;
+    try {
+      m = c.move(toMove(u));
+    } catch {
+      return false;
+    }
+    if (m.color === opp && m.to === sq && m.captured) return true;
+    if (m.color !== opp && m.from === sq) return false;
+  }
+  return false;
+}
 
 export interface MoveInsightInput {
   /** 走棋前局面 */
@@ -227,13 +285,15 @@ export function explainMove(o: MoveInsightInput): MoveInsight {
   const allowsMate = rl?.mate !== undefined && rl.mate > 0;
 
   if (!o.bad && !allowsMate) {
-    const motif = detectMotifs(o.fen, o.uci, `${opp}的`).find((x) => TACTICAL.includes(x.kind));
+    const line = [o.uci, ...(rl?.pv ?? [])];
+    const oppMated = rl?.mate !== undefined && rl.mate < 0;
+    const motif = confirmedMotifs(o.fen, line, `${opp}的`, oppMated).find((x) => TACTICAL.includes(x.kind));
     if (motif) {
       res.praise = motif.kind === 'mate' ? '漂亮，直接将杀！' : motif.kind === 'free' || motif.kind === 'trade-up' ? `好棋！${motif.text}` : `妙着！${motif.text}`;
       return res;
     }
-    if (o.uci === o.best && o.replyLine) {
-      const gain = pvMaterialSwing(o.fen, [o.uci, ...o.replyLine.pv]);
+    if (o.uci === o.best && rl) {
+      const gain = pvMaterialSwing(o.fen, line);
       if (gain >= 2) res.praise = `好棋！照这样下去${me}能赢得${materialWords(gain)}`;
     }
     return res;
@@ -242,10 +302,10 @@ export function explainMove(o: MoveInsightInput): MoveInsight {
   if (allowsMate) {
     res.problem.push(`${opp}有 ${rl!.mate} 步杀${replySan ? `，从 <b>${replySan}</b> 开始` : ''}`);
   } else if (reply && replySan) {
-    const motif = detectMotifs(afterFen, reply, `${me}的`)[0];
+    const motif = confirmedMotifs(afterFen, rl!.pv, `${me}的`).find((x) => x.kind !== 'check');
     res.problem.push(motif ? `${opp}可以走 <b>${replySan}</b>：${motif.text}` : `${opp}的最佳应对是 <b>${replySan}</b>`);
     const to = o.uci.slice(2, 4);
-    if (reply.slice(2, 4) !== to && hangingSquares(afterFen, m.color as Color).includes(to as Square)) {
+    if (reply.slice(2, 4) !== to && hangingSquares(afterFen, m.color as Color).includes(to as Square) && capturedOn(afterFen, rl!.pv, to)) {
       res.problem.push(`${me}刚走的${PIECE_NAME[m.promotion ?? m.piece]}在 ${to} 没有足够的保护`);
     }
     const lost = pvMaterialSwing(afterFen, rl!.pv);
@@ -256,8 +316,9 @@ export function explainMove(o: MoveInsightInput): MoveInsight {
     const bl = o.bestLine;
     if (bl?.mate !== undefined && bl.mate > 0) res.better.push(`${bl.mate} 步杀`);
     else {
-      for (const x of detectMotifs(o.fen, o.best, `${opp}的`).slice(0, 2)) res.better.push(x.text);
-      const gain = bl ? pvMaterialSwing(o.fen, bl.pv) : 0;
+      const line = bl?.pv[0] === o.best ? bl.pv : [o.best];
+      for (const x of confirmedMotifs(o.fen, line, `${opp}的`).slice(0, 2)) res.better.push(x.text);
+      const gain = pvMaterialSwing(o.fen, line);
       if (gain >= 1) res.better.push(`能赢得${materialWords(gain)}`);
     }
   }

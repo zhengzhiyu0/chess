@@ -10,7 +10,7 @@ import { MODELS, type MaiaResult } from './maia/maia';
 import { sampleMove } from './maia/sample';
 import type { Stockfish, SfLine } from './engine/stockfish';
 import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
-import { PIECE_NAME, detectMotifs, explainMove, hangingSquares as hangingOf, plainEval, type MoveInsight, type Sides } from './coach/explain';
+import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, plainEval, type MoveInsight, type Sides } from './coach/explain';
 import { loadSettings, saveSettings, type Settings } from './settings';
 import { GameTree, mainChild, type GNode } from './game/tree';
 import { END_REASON_TEXT, START_FEN, moveNumberOf, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
@@ -1190,7 +1190,7 @@ async function computeThreat(s: Stockfish, n: Node, signal: AbortSignal) {
   }
   const mv = new Chess(nf).move(toMove(r.bestmove));
   let text = `对手威胁 <b>${mv.san}</b>`;
-  const motif = detectMotifs(nf, r.bestmove, '你的')[0];
+  const motif = confirmedMotifs(nf, line.pv, '你的').find((x) => x.kind !== 'check');
   if (line.mate !== undefined && line.mate > 0) text += `，${line.mate} 步杀`;
   else if (motif) text += `：${motif.text}`;
   else if (mv.captured) text += `，吃掉你的${PIECE_NAME[mv.captured]}`;

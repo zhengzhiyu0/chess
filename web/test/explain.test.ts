@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectMotifs, explainMove, hangingSquares, materialWords, plainEval, pvMaterialSwing } from '../src/coach/explain';
+import { confirmedMotifs, detectMotifs, explainMove, hangingSquares, materialWords, plainEval, pvMaterialSwing } from '../src/coach/explain';
 
 const S = { me: '你', opp: '对手' };
 const kinds = (fen: string, uci: string) => detectMotifs(fen, uci).map((m) => m.kind);
@@ -51,6 +51,18 @@ describe('material and words', () => {
   });
 });
 
+describe('confirmedMotifs', () => {
+  it('keeps a pin only when the line wins the pinned piece', () => {
+    const fen = '4k3/8/2n5/8/8/8/8/4KB2 w - - 0 1';
+    expect(confirmedMotifs(fen, ['f1b5', 'e8d7', 'b5c6']).map((m) => m.kind)).toContain('pin');
+    expect(confirmedMotifs(fen, ['f1b5', 'e8d7'])).toEqual([]);
+  });
+
+  it('keeps free captures without a follow-up but checks material', () => {
+    expect(confirmedMotifs('4k3/8/8/3n4/8/8/8/3RK3 w - - 0 1', ['d1d5']).map((m) => m.kind)).toContain('free');
+  });
+});
+
 describe('explainMove', () => {
   it('explains a bad move and the better one', () => {
     const r = explainMove({
@@ -81,7 +93,41 @@ describe('explainMove', () => {
   });
 
   it('praises a good fork', () => {
-    const r = explainMove({ fen: 'r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1', uci: 'b5c7', best: 'b5c7', bad: false, sides: S });
+    const r = explainMove({
+      fen: 'r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1',
+      uci: 'b5c7',
+      best: 'b5c7',
+      replyLine: { multipv: 1, depth: 10, cp: -500, pv: ['e8d7', 'c7a8'] },
+      bad: false,
+      sides: S,
+    });
     expect(r.praise).toContain('捉双');
+  });
+
+  it('does not praise a fork the engine line refutes', () => {
+    // 马捉双王车，但黑象直接吃掉马
+    const r = explainMove({
+      fen: 'r2bk3/8/8/1N6/8/8/8/4K3 w - - 0 1',
+      uci: 'b5c7',
+      best: 'b5c7',
+      replyLine: { multipv: 1, depth: 10, cp: 300, pv: ['d8c7'] },
+      bad: false,
+      sides: S,
+    });
+    expect(r.praise).toBeNull();
+  });
+
+  it('does not claim a fork when the forked pieces escape', () => {
+    // 黑马将军并捉双王车，但引擎变化里车没有被吃
+    const r = explainMove({
+      fen: '4k3/8/8/8/3n4/8/7P/R3K3 w - - 0 1',
+      uci: 'h2h3',
+      best: 'e1d2',
+      replyLine: { multipv: 1, depth: 10, cp: 0, pv: ['d4c2', 'e1d2'] },
+      bad: true,
+      sides: S,
+    });
+    expect(r.problem[0]).not.toContain('捉双');
+    expect(r.problem[0]).toContain('Nc2+');
   });
 });

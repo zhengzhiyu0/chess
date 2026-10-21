@@ -1,0 +1,73 @@
+web/src/main.ts
+  s_f361b3c8d20bfd::t_77d7e7b822c5d2 267,275-283,286-290,292-294,296,302-306,317
+  s_f361b3c8d20bfd::t_544b7178ebb89f 720-722,724-725
+  s_f361b3c8d20bfd::t_75bb50b85e31ed 1250-1253
+  s_f361b3c8d20bfd::t_9e1088685b4336 260,262-263
+  s_f361b3c8d20bfd::t_3605e57f263a2b 693-696,698-699,704-705,734,893,1386,1422
+  s_f361b3c8d20bfd::t_acac17b22cf943 697
+  s_f361b3c8d20bfd::t_89df72b2fde65f 1794
+  s_e991c37ee621d1::t_9250897f3ec596 1906-1907
+  s_e991c37ee621d1::t_8705e9ec21bc68 1905,1924
+  s_f1cb897732d5ac::t_2cfd65bf545999 1744,1844-1849,1853-1856,1885-1887
+  s_f361b3c8d20bfd::t_a404c5dee66a92 863,870,891
+  s_f361b3c8d20bfd::t_b114d9e5ab951a 772
+  s_f361b3c8d20bfd::t_8a2c32baedae3a 1516,1532
+  s_f361b3c8d20bfd::t_418baf96e825f9 25,264-265,1120-1123
+  s_f361b3c8d20bfd::t_8ea47bc7b945c2 817,819,836,848-849,851-853
+  s_f361b3c8d20bfd::t_7cab77483c5d0c 1248,1568
+web/index.html
+  s_f1cb897732d5ac::t_0a0720d087eedd 286-291
+  s_f361b3c8d20bfd::t_130c8e4aeb9bff 81,124-125
+  s_f361b3c8d20bfd::t_dfcd20f094df8a 221
+  s_f361b3c8d20bfd::t_56f0ca76114d22 96-100,292-293
+web/src/settings.ts
+  s_f361b3c8d20bfd::t_40df481223215d 45-46,84
+web/src/app/judge-icon.ts
+  s_f361b3c8d20bfd::t_3aba51fbca6320 1-29,31,33-35
+  s_f361b3c8d20bfd::t_d8cbbaf7a10d3f 30,32
+  s_f361b3c8d20bfd::t_7203b1069f05ca 36-45
+web/src/app/moves-ui.ts
+  s_f361b3c8d20bfd::t_adb529b24c83a4 8-9,26,29
+web/src/style.css
+  s_f361b3c8d20bfd::t_c1c8611f105214 1272-1273,1275-1277
+  s_f361b3c8d20bfd::t_af5864a0725e3f 767-771,774-776,1267-1271,1274,1278-1284,1287
+  s_e991c37ee621d1::t_9250897f3ec596 21,56-59,581,599,779,1298-1303
+  s_f361b3c8d20bfd::t_aae968429ff6be 1266
+  s_f361b3c8d20bfd::t_e3c2a56d557867 573-574,577-580,582-598,602,772-773,777-778
+  s_f361b3c8d20bfd::t_eb605269633e66 1416-1444,1447-1450
+  s_f1cb897732d5ac::t_ebe5f59d96b558 1462-1467
+README.md
+  s_f361b3c8d20bfd::t_7114e723e41ca2 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "380379d9d6417c1b34c0543c680a71894a974968",
+  "prompts": {},
+  "sessions": {
+    "s_e991c37ee621d1": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "f6c14dc0-afa5-4949-8221-b2406cb8e541",
+        "model": "customendpoint/ufosaga/claude-opus-5.5"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_f1cb897732d5ac": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "b6f97639-75ad-41cb-8e5b-53831fd1973c",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_f361b3c8d20bfd": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6268712a-73e4-4e90-98b1-daeb8dbfcfcc",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

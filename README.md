@@ -77,9 +77,14 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 说明：
 
 - 免费 Apple ID 签名的 App **7 天后过期**，需要重新签名（棋局和设置保留）。AltStore 可以在同一 Wi-Fi 下自动续签。
-- App 预装 Stockfish 19 **满血版**（完整 NNUE）和**轻量版**（小网络）两个单线程版本，以及 Maia 5M/23M 模型，无需下载，完全离线可用；App 内没有下载按钮和离线包管理，在「设置 → Stockfish 版本」中切换满血/轻量。WKWebView 不支持 `SharedArrayBuffer`，因此没有多线程版；79M 模型内存占用过大，未打包。
+- App 内的引擎**全部原生实现，不使用 WebAssembly**（[native-plugins/maia-native](web/native-plugins/maia-native)）：
+  - **Stockfish 19**：C++ 源码直接编进 App，原生多线程 + ARM NEON/dotprod。**满血版**（完整 NNUE）和**轻量版**（小网络）都已预装，在「设置 → Stockfish 版本」中切换。默认线程数 = CPU 核心数 − 1。
+  - **Maia-3 5M / 23M / 79M**：ONNX Runtime iOS 原生推理，优先用 CoreML（神经网络引擎 / GPU），不支持时回退到 CPU。首次加载某个模型时 CoreML 要编译一次，之后会缓存。
+  - 全部预装，无需下载，完全离线可用；App 内没有下载按钮和离线包管理。「设置 → 环境信息」显示当前引擎的实际运行方式。
 - App 的对弈界面与手机网页版一致：菜单在顶部，提示/悔棋/教练在“我”的信息栏里。点自己的头像（或「设置 → 我的头像」）可换成预设头像或相册照片。
-- 本地准备 iOS 工程：`cd web && npm run build:native`，依次执行构建、生成 `dist-native/`（[prepare-native.mjs](web/scripts/prepare-native.mjs)）、`cap sync ios`。Xcode 工程位于 `web/ios/`。
+- 本地准备 iOS 工程：`cd web && npm run build:native`，依次执行构建、生成 `dist-native/`（[prepare-native.mjs](web/scripts/prepare-native.mjs)：去掉所有 wasm，下载并校验 NNUE 网络，拼接 ONNX 模型）、`cap sync ios`。Xcode 工程位于 `web/ios/`。
+- 原生 Stockfish 可以脱离 Xcode 单独测试：`sh web/native-plugins/maia-native/stockfish/test/build_smoke.sh web/.cache/nnue`（CI 也会在 arm64 macOS 上跑这一步）。
+- Stockfish 以 GPL-3.0 发布，源码见 [stockfish/](web/native-plugins/maia-native/stockfish)。
 - 私有仓库使用 macOS runner 会按 10 倍分钟数计费，公开仓库免费。
 
 ## 许可证

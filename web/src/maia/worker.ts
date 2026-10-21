@@ -1,5 +1,6 @@
 import * as ort from 'onnxruntime-web';
 import { buildTokens, FEAT, NUM_MOVES, uciToIndex } from './encode';
+import { wdlFromValue } from './wdl';
 
 export type WorkerIn =
   | { type: 'load'; reqId: number; modelBase: string; backend: 'wasm' | 'webgpu'; numThreads: number; lean: boolean }
@@ -104,11 +105,7 @@ if (!self.name?.startsWith('em-pthread')) ctx.onmessage = async (e) => {
       const all = out.logits_move.data as Float32Array;
       const v = out.logits_value.data as Float32Array;
       const logits = Float32Array.from(msg.indices, (i) => all[i]);
-      // value head order is [loss, draw, win] for the side to move
-      const m = Math.max(v[0], v[1], v[2]);
-      const ex = [v[0], v[1], v[2]].map((x) => Math.exp(x - m));
-      const s = ex[0] + ex[1] + ex[2];
-      const wdl: [number, number, number] = [ex[2] / s, ex[1] / s, ex[0] / s];
+      const wdl = wdlFromValue(v);
       ctx.postMessage({ type: 'result', reqId: msg.reqId, logits, wdl, ms: performance.now() - t0 }, [logits.buffer]);
     }
   } catch (err) {

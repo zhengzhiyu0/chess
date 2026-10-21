@@ -1,0 +1,2 @@
+﻿nmrugg/stockfish.js v19.0.1 (commit 0d5dd7944f88c817c07a26bc4fb1905d5f9c46d6), src/ minus emscripten/universal/glue/main.cpp/Makefile
+Patched: shm.h honours SF_NO_SHM (iOS sandbox has no POSIX shm).

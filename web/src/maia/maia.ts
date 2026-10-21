@@ -1,7 +1,9 @@
 import type { Chess } from 'chess.js';
-import { legalMoveIndices } from './encode';
+import { buildTokens, legalMoveIndices, uciToIndex } from './encode';
 import { softmaxMoves, type ScoredMove } from './sample';
 import type { WorkerIn, WorkerOut } from './worker';
+import { wdlFromValue } from './wdl';
+import { isNative } from '../native';
 
 export type ModelId = '5m' | '23m' | '79m';
 
@@ -21,14 +23,69 @@ export interface MaiaResult {
 type Pending = { resolve: (v: WorkerOut) => void; reject: (e: Error) => void };
 type Req = WorkerIn extends infer T ? (T extends { reqId: number } ? Omit<T, 'reqId'> : never) : never;
 
+export type MaiaBackend = 'wasm' | 'webgpu' | 'native';
+
+const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const START_LEGAL = ['a2a3', 'a2a4', 'b2b3', 'b2b4', 'c2c3', 'c2c4', 'd2d3', 'd2d4', 'e2e3', 'e2e4', 'f2f3', 'f2f4', 'g2g3', 'g2g4', 'h2h3', 'h2h4', 'b1a3', 'b1c3', 'g1f3', 'g1h3'];
+const START_TOP = ['e2e4', 'd2d4', 'c2c4', 'g1f3'];
+
+function toBase64(f: Float32Array): string {
+  const bytes = new Uint8Array(f.buffer, f.byteOffset, f.byteLength);
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+/** The app's native Maia (ONNX Runtime + CoreML, see native-plugins/maia-native). */
+class NativeMaia {
+  private dead = false;
+  provider = '';
+  private constructor(readonly model: ModelId) {}
+
+  get alive() {
+    return !this.dead;
+  }
+
+  static async create(model: ModelId): Promise<NativeMaia> {
+    const { MaiaNative } = await import('maia-native');
+    const m = new NativeMaia(model);
+    const res = await MaiaNative.load({
+      model,
+      probeTokens: toBase64(buildTokens([START])),
+      probeLegal: START_LEGAL.map(uciToIndex),
+      probeTop: START_TOP.map(uciToIndex),
+    });
+    m.provider = res.provider;
+    return m;
+  }
+
+  async evaluate(chess: Chess, fens: string[], selfElo: number, oppoElo: number): Promise<MaiaResult> {
+    if (this.dead) throw new Error('Maia 已卸载');
+    const legal = legalMoveIndices(chess);
+    if (legal.length === 0) return { moves: [], wdl: [0, 1, 0], ms: 0 };
+    const { MaiaNative } = await import('maia-native');
+    const res = await MaiaNative.eval({ tokens: toBase64(buildTokens(fens)), indices: legal.map((l) => l.index), selfElo, oppoElo });
+    const moves = softmaxMoves(legal.map((l, i) => ({ uci: l.uci, logit: res.logits[i] })));
+    return { moves, wdl: wdlFromValue(res.value), ms: res.ms };
+  }
+
+  dispose() {
+    if (this.dead) return;
+    this.dead = true;
+    void import('maia-native').then(({ MaiaNative }) => MaiaNative.unload());
+  }
+}
+
 export class Maia {
-  private worker: Worker;
+  private worker!: Worker;
+  private native: NativeMaia | null = null;
   private pending = new Map<number, Pending>();
   private nextId = 1;
   private dead = false;
   onProgress: ((loaded: number, total: number) => void) | null = null;
 
-  private constructor(readonly model: ModelId, readonly backend: 'wasm' | 'webgpu') {
+  private constructor(readonly model: ModelId, readonly backend: MaiaBackend) {
+    if (backend === 'native') return;
     this.worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = (e: MessageEvent<WorkerOut>) => {
       const msg = e.data;
@@ -48,12 +105,18 @@ export class Maia {
 
   /** false once disposed or crashed; callers should create a new instance */
   get alive() {
-    return !this.dead;
+    return !this.dead && (this.native?.alive ?? true);
+  }
+
+  /** where inference actually runs: 'coreml' / 'cpu' for the native app, else the requested backend */
+  get provider(): string {
+    return this.native?.provider ?? this.backend;
   }
 
   private fail(message: string) {
     this.dead = true;
-    this.worker.terminate();
+    if (this.native) this.native.dispose();
+    else this.worker.terminate();
     for (const p of this.pending.values()) p.reject(new Error(message));
     this.pending.clear();
   }
@@ -75,6 +138,7 @@ export class Maia {
     });
   }
 
+  /** In the iOS app `backend` is ignored: the native engine is always used. */
   static async create(
     model: ModelId,
     backend: 'wasm' | 'webgpu',
@@ -82,6 +146,11 @@ export class Maia {
     lean = false,
     threads?: number,
   ): Promise<Maia> {
+    if (isNative) {
+      const m = new Maia(model, 'native');
+      m.native = await NativeMaia.create(model);
+      return m;
+    }
     const m = new Maia(model, backend);
     m.onProgress = onProgress ?? null;
     const numThreads = threads ?? (self.crossOriginIsolated ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1)) : 1);
@@ -102,6 +171,10 @@ export class Maia {
 
   /** `fens`: all positions of the game so far (oldest first) ending with `chess`'s position. */
   async evaluate(chess: Chess, fens: string[], selfElo: number, oppoElo: number): Promise<MaiaResult> {
+    if (this.native) {
+      if (this.dead) throw new Error('Maia 已卸载');
+      return this.native.evaluate(chess, fens, selfElo, oppoElo);
+    }
     const legal = legalMoveIndices(chess);
     if (legal.length === 0) return { moves: [], wdl: [0, 1, 0], ms: 0 };
     const res = await this.call({ type: 'eval', fens, indices: legal.map((l) => l.index), selfElo, oppoElo }, 20000);

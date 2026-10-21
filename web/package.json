@@ -18,6 +18,7 @@
     "@capacitor/status-bar": "^8.0.4",
     "@lichess-org/chessground": "10.4.2",
     "chess.js": "1.4.0",
+    "maia-native": "file:native-plugins/maia-native",
     "onnxruntime-web": "1.30.0",
     "stockfish": "19.0.1"
   },

@@ -2,6 +2,7 @@ import { Maia, MODELS } from '../maia/maia';
 import { Stockfish } from '../engine/stockfish';
 import type { Settings } from '../settings';
 import { setStatus } from './dom';
+import { isNative } from '../native';
 
 /** Lazily loaded, cached engine instances; honours the low-memory setting. */
 export class Engines {
@@ -25,7 +26,8 @@ export class Engines {
    */
   private exclusive() {
     const st = this.settings();
-    return st.lowMemory && !st.sfLite && !this.needBoth();
+    // native engines live outside the WebView's memory limit; keep both resident
+    return !isNative && st.lowMemory && !st.sfLite && !this.needBoth();
   }
 
   unloadMaia() {
@@ -57,11 +59,12 @@ export class Engines {
     setStatus(`加载 ${MODELS[model].label}…`);
     this.maiaLoading = Maia.create(model, st.backend, progress, lean)
       .catch(async (err) => {
-        if (st.backend !== 'webgpu') throw err;
+        if (isNative || st.backend !== 'webgpu') throw err;
         console.warn('WebGPU 失败，回退 WASM', err);
         return Maia.create(model, 'wasm', progress, lean);
       })
       .catch(async (err) => {
+        if (isNative) throw err;
         // iOS: ORT's wasm init fails ("no available backend found") when memory is tight,
         // typically with multi-threaded Stockfish resident; free it and retry single-threaded
         console.warn('Maia 加载失败，释放 Stockfish 后以单线程重试', err);
@@ -71,7 +74,7 @@ export class Engines {
       })
       .then((m) => {
         this.maia = m;
-        setStatus(`${MODELS[model].label} 就绪`);
+        setStatus(`${MODELS[model].label} 就绪${isNative ? `（原生 · ${m.provider === 'coreml' ? 'CoreML' : 'CPU'}）` : ''}`);
         return m;
       })
       .catch((err) => {
@@ -96,7 +99,7 @@ export class Engines {
     this.sfLoading = Stockfish.create(st.sfThreads, st.sfHash, st.sfLite)
       .then((s) => {
         this.sf = s;
-        setStatus(`Stockfish 19${s.lite ? ' 轻量版' : ''} 就绪（${s.multiThreaded ? s.threads + ' 线程' : '单线程'}）`);
+        setStatus(`Stockfish 19${s.lite ? ' 轻量版' : ' 满血版'} 就绪（${s.native ? '原生 · ' : ''}${s.multiThreaded ? s.threads + ' 线程' : '单线程'}）`);
         return s;
       })
       .catch((err) => {

@@ -1,0 +1,14 @@
+{
+  "name": "maia-native",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Native iOS engines for Maia Coach: Stockfish 19 (C++, NEON, multi-threaded) and Maia-3 (ONNX Runtime + CoreML)",
+  "license": "GPL-3.0-or-later",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  }
+}

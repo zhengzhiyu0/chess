@@ -1,0 +1,65 @@
+// swift-tools-version: 5.9
+import PackageDescription
+
+// Native engines for the iOS app: Stockfish 19 (full + lite NNUE, C++ with pthreads/NEON) and
+// Maia-3 via ONNX Runtime (CoreML EP). Engine data files (nn-*.nnue, maia3-*.onnx) are not part of
+// this package; scripts/prepare-native.mjs puts them in dist-native/native/, which Capacitor copies to the bundle's public/native/.
+
+let sfCommon: [CXXSetting] = [
+    .headerSearchPath("../src"),
+    .define("NDEBUG"),
+    .define("IS_64BIT"),
+    .define("USE_POPCNT"),
+    .define("USE_NEON", to: "8"),
+    .define("USE_NEON_DOTPROD"),
+    .define("NNUE_EMBEDDING_OFF"),
+    .define("SF_EMBEDDED"),
+    .define("SF_NO_SHM"),
+    // A13 is the oldest target device (dotprod); newer chips run this code unchanged
+    .unsafeFlags(["-O3", "-mcpu=apple-a13", "-fno-exceptions", "-w"]),
+]
+
+let package = Package(
+    name: "MaiaNative",
+    platforms: [.iOS(.v15)],
+    products: [
+        .library(name: "MaiaNative", targets: ["MaiaNativePlugin"])
+    ],
+    dependencies: [
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0"),
+        .package(url: "https://github.com/microsoft/onnxruntime-swift-package-manager.git", exact: "1.24.2"),
+    ],
+    targets: [
+        .target(
+            name: "StockfishFull",
+            path: "stockfish/full",
+            publicHeadersPath: "include",
+            cxxSettings: sfCommon + [
+                .define("Stockfish", to: "StockfishFull"),
+                .define("SF_C_PREFIX", to: "sf_full"),
+            ]
+        ),
+        .target(
+            name: "StockfishLite",
+            path: "stockfish/lite",
+            publicHeadersPath: "include",
+            cxxSettings: sfCommon + [
+                .define("Stockfish", to: "StockfishLite"),
+                .define("SF_C_PREFIX", to: "sf_lite"),
+                .define("USE_LITE_NET"),
+            ]
+        ),
+        .target(
+            name: "MaiaNativePlugin",
+            dependencies: [
+                .product(name: "Capacitor", package: "capacitor-swift-pm"),
+                .product(name: "Cordova", package: "capacitor-swift-pm"),
+                .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
+                "StockfishFull",
+                "StockfishLite",
+            ],
+            path: "ios/Sources/MaiaNativePlugin"
+        ),
+    ],
+    cxxLanguageStandard: .cxx17
+)

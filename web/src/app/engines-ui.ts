@@ -27,8 +27,8 @@ async function renderPackages(ctx: EnginesCtx) {
   const list = $('pkg-list');
   if (isNative) {
     list.innerHTML =
-      '<p class="muted">App 已预装全部引擎，无需下载：</p>' +
-      '<ul class="muted"><li>Stockfish 19 满血版（完整 NNUE）</li><li>Stockfish 19 轻量版（小网络）</li><li>Maia-3 5M / 23M</li></ul>' +
+      '<p class="muted">App 已预装全部原生引擎，无需下载：</p>' +
+      '<ul class="muted"><li>Stockfish 19 满血版（完整 NNUE，C++ 原生多线程 + NEON）</li><li>Stockfish 19 轻量版（小网络，原生）</li><li>Maia-3 5M / 23M / 79M（ONNX Runtime 原生，CoreML 加速）</li></ul>' +
       '<p class="muted">在「设置 → Stockfish 版本」中切换满血/轻量。</p>';
     return;
   }

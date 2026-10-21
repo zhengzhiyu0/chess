@@ -54,6 +54,8 @@ export interface Settings {
   reviewOpponent: boolean;
   /** my avatar, see app/avatar.ts ('' = default) */
   avatar: string;
+  /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
+  engineGen?: number;
 }
 
 const KEY = 'maia-coach.settings';
@@ -62,8 +64,10 @@ export const isIOS =
   /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 export function defaultSettings(): Settings {
+  // the iOS app runs native engines with real threads and no WebView memory cap
+  const cores = navigator.hardwareConcurrency || 2;
   return {
-    model: isIOS ? '5m' : '23m',
+    model: isNative ? '23m' : isIOS ? '5m' : '23m',
     elo: 1500,
     autoElo: true,
     ratedGames: 0,
@@ -73,11 +77,11 @@ export function defaultSettings(): Settings {
     backend: 'wasm',
     thinkDelay: true,
     sfMovetime: 1000,
-    sfThreads: Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1)),
-    sfHash: isIOS ? 32 : 128,
-    sfLite: isIOS,
-    lowMemory: isIOS,
-    warmup: !isIOS,
+    sfThreads: isNative ? Math.max(1, Math.min(6, cores - 1)) : Math.max(1, Math.min(4, cores - 1)),
+    sfHash: isNative ? 128 : isIOS ? 32 : 128,
+    sfLite: isNative ? false : isIOS,
+    lowMemory: isIOS && !isNative,
+    warmup: isNative || !isIOS,
     autoOffline: true,
     gameType: 'coach',
     coachLevel: 'mistake',
@@ -106,7 +110,11 @@ export function loadSettings(): Settings {
     if (saved.elo === undefined && typeof saved.maiaElo === 'number') saved.elo = saved.maiaElo;
     delete saved.maiaElo;
     delete saved.myElo;
-    if (isNative && saved.model === '79m') saved.model = '23m';
+    // settings from the WebView-engine app builds (single thread, tiny hash) would cripple the native engines
+    if (isNative && saved.engineGen !== 2) {
+      const d = defaultSettings();
+      Object.assign(saved, { sfThreads: d.sfThreads, sfHash: d.sfHash, lowMemory: d.lowMemory, warmup: d.warmup, engineGen: 2 });
+    }
     return { ...defaultSettings(), ...saved };
   } catch {
     return defaultSettings();

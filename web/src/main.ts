@@ -1775,10 +1775,14 @@ function openSettings() {
   $('set-avatar').innerHTML = avatarHtml(settings.avatar);
   $('btn-set-avatar').onclick = openAvatar;
   const sf = engines.sf;
+  const maia = engines.maia;
   $('env-info').innerHTML =
-    `跨源隔离：${self.crossOriginIsolated ? '✅（多线程可用）' : '❌（单线程）'}<br>` +
-    `WebGPU：${'gpu' in navigator ? '✅' : '❌'}　CPU 核心：${navigator.hardwareConcurrency || '?'}<br>` +
-    `Stockfish：${sf ? (sf.multiThreaded ? sf.threads + ' 线程' : '单线程') : '未加载'}　Maia：${engines.maia ? engines.maia.model : '未加载'}<br>` +
+    (isNative
+      ? `引擎：原生（Stockfish C++ / NEON 多线程，Maia ONNX Runtime）　CPU 核心：${navigator.hardwareConcurrency || '?'}<br>`
+      : `跨源隔离：${self.crossOriginIsolated ? '✅（多线程可用）' : '❌（单线程）'}<br>` +
+        `WebGPU：${'gpu' in navigator ? '✅' : '❌'}　CPU 核心：${navigator.hardwareConcurrency || '?'}<br>`) +
+    `Stockfish：${sf ? `${sf.lite ? '轻量' : '满血'} · ${sf.multiThreaded ? sf.threads + ' 线程' : '单线程'}` : '未加载'}　` +
+    `Maia：${maia ? `${maia.model}${isNative ? ' · ' + (maia.provider === 'coreml' ? 'CoreML' : 'CPU') : ''}` : '未加载'}<br>` +
     `视口：${innerWidth}×${innerHeight}　屏幕：${window.screen.width}×${window.screen.height}${document.documentElement.classList.contains('letterbox') ? '（底部已补偿）' : ''}<br>` +
     `${layoutDiag()}<br>` +
     `版本：${__APP_VERSION__}`;
@@ -2322,9 +2326,8 @@ function init() {
     else if (screen === 'home' && location.hash === '#game') showScreen('game', false);
   });
   if (location.hash === '#game') showScreen('game', false);
-  setStatus(self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
+  setStatus(isNative ? '就绪（原生引擎）' : self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
 
-  if (isNative) document.querySelector<HTMLOptionElement>('#model option[value="79m"]')?.remove();
   const willReload = import.meta.env.PROD && !isNative && 'serviceWorker' in navigator && !self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded');
   const idle = (cb: () => void) => ('requestIdleCallback' in self ? requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));
   if (!willReload) {

@@ -19,8 +19,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - uses: actions/cache@v4
+        with:
+          path: web/.cache/nnue
+          key: nnue-${{ hashFiles('web/native-plugins/maia-native/stockfish/src/evaluate.h') }}
       - run: npm ci
       - run: npm run build:native
+
+      # the native Stockfish (full + lite in one binary, NEON) must answer UCI, search and stop
+      - name: Native Stockfish smoke test (arm64 macOS)
+        run: sh native-plugins/maia-native/stockfish/test/build_smoke.sh .cache/nnue
 
       - name: Xcode build (no signing)
         run: |

@@ -1,0 +1,27 @@
+web/src/main.ts
+  s_2694b6c38eb2b3::t_95312bc75a4cc8 13,1193
+web/src/coach/explain.ts
+  s_2694b6c38eb2b3::t_a4d77d78b1b86d 21-22
+  s_2694b6c38eb2b3::t_7a83ce51a48a04 288-290,295-296,305,308,319-321
+  s_2694b6c38eb2b3::t_7c08134542aeb3 181-234
+  s_2694b6c38eb2b3::t_b1531bbffa6641 76,91-92,112,116,120
+web/test/explain.test.ts
+  s_2694b6c38eb2b3::t_46f757e70ace77 2,54-65,108,110,121,126
+  s_2694b6c38eb2b3::t_800def303a7143 96-103,106-107,109,111-120,122-125,127-132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5cd6c259734d264b52f5f2b5ca195aa58ce0ede4",
+  "prompts": {},
+  "sessions": {
+    "s_2694b6c38eb2b3": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "191c71be-e6ac-40ef-9b52-745fc52c7b26",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

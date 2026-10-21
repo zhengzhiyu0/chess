@@ -1,0 +1,32 @@
+web/src/settings.ts
+  s_3ce749e80efed9::t_42e45c02806d5a 23-24,84-85,88,129-133
+web/src/main.ts
+  s_3ce749e80efed9::t_41ed0a2aeb3832 15,736-737,852,1840,1865,2250-2253
+  s_3ce749e80efed9::t_9bcc61d1bcc16b 610,728-735,738-740,743,829,833-845,851,853,858-860,863-864,1231
+web/index.html
+  s_3ce749e80efed9::t_84ca8e7ba2f1ee 234,247
+web/src/engine/stockfish.ts
+  s_3ce749e80efed9::t_9893f8812ceff9 20,242,267-269
+web/src/native.ts
+  s_3ce749e80efed9::t_a92b1df84536fe 5-21
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/StockfishNativePlugin.swift
+  s_3ce749e80efed9::t_0d1260acca71fd 21,42
+web/src/style.css
+  s_3ce749e80efed9::t_0d1260acca71fd 510-511
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8071f893d7322cfb2d9659bb834df1d42d236d04",
+  "prompts": {},
+  "sessions": {
+    "s_3ce749e80efed9": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "a7329e4d-57d0-49ce-8685-412b0d3b4f70",
+        "model": "customendpoint/ufosaga/claude-opus-5.5"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

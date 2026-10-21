@@ -22,6 +22,7 @@ import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from
 import { Engines } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { findNode, movesHtml } from './app/moves-ui';
+import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
 import { openHistory } from './app/history-ui';
 
 // ---------- state ----------
@@ -256,47 +257,53 @@ function canPremove(): boolean {
   return mode === 'play' && settings.premove && node === tip() && result === '' && coachState === 'idle' && turnOf(node.fen) !== userColor;
 }
 
-/** Custom arrow brushes for analysis (brighter and thicker than chessground's defaults). */
+/** Arrow brushes for review: green = engine best / the move you should have played, blue = what players at your rating usually play. */
 const BRUSHES = {
-  best: { key: 'kb', color: '#2fa84f', opacity: 1, lineWidth: 13 },
-  human: { key: 'kh', color: '#2f7fe0', opacity: 1, lineWidth: 9 },
-  bad: { key: 'kr', color: '#e0342b', opacity: 1, lineWidth: 11 },
-  meh: { key: 'ky', color: '#f2b705', opacity: 1, lineWidth: 11 },
+  best: { key: 'kb', color: '#5fa83f', opacity: 0.85, lineWidth: 7 },
+  human: { key: 'kh', color: '#3b82d6', opacity: 0.8, lineWidth: 5 },
+  /** opponent's threat (coach) */
+  threat: { key: 'kt', color: '#e8402f', opacity: 0.75, lineWidth: 6 },
 };
-const LABEL_FILL: Record<string, string> = { best: '#1f7a39', human: '#1d5fae', bad: '#a8221b', meh: '#a87e00' };
+const LEGEND_TEXT: Record<string, string> = { best: '最佳', human: '常见' };
 
 interface ReviewArrow {
   uci: string;
   kind: keyof typeof BRUSHES;
-  label: string;
   text: string;
 }
 
-/** Arrows shown in review for the current position: the move actually played, engine best, typical human move. */
+/** Whether the move leading to `n` is judged in review (by default only the user's own moves). */
+function showMove(n: Node): boolean {
+  return Boolean(n.parent) && (settings.reviewOpponent || imported || turnOf(n.parent!.fen) === userColor);
+}
+
+/** Whether suggestions for the side to move in `n` are shown. */
+const showSide = (n: Node) => settings.reviewOpponent || imported || turnOf(n.fen) === userColor;
+
+/** Review arrows, chess.com style: after a bad move, the move that should have been played; otherwise the best (and typical human) move here. */
 function reviewArrows(): ReviewArrow[] {
   const out: ReviewArrow[] = [];
-  const best = liveOn && liveLines[0]?.pv[0] ? liveLines[0].pv[0] : node.a.eval?.best;
-  // the game move from this position (explorations are not "played")
-  const played = node.x ? undefined : mainChild(node);
-  if (played) {
-    const r = reviewOf(played);
-    const j = r?.judgement;
-    const bad = j === 'mistake' || j === 'blunder';
-    const what = j ? JUDGEMENT_INFO[j].label : '未分析';
-    if (played.uci === best) out.push({ uci: played.uci, kind: 'best', label: '实', text: `实战 ${played.san}（就是最佳）` });
-    else out.push({ uci: played.uci, kind: bad ? 'bad' : 'meh', label: '实', text: `实战 ${played.san}（${what}）` });
+  const p = node.parent;
+  const r = p && showMove(node) ? reviewOf(node) : null;
+  if (p && r && SEVERITY[r.judgement] > 0 && p.a.eval?.best) {
+    out.push({ uci: p.a.eval.best, kind: 'best', text: `应走 ${sanOf(p.fen, p.a.eval.best)}` });
+    return out;
   }
-  if (best && best !== played?.uci) out.push({ uci: best, kind: 'best', label: '最', text: `最佳 ${sanOf(node.fen, best)}` });
+  if (!showSide(node)) return out;
+  const best = liveOn && liveLines[0]?.pv[0] ? liveLines[0].pv[0] : node.a.eval?.best;
+  if (best) out.push({ uci: best, kind: 'best', text: `最佳 ${sanOf(node.fen, best)}` });
   const h = node.a.human?.moves[0];
-  if (h && h.uci !== best && h.uci !== played?.uci)
-    out.push({ uci: h.uci, kind: 'human', label: '人', text: `${settings.elo} 分常走 ${sanOf(node.fen, h.uci)}（${(h.p * 100).toFixed(0)}%）` });
+  if (h && h.uci !== best) out.push({ uci: h.uci, kind: 'human', text: `${settings.elo} 分常走 ${sanOf(node.fen, h.uci)}（${(h.p * 100).toFixed(0)}%）` });
   return out;
 }
 
 function arrows(): DrawShape[] {
   const shapes: DrawShape[] = [...hintShapes, ...coachShapes()];
-  if (mode === 'review')
-    for (const a of reviewArrows()) shapes.push({ ...arrow(a.uci, a.kind), label: { text: a.label, fill: LABEL_FILL[a.kind] } });
+  if (mode === 'review') {
+    for (const a of reviewArrows()) shapes.push(arrow(a.uci, a.kind));
+    const r = node.uci && showMove(node) ? reviewOf(node) : null;
+    if (r && node.uci) shapes.push({ orig: node.uci.slice(2, 4) as Key, customSvg: { html: judgeBoardSvg(r.judgement) } });
+  }
   return shapes;
 }
 
@@ -307,7 +314,7 @@ function renderLegend() {
     return;
   }
   box.innerHTML = reviewArrows()
-    .map((a) => `<span class="lg"><i style="background:${BRUSHES[a.kind].color}">${a.label}</i>${escapeHtml(a.text)}</span>`)
+    .map((a) => `<span class="lg" title="${LEGEND_TEXT[a.kind] ?? ''}"><i style="background:${BRUSHES[a.kind].color}"></i>${escapeHtml(a.text)}</span>`)
     .join('');
 }
 
@@ -683,11 +690,19 @@ async function evalNode(s: Stockfish, n: Node, signal: AbortSignal) {
   n.a.eval = posEvalFrom(n, r.lines, r.bestmove);
 }
 
+/** Review mode runs automatically: whole-game analysis first, then live multi-PV on the current position. */
+function startReview() {
+  if (mode !== 'review' || screen !== 'game') return;
+  liveOn = true;
+  if (!batchCtrl || batchCtrl.signal.aborted) void analyseGame();
+}
+
 async function analyseGame() {
   batchCtrl?.abort();
   const ctrl = new AbortController();
   batchCtrl = ctrl;
-  setLive(false);
+  // the batch and live search share one Stockfish; live resumes when the batch ends
+  liveCtrl?.abort();
   const bar = $('analyse-progress');
   bar.classList.remove('hidden');
   const fill = bar.firstElementChild as HTMLElement;
@@ -702,10 +717,12 @@ async function analyseGame() {
       fill.style.width = `${((i + 1) / n) * sfShare}%`;
       if (nodes[i] === node || i % 4 === 0) update();
     }
-    for (let i = 0; i < n - 1; i++) {
+    // Stockfish needs every position (both sides of each judged move); Maia only where the judged side is to move
+    const maiaNodes = nodes.slice(0, -1).filter(showSide);
+    for (let i = 0; i < maiaNodes.length; i++) {
       if (ctrl.signal.aborted) return;
-      await maiaEval(nodes[i]);
-      fill.style.width = `${sfShare + ((i + 1) / (n - 1)) * (100 - sfShare)}%`;
+      await maiaEval(maiaNodes[i]);
+      fill.style.width = `${sfShare + ((i + 1) / maiaNodes.length) * (100 - sfShare)}%`;
     }
     setStatus('分析完成');
   } catch (err) {
@@ -714,6 +731,7 @@ async function analyseGame() {
     if (batchCtrl === ctrl) {
       batchCtrl = null;
       bar.classList.add('hidden');
+      void runLive();
     }
     update();
   }
@@ -740,7 +758,6 @@ function reviewOf(n: Node): MoveReview | null {
 
 function setLive(on: boolean) {
   liveOn = on;
-  $('btn-live').classList.toggle('on', on);
   if (!on) {
     liveCtrl?.abort();
     liveLines = [];
@@ -752,7 +769,7 @@ async function runLive() {
   liveCtrl?.abort();
   liveLines = [];
   renderLines();
-  if (!liveOn || mode !== 'review') return;
+  if (!liveOn || mode !== 'review' || (batchCtrl && !batchCtrl.signal.aborted)) return;
   const ctrl = new AbortController();
   liveCtrl = ctrl;
   const n = node;
@@ -797,9 +814,9 @@ function renderGraph() {
     const x = n > 1 ? (i / (n - 1)) * 100 : 0;
     const y = 40 - (e.white / 100) * 40;
     pts.push(`${x.toFixed(2)},${y.toFixed(2)}`);
-    const r = reviewOf(nodes[i]);
+    const r = showMove(nodes[i]) ? reviewOf(nodes[i]) : null;
     if (r && ['mistake', 'blunder', 'inaccuracy'].includes(r.judgement)) {
-      dots.push(`<circle cx="${x}" cy="${y}" r="0.9" fill="${JUDGEMENT_INFO[r.judgement].color}"/>`);
+      dots.push(`<circle cx="${x}" cy="${y}" r="0.9" fill="${judgeColor(r.judgement)}"/>`);
     }
   }
   const cx = n > 1 ? (realOf(node).ply / (n - 1)) * 100 : 0;
@@ -816,7 +833,7 @@ function renderSummary() {
   const box = $('summary');
   const stats = { w: { acc: [] as number[], c: {} as Record<string, number> }, b: { acc: [] as number[], c: {} as Record<string, number> } };
   for (const n of gameLine()) {
-    const r = reviewOf(n);
+    const r = showMove(n) ? reviewOf(n) : null;
     if (!r) continue;
     const s = stats[turnOf(n.parent!.fen)];
     s.acc.push(r.accuracy);
@@ -828,11 +845,12 @@ function renderSummary() {
   }
   const row = (k: Color, name: string) => {
     const s = stats[k];
-    const avg = s.acc.length ? s.acc.reduce((a, b) => a + b, 0) / s.acc.length : 0;
+    if (!s.acc.length) return '';
+    const avg = s.acc.reduce((a, b) => a + b, 0) / s.acc.length;
     const counts = (['inaccuracy', 'mistake', 'blunder'] as Judgement[])
-      .map((j) => `<span style="color:${JUDGEMENT_INFO[j].color}">${JUDGEMENT_INFO[j].label} ${s.c[j] ?? 0}</span>`)
-      .join(' ');
-    return `<div><b>${name}</b> 准确率 ${avg.toFixed(1)}% ${counts}</div>`;
+      .map((j) => `<span class="cnt" title="${JUDGEMENT_INFO[j].label}">${judgeIcon(j)}${s.c[j] ?? 0}</span>`)
+      .join('');
+    return `<div class="sum-row"><b>${name}</b><span>准确率 ${avg.toFixed(1)}%</span>${counts}</div>`;
   };
   const who = (c: Color) => (imported ? (c === 'w' ? '白' : '黑') : `${c === 'w' ? '白' : '黑'}（${userColor === c ? '我' : 'Maia'}）`);
   box.innerHTML = row('w', who('w')) + row('b', who('b'));
@@ -842,14 +860,14 @@ function renderCoach() {
   const box = $('coach-box');
   const parts: string[] = [];
   const p = node.parent;
-  if (p) {
+  if (p && (mode !== 'review' || showMove(node))) {
     const r = reviewOf(node);
     const prev = p.a.eval;
     const num = `${Number(p.fen.split(' ')[5])}${turnOf(p.fen) === 'w' ? '.' : '…'}`;
     if (r && prev) {
       const info = JUDGEMENT_INFO[r.judgement];
       parts.push(
-        `<div class="j" style="color:${info.color}">${num} ${node.san}${info.symbol} — ${info.label}</div>`,
+        `<div class="j" style="color:${judgeColor(r.judgement)}">${judgeIcon(r.judgement)}${num} ${node.san} ${info.label}</div>`,
         `<div>行棋方胜率 ${r.before.toFixed(0)}% → ${r.after.toFixed(0)}%</div>`,
       );
       if (prev.best && prev.best !== node.uci) {
@@ -870,9 +888,9 @@ function renderCoach() {
     }
   }
   const e = node.a.eval;
-  if (e && !node.children.length && e.best) parts.push(`<div>当前最佳：<b>${sanOf(node.fen, e.best)}</b>（${e.text}）</div>`);
+  if (e && !node.children.length && e.best && showSide(node)) parts.push(`<div>当前最佳：<b>${sanOf(node.fen, e.best)}</b>（${e.text}）</div>`);
   if (node.comment) parts.push(`<div class="note">${escapeHtml(node.comment)}</div>`);
-  if (!parts.length && mode === 'review') parts.push('<div class="muted">点击“分析整局”，Stockfish 会逐步评估，Maia 会告诉你同水平的人通常怎么走。在棋盘上走子是“试走”，不会改动对局记录，可随时“回到对局”。</div>');
+  if (!parts.length && mode === 'review') parts.push('<div class="muted">进入复盘会自动分析整局：Stockfish 逐步评估，Maia 告诉你同水平的人通常怎么走。在棋盘上走子是“试走”，不会改动对局记录，可随时“回到对局”。</div>');
   box.innerHTML = parts.join('');
 }
 
@@ -1099,8 +1117,10 @@ function coachShapes(): DrawShape[] {
   if (coachState !== 'idle' || turnOf(t.fen) !== userColor) return [];
   const out: DrawShape[] = [];
   if (settings.coachBest && t.a.eval?.best) out.push(arrow(t.a.eval.best, 'green'));
-  if (settings.coachThreats && t.a.threat) out.push(arrow(t.a.threat.uci, 'red'));
-  if (settings.coachHanging) for (const sq of hangingSquares(t)) out.push({ orig: sq as Key, brush: 'red' });
+  if (settings.coachThreats && t.a.threat) out.push(arrow(t.a.threat.uci, 'threat'));
+  if (settings.coachHanging)
+    for (const sq of hangingSquares(t))
+      out.push({ orig: sq as Key, customSvg: { html: HANGING_GLOW }, below: true }, { orig: sq as Key, customSvg: { html: HANGING_BADGE } });
   return out;
 }
 
@@ -1225,16 +1245,17 @@ function renderMoves() {
     tree,
     node,
     (n) => {
-      const r = reviewOf(n);
+      const r = !review || showMove(n) ? reviewOf(n) : null;
       if (!r) return null;
-      const info = JUDGEMENT_INFO[r.judgement];
-      return { symbol: info.symbol, color: r.judgement !== 'good' && r.judgement !== 'best' ? info.color : undefined };
+      const j = r.judgement;
+      // like chess.com: icons only where they matter
+      if (j === 'good') return null;
+      return { symbol: '', color: j === 'best' ? undefined : judgeColor(j), icon: judgeIcon(j) };
     },
     review,
   );
   if (resultText()) html += `<span class="res">${resultText()}</span>`;
   box.innerHTML = html;
-  box.classList.toggle('wrap', review && [...tree.nodes()].some((n) => n.children.length > 1));
   // 只滚动着法框内部，避免 scrollIntoView 带动整个页面跳动
   const cur = box.querySelector<HTMLElement>('.cur');
   if (cur) {
@@ -1362,6 +1383,7 @@ function showScreen(s: 'home' | 'game', push = true) {
       cg.redrawAll();
       update();
       resumeCoach();
+      startReview();
     });
   }
 }
@@ -1397,7 +1419,7 @@ function setMode(m: 'play' | 'review') {
   if (m === 'play') {
     void maiaTurn();
     coachTurn();
-  }
+  } else startReview();
 }
 
 // ---------- settings dialog ----------
@@ -1491,6 +1513,7 @@ function openSettings() {
       customDark: el('customDark').value,
       pieceSet: el('pieceSet').value,
       premove: el('premove').checked,
+      reviewOpponent: el('reviewOpponent').checked,
     };
     applySettings(old);
   };
@@ -1506,6 +1529,7 @@ function applySettings(old: Settings) {
   if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) clearAnn('human');
   if (old.sfMovetime !== settings.sfMovetime) clearAnn('eval', 'threat');
   if (!settings.premove) cg.cancelPremove();
+  if (old.reviewOpponent !== settings.reviewOpponent && mode === 'review' && screen === 'game') void analyseGame();
   update();
   renderHome();
 }
@@ -1541,7 +1565,7 @@ function annotate(n: Node): Annotation | undefined {
     const sign = turnOf(n.fen) === 'w' ? 1 : -1;
     out.commands = [l.mate !== undefined ? `[%eval #${sign * l.mate}]` : `[%eval ${((sign * (l.cp ?? 0)) / 100).toFixed(2)}]`];
   }
-  const r = reviewOf(n);
+  const r = showMove(n) ? reviewOf(n) : null;
   const nag = r && JUDGE_NAG[r.judgement];
   if (nag && !n.nags?.length) out.nags = [nag];
   return out;
@@ -1717,7 +1741,7 @@ function bind() {
   // tap outside a dialog's box closes it
   document.querySelectorAll<HTMLDialogElement>('dialog').forEach((d) => {
     d.addEventListener('click', (e) => {
-      if (e.target === d && d.id !== 'dlg-promo') d.close();
+      if (e.target === d && d.id !== 'dlg-promo' && d.id !== 'dlg-update') d.close();
     });
   });
   const menu = $<HTMLDialogElement>('dlg-menu');
@@ -1767,6 +1791,7 @@ function bind() {
     flipped = !flipped;
     update();
   };
+  $('btn-menu-top').onclick = () => $('btn-menu').click();
   $('btn-menu').onclick = () => {
     const live = mode === 'play' && result === '' && !imported && tip() !== tree.root;
     $<HTMLButtonElement>('btn-resign').disabled = !live;
@@ -1786,15 +1811,12 @@ function bind() {
   $('btn-menu-settings').onclick = fromMenu(openSettings);
   $('btn-undo').onclick = undo;
   $('btn-hint').onclick = () => void hint();
-  $('btn-analyse').onclick = () => void analyseGame();
-  $('btn-live').onclick = () => setLive(!liveOn);
   $('btn-settings').onclick = openSettings;
   $('btn-engines').onclick = () => openEngines(enginesCtx);
   $('btn-result-review').onclick = () => {
     $<HTMLDialogElement>('dlg-result').close();
     node = tree.root;
     setMode('review');
-    void analyseGame();
   };
   $('btn-result-new').onclick = () => {
     $<HTMLDialogElement>('dlg-result').close();
@@ -1819,10 +1841,19 @@ function bind() {
     }
   });
   $('btn-pgn-import').onclick = fromMenu(openPgnImport);
-  $('update-bar').onclick = () => {
+  const updateDlg = $<HTMLDialogElement>('dlg-update');
+  // 强制弹窗：禁止 Esc 关闭，被意外关闭时重新弹出
+  updateDlg.addEventListener('cancel', (e) => e.preventDefault());
+  updateDlg.addEventListener('close', () => updateDlg.showModal());
+  const reloadForUpdate = (e: Event) => {
+    e.preventDefault();
     saveGame();
     location.reload();
   };
+  const reloadBtn = $('btn-update-reload');
+  reloadBtn.addEventListener('click', reloadForUpdate);
+  // iOS 上 click 偶尔不触发，用 touchend 兜底
+  reloadBtn.addEventListener('touchend', reloadForUpdate);
   document.addEventListener('keydown', (e) => {
     if (screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
     if (e.key === 'ArrowLeft') goto(node.parent);
@@ -1851,7 +1882,9 @@ function registerServiceWorker() {
   const hadController = Boolean(navigator.serviceWorker.controller);
   // a new deployment's SW took over: the running page is the old version
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (hadController) $('update-bar').classList.remove('hidden');
+    if (!hadController) return;
+    const dlg = $<HTMLDialogElement>('dlg-update');
+    if (!dlg.open) dlg.showModal();
   });
   navigator.serviceWorker.register('./sw.js').then((reg) => {
     // first visit: reload once so the SW can add COOP/COEP headers (enables multi-threading)
@@ -1869,8 +1902,9 @@ function registerServiceWorker() {
 
 /**
  * iOS 主屏幕 App（standalone）在部分系统版本上，网页视口比屏幕短一截（WebKit bug 313800），
- * 导致固定定位的应用容器和工具栏停在屏幕底部上方。此时扩展容器以覆盖视口差值，
- * 同时保留 safe-area-inset-bottom，让工具栏按钮避开 Home 指示条。
+ * 底部那条区域网页无法布局，Home 指示条就落在其中。此时：
+ * - 不再额外预留 safe-area-inset-bottom（否则会在视口内再空出一截）；
+ * - 把 html 背景设为工具栏颜色，让那条区域与工具栏连成一体。
  */
 function fitStandalone() {
   const standalone = (navigator as { standalone?: boolean }).standalone === true || matchMedia('(display-mode: standalone)').matches;
@@ -1887,9 +1921,7 @@ function fitStandalone() {
     const sh = landscape ? Math.min(w, h) : Math.max(w, h);
     const gap = Math.abs(innerWidth - sw) <= 1 ? sh - innerHeight : 0;
     const safeB = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
-    const viewportGap = gap > 8 && safeB > 0 ? gap : 0;
-    root.style.setProperty('--viewport-gap', `${viewportGap}px`);
-    root.classList.toggle('letterbox', viewportGap > 0);
+    root.classList.toggle('letterbox', gap > 8 && safeB > 0);
   };
   fit();
   addEventListener('resize', fit);

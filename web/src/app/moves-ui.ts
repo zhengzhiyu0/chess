@@ -5,6 +5,8 @@ import { NAG_SYMBOL } from '../game/pgn';
 export interface MoveMark {
   symbol: string;
   color?: string;
+  /** inline HTML (e.g. an SVG badge) appended after the move */
+  icon?: string;
 }
 
 /**
@@ -21,10 +23,10 @@ export function movesHtml<A extends object>(tree: GameTree<A>, cur: GNode<A>, ma
     else if (needNum) html += `<span class="num">${num}…</span>`;
     const m = mark(n);
     const nag = n.nags?.map((g) => NAG_SYMBOL[g] ?? '').join('') ?? '';
-    const sym = m && m.symbol && m.symbol !== '★' ? m.symbol : nag;
+    const sym = m?.icon ? '' : m && m.symbol && m.symbol !== '★' ? m.symbol : nag;
     const style = m?.color ? ` style="color:${m.color}"` : '';
     const cls = `mv${n === cur ? ' cur' : ''}${mainIds.has(n.id) ? '' : ' side'}${n.x ? ' x' : ''}${n.comment ? ' noted' : ''}`;
-    return html + `<span class="${cls}" data-id="${n.id}"${style}>${n.san}${sym}</span>`;
+    return html + `<span class="${cls}" data-id="${n.id}"${style}>${m?.icon ?? ''}${n.san}${sym}</span>`;
   };
   const vars = (parent: GNode<A>, alts: GNode<A>[]) => alts.map((v) => `<span class="var">${line(parent, v, true)}</span>`).join('');
   const line = (from: GNode<A>, first: GNode<A>, needNum: boolean): string => {

@@ -42,6 +42,8 @@ export interface Settings {
   pieceSet: string;
   /** queue a move while the opponent is thinking */
   premove: boolean;
+  /** review: also judge the opponent's moves (default: only mine) */
+  reviewOpponent: boolean;
 }
 
 const KEY = 'maia-coach.settings';
@@ -79,6 +81,7 @@ export function defaultSettings(): Settings {
     customDark: '#739552',
     pieceSet: 'cburnett',
     premove: true,
+    reviewOpponent: false,
   };
 }
 

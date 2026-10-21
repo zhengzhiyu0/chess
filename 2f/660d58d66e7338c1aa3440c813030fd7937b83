@@ -1,0 +1,24 @@
+web/src/main.ts
+  s_65bbbee9d579f4::t_1a1512f763b8a7 1871-1874
+web/src/audio/sound.ts
+  s_65bbbee9d579f4::t_7f346ea9409ea7 26-27,29-30
+  s_65bbbee9d579f4::t_0790b5aa66033e 125-138
+  s_65bbbee9d579f4::t_41c32688e134d0 87-89
+  s_65bbbee9d579f4::t_8fddfff3f518d1 259-270
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2f660d58d66e7338c1aa3440c813030fd7937b83",
+  "prompts": {},
+  "sessions": {
+    "s_65bbbee9d579f4": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "f6b87d12-e2b1-4510-a30c-756d31f0876e",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

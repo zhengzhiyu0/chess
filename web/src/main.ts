@@ -29,6 +29,7 @@ import { COACHES } from './app/coach-avatars';
 import { findNode, movesHtml } from './app/moves-ui';
 import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
 import { BoardFx, moveFxOf } from './app/fx';
+import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
 
 // ---------- state ----------
@@ -373,10 +374,12 @@ function renderBoard() {
 // ---------- board effects & autoplay ----------
 
 let fx: BoardFx;
+let dodge: DodgeFx;
 let fxLast: Node | null = null;
 
 function applyFx() {
   fx.enabled = settings.boardFx;
+  dodge.enabled = settings.boardFx;
   $('board').parentElement!.classList.toggle('fx-on', settings.boardFx);
   if (!settings.boardFx) fx.clear();
 }
@@ -2573,6 +2576,7 @@ function init() {
   });
   homeCg = Chessground($('home-board'), { viewOnly: true, coordinates: false, animation: { enabled: false } });
   fx = new BoardFx($('board').parentElement!, () => cg.state.orientation);
+  dodge = new DodgeFx(cg, $('board'));
   applyFx();
   $('btn-autoplay').onclick = toggleAutoplay;
   $<HTMLSelectElement>('autoplay-speed').onchange = (e) => {

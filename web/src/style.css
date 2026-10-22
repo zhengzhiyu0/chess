@@ -1570,6 +1570,48 @@ dialog input[type='color'] {
 .fx-shake {
   animation: fx-shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
+/* 可被吃的棋子：选中/拖动攻击者时发抖，靠近时跳起侧身躲开（独立 translate/rotate 不干扰 chessground 的 transform 定位） */
+.fx-on cg-board piece.fx-nervous {
+  animation: fx-nervous 0.5s ease-in-out infinite;
+}
+.fx-on cg-board piece.fx-dodge {
+  z-index: 3;
+  animation:
+    fx-hop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.25) forwards,
+    fx-hover 0.6s ease-in-out 0.28s infinite alternate;
+}
+@keyframes fx-nervous {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  25% {
+    rotate: -4deg;
+  }
+  75% {
+    rotate: 4deg;
+  }
+}
+@keyframes fx-hop {
+  from {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  to {
+    translate: calc(var(--dodge-dir, 1) * 18%) -34%;
+    rotate: calc(var(--dodge-dir, 1) * 16deg);
+  }
+}
+@keyframes fx-hover {
+  from {
+    translate: calc(var(--dodge-dir, 1) * 18%) -34%;
+    rotate: calc(var(--dodge-dir, 1) * 16deg);
+  }
+  to {
+    translate: calc(var(--dodge-dir, 1) * 18%) -26%;
+    rotate: calc(var(--dodge-dir, 1) * 11deg);
+  }
+}
 @keyframes fx-pop {
   from {
     transform: scale(0) rotate(-30deg);

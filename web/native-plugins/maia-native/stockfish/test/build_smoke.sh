@@ -1,7 +1,8 @@
 #!/bin/sh
-# Builds the embedded Stockfish (full + lite linked into one binary) with the same defines as
-# Package.swift and runs sf_smoke.cpp against it. Works with clang/g++ or `zig c++`.
-#   sh build_smoke.sh <dir with nn-*.nnue>        (CXX / OUT / ARCH_FLAGS may be overridden)
+# Builds the embedded Stockfish (full + lite linked into one binary) with the same flags as
+# Package.swift (-O3, ThinLTO) and runs sf_smoke.cpp against it. Works with clang or `zig c++`.
+#   sh build_smoke.sh <dir with nn-*.nnue>   (CXX / OUT / ARCH_FLAGS / LTO_FLAGS may be overridden;
+#   LTO_FLAGS= disables LTO, e.g. for g++ without the gold/lld plugin)
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 root="$here/.."
@@ -15,7 +16,7 @@ if [ -z "${ARCH_FLAGS:-}" ]; then
     *) ARCH_FLAGS="-DUSE_SSE41 -DUSE_SSSE3 -DUSE_SSE2 -msse4.1" ;;
   esac
 fi
-common="-std=c++17 -O2 -DNDEBUG -DIS_64BIT -DUSE_POPCNT -DNNUE_EMBEDDING_OFF -DSF_EMBEDDED -DSF_NO_SHM $ARCH_FLAGS -w"
+common="-std=c++17 -O3 ${LTO_FLAGS--flto=thin} -DNDEBUG -DIS_64BIT -DUSE_POPCNT -DNNUE_EMBEDDING_OFF -DSF_EMBEDDED -DSF_NO_SHM $ARCH_FLAGS -w"
 
 objs=""
 build() {
@@ -32,5 +33,5 @@ build lite "-DStockfish=StockfishLite -DSF_C_PREFIX=sf_lite -DUSE_LITE_NET"
 wait
 for o in $objs; do [ -s "$o" ] || { echo "compile failed: $o" >&2; exit 1; }; done
 $CXX -std=c++17 -O2 -c "$here/sf_smoke.cpp" -o "$out/smoke.o"
-$CXX $objs "$out/smoke.o" -lpthread -o "$out/sf_smoke"
+$CXX ${LTO_FLAGS--flto=thin} $objs "$out/smoke.o" -lpthread -o "$out/sf_smoke"
 "$out/sf_smoke" "$nets"

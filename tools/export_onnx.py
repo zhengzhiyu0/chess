@@ -1,7 +1,13 @@
 """Export Maia-3 checkpoints to ONNX and verify parity with PyTorch.
 
+Two targets:
+  web     fp32, dynamic batch -> _onnx/maia3-*.onnx and web/public/models/ (browser, onnxruntime-web)
+  native  batch fixed to 1, fp16 weights and compute (fp32 inputs/outputs) -> _onnx/native/ and
+          web/native-models/ (iOS app, ONNX Runtime + CoreML: static shapes and fp16 ops let CoreML
+          run the graph on the Neural Engine, and fp16 halves the bundle)
+
 Usage:
-    .venv\Scripts\python.exe tools\export_onnx.py --models 5m 23m 79m
+    .venv\Scripts\python.exe tools\export_onnx.py --models 5m 23m 79m --targets web native
 """
 
 import argparse
@@ -90,7 +96,7 @@ def build_model(alias, ckpt_path):
     return model, cfg
 
 
-def split_for_web(onnx_path: Path, dest_dir: Path, chunk_mb: int = 32):
+def split_for_web(onnx_path: Path, dest_dir: Path, chunk_mb: int = 32, extra=None):
     """Split into <=32MB parts: static hosts like GitHub Pages reject files >100MB,
     and chunked fetch gives download progress in the browser."""
     import hashlib
@@ -109,16 +115,89 @@ def split_for_web(onnx_path: Path, dest_dir: Path, chunk_mb: int = 32):
         name = f"part{len(parts):02d}-{digest[:8]}.bin"
         (dest_dir / name).write_bytes(data[i:i + step])
         parts.append(name)
-    manifest = {"size": len(data), "sha256": digest, "parts": parts}
+    manifest = {"size": len(data), "sha256": digest, "parts": parts, **(extra or {})}
     (dest_dir / "manifest.json").write_text(json.dumps(manifest, indent=1))
+
+
+class HalfWrapper(torch.nn.Module):
+    """fp16 weights and compute behind fp32 inputs/outputs (the app's tensors stay fp32).
+
+    CoreML only schedules fp16-typed ML Program ops on the Neural Engine; an fp32 graph runs on
+    GPU/CPU. ORT's CPU fallback inserts Casts around any fp16 op it lacks a kernel for."""
+
+    def __init__(self, wrapper):
+        super().__init__()
+        self.inner = wrapper.half()
+
+    def forward(self, tokens, self_elo, oppo_elo):
+        move, value = self.inner(tokens.half(), self_elo.half(), oppo_elo.half())
+        return move.float(), value.float()
+
+
+def export_native(wrapper, cfg, size, out_dir: Path, ort):
+    """Batch fixed to 1 (CoreML compiles static shapes fully for the Neural Engine) + fp16.
+    COREML_CACHE_KEY makes ORT's compiled-model cache key stable across app updates (otherwise it
+    hashes the model path, which changes with every reinstall's bundle location)."""
+    import copy
+    import hashlib
+
+    import onnx
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"maia3-{size}.onnx"
+    half = HalfWrapper(copy.deepcopy(wrapper)).eval()
+    tokens = (torch.rand(1, 64, 12 * cfg.history) > 0.9).float()
+    elo_s = torch.tensor([1500.0])
+    torch.onnx.export(
+        half,
+        (tokens, elo_s, elo_s),
+        str(out_path),
+        input_names=["tokens", "self_elo", "oppo_elo"],
+        output_names=["logits_move", "logits_value"],
+        opset_version=17,
+        dynamo=False,
+        do_constant_folding=True,
+    )
+    m = onnx.load(str(out_path))
+    digest = hashlib.sha256(m.SerializeToString(deterministic=True)).hexdigest()
+    key = f"maia3{size}{digest[:16]}"
+    onnx.helper.set_model_props(m, {"COREML_CACHE_KEY": key})
+    onnx.save(m, str(out_path))
+    onnx.checker.check_model(str(out_path))
+
+    # parity on positions with real move structure: random token planes at several Elo pairs
+    worst_m = worst_p = 0.0
+    so = ort.SessionOptions()
+    so.log_severity_level = 3  # CPU lacks some fp16 kernels; the inserted Casts are expected
+    sess = ort.InferenceSession(str(out_path), so, providers=["CPUExecutionProvider"])
+    gen = torch.Generator().manual_seed(0)
+    for i in range(16):
+        t = (torch.rand(1, 64, 12 * cfg.history, generator=gen) > 0.9).float()
+        s = torch.tensor([600.0 + 100 * i])
+        o = torch.tensor([2100.0 - 90 * i])
+        with torch.no_grad():
+            ref_m, ref_v = wrapper(t, s, o)
+        got_m, got_v = sess.run(None, {"tokens": t.numpy(), "self_elo": s.numpy(), "oppo_elo": o.numpy()})
+        ref_p = torch.softmax(ref_m, 1).numpy()
+        got_p = torch.softmax(torch.from_numpy(got_m), 1).numpy()
+        worst_m = max(worst_m, float(np.abs(got_m - ref_m.numpy()).max()), float(np.abs(got_v - ref_v.numpy()).max()))
+        worst_p = max(worst_p, float(np.abs(got_p - ref_p).max()))
+        top2 = np.sort(ref_p[0])[-2:]
+        if top2[1] - top2[0] > 0.02:
+            assert got_m.argmax() == ref_m.numpy().argmax(), f"native {size}: top-1 changed on sample {i}"
+    print(f"{size} native: {out_path.stat().st_size / 1e6:.1f}MB  max|dlogit|={worst_m:.2e}  max|dp|={worst_p:.2e}  key={key}")
+    assert worst_p < 5e-3, worst_p
+    return out_path, key
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", nargs="+", default=["5m", "23m", "79m"])
+    ap.add_argument("--targets", nargs="+", default=["web", "native"], choices=["web", "native"])
     ap.add_argument("--ckpt-dir", default=str(ROOT / "_ckpt"))
     ap.add_argument("--onnx-dir", default=str(ROOT / "_onnx"))
     ap.add_argument("--web-dir", default=str(ROOT / "web" / "public" / "models"))
+    ap.add_argument("--native-dir", default=str(ROOT / "web" / "native-models"))
     args = ap.parse_args()
 
     import onnxruntime as ort
@@ -134,8 +213,15 @@ def main():
             ref_orig, _, _ = model(tokens, elo_s.long(), elo_o.long())
         replace_rmsnorm(model)
         wrapper = ExportWrapper(model).eval()
-        out_path = out_dir / f"maia3-{size}.onnx"
 
+        if "native" in args.targets:
+            path, key = export_native(wrapper, cfg, size, out_dir / "native", ort)
+            # git-tracked like the web parts: the iOS CI build has no checkpoints or torch
+            split_for_web(path, Path(args.native_dir) / f"maia3-{size}", extra={"cacheKey": key})
+        if "web" not in args.targets:
+            continue
+
+        out_path = out_dir / f"maia3-{size}.onnx"
         torch.onnx.export(
             wrapper,
             (tokens, elo_s, elo_o),

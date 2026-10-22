@@ -19,9 +19,24 @@ export interface StockfishNativePlugin {
   addListener(event: 'lines', cb: (e: { engine: SfFlavour; lines: string[] }) => void): Promise<PluginListenerHandle>;
 }
 
+export interface MaiaEvalOpts {
+  tokens: string;
+  indices: number[];
+  selfElo: number;
+  oppoElo: number;
+}
+
+export interface MaiaEvalResult {
+  logits: number[];
+  value: number[];
+  ms: number;
+}
+
 export interface MaiaNativePlugin {
   load(opts: { model: string; probeTokens?: string; probeLegal?: number[]; probeTop?: number[] }): Promise<{ provider: string }>;
-  eval(opts: { tokens: string; indices: number[]; selfElo: number; oppoElo: number }): Promise<{ logits: number[]; value: number[]; ms: number }>;
+  eval(opts: MaiaEvalOpts): Promise<MaiaEvalResult>;
+  /** several positions in one bridge call */
+  evalBatch(opts: { items: MaiaEvalOpts[] }): Promise<{ results: MaiaEvalResult[] }>;
   unload(): Promise<void>;
 }
 

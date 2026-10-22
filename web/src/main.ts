@@ -97,6 +97,8 @@ let liveOn = false;
 let liveCtrl: AbortController | null = null;
 let liveLines: SfLine[] = [];
 let batchCtrl: AbortController | null = null;
+/** whole-game analysis interrupted by the app going to the background, resumed on return */
+let pausedBatch = false;
 let screen: 'home' | 'game' = 'home';
 let shownResult = '';
 let coachOn = false;
@@ -917,7 +919,9 @@ async function reviewHuman() {
   const todo = want.filter((x): x is Node => Boolean(x) && !x!.a.human);
   if (!todo.length) return;
   try {
-    for (const x of todo) await maiaEval(x);
+    const m = await getMaia();
+    const res = await m.evaluateMany(todo.map((x) => ({ chess: chessOf(x), fens: maiaFens(x), selfElo: settings.elo, oppoElo: settings.elo })));
+    todo.forEach((x, i) => (x.a.human = res[i]));
   } catch (err) {
     console.error(err);
     return;
@@ -2551,9 +2555,16 @@ function bind() {
     if (document.hidden) saveGame();
     if (document.hidden) flushEvals();
     // native engine threads keep running while the app is in the background; don't let the
-    // open-ended live search burn battery there
-    if (document.hidden) liveCtrl?.abort();
-    else if (liveOn) void runLive();
+    // open-ended live search or the whole-game analysis burn battery there (aborted searches
+    // aren't cached, and analyseGame skips positions already evaluated when it resumes)
+    if (document.hidden) {
+      pausedBatch = Boolean(batchCtrl && !batchCtrl.signal.aborted);
+      batchCtrl?.abort();
+      liveCtrl?.abort();
+    } else if (pausedBatch && mode === 'review' && screen === 'game') {
+      pausedBatch = false;
+      void analyseGame();
+    } else if (liveOn) void runLive();
   });
   window.addEventListener('pagehide', () => {
     saveGame();

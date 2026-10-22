@@ -20,6 +20,13 @@ export interface MaiaResult {
   ms: number;
 }
 
+export interface MaiaJob {
+  chess: Chess;
+  fens: string[];
+  selfElo: number;
+  oppoElo: number;
+}
+
 type Pending = { resolve: (v: WorkerOut) => void; reject: (e: Error) => void };
 type Req = WorkerIn extends infer T ? (T extends { reqId: number } ? Omit<T, 'reqId'> : never) : never;
 
@@ -60,13 +67,29 @@ class NativeMaia {
   }
 
   async evaluate(chess: Chess, fens: string[], selfElo: number, oppoElo: number): Promise<MaiaResult> {
+    return (await this.evaluateMany([{ chess, fens, selfElo, oppoElo }]))[0];
+  }
+
+  async evaluateMany(jobs: MaiaJob[]): Promise<MaiaResult[]> {
     if (this.dead) throw new Error('Maia 已卸载');
-    const legal = legalMoveIndices(chess);
-    if (legal.length === 0) return { moves: [], wdl: [0, 1, 0], ms: 0 };
+    const legal = jobs.map((j) => legalMoveIndices(j.chess));
+    const live = jobs.map((_, i) => i).filter((i) => legal[i].length > 0);
+    const out: MaiaResult[] = jobs.map(() => ({ moves: [], wdl: [0, 1, 0], ms: 0 }));
+    if (!live.length) return out;
     const { MaiaNative } = await import('maia-native');
-    const res = await MaiaNative.eval({ tokens: toBase64(buildTokens(fens)), indices: legal.map((l) => l.index), selfElo, oppoElo });
-    const moves = softmaxMoves(legal.map((l, i) => ({ uci: l.uci, logit: res.logits[i] })));
-    return { moves, wdl: wdlFromValue(res.value), ms: res.ms };
+    const items = live.map((i) => ({
+      tokens: toBase64(buildTokens(jobs[i].fens)),
+      indices: legal[i].map((l) => l.index),
+      selfElo: jobs[i].selfElo,
+      oppoElo: jobs[i].oppoElo,
+    }));
+    const results = items.length === 1 ? [await MaiaNative.eval(items[0])] : (await MaiaNative.evalBatch({ items })).results;
+    live.forEach((i, k) => {
+      const res = results[k];
+      const moves = softmaxMoves(legal[i].map((l, j) => ({ uci: l.uci, logit: res.logits[j] })));
+      out[i] = { moves, wdl: wdlFromValue(res.value), ms: res.ms };
+    });
+    return out;
   }
 
   dispose() {
@@ -181,6 +204,17 @@ export class Maia {
     if (res.type !== 'result') throw new Error('unexpected worker reply');
     const moves = softmaxMoves(legal.map((l, i) => ({ uci: l.uci, logit: res.logits[i] })));
     return { moves, wdl: res.wdl, ms: res.ms };
+  }
+
+  /** Several positions; in the iOS app they share one bridge round trip. */
+  async evaluateMany(jobs: MaiaJob[]): Promise<MaiaResult[]> {
+    if (this.native) {
+      if (this.dead) throw new Error('Maia 已卸载');
+      return this.native.evaluateMany(jobs);
+    }
+    const out: MaiaResult[] = [];
+    for (const j of jobs) out.push(await this.evaluate(j.chess, j.fens, j.selfElo, j.oppoElo));
+    return out;
   }
 
   dispose() {

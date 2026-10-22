@@ -19,7 +19,7 @@
 
 | 路径 | 说明 |
 |---|---|
-| `tools/export_onnx.py` | 把官方 PyTorch 权重导出为 ONNX，与原版逐一对比后切分到 `web/public/models/` |
+| `tools/export_onnx.py` | 把官方 PyTorch 权重导出为 ONNX，与原版逐一对比后切分到 `web/public/models/`（网页，fp32）和 `web/native-models/`（iOS App，fp16 + 固定 batch 1） |
 | `tools/make_golden.py` | 用官方 Python 管线生成 `web/test/golden.json`，供 JS 端校验 |
 | `web/` | PWA 源码（Vite + TypeScript） |
 | `_maia3/`、`_ckpt/`、`_onnx/` | 官方仓库、原始权重、导出的 ONNX（仅用于导出和测试，不参与部署） |
@@ -41,9 +41,11 @@ dev/preview 服务器会发送 COOP/COEP 头，因此 Stockfish 和 ORT 可以�
 ## 重新导出模型（可选）
 
 ```powershell
-.venv\Scripts\python.exe tools\export_onnx.py
+.venv\Scripts\python.exe tools\export_onnx.py                    # 网页版和 App 版都导出；--targets web / native 只导出其一
 .venv\Scripts\python.exe tools\make_golden.py
 ```
+
+App 版模型（`web/native-models/`）提交在仓库里，因为 CI 构建 iOS 时没有原始权重和 PyTorch。
 
 ## 安装到 iPhone（无需开发者账号）
 
@@ -78,11 +80,11 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 
 - 免费 Apple ID 签名的 App **7 天后过期**，需要重新签名（棋局和设置保留）。AltStore 可以在同一 Wi-Fi 下自动续签。
 - App 内的引擎**全部原生实现，不使用 WebAssembly**（[native-plugins/maia-native](web/native-plugins/maia-native)）：
-  - **Stockfish 19**：C++ 源码直接编进 App，原生多线程 + ARM NEON/dotprod。**满血版**（完整 NNUE）和**轻量版**（小网络）都已预装，在「设置 → Stockfish 版本」中切换。默认线程数 = CPU 核心数 − 1。
-  - **Maia-3 5M / 23M / 79M**：ONNX Runtime iOS 原生推理，优先用 CoreML（神经网络引擎 / GPU），不支持时回退到 CPU。首次加载某个模型时 CoreML 要编译一次，之后会缓存。
+  - **Stockfish 19**：C++ 源码直接编进 App（-O3 + ThinLTO），原生多线程 + ARM NEON/dotprod。**满血版**（完整 NNUE）和**轻量版**（小网络）都已预装，在「设置 → Stockfish 版本」中切换。默认 2 线程（性能核数量），避免发热。
+  - **Maia-3 5M / 23M / 79M**：ONNX Runtime iOS 原生推理。App 使用单独导出的 fp16、固定 batch 1 模型（共约 212MB，网页版 fp32 为 424MB），让 CoreML 能把整张图放到神经网络引擎上；不支持时回退到 CPU。首次加载某个模型时 CoreML 要编译一次，编译结果按模型内容缓存，App 更新后仍可复用，旧版本的缓存会自动清理。加载前会检查可用内存，不够时直接提示，而不是被系统强杀。
   - 全部预装，无需下载，完全离线可用；App 内没有下载按钮和离线包管理。「设置 → 环境信息」显示当前引擎的实际运行方式。
 - App 的对弈界面与手机网页版一致：菜单在顶部，提示/悔棋/教练在“我”的信息栏里。点自己的头像（或「设置 → 我的头像」）可换成预设头像或相册照片。
-- 本地准备 iOS 工程：`cd web && npm run build:native`，依次执行构建、生成 `dist-native/`（[prepare-native.mjs](web/scripts/prepare-native.mjs)：去掉所有 wasm，下载并校验 NNUE 网络，拼接 ONNX 模型）、`cap sync ios`。Xcode 工程位于 `web/ios/`。
+- 本地准备 iOS 工程：`cd web && npm run build:native`，依次执行构建、生成 `dist-native/`（[prepare-native.mjs](web/scripts/prepare-native.mjs)：去掉所有 wasm，下载并校验 NNUE 网络，拼接 `native-models/` 中的 ONNX 模型）、`cap sync ios`。Xcode 工程位于 `web/ios/`。
 - 原生 Stockfish 可以脱离 Xcode 单独测试：`sh web/native-plugins/maia-native/stockfish/test/build_smoke.sh web/.cache/nnue`（CI 也会在 arm64 macOS 上跑这一步）。
 - Stockfish 以 GPL-3.0 发布，源码见 [stockfish/](web/native-plugins/maia-native/stockfish)。
 - 私有仓库使用 macOS runner 会按 10 倍分钟数计费，公开仓库免费。

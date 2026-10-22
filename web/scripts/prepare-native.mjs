@@ -2,7 +2,7 @@
 // The app uses native engines (native-plugins/maia-native), so every WebAssembly engine and the
 // chunked web models are left out; instead dist-native/native/ gets the files the native code loads:
 //   nn-*.nnue   Stockfish networks (full + lite), downloaded once into .cache/ and verified by hash
-//   maia3-*.onnx  Maia models, reassembled from the web build's parts
+//   maia3-*.onnx  Maia models (fp16, batch 1), reassembled from native-models/ parts
 import { createHash } from 'node:crypto';
 import { cpSync, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -34,6 +34,7 @@ const NET_URLS = (n) => [
   `https://tests.stockfishchess.org/api/nn/${n}`,
 ];
 const MODELS = ['5m', '23m', '79m'];
+const cacheKeys = {};
 
 const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
 
@@ -71,13 +72,18 @@ mkdirSync(out, { recursive: true });
 for (const n of NETS) cpSync(await fetchNet(n), join(out, n));
 
 for (const m of MODELS) {
-  const dir = join(root, 'public', 'models', `maia3-${m}`);
+  // the app's own fp16 / batch-1 export (tools/export_onnx.py --targets native), not the web fp32 one
+  const dir = join(root, 'native-models', `maia3-${m}`);
   const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'));
   const buf = Buffer.concat(manifest.parts.map((p) => readFileSync(join(dir, p))));
   if (buf.length !== manifest.size || createHash('sha256').update(buf).digest('hex') !== manifest.sha256)
     throw new Error(`maia3-${m}: parts do not match manifest`);
+  if (!manifest.cacheKey) throw new Error(`maia3-${m}: not a native export (no cacheKey), rerun tools/export_onnx.py --targets native`);
   writeFileSync(join(out, `maia3-${m}.onnx`), buf);
+  cacheKeys[m] = manifest.cacheKey;
 }
+// MaiaNativePlugin deletes compiled CoreML models whose key is not listed here (older app versions)
+writeFileSync(join(out, 'maia-models.json'), JSON.stringify({ cacheKeys }));
 
 const size = (d) => readdirSync(d).reduce((a, n) => a + (statSync(join(d, n)).isDirectory() ? size(join(d, n)) : statSync(join(d, n)).size), 0);
 console.log(`dist-native ready: ${(size(dst) / 1048576).toFixed(0)}MB (native engines ${(size(out) / 1048576).toFixed(0)}MB)`);

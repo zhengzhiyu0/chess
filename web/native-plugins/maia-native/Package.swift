@@ -15,8 +15,10 @@ let sfCommon: [CXXSetting] = [
     .define("NNUE_EMBEDDING_OFF"),
     .define("SF_EMBEDDED"),
     .define("SF_NO_SHM"),
-    // A13 is the oldest target device (dotprod); newer chips run this code unchanged
-    .unsafeFlags(["-O3", "-mcpu=apple-a13", "-fno-exceptions", "-w"]),
+    // A13 is the oldest target device (dotprod); newer chips run this code unchanged. ThinLTO
+    // inlines across Stockfish's translation units (as the official Makefile's -flto does); ld64
+    // performs the LTO step itself for the bitcode objects when the app links.
+    .unsafeFlags(["-O3", "-mcpu=apple-a13", "-flto=thin", "-fno-exceptions", "-w"]),
 ]
 
 let package = Package(

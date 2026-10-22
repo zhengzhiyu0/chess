@@ -87,6 +87,9 @@ interface Particle {
 const PIECE_SHARDS = { w: ['#ffffff', '#e8e6e1', '#c9c5bc'], b: ['#4a4744', '#2b2927', '#6b6763'] };
 const CONFETTI = ['#ffd54a', '#5fae3e', '#4fb3ff', '#ff6b8b', '#b98cff', '#ffffff', '#ff9f43'];
 const MAX = 260;
+/** attack/defence path timing (seconds) */
+const LINE_GROW = 0.38;
+const LINE_FADE = 0.45;
 const RING: Partial<Record<Judgement, string>> = {
   brilliant: '#3fe0d6',
   great: '#6aa8ff',
@@ -287,7 +290,7 @@ export class BoardFx {
   private line(a: string, b: string, color: string) {
     const [x, y] = this.center(a);
     const [x2, y2] = this.center(b);
-    this.push({ x, y, x2, y2, vx: 0, vy: 0, g: 0, drag: 0, t: 0, life: 1.3, size: this.size / 8, color, shape: 'line', rot: 0, vr: 0 });
+    this.push({ x, y, x2, y2, vx: 0, vy: 0, g: 0, drag: 0, t: 0, life: 2.4, size: this.size / 8, color, shape: 'line', rot: 0, vr: 0 });
     this.start();
   }
 
@@ -321,7 +324,7 @@ export class BoardFx {
       const q = p.t / p.life;
       c.save();
       if (p.shape === 'line') {
-        this.drawLine(p, q);
+        this.drawLine(p);
         c.restore();
         continue;
       }
@@ -360,7 +363,7 @@ export class BoardFx {
     if (!this.raf) c.clearRect(0, 0, this.canvas.width, this.canvas.height);
   };
 
-  private drawLine(p: Particle, q: number) {
+  private drawLine(p: Particle) {
     const c = this.ctx;
     const s = p.size;
     const dx = p.x2! - p.x;
@@ -368,12 +371,13 @@ export class BoardFx {
     const len = Math.hypot(dx, dy);
     const ux = dx / len;
     const uy = dy / len;
-    // from the piece's edge to just short of the target, growing over the first 30%
+    // from the piece's edge to just short of the target
     const start = s * 0.32;
     const end = len - s * 0.42;
-    const grow = Math.min(1, q / 0.3);
+    // fixed-time grow and fade so a longer life only lengthens the hold
+    const grow = Math.min(1, p.t / LINE_GROW);
     const head = start + (end - start) * (1 - (1 - grow) ** 3);
-    c.globalAlpha = q < 0.7 ? 0.9 : ((1 - q) / 0.3) * 0.9;
+    c.globalAlpha = Math.min(1, (p.life - p.t) / LINE_FADE) * 0.9;
     c.strokeStyle = c.fillStyle = p.color;
     c.lineCap = 'round';
     c.lineWidth = s * 0.09;
@@ -397,7 +401,7 @@ export class BoardFx {
     c.fill();
     // target ring pulses once the line arrives
     if (grow >= 1) {
-      const k = Math.min(1, (q - 0.3) / 0.15);
+      const k = Math.min(1, (p.t - LINE_GROW) / 0.2);
       c.lineWidth = s * 0.06;
       c.beginPath();
       c.arc(p.x2!, p.y2!, s * (0.36 + 0.05 * Math.sin(p.t * 12)) * k, 0, Math.PI * 2);

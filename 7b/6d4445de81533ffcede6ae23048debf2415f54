@@ -1,0 +1,31 @@
+web/src/style.css
+  s_a786f512410faf::t_1334cdaaa2a196 436-437
+web/src/app/coach-avatars.ts
+  s_a786f512410faf::t_a3528921e198a6 123-131
+  s_a786f512410faf::t_b34c3dd0153204 161
+  s_a786f512410faf::t_83bad2122690fd 120-122
+  s_a786f512410faf::t_355e3f4038a74b 132-133
+  s_a786f512410faf::t_4d0aea55a71999 160
+  s_a786f512410faf::t_e3ceae89783768 162-164
+  s_a786f512410faf::t_acdd36c9d16419 2-5,8-9,13,17-21,23-24,26-27,31-38,41,44,48,53-58,60,69-78,80-90,93,97-109,111-115,118-119,138-140,142-143,145,152,165-179
+web/index.html
+  s_a786f512410faf::t_ddfee671e09d7d 14
+web/public/icons/icon.svg
+  s_a786f512410faf::t_c0d11982446e25 4,9-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7b6d4445de81533ffcede6ae23048debf2415f54",
+  "prompts": {},
+  "sessions": {
+    "s_a786f512410faf": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "065e1af4-c0ad-4194-a169-ee25cf973be4",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

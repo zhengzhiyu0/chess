@@ -1,60 +1,63 @@
 /**
- * Cartoon coach portraits (Maia's side), drawn as SVG so they stay crisp at any size.
- * All portraits share the same face and proportions; only hair, skin, clothes and accessories vary.
+ * Coach portraits (Maia's side) in a bold, flat "learning-app mascot" style: big eyes, squircle heads,
+ * saturated colours and no outlines, so they still read at 36px.
+ * Drawn as SVG on a 100×100 canvas; the tile background is part of the SVG.
+ * No <defs>/ids: these SVGs are inlined many times on one page.
  */
 
-type Hair = 'long' | 'bob' | 'bun' | 'ponytail' | 'short' | 'curly' | 'bald';
-type Top = 'blazer' | 'tee' | 'turtleneck';
+type Hair = 'sweep' | 'buns' | 'quiff' | 'bald' | 'afro' | 'spiky' | 'beanie' | 'bun';
+type Mouth = 'open' | 'grin' | 'smirk' | 'smile';
 
 interface Coach {
   name: string;
-  bg: [string, string];
+  bg: string;
   skin: string;
   hair: Hair;
   hairColor: string;
-  top: Top;
-  topColor: string;
-  female?: boolean;
+  top: string;
+  mouth: Mouth;
+  hat?: string;
+  /** half-closed eyelids */
+  lid?: boolean;
   beard?: boolean;
-  glasses?: boolean;
+  stache?: boolean;
+  glasses?: 'round' | 'square';
   hoops?: boolean;
+  /** V-neck collar */
+  collar?: boolean;
 }
 
 export const COACHES: Coach[] = [
-  { name: '安娜', bg: ['#6f9bd1', '#3f679c'], skin: '#f3c6a6', hair: 'long', hairColor: '#3a2419', top: 'blazer', topColor: '#2c3e57', female: true },
-  { name: '阿玛拉', bg: ['#666c74', '#33373d'], skin: '#b9784f', hair: 'bun', hairColor: '#2e1b24', top: 'tee', topColor: '#ece8e2', female: true, hoops: true },
-  { name: '里奥', bg: ['#5fb3ac', '#2f7a74'], skin: '#f1c39f', hair: 'short', hairColor: '#5a3a24', top: 'blazer', topColor: '#33465e' },
-  { name: '小美', bg: ['#d78ca9', '#94506f'], skin: '#f7d5ba', hair: 'bob', hairColor: '#1f1a1d', top: 'turtleneck', topColor: '#e0745e', female: true },
-  { name: '维克多', bg: ['#86b07e', '#4a7447'], skin: '#ecbb98', hair: 'bald', hairColor: '#b9b4ae', top: 'blazer', topColor: '#5b4636', beard: true, glasses: true },
-  { name: '索菲亚', bg: ['#f0b35a', '#bd7a2c'], skin: '#f8d8c2', hair: 'ponytail', hairColor: '#b5532c', top: 'tee', topColor: '#3f8f6a', female: true },
-  { name: '奥马尔', bg: ['#d0895a', '#8c4f2e'], skin: '#8f5c3c', hair: 'curly', hairColor: '#1d1512', top: 'tee', topColor: '#2f4a6e', beard: true },
-  { name: '格蕾丝', bg: ['#a993d6', '#6a539c'], skin: '#c48d65', hair: 'curly', hairColor: '#d8d3d0', top: 'turtleneck', topColor: '#5a3f7a', female: true, glasses: true },
+  { name: '莉亚', bg: '#8e7cf0', skin: '#f6cdb0', hair: 'sweep', hairColor: '#3a2a6b', top: '#5b45c9', mouth: 'smirk', lid: true },
+  { name: '小柚', bg: '#ffb340', skin: '#f9d4b6', hair: 'buns', hairColor: '#e2672f', top: '#ff5f7a', mouth: 'open' },
+  { name: '里奥', bg: '#48c6b8', skin: '#efbf98', hair: 'quiff', hairColor: '#7a4a26', top: '#2f8f5f', mouth: 'grin' },
+  { name: '维克多', bg: '#7fb069', skin: '#f0c4a0', hair: 'bald', hairColor: '#eeeae4', top: '#8a5a3c', mouth: 'smile', stache: true, glasses: 'round' },
+  { name: '扎拉', bg: '#ff7a59', skin: '#9a5e3a', hair: 'afro', hairColor: '#22161a', top: '#ffd23f', mouth: 'open', hoops: true },
+  { name: '阿健', bg: '#4aa3f0', skin: '#f3cba5', hair: 'spiky', hairColor: '#16161c', top: '#ffffff', mouth: 'grin', glasses: 'square', collar: true },
+  { name: '奥斯卡', bg: '#f0a33a', skin: '#b87a52', hair: 'beanie', hairColor: '#3b2416', hat: '#e2453c', top: '#3f5c8c', mouth: 'smile', beard: true },
+  { name: '梅姨', bg: '#e886b0', skin: '#f5d0b8', hair: 'bun', hairColor: '#b9b3c4', top: '#5d8f7a', mouth: 'smile', glasses: 'round', lid: true },
 ];
 
-/** Multiply each RGB channel of `#rrggbb` by `f`. */
+/** Multiply each RGB channel of `#rrggbb` by `f` (clamped). */
 function shade(hex: string, f: number): string {
   const n = parseInt(hex.slice(1), 16);
-  const ch = (s: number) => Math.round(((n >> s) & 255) * f).toString(16).padStart(2, '0');
+  const ch = (s: number) => Math.min(255, Math.round(((n >> s) & 255) * f)).toString(16).padStart(2, '0');
   return `#${ch(16)}${ch(8)}${ch(0)}`;
 }
 
-const BANGS = 'M20.4 28.5C20.6 18 25.6 12.6 32.6 12.6c7 0 11.6 5.4 11.4 14.6-5.4-.6-10.4-3.6-13-8.2-2.4 4.8-6.4 8.2-10.6 9.5z';
+const HEAD = 'M27 45C27 29 37 21 50 21s23 8 23 24v8c0 14-9 22-23 22s-23-8-23-22z';
 
 function backHair(c: Coach): string {
   const f = `fill="${c.hairColor}"`;
   switch (c.hair) {
-    case 'long':
-      return `<path d="M15.5 31c0-13 7.4-21 16.5-21s16.5 8 16.5 21v15.5c0 2.6-2.8 3.6-4.6 1.8L42 36H22l-1.9 12.3c-1.8 1.8-4.6.8-4.6-1.8z" ${f}/>`;
-    case 'bob':
-      return `<path d="M17 30c0-12 6.6-19.5 15-19.5S47 18 47 30v9.5c0 2.4-2.4 3.2-4 1.8L41.5 34h-19L21 41.3c-1.6 1.4-4 .6-4-1.8z" ${f}/>`;
+    case 'sweep':
+      return `<path d="M23 48c0-22 12-33 28-33s26 12 26 32v34H23z" ${f}/>`;
+    case 'buns':
+      return `<circle cx="28" cy="22" r="11" ${f}/><circle cx="72" cy="22" r="11" ${f}/><path d="M25 50c0-19 11-29 25-29s25 10 25 29v8H25z" ${f}/>`;
+    case 'afro':
+      return `<circle cx="50" cy="38" r="31" ${f}/><circle cx="24" cy="50" r="12" ${f}/><circle cx="76" cy="50" r="12" ${f}/>`;
     case 'bun':
-      return `<circle cx="32" cy="12.4" r="5.4" ${f}/><ellipse cx="32" cy="27" rx="13" ry="14.4" ${f}/>`;
-    case 'ponytail':
-      return `<path d="M41.6 17.6c8.4.6 9.6 14.4 5.4 25.4-1.6-7.4-2.8-13.6-6.8-17.8z" ${f}/><ellipse cx="32" cy="27" rx="12.6" ry="14.4" ${f}/>`;
-    case 'curly': {
-      const pts = [[20.4, 29], [19.8, 23], [22.6, 17.6], [27, 14.2], [32, 13], [37, 14.2], [41.4, 17.6], [44.2, 23], [43.6, 29]];
-      return pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4.6" ${f}/>`).join('');
-    }
+      return `<circle cx="50" cy="13" r="10" ${f}/><path d="M26 50c0-19 10-29 24-29s24 10 24 29z" ${f}/>`;
     default:
       return '';
   }
@@ -63,81 +66,90 @@ function backHair(c: Coach): string {
 function frontHair(c: Coach): string {
   const f = `fill="${c.hairColor}"`;
   switch (c.hair) {
-    case 'long':
-    case 'bob':
+    case 'sweep':
+      return `<path d="M26 47c-1-17 10-28 25-28 14 0 23 9 23 22-11 0-24-5-31-13-2 9-8 16-17 19z" ${f}/>`;
+    case 'buns':
+      return `<path d="M27 42c1-13 10-21 23-21s22 8 23 21c-6-1-12-5-15-10-2 4-6 7-10 8-1-3-2-5-2-7-5 5-12 8-19 9z" ${f}/>`;
+    case 'quiff':
+      return `<path d="M26 47c-3-18 5-30 20-31 5-7 20-6 25 3 6 5 6 16 2 28-1-7-3-12-6-14-10 3-22 2-31-2-4 4-8 9-10 16z" ${f}/>`;
+    case 'afro':
+      return `<path d="M27 40c2-13 11-19 23-19s21 6 23 19c-8-4-16-6-23-6s-15 2-23 6z" ${f}/>`;
+    case 'spiky':
+      return `<path d="M26 46c-3-12 0-20 5-24l-1-8 8 5 5-9 5 8 7-8 3 9 9-5-1 9c5 5 7 13 5 23-2-6-5-10-9-12-9 3-21 3-29-1-3 3-5 7-7 13z" ${f}/>`;
     case 'bun':
-    case 'ponytail':
-      return `<path d="${BANGS}" ${f}/>`;
-    case 'short':
-      return `<path d="M20.5 28.4c-.9-9.4 3.6-15.8 11.5-15.8 7.6 0 12.6 5.4 11.6 15.8-1-4.6-2.6-7.2-4.8-8.4-4.2 1.6-9.6 1.6-13.8-.6-2.2 1.6-3.6 4.6-4.5 9z" ${f}/>`;
-    case 'curly': {
-      const pts = [[22.6, 21.4], [26.4, 18.4], [30.6, 17.2], [35, 17.4], [39.2, 18.8], [42, 22]];
-      return pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.4" ${f}/>`).join('');
+      return `<path d="M27 44c0-14 10-23 23-23s23 9 23 23c-9-2-17-7-23-14-6 7-14 12-23 14z" ${f}/>`;
+    case 'beanie': {
+      // brim sits at y≈30–37 so the brows (y≈40) stay on the forehead
+      const hat = c.hat ?? '#e2453c';
+      return (
+        `<path d="M28 44v-8h4v10zM72 44v-8h-4v10z" ${f}/>` +
+        `<path d="M26 33c0-13 11-21 24-21s24 8 24 21z" fill="${hat}"/>` +
+        `<path d="M38 15v18M50 12v21M62 15v18" stroke="${shade(hat, 0.86)}" stroke-width="2.4" stroke-linecap="round"/>` +
+        `<rect x="24" y="29" width="52" height="9" rx="4.5" fill="${shade(hat, 0.8)}"/>` +
+        `<circle cx="50" cy="10" r="5" fill="${shade(hat, 0.8)}"/>`
+      );
     }
     case 'bald':
-      return `<path d="M20.6 31.2c-.5-5 .3-8.6 2-10.6l.9 10.2zM43.4 31.2c.5-5-.3-8.6-2-10.6l-.9 10.2z" ${f}/><ellipse cx="27.6" cy="19.6" rx="3.4" ry="1.6" fill="#fff" opacity=".22"/>`;
+      return `<path d="M27 54c-2-7-1-13 2-17l3 17zM73 54c2-7 1-13-2-17l-3 17z" ${f}/><ellipse cx="41" cy="28" rx="7" ry="3" transform="rotate(-20 41 28)" fill="#fff" opacity=".35"/>`;
   }
 }
 
-function clothes(c: Coach): string {
-  const body = `<path d="M7 64c1.6-11 11-17.5 25-17.5S55.4 53 57 64z" fill="${c.topColor}"/>`;
-  const neck =
-    `<path d="M27 38h10v9.5c0 2.8-2.2 4.5-5 4.5s-5-1.7-5-4.5z" fill="${shade(c.skin, 0.93)}"/>` +
-    `<path d="M27 42.5c1.5 1.2 3.2 1.8 5 1.8s3.5-.6 5-1.8V40H27z" fill="${shade(c.skin, 0.85)}"/>`;
-  const dark = shade(c.topColor, 0.78);
-  switch (c.top) {
-    case 'blazer':
+function eyes(c: Coach): string {
+  let s = '';
+  for (const x of [40, 60]) {
+    const look = x < 50 ? 1 : -1;
+    s +=
+      `<ellipse cx="${x}" cy="49" rx="6" ry="7" fill="#fff"/>` +
+      `<circle cx="${x + look}" cy="50.5" r="4.2" fill="#2b1d16"/>` +
+      `<circle cx="${x + look + 1.4}" cy="48.8" r="1.5" fill="#fff"/>`;
+    if (c.lid) {
+      s +=
+        `<path d="M${x - 6.6} 48.6c0-5 3-8.4 6.6-8.4s6.6 3.4 6.6 8.4z" fill="${c.skin}"/>` +
+        `<path d="M${x - 6.6} 48.6h13.2" stroke="${shade(c.skin, 0.55)}" stroke-width="1.6" stroke-linecap="round"/>`;
+    }
+  }
+  const light = c.hair === 'bald' || c.hair === 'bun';
+  const brow = light ? shade(c.hairColor, 0.55) : c.hairColor;
+  const y = c.lid ? 39 : 38.5;
+  s += `<path d="M34 ${y}q6-3.5 11-.6M66 ${y}q-6-3.5-11-.6" fill="none" stroke="${brow}" stroke-width="3" stroke-linecap="round"/>`;
+  return s;
+}
+
+function mouth(c: Coach): string {
+  const dk = '#5b1f24';
+  switch (c.mouth) {
+    case 'open':
       return (
-        body +
-        '<path d="M25.5 47.2 32 57l6.5-9.8c-2-.5-4.2-.7-6.5-.7s-4.5.2-6.5.7z" fill="#f4f1ec"/>' +
-        `<path d="M25.5 47.2 29 64h-4l-3.6-15.4zM38.5 47.2 35 64h4l3.6-15.4z" fill="${dark}"/>` +
-        neck
+        `<path d="M41 61h18c0 6-4 10-9 10s-9-4-9-10z" fill="${dk}"/>` +
+        '<path d="M42 61h16c0 1.8-.6 3-1 3H43c-.4 0-1-1.2-1-3z" fill="#fff"/>' +
+        '<ellipse cx="50" cy="68.4" rx="4.6" ry="2.6" fill="#f06a7a"/>'
       );
-    case 'tee':
-      return body + neck + `<path d="M26.6 47.6q5.4 5.6 10.8 0" fill="none" stroke="${dark}" stroke-width="1.4" stroke-linecap="round"/>`;
-    case 'turtleneck':
-      return body + neck + `<rect x="26.2" y="44.6" width="11.6" height="6.4" rx="3" fill="${dark}"/>`;
+    case 'grin':
+      return `<path d="M41 61q9 3 18 0c-1 6-4.5 8.6-9 8.6s-8-2.6-9-8.6z" fill="${dk}"/><path d="M42 61.6q8 2.4 16 0l-.6 2q-7.4 2-14.8 0z" fill="#fff"/>`;
+    case 'smirk':
+      return `<path d="M42 63q6 4 15-1" fill="none" stroke="${dk}" stroke-width="2.6" stroke-linecap="round"/>`;
+    case 'smile':
+      return `<path d="M42 62q8 6 16 0" fill="none" stroke="${dk}" stroke-width="2.8" stroke-linecap="round"/>`;
   }
-}
-
-function face(c: Coach): string {
-  const ear = shade(c.skin, 0.96);
-  const brow = c.hair === 'bald' ? shade(c.hairColor, 0.6) : c.hairColor === '#d8d3d0' ? '#7c716b' : c.hairColor;
-  return (
-    `<ellipse cx="20.6" cy="31.5" rx="2.4" ry="3.2" fill="${ear}"/><ellipse cx="43.4" cy="31.5" rx="2.4" ry="3.2" fill="${ear}"/>` +
-    `<ellipse cx="32" cy="30" rx="11.4" ry="13.2" fill="${c.skin}"/>` +
-    frontHair(c) +
-    `<path d="M24.6 26.6q2.6-1.6 5 0M34.4 26.6q2.6-1.6 5 0" fill="none" stroke="${brow}" stroke-width="${c.female ? 1.3 : 1.7}" stroke-linecap="round"/>` +
-    '<ellipse cx="27.2" cy="30.6" rx="1.7" ry="2" fill="#2a1a12"/><ellipse cx="36.8" cy="30.6" rx="1.7" ry="2" fill="#2a1a12"/>' +
-    '<circle cx="27.8" cy="29.9" r=".55" fill="#fff"/><circle cx="37.4" cy="29.9" r=".55" fill="#fff"/>' +
-    `<ellipse cx="24.4" cy="35.4" rx="2.4" ry="1.4" fill="#ec8f86" opacity="${c.female ? 0.45 : 0.25}"/><ellipse cx="39.6" cy="35.4" rx="2.4" ry="1.4" fill="#ec8f86" opacity="${c.female ? 0.45 : 0.25}"/>` +
-    `<path d="M32 31.5v2.6l-1.1.6" fill="none" stroke="${shade(c.skin, 0.82)}" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>` +
-    `<path d="M28.2 37q3.8 3.4 7.6 0" fill="#fff" stroke="${c.female ? '#b9533f' : shade(c.skin, 0.6)}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>`
-  );
 }
 
 function extras(c: Coach): string {
   let s = '';
-  if (c.beard) {
-    s +=
-      `<path d="M20.8 32c.6 7.6 5 12.4 11.2 12.4S42.6 39.6 43.2 32c-1.2 4-3 6.4-5.2 7.4-1 2.6-3.4 3.8-6 3.8s-5-1.2-6-3.8c-2.2-1-4-3.4-5.2-7.4z" fill="${c.hairColor}"/>` +
-      `<path d="M28 35.8c1.6-1 3-.8 4 0 1-.8 2.4-1 4 0-1.4.9-2.8 1-4 .5-1.2.5-2.6.4-4-.5z" fill="${c.hairColor}"/>`;
+  if (c.stache) s += `<path d="M38 61c3-5 8-5 12-2 4-3 9-3 12 2-4 2-8 2-12 0-4 2-8 2-12 0z" fill="${c.hairColor}"/>`;
+  if (c.glasses === 'round') {
+    s += '<g fill="none" stroke="#3a2a22" stroke-width="2"><circle cx="40" cy="49" r="8.6"/><circle cx="60" cy="49" r="8.6"/><path d="M48.6 48q1.4-1.4 2.8 0M31.4 48H27M68.6 48H73"/></g>';
   }
-  if (c.glasses) {
-    s +=
-      '<g fill="rgba(255,255,255,.14)" stroke="#2b2b30" stroke-width="1.1">' +
-      '<rect x="23.3" y="27.4" width="7.8" height="6.2" rx="2.4"/><rect x="32.9" y="27.4" width="7.8" height="6.2" rx="2.4"/></g>' +
-      '<path d="M31.1 29.6q.9-.7 1.8 0M23.3 29.4h-2.2M40.7 29.4h2.2" fill="none" stroke="#2b2b30" stroke-width="1.1"/>';
+  if (c.glasses === 'square') {
+    s += '<g fill="none" stroke="#1d3d7a" stroke-width="2.4"><rect x="31" y="41.5" width="18" height="14" rx="4"/><rect x="51" y="41.5" width="18" height="14" rx="4"/><path d="M49 47h2M31 47h-4M69 47h4"/></g>';
   }
-  if (c.hoops) s += '<circle cx="20.4" cy="36.6" r="2" fill="none" stroke="#e7b545" stroke-width="1"/><circle cx="43.6" cy="36.6" r="2" fill="none" stroke="#e7b545" stroke-width="1"/>';
+  if (c.hoops) s += '<circle cx="26" cy="60" r="4" fill="none" stroke="#ffd23f" stroke-width="2.2"/><circle cx="74" cy="60" r="4" fill="none" stroke="#ffd23f" stroke-width="2.2"/>';
   return s;
 }
 
 const cache = new Map<number, string>();
 
 export function coachBg(index: number): string {
-  const c = COACHES[index] ?? COACHES[0];
-  return `linear-gradient(${c.bg[0]}, ${c.bg[1]})`;
+  return (COACHES[index] ?? COACHES[0]).bg;
 }
 
 export function coachSvg(index: number): string {
@@ -145,7 +157,26 @@ export function coachSvg(index: number): string {
   const hit = cache.get(i);
   if (hit) return hit;
   const c = COACHES[i];
-  const svg = `<svg viewBox="9 7 46 46" aria-hidden="true">${backHair(c)}${clothes(c)}${face(c)}${extras(c)}</svg>`;
+  const neck = shade(c.skin, 0.88);
+  const svg =
+    '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+    `<rect width="100" height="100" fill="${c.bg}"/><circle cx="50" cy="50" r="40" fill="#fff" opacity=".12"/>` +
+    backHair(c) +
+    `<path d="M14 100c0-13 15-21 36-21s36 8 36 21z" fill="${c.top}"/>` +
+    `<path d="M43 70h14v9c0 4-3 6-7 6s-7-2-7-6z" fill="${neck}"/>` +
+    (c.collar ? '<path d="M41 80l9 8 9-8" fill="none" stroke="#c9d3e0" stroke-width="2.4" stroke-linejoin="round"/>' : '') +
+    `<circle cx="27" cy="52" r="5" fill="${neck}"/><circle cx="73" cy="52" r="5" fill="${neck}"/>` +
+    `<path d="${HEAD}" fill="${c.skin}"/>` +
+    frontHair(c) +
+    eyes(c) +
+    '<ellipse cx="33" cy="59" rx="4" ry="2.4" fill="#ff7b7b" opacity=".3"/><ellipse cx="67" cy="59" rx="4" ry="2.4" fill="#ff7b7b" opacity=".3"/>' +
+    `<path d="M47 54.5c0 2.6 1.4 4 3 4s3-1.4 3-4" fill="${neck}"/>` +
+    (c.beard
+      ? `<path d="M27.5 52c1 15 9 23 22.5 23s21.5-8 22.5-23c-3 6-7 8-11 8-2-2-6-3-11.5-3s-9.5 1-11.5 3c-4 0-8-2-11-8z" fill="${c.hairColor}"/>`
+      : '') +
+    mouth(c) +
+    extras(c) +
+    '</svg>';
   cache.set(i, svg);
   return svg;
 }

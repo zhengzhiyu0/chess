@@ -433,6 +433,8 @@ input[type='checkbox'] {
   color: #262421;
 }
 .avatar.coach {
+  /* the coach comment panel's `.coach { padding }` must not shrink the portrait */
+  padding: 0;
   overflow: hidden;
   background: #4f7bb3;
 }
@@ -444,11 +446,6 @@ input[type='checkbox'] {
   height: 100% !important;
   margin: 0 !important;
   stroke: none;
-}
-/* 对局信息栏头像较小：放大人物、裁掉多余背景 */
-.player .avatar.coach svg {
-  transform: scale(1.22);
-  transform-origin: 50% 22%;
 }
 .avatar.default {
   background: #5a5856;

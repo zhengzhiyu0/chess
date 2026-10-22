@@ -1,0 +1,27 @@
+web/src/app/dodge.ts
+  s_b7f87d2d7cddd3::t_db00fe7af16e7d 1-14,19,25-77,84-89,91-95
+  s_b7f87d2d7cddd3::t_5c6b60840520cd 23-24,78-83
+  s_b7f87d2d7cddd3::t_f47080d70460a8 90
+  s_b7f87d2d7cddd3::t_f5e0d3025a4ab2 15-18,20-22
+web/src/style.css
+  s_b7f87d2d7cddd3::t_1505a5ceadf665 1573-1614
+web/src/main.ts
+  s_b7f87d2d7cddd3::t_31f0f4708856f7 2579
+  s_b7f87d2d7cddd3::t_1f2d318dbc630d 32,377,382
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9559ef494d43099070533b37a24b2d534880e22d",
+  "prompts": {},
+  "sessions": {
+    "s_b7f87d2d7cddd3": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "2d5ef69f-047e-4ff4-a214-323f763ee3ea",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

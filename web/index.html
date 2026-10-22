@@ -112,20 +112,19 @@
                 <div class="hint" id="hint-box"></div>
               </div>
               <div class="tab hidden" id="tab-review">
-                <div class="progress hidden" id="analyse-progress"><div></div></div>
-                <svg id="graph" class="graph" viewBox="0 0 100 40" preserveAspectRatio="none"></svg>
-                <div class="summary" id="summary"></div>
-                <div class="autoplay" id="autoplay">
-                  <button type="button" id="btn-autoplay" aria-label="自动播放"></button>
+                <div class="progress analyse-progress hidden"><div></div></div>
+                <div class="review-ctrl">
+                  <button type="button" id="btn-autoplay" class="rc-btn" aria-label="自动播放" title="自动播放（空格）"></button>
                   <select id="autoplay-speed" aria-label="播放速度">
                     <option value="2400">慢</option>
                     <option value="1200">中</option>
                     <option value="600">快</option>
                   </select>
-                </div>
-                <div class="review-nav" id="review-nav">
-                  <button type="button" data-review-nav="prev" aria-label="上一个问题">‹ 上一个问题</button>
-                  <button type="button" data-review-nav="next" aria-label="下一个问题">下一个问题 ›</button>
+                  <span class="rc-sep"></span>
+                  <button type="button" class="rc-btn" data-review-nav="prev" aria-label="上一个问题" title="上一个问题（[）"><svg viewBox="0 0 24 24"><path d="M18 6l-6 6 6 6M11 6l-6 6 6 6" /></svg></button>
+                  <span class="rc-issues" id="review-issues"></span>
+                  <button type="button" class="rc-btn" data-review-nav="next" aria-label="下一个问题" title="下一个问题（]）"><svg viewBox="0 0 24 24"><path d="M6 6l6 6-6 6M13 6l6 6-6 6" /></svg></button>
+                  <button type="button" class="rc-btn" id="btn-report" aria-label="复盘报告" title="复盘报告"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7" /></svg></button>
                 </div>
                 <div class="var-actions" id="var-actions"></div>
                 <div class="arrow-legend" id="arrow-legend"></div>
@@ -143,6 +142,18 @@
               <button data-nav="next" class="tool only-wide" aria-label="下一步"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg><span>前进</span></button>
             </nav>
           </section>
+        </div>
+
+        <div class="report hidden" id="report">
+          <div class="report-body">
+            <div class="progress analyse-progress hidden"><div></div></div>
+            <div class="report-hint muted" id="report-hint"></div>
+            <svg id="graph" class="graph" viewBox="0 0 100 40" preserveAspectRatio="none"></svg>
+            <div class="summary" id="summary"></div>
+          </div>
+          <div class="report-foot">
+            <button type="button" id="btn-report-start" class="primary big">开始回顾</button>
+          </div>
         </div>
       </section>
 
@@ -190,6 +201,7 @@
       <form method="dialog">
         <h3 tabindex="-1" autofocus>设置</h3>
         <button type="button" class="avatar-row" id="btn-set-avatar"><span id="set-avatar"></span><span>我的头像</span><span class="link">更换 ›</span></button>
+        <button type="button" class="avatar-row" id="btn-set-coach"><span id="set-coach"></span><span>教练头像</span><span class="link">更换 ›</span></button>
         <label>Maia 模型
           <select name="model">
             <option value="5m">Maia-3 5M（21MB，最快）</option>
@@ -237,6 +249,12 @@
           <select name="pieceSet" id="piece-set"></select>
         </label>
         <div class="look-preview" id="look-preview"></div>
+        <label>对局棋盘大小 <output name="bsPlayOut"></output>
+          <input type="range" name="boardSizePlay" min="60" max="100" step="5" />
+        </label>
+        <label>复盘棋盘大小 <output name="bsReviewOut"></output>
+          <input type="range" name="boardSizeReview" min="60" max="100" step="5" />
+        </label>
         <label>Stockfish 每步分析时间（毫秒）
           <input type="number" name="sfMovetime" min="100" max="20000" step="100" />
         </label>
@@ -291,6 +309,19 @@
           <button type="button" id="btn-avatar-photo">从相册选择照片</button>
         </div>
         <input type="file" id="avatar-file" accept="image/*" hidden />
+        <div class="row">
+          <button value="cancel">取消</button>
+          <button value="ok" class="primary">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-coach-avatar">
+      <form method="dialog">
+        <h3>教练头像</h3>
+        <div class="avatar-current" id="coach-current"></div>
+        <div class="coach-name" id="coach-name"></div>
+        <div class="avatar-grid" id="coach-grid"></div>
         <div class="row">
           <button value="cancel">取消</button>
           <button value="ok" class="primary">保存</button>

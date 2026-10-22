@@ -1,3 +1,4 @@
+import { coachBg, coachSvg } from './coach-avatars';
 import { escapeHtml } from './dom';
 
 /**
@@ -42,6 +43,10 @@ export function avatarParts(value: string): { cls: string; style: string; html: 
 export function avatarHtml(value: string, extraCls = ''): string {
   const p = avatarParts(value);
   return `<div class="avatar me ${p.cls} ${extraCls}"${p.style ? ` style="${p.style}"` : ''}>${p.html}</div>`;
+}
+
+export function coachAvatarHtml(index: number, extraCls = ''): string {
+  return `<div class="avatar coach ${extraCls}" style="background:${coachBg(index)}">${coachSvg(index)}</div>`;
 }
 
 /** Centre-crops and downsizes a picked photo to a small JPEG data URL (~10KB) so it fits in localStorage. */

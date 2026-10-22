@@ -18,12 +18,14 @@ import { END_REASON_TEXT, START_FEN, moveNumberOf, pvToSan, sanOf, terminalOf, t
 import { exportPgn as treeToPgn, parsePgn, type Annotation } from './game/pgn';
 import { ChessClock, TIME_CONTROLS, fmtClockShort, pgnTimeControl, thinkBudget, timeControlOf } from './game/clock';
 import { computeStats, loadHistory, newGameId, saveHistory, upsert, type StoredGame } from './game/history';
+import { installTapHaptics } from './audio/haptics';
 import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio, type EndKind } from './audio/sound';
 import { $, escapeHtml, setStatus } from './app/dom';
 import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from './app/appearance';
 import { Engines } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
-import { AVATAR_PRESETS, avatarFromFile, avatarHtml } from './app/avatar';
+import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './app/avatar';
+import { COACHES } from './app/coach-avatars';
 import { findNode, movesHtml } from './app/moves-ui';
 import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
 import { BoardFx, moveFxOf } from './app/fx';
@@ -435,9 +437,10 @@ function renderAutoplay() {
   const btn = $('btn-autoplay');
   const on = autoplayOn();
   btn.classList.toggle('on', on);
+  btn.setAttribute('aria-label', on ? '暂停' : '自动播放');
   btn.innerHTML = on
-    ? '<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>暂停'
-    : '<svg viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>自动播放';
+    ? '<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>'
+    : '<svg viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
   $<HTMLSelectElement>('autoplay-speed').value = String(settings.autoplayMs);
 }
 
@@ -838,9 +841,12 @@ async function analyseGame() {
   batchCtrl = ctrl;
   // the batch and live search share one Stockfish; live resumes when the batch ends
   liveCtrl?.abort();
-  const bar = $('analyse-progress');
-  bar.classList.remove('hidden');
-  const fill = bar.firstElementChild as HTMLElement;
+  const bars = document.querySelectorAll<HTMLElement>('.analyse-progress');
+  const fills = [...bars].map((b) => b.firstElementChild as HTMLElement);
+  const setFill = (pct: number) => fills.forEach((f) => (f.style.width = `${pct}%`));
+  bars.forEach((b) => b.classList.remove('hidden'));
+  setFill(0);
+  renderReportHint();
   const nodes = gameLine();
   const n = nodes.length;
   const sfShare = settings.lowMemory ? 50 : 70;
@@ -849,7 +855,7 @@ async function analyseGame() {
     for (let i = 0; i < n; i++) {
       if (ctrl.signal.aborted) return;
       await evalNode(s, nodes[i], ctrl.signal);
-      fill.style.width = `${((i + 1) / n) * sfShare}%`;
+      setFill(((i + 1) / n) * sfShare);
       if (nodes[i] === node || i % 4 === 0) update();
     }
     // Stockfish needs every position (both sides of each judged move); Maia only where the judged side is to move
@@ -857,7 +863,7 @@ async function analyseGame() {
     for (let i = 0; i < maiaNodes.length; i++) {
       if (ctrl.signal.aborted) return;
       await maiaEval(maiaNodes[i]);
-      fill.style.width = `${sfShare + ((i + 1) / maiaNodes.length) * (100 - sfShare)}%`;
+      setFill(sfShare + ((i + 1) / maiaNodes.length) * (100 - sfShare));
     }
     setStatus('分析完成');
   } catch (err) {
@@ -865,7 +871,7 @@ async function analyseGame() {
   } finally {
     if (batchCtrl === ctrl) {
       batchCtrl = null;
-      bar.classList.add('hidden');
+      bars.forEach((b) => b.classList.add('hidden'));
       void runLive();
     }
     update();
@@ -989,32 +995,62 @@ function renderSummary() {
     s.acc.push(r.accuracy);
     s.c[r.judgement] = (s.c[r.judgement] ?? 0) + 1;
   }
-  if (!stats.w.acc.length && !stats.b.acc.length) {
-    box.innerHTML = '';
-    return;
-  }
-  const row = (k: Color, name: string) => {
-    const s = stats[k];
-    if (!s.acc.length) return '';
-    const avg = s.acc.reduce((a, b) => a + b, 0) / s.acc.length;
-    const counts = (['inaccuracy', 'mistake', 'blunder'] as Judgement[])
-      .map((j) => {
-        const count = s.c[j] ?? 0;
-        return `<button class="cnt" type="button" data-judgement="${j}" aria-label="${name}${JUDGEMENT_INFO[j].label}${count}次"><span>${judgeIcon(j)}</span><span>${count}</span></button>`;
-      })
-      .join('');
-    return `<div class="sum-row"><b>${name}</b><span>准确率 ${avg.toFixed(1)}%</span>${counts}</div>`;
+  renderReviewNav();
+  const sides: Color[] = ['w', 'b'];
+  const who = (c: Color) => {
+    const side = c === 'w' ? '白' : '黑';
+    if (imported) return escapeHtml((c === 'w' ? headers?.White : headers?.Black) || `${side}方`);
+    return `${side}（${userColor === c ? '我' : 'Maia'}）`;
   };
-  const who = (c: Color) => (imported ? (c === 'w' ? '白' : '黑') : `${c === 'w' ? '白' : '黑'}（${userColor === c ? '我' : 'Maia'}）`);
-  box.innerHTML = row('w', who('w')) + row('b', who('b'));
-  box.querySelectorAll<HTMLButtonElement>('.cnt').forEach((button) => {
+  const acc = (c: Color) => {
+    const a = stats[c].acc;
+    return a.length ? (a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : '—';
+  };
+  const cell = (c: Color, j: Judgement) => {
+    if (!stats[c].acc.length) return '<span class="rp-cnt zero">—</span>';
+    const count = stats[c].c[j] ?? 0;
+    return `<button type="button" class="rp-cnt${count ? '' : ' zero'}" data-side="${c}" data-judgement="${j}" style="color:${judgeColor(j)}" aria-label="${who(c)}${JUDGEMENT_INFO[j].label}${count}次">${count}</button>`;
+  };
+  const line = (k: string, vals: string[], mid = '', cls = '') =>
+    `<div class="rp-row${cls}"><span class="rp-k">${k}</span>${vals[0]}<span class="rp-ico">${mid}</span>${vals[1]}</div>`;
+  const rows = (['best', 'good', 'inaccuracy', 'mistake', 'blunder'] as Judgement[])
+    .map((j) => line(JUDGEMENT_INFO[j].label, sides.map((c) => cell(c, j)), judgeIcon(j)))
+    .join('');
+  box.dataset.empty = String(!stats.w.acc.length && !stats.b.acc.length);
+  box.innerHTML =
+    line('', sides.map((c) => `<div class="rp-who">${sideAvatar(c, 'rp-ava')}<b class="rp-name">${who(c)}</b></div>`), '', ' rp-head') +
+    line('准确率', sides.map((c) => `<span class="rp-accv${c === 'w' ? ' w' : ''}">${acc(c)}</span>`), '', ' rp-acc') +
+    rows;
+  box.querySelectorAll<HTMLButtonElement>('.rp-cnt').forEach((button) => {
     button.onclick = () => {
-      const judgement = button.dataset.judgement as Judgement;
-      const side = button.closest<HTMLElement>('.sum-row')?.querySelector('b')?.textContent ?? '';
-      setStatus(`${side}：${JUDGEMENT_INFO[judgement].label} ${button.lastElementChild?.textContent ?? 0} 次`);
+      const side = button.dataset.side as Color;
+      const j = button.dataset.judgement as Judgement;
+      const target = gameLine().find((n) => n.parent && turnOf(n.parent.fen) === side && showMove(n) && reviewOf(n)?.judgement === j);
+      if (!target) return;
+      closeReport();
+      goto(target);
     };
   });
-  renderReviewNav();
+}
+
+let reportOpen = false;
+
+function openReport() {
+  stopAutoplay();
+  reportOpen = true;
+  $('report').classList.remove('hidden');
+  renderReportHint();
+}
+
+function closeReport() {
+  reportOpen = false;
+  $('report').classList.add('hidden');
+}
+
+function renderReportHint() {
+  const analysing = Boolean(batchCtrl && !batchCtrl.signal.aborted);
+  const empty = $('summary').dataset.empty === 'true';
+  $('report-hint').textContent = analysing ? '正在分析整局…' : empty ? '暂无可统计的着法' : '';
 }
 
 function reviewIssues(): Node[] {
@@ -1038,10 +1074,12 @@ function jumpReviewIssue(direction: -1 | 1) {
 }
 
 function renderReviewNav() {
-  const bar = $('review-nav');
   const issues = reviewIssues();
-  bar.classList.toggle('hidden', mode !== 'review' || issues.length === 0);
-  bar.querySelectorAll<HTMLButtonElement>('[data-review-nav]').forEach((button) => {
+  const cur = issues.indexOf(realOf(node));
+  $('review-issues').textContent = issues.length ? `${cur >= 0 ? `${cur + 1}/` : ''}${issues.length}` : '0';
+  $('review-issues').title = '问题着法（不精确/错误/漏着）';
+  document.querySelectorAll<HTMLButtonElement>('[data-review-nav]').forEach((button) => {
+    button.disabled = issues.length === 0;
     button.onclick = () => jumpReviewIssue(button.dataset.reviewNav === 'next' ? 1 : -1);
   });
 }
@@ -1245,19 +1283,30 @@ function stopDemo() {
   update();
 }
 
+// 用 SVG 而非 ⏮/▶ 等字符：iOS 会把它们渲染成彩色 emoji。
+const demoIcon = (d: string) =>
+  `<svg class="demo-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="${d}"/></svg>`;
+const DEMO_ICONS = {
+  play: demoIcon('M4 2.5v11l9-5.5z'),
+  first: demoIcon('M3 3h2v10H3zM14 3v10L6 8z'),
+  prev: demoIcon('M11 2.5v11L3 8z'),
+  next: demoIcon('M5 2.5v11L13 8z'),
+  stop: demoIcon('M4.2 2.8 8 6.6l3.8-3.8 1.4 1.4L9.4 8l3.8 3.8-1.4 1.4L8 9.4l-3.8 3.8-1.4-1.4L6.6 8 2.8 4.2z'),
+};
+
 /** 卡片里的“演示”按钮，或正在演示时的控制条。 */
 function demoControls(fen: string, pv: string[], key: string, label: string): string {
   if (!pv.length) return '';
   if (demo?.key !== key) {
-    return `<button type="button" class="demo-btn" data-demo="start" data-key="${escapeHtml(key)}" data-fen="${escapeHtml(fen)}" data-pv="${pv.join(' ')}">▶ ${label}</button>`;
+    return `<button type="button" class="demo-btn" data-demo="start" data-key="${escapeHtml(key)}" data-fen="${escapeHtml(fen)}" data-pv="${pv.join(' ')}">${DEMO_ICONS.play}${label}</button>`;
   }
   const san = demo.idx > 0 ? sanOf(fenAt(demo.fen, demo.pv, demo.idx - 1), demo.pv[demo.idx - 1]) : '起始局面';
   return (
-    `<div class="demo-bar"><button type="button" data-demo="first" aria-label="回到起点">⏮</button>` +
-    `<button type="button" data-demo="prev" aria-label="上一步">‹</button>` +
+    `<div class="demo-bar"><button type="button" data-demo="first" aria-label="回到起点">${DEMO_ICONS.first}</button>` +
+    `<button type="button" data-demo="prev" aria-label="上一步">${DEMO_ICONS.prev}</button>` +
     `<span class="demo-pos">${demo.idx}/${demo.pv.length} <b>${san}</b></span>` +
-    `<button type="button" data-demo="next" aria-label="下一步">›</button>` +
-    `<button type="button" data-demo="stop" aria-label="结束演示">✕</button></div>`
+    `<button type="button" data-demo="next" aria-label="下一步">${DEMO_ICONS.next}</button>` +
+    `<button type="button" data-demo="stop" aria-label="结束演示">${DEMO_ICONS.stop}</button></div>`
   );
 }
 
@@ -1637,6 +1686,12 @@ function material(n: Node, color: Color): { html: string; diff: number } {
   return { html, diff: score };
 }
 
+/** 我：设置里的头像；Maia：教练形象；导入的对局：默认剪影 */
+function sideAvatar(c: Color, cls = ''): string {
+  if (imported) return avatarHtml('', cls.replace('pick', ''));
+  return c === userColor ? avatarHtml(settings.avatar, cls) : coachAvatarHtml(settings.coachAvatar, cls);
+}
+
 function renderPlayers() {
   const model = MODELS[settings.model].label.split('（')[0];
   const oppColor: Color = userColor === 'w' ? 'b' : 'w';
@@ -1650,7 +1705,7 @@ function renderPlayers() {
       const e = color === 'w' ? headers?.WhiteElo : headers?.BlackElo;
       elo = e ? `(${escapeHtml(e)})` : '';
     }
-    const avatar = who === 'me' && !imported ? avatarHtml(settings.avatar, 'pick') : '<div class="avatar bot">♞</div>';
+    const avatar = sideAvatar(color, who === 'me' ? 'pick' : '');
     const thinking = who === 'maia' && maiaThinking ? '<span class="dots"><i></i><i></i><i></i></span>' : '';
     const v = clockView(color);
     return (
@@ -1697,6 +1752,7 @@ function update() {
   renderEvalBar();
   renderGraph();
   renderSummary();
+  renderReportHint();
   renderCoach();
   renderVarActions();
   renderLegend();
@@ -1767,9 +1823,12 @@ function lastOfLine(): Node {
 }
 
 function setMode(m: 'play' | 'review') {
+  const prev = mode;
   mode = m;
   stopAutoplay();
   if (m === 'play' && !tree.isMainline(node)) node = tip();
+  if (m === 'play') closeReport();
+  else if (prev !== 'review') openReport();
   $('game').dataset.mode = m;
   document.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === m));
   $('tab-play').classList.toggle('hidden', m !== 'play');
@@ -1828,6 +1887,34 @@ function openAvatar() {
   dlg.showModal();
 }
 
+function openCoachAvatar() {
+  const dlg = $<HTMLDialogElement>('dlg-coach-avatar');
+  let pick = settings.coachAvatar;
+  const draw = () => {
+    $('coach-current').innerHTML = coachAvatarHtml(pick, 'big');
+    $('coach-name').textContent = COACHES[pick]?.name ?? '';
+    $('coach-grid').innerHTML = COACHES.map(
+      (c, i) => `<button type="button" data-i="${i}" class="${i === pick ? 'on' : ''}" aria-label="${c.name}">${coachAvatarHtml(i)}</button>`,
+    ).join('');
+  };
+  $('coach-grid').onclick = (e) => {
+    const i = (e.target as HTMLElement).closest<HTMLElement>('[data-i]')?.dataset.i;
+    if (i === undefined) return;
+    pick = Number(i);
+    draw();
+  };
+  draw();
+  dlg.returnValue = '';
+  dlg.onclose = () => {
+    if (dlg.returnValue !== 'ok' || pick === settings.coachAvatar) return;
+    settings = { ...settings, coachAvatar: pick };
+    saveSettings(settings);
+    $('set-coach').innerHTML = coachAvatarHtml(settings.coachAvatar);
+    update();
+  };
+  dlg.showModal();
+}
+
 // ---------- settings dialog ----------
 
 function openSettings() {
@@ -1855,6 +1942,8 @@ function openSettings() {
     const v = Number(el('elo').value);
     (f.elements.namedItem('eloOut') as HTMLOutputElement).value = v < 600 ? `${v}（低于 600 为模型外推）` : String(v);
     (f.elements.namedItem('tempOut') as HTMLOutputElement).value = el('temperature').value;
+    (f.elements.namedItem('bsPlayOut') as HTMLOutputElement).value = `${el('boardSizePlay').value}%`;
+    (f.elements.namedItem('bsReviewOut') as HTMLOutputElement).value = `${el('boardSizeReview').value}%`;
   };
   let prevBoard = settings.boardTheme;
   boardSel.onchange = () => {
@@ -1888,6 +1977,8 @@ function openSettings() {
   look();
   $('set-avatar').innerHTML = avatarHtml(settings.avatar);
   $('btn-set-avatar').onclick = openAvatar;
+  $('set-coach').innerHTML = coachAvatarHtml(settings.coachAvatar);
+  $('btn-set-coach').onclick = openCoachAvatar;
   const sf = engines.sf;
   const maia = engines.maia;
   $('env-info').innerHTML =
@@ -1933,6 +2024,8 @@ function openSettings() {
       pieceSet: el('pieceSet').value,
       premove: el('premove').checked,
       boardFx: el('boardFx').checked,
+      boardSizePlay: num('boardSizePlay'),
+      boardSizeReview: num('boardSizeReview'),
       reviewOpponent: el('reviewOpponent').checked,
     };
     applySettings(old);
@@ -1940,10 +2033,18 @@ function openSettings() {
   dlg.showModal();
 }
 
+function applyBoardSize() {
+  const s = document.documentElement.style;
+  s.setProperty('--bs-play', String(settings.boardSizePlay / 100));
+  s.setProperty('--bs-review', String(settings.boardSizeReview / 100));
+  if (cg) requestAnimationFrame(() => cg.redrawAll());
+}
+
 function applySettings(old: Settings) {
   saveSettings(settings);
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);
+  applyBoardSize();
   if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash || old.sfLite !== settings.sfLite) engines.unloadSf();
   if (old.model !== settings.model || old.backend !== settings.backend) engines.unloadMaia();
   if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) clearAnn('human');
@@ -2076,6 +2177,7 @@ function openPgnImport() {
     loadImported(p);
     saveGame();
     setMode('review');
+    openReport();
     showScreen('game');
   };
   dlg.showModal();
@@ -2128,6 +2230,7 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
         node = tree.root;
         saveGame();
         setMode('review');
+        openReport();
         showScreen('game');
       },
       remove: (id) => {
@@ -2254,6 +2357,7 @@ function bind() {
     $<HTMLDialogElement>('dlg-result').close();
     node = tree.root;
     setMode('review');
+    openReport();
   };
   $('btn-result-new').onclick = () => {
     $<HTMLDialogElement>('dlg-result').close();
@@ -2276,8 +2380,11 @@ function bind() {
   $('graph').onclick = (e) => {
     const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
     const l = currentLine();
+    closeReport();
     goto(l[Math.round(((e.clientX - rect.left) / rect.width) * (l.length - 1))]);
   };
+  $('btn-report').onclick = openReport;
+  $('btn-report-start').onclick = closeReport;
   $('btn-pgn-copy').onclick = fromMenu(async () => {
     const pgn = exportPgn();
     try {
@@ -2303,6 +2410,10 @@ function bind() {
   reloadBtn.addEventListener('touchend', reloadForUpdate);
   document.addEventListener('keydown', (e) => {
     if (screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
+    if (reportOpen) {
+      if (e.key === 'Escape' || e.key === 'Enter') closeReport();
+      return;
+    }
     if (mode === 'review' && e.key === ' ' && !(e.target as HTMLElement).closest('input, select, textarea, button')) {
       e.preventDefault();
       toggleAutoplay();
@@ -2332,6 +2443,7 @@ function bind() {
     const lab = t.closest('dialog label:not(.check)');
     if (lab && !t.closest('input, select, textarea, button')) e.preventDefault();
   });
+  installTapHaptics();
   // iOS may suspend audio again after returning from the background; retry on every gesture.
   for (const event of ['pointerdown', 'touchend', 'keydown']) {
     document.addEventListener(event, () => unlockAudio(), { capture: true, passive: true });
@@ -2423,6 +2535,7 @@ function init() {
   fitStandalone();
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);
+  applyBoardSize();
   cg = Chessground($('board'), {
     animation: { duration: 180 },
     ranksPosition: 'left',

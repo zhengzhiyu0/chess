@@ -54,12 +54,17 @@ export interface Settings {
   premove: boolean;
   /** board animations: badge pop-in, capture particles, check pulse, mate confetti */
   boardFx: boolean;
+  /** board size in % of the largest size that fits (play / review layouts) */
+  boardSizePlay: number;
+  boardSizeReview: number;
   /** review autoplay delay per move in ms */
   autoplayMs: number;
   /** review: also judge the opponent's moves (default: only mine) */
   reviewOpponent: boolean;
   /** my avatar, see app/avatar.ts ('' = default) */
   avatar: string;
+  /** Maia's coach portrait, index into COACHES (app/coach-avatars.ts) */
+  coachAvatar: number;
   /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
   engineGen?: number;
   /** sound theme default migration: 1 = Lichess sfx, 2 = wooden board set */
@@ -109,9 +114,12 @@ export function defaultSettings(): Settings {
     pieceSet: 'cburnett',
     premove: true,
     boardFx: !matchMedia('(prefers-reduced-motion: reduce)').matches,
+    boardSizePlay: 100,
+    boardSizeReview: 100,
     autoplayMs: 1200,
     reviewOpponent: false,
     avatar: '',
+    coachAvatar: 0,
   };
 }
 

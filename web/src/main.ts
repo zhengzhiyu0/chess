@@ -9,6 +9,7 @@ import './style.css';
 import { MODELS, type MaiaResult } from './maia/maia';
 import { sampleMove } from './maia/sample';
 import type { Stockfish, SfLine } from './engine/stockfish';
+import { flushEvals, getEval, putEval } from './engine/eval-cache';
 import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, plainEval, type MoveInsight, type Sides } from './coach/explain';
 import { ELO_MAX, ELO_MIN, eloDelta, loadSettings, saveSettings, type Settings } from './settings';
@@ -288,13 +289,13 @@ interface ReviewArrow {
   text: string;
 }
 
-/** Whether the move leading to `n` is judged in review (by default only the user's own moves). */
+/** Whether the move leading to `n` is judged in review (by default only the user's own moves; both sides in tried-out lines). */
 function showMove(n: Node): boolean {
-  return Boolean(n.parent) && (settings.reviewOpponent || imported || turnOf(n.parent!.fen) === userColor);
+  return Boolean(n.parent) && (settings.reviewOpponent || imported || Boolean(n.x) || turnOf(n.parent!.fen) === userColor);
 }
 
-/** Whether suggestions for the side to move in `n` are shown. */
-const showSide = (n: Node) => settings.reviewOpponent || imported || turnOf(n.fen) === userColor;
+/** Whether suggestions for the side to move in `n` are shown; in a tried-out line always, e.g. how the opponent should answer. */
+const showSide = (n: Node) => settings.reviewOpponent || imported || Boolean(n.x) || turnOf(n.fen) === userColor;
 
 /** Review arrows: after a bad move, the move that should have been played; plus the best (and typical human) move for the side to move now. */
 function reviewArrows(): ReviewArrow[] {
@@ -838,13 +839,25 @@ function depthCap(kind: keyof typeof DEPTH_CAP): number | undefined {
   return settings.ecoAnalysis ? DEPTH_CAP[kind] : undefined;
 }
 
+/** Search settings that change an evaluation's result; part of the persistent cache key. */
+const evalSig = () => `${settings.sfLite ? 'l' : 'f'}${settings.sfMovetime}${settings.ecoAnalysis ? 'e' : ''}`;
+
 async function evalNode(s: Stockfish, n: Node, signal: AbortSignal) {
   if (n.a.eval) return;
+  // the FEN includes the move counters, so a repetition (scored as a draw) rarely shares a key
+  const key = `${evalSig()}|${n.fen}`;
+  const hit = getEval(key);
+  if (hit) {
+    n.a.eval = posEvalFrom(n, hit.line ? [hit.line] : [], hit.best);
+    return;
+  }
   const r = await s.analyse(tree.root.fen, { moves: movesTo(n), movetime: settings.sfMovetime, depth: depthCap('eval'), signal });
   if (signal.aborted) return;
   // no bestmove on a live position means the engine died mid-search; don't cache a fake "½"
   if (!r.bestmove && !chessOf(n).isGameOver()) return;
   n.a.eval = posEvalFrom(n, r.lines, r.bestmove);
+  // a search shortened by overheating isn't representative
+  if (thermalState < 2) putEval(key, { line: r.lines[0] ?? null, best: r.bestmove });
 }
 
 /** Review mode runs automatically: whole-game analysis first, then live multi-PV on the current position. */
@@ -868,21 +881,13 @@ async function analyseGame() {
   renderReportHint();
   const nodes = gameLine();
   const n = nodes.length;
-  const sfShare = settings.lowMemory ? 50 : 70;
   try {
     const s = await getSf();
     for (let i = 0; i < n; i++) {
       if (ctrl.signal.aborted) return;
       await evalNode(s, nodes[i], ctrl.signal);
-      setFill(((i + 1) / n) * sfShare);
+      setFill(((i + 1) / n) * 100);
       if (nodes[i] === node || i % 4 === 0) update();
-    }
-    // Stockfish needs every position (both sides of each judged move); Maia only where the judged side is to move
-    const maiaNodes = nodes.slice(0, -1).filter(showSide);
-    for (let i = 0; i < maiaNodes.length; i++) {
-      if (ctrl.signal.aborted) return;
-      await maiaEval(maiaNodes[i]);
-      setFill(sfShare + ((i + 1) / maiaNodes.length) * (100 - sfShare));
     }
     setStatus('分析完成');
   } catch (err) {
@@ -894,6 +899,32 @@ async function analyseGame() {
       void runLive();
     }
     update();
+  }
+}
+
+/**
+ * Maia's "what players at your level play here" for the shown position and the move that led to
+ * it, computed when a position is viewed rather than for the whole game up front.
+ */
+async function reviewHuman() {
+  if (mode !== 'review' || screen !== 'game' || autoplayOn()) return;
+  // a single resident engine: loading Maia now would evict Stockfish mid-search
+  const busy = (batchCtrl && !batchCtrl.signal.aborted) || (liveCtrl && !liveCtrl.signal.aborted);
+  if (singleEngine() && busy) return;
+  const n = node;
+  const want = [n.parent && showMove(n) ? n.parent : null, showSide(n) && !chessOf(n).isGameOver() ? n : null];
+  const todo = want.filter((x): x is Node => Boolean(x) && !x!.a.human);
+  if (!todo.length) return;
+  try {
+    for (const x of todo) await maiaEval(x);
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+  if (n === node && mode === 'review') {
+    renderCoach();
+    cg.setAutoShapes(arrows());
+    renderLegend();
   }
 }
 
@@ -925,7 +956,18 @@ function setLive(on: boolean) {
   void runLive();
 }
 
+/** web low-memory mode keeps a single engine resident (see Engines.exclusive) */
+const singleEngine = () => !isNative && settings.lowMemory && !settings.sfLite;
+
 async function runLive() {
+  // with a single resident engine, Maia must wait until the live search is done
+  const early = !singleEngine();
+  if (early) void reviewHuman();
+  await liveSearch();
+  if (!early) void reviewHuman();
+}
+
+async function liveSearch() {
   liveCtrl?.abort();
   liveLines = [];
   renderLines();
@@ -978,6 +1020,8 @@ async function runLive() {
     flush();
   } catch (err) {
     console.error(err);
+  } finally {
+    if (liveCtrl === ctrl) liveCtrl = null;
   }
 }
 
@@ -2482,12 +2526,16 @@ function bind() {
     syncClock();
     renderClocks();
     if (document.hidden) saveGame();
+    if (document.hidden) flushEvals();
     // native engine threads keep running while the app is in the background; don't let the
     // open-ended live search burn battery there
     if (document.hidden) liveCtrl?.abort();
     else if (liveOn) void runLive();
   });
-  window.addEventListener('pagehide', () => saveGame());
+  window.addEventListener('pagehide', () => {
+    saveGame();
+    flushEvals();
+  });
 }
 
 function registerServiceWorker() {

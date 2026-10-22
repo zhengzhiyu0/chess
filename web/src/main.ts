@@ -51,6 +51,8 @@ interface Ann {
   human: MaiaResult;
   /** null = computed, nothing serious */
   threat: Threat | null;
+  /** finished review live (multi-PV) search, so revisiting a position doesn't search it again */
+  live: SfLine[];
 }
 
 type Node = GNode<Ann>;
@@ -394,9 +396,11 @@ function moveFx() {
 }
 
 let autoTimer = 0;
+/** true while an autoplay step is moving the board (autoTimer is momentarily 0 then) */
+let autoStepping = false;
 
 function autoplayOn() {
-  return autoTimer !== 0;
+  return autoTimer !== 0 || autoStepping;
 }
 
 function stopAutoplay() {
@@ -404,18 +408,29 @@ function stopAutoplay() {
   clearTimeout(autoTimer);
   autoTimer = 0;
   renderAutoplay();
+  if (liveOn) void runLive();
+}
+
+function autoplayEnd() {
+  renderAutoplay();
+  if (liveOn) void runLive();
 }
 
 function autoplayStep() {
   autoTimer = 0;
-  if (mode !== 'review' || screen !== 'game' || document.hidden) return renderAutoplay();
+  if (mode !== 'review' || screen !== 'game' || document.hidden) return autoplayEnd();
   if (demo) {
-    if (demo.idx >= demo.pv.length) return renderAutoplay();
+    if (demo.idx >= demo.pv.length) return autoplayEnd();
     stepDemo(1);
   } else {
     const next = mainChild(node);
-    if (!next) return renderAutoplay();
-    goto(next, true);
+    if (!next) return autoplayEnd();
+    autoStepping = true;
+    try {
+      goto(next, true);
+    } finally {
+      autoStepping = false;
+    }
     play(soundForSan(next.san));
   }
   autoTimer = window.setTimeout(autoplayStep, settings.autoplayMs);
@@ -430,6 +445,7 @@ function toggleAutoplay() {
     else goto(tree.root, true);
   }
   autoTimer = window.setTimeout(autoplayStep, 350);
+  liveCtrl?.abort();
   renderAutoplay();
 }
 
@@ -910,10 +926,20 @@ async function runLive() {
   liveCtrl?.abort();
   liveLines = [];
   renderLines();
-  if (!liveOn || mode !== 'review' || document.hidden || (batchCtrl && !batchCtrl.signal.aborted)) return;
+  if (!liveOn || mode !== 'review' || (batchCtrl && !batchCtrl.signal.aborted)) return;
+  const n = node;
+  if (n.a.live) {
+    liveLines = n.a.live;
+    renderLines();
+    renderEvalBar();
+    cg.setAutoShapes(arrows());
+    renderLegend();
+    return;
+  }
+  // autoplay moves on every ~1s: a search per step would keep the engine busy the whole time
+  if (document.hidden || autoplayOn()) return;
   const ctrl = new AbortController();
   liveCtrl = ctrl;
-  const n = node;
   // engine output arrives every ~50ms; re-rendering PV text + arrows that often costs more than it shows
   let pending: SfLine[] | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -930,7 +956,7 @@ async function runLive() {
   try {
     const s = await getSf();
     if (ctrl.signal.aborted) return;
-    await s.analyse(tree.root.fen, {
+    const r = await s.analyse(tree.root.fen, {
       moves: movesTo(n),
       // eco: the position is settled long before a minute; stop at the depth cap or after 15s
       movetime: settings.ecoAnalysis || thermalState >= 2 ? 15000 : 60000,
@@ -945,6 +971,7 @@ async function runLive() {
       },
     });
     if (timer) clearTimeout(timer);
+    if (!ctrl.signal.aborted && r.bestmove && r.lines.length) n.a.live = r.lines;
     flush();
   } catch (err) {
     console.error(err);
@@ -2048,7 +2075,7 @@ function applySettings(old: Settings) {
   if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash || old.sfLite !== settings.sfLite) engines.unloadSf();
   if (old.model !== settings.model || old.backend !== settings.backend) engines.unloadMaia();
   if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) clearAnn('human');
-  if (old.sfMovetime !== settings.sfMovetime || old.sfLite !== settings.sfLite || old.ecoAnalysis !== settings.ecoAnalysis) clearAnn('eval', 'threat');
+  if (old.sfMovetime !== settings.sfMovetime || old.sfLite !== settings.sfLite || old.ecoAnalysis !== settings.ecoAnalysis) clearAnn('eval', 'threat', 'live');
   if (!settings.premove) cg.cancelPremove();
   applyFx();
   if (old.reviewOpponent !== settings.reviewOpponent && mode === 'review' && screen === 'game') void analyseGame();

@@ -1,6 +1,11 @@
 import { JUDGEMENT_INFO, type Judgement } from '../coach/coach';
 
 const ICON_COLOR: Record<Judgement, string> = {
+  brilliant: '#1bada6',
+  great: '#4a87d6',
+  book: '#a8865e',
+  forced: '#8f9aa3',
+  miss: '#ee6b5e',
   best: '#5fae3e',
   good: '#8db86b',
   inaccuracy: '#f2b630',
@@ -15,6 +20,13 @@ const emark = (x: number, s: number) =>
   `<g transform="translate(${x} -.5) scale(${s})"><path d="M0-10.5V3" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cy="10" r="2.9" fill="#fff"/></g>`;
 
 const GLYPH: Record<Judgement, string> = {
+  brilliant: emark(-5, 0.9) + emark(5, 0.9),
+  great: emark(0, 1.05),
+  book:
+    '<path d="M0-5.5C-3-8-7-8.5-11-7.5V7C-7 6-3 6.5 0 9 3 6.5 7 6 11 7V-7.5C7-8.5 3-8 0-5.5z" fill="#fff"/>' +
+    `<path d="M0-4.5V7.5" stroke="${'#a8865e'}" stroke-width="1.6"/>`,
+  forced: '<path d="M-9 0H6M1-7l7 7-7 7" fill="none" stroke="#fff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  miss: '<path d="M-6.5-6.5 6.5 6.5M6.5-6.5-6.5 6.5" stroke="#fff" stroke-width="4.8" stroke-linecap="round"/>',
   best: '<path d="M0-11.5 3.4-4.4 11.2-3.5 5.5 1.9 7 9.6 0 5.8-7 9.6-5.5 1.9-11.2-3.5-3.4-4.4z" fill="#fff" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>',
   good: '<path d="M-8 .5l5 5L8.5-6" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>',
   inaccuracy: qmark(-4.6, 0.86) + emark(6.4, 0.86),

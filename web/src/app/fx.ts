@@ -1,6 +1,6 @@
 // Board effects layer: particles (canvas) and board shake on top of chessground. Badge pop-in,
 // hanging-piece breathing and check pulse are pure CSS (see `.fx-on` rules in style.css).
-import { Chess } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
 import type { Judgement } from '../coach/coach';
 import { toMove } from '../game/rules';
 
@@ -13,7 +13,15 @@ export interface MoveFx {
   checkSq?: string;
   mate?: boolean;
   judgement?: Judgement;
+  /** castling: the rook's journey */
+  rook?: { from: string; to: string };
+  /** enemy pieces the moved piece now attacks (worth attacking) */
+  attacks: string[];
+  /** own threatened pieces the moved piece now defends */
+  defends: string[];
 }
+
+const VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
 
 /** Describes the move `uci` played from `fen` for {@link BoardFx.move}; null if illegal. */
 export function moveFxOf(fen: string, uci: string, judgement?: Judgement): MoveFx | null {
@@ -24,7 +32,24 @@ export function moveFxOf(fen: string, uci: string, judgement?: Judgement): MoveF
   } catch {
     return null;
   }
-  const out: MoveFx = { from: mv.from, to: mv.to, judgement };
+  const out: MoveFx = { from: mv.from, to: mv.to, judgement, attacks: [], defends: [] };
+  if (mv.flags.includes('k') || mv.flags.includes('q')) {
+    const r = mv.from[1];
+    out.rook = mv.flags.includes('k') ? { from: 'h' + r, to: 'f' + r } : { from: 'a' + r, to: 'd' + r };
+  }
+  const me = mv.color;
+  const opp = me === 'w' ? 'b' : 'w';
+  const at = (out.rook?.to ?? mv.to) as Square;
+  const mine = VALUE[c.get(at)?.type ?? 'p'];
+  for (const row of c.board())
+    for (const p of row) {
+      if (!p || p.square === at || !c.attackers(p.square, me).includes(at)) continue;
+      if (p.color === opp) {
+        if (p.type === 'k' || VALUE[p.type] > mine || !c.attackers(p.square, opp).length) out.attacks.push(p.square);
+      } else if (p.type !== 'k' && c.isAttacked(p.square, opp)) out.defends.push(p.square);
+    }
+  out.attacks = out.attacks.slice(0, 3);
+  out.defends = out.defends.slice(0, 2);
   if (mv.captured) {
     const sq = mv.flags.includes('e') ? mv.to[0] + mv.from[1] : mv.to;
     out.captured = { square: sq, color: mv.color === 'w' ? 'b' : 'w' };
@@ -37,7 +62,7 @@ export function moveFxOf(fen: string, uci: string, judgement?: Judgement): MoveF
   return out;
 }
 
-type Shape = 'rect' | 'circle' | 'star' | 'ring';
+type Shape = 'rect' | 'circle' | 'star' | 'ring' | 'line';
 interface Particle {
   x: number;
   y: number;
@@ -54,11 +79,27 @@ interface Particle {
   vr: number;
   /** confetti: width/height flip to fake 3D rotation */
   flip?: number;
+  /** line: end point */
+  x2?: number;
+  y2?: number;
 }
 
 const PIECE_SHARDS = { w: ['#ffffff', '#e8e6e1', '#c9c5bc'], b: ['#4a4744', '#2b2927', '#6b6763'] };
 const CONFETTI = ['#ffd54a', '#5fae3e', '#4fb3ff', '#ff6b8b', '#b98cff', '#ffffff', '#ff9f43'];
 const MAX = 260;
+const RING: Partial<Record<Judgement, string>> = {
+  brilliant: '#3fe0d6',
+  great: '#6aa8ff',
+  best: '#ffd54a',
+  book: '#d9b48a',
+  inaccuracy: '#ffd36b',
+  mistake: '#ff9b3d',
+  miss: '#ff7a6b',
+  blunder: '#ff4b3e',
+};
+const GOLD = ['#ffd54a', '#ffd54a', '#ffffff'];
+const GREAT = ['#6aa8ff', '#6aa8ff', '#ffffff'];
+const BRILLIANT = ['#3fe0d6', '#7ff0e8', '#ffffff'];
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 export class BoardFx {
@@ -113,13 +154,26 @@ export class BoardFx {
   /** Effects for a move that has just been made; `delay` lets the piece slide in first. */
   move(m: MoveFx, delay = 160) {
     if (!this.enabled || !this.size) return;
+    // the rook hops while chessground slides it; wait a frame for the piece element to be keyed
+    if (m.rook) this.later(16, () => this.castle(m));
     this.later(delay, () => {
       const [x, y] = this.center(m.to);
       if (m.captured) this.shards(...this.center(m.captured.square), m.captured.color);
       const j = m.judgement;
-      this.ring(x, y, j === 'best' ? '#ffd54a' : j === 'blunder' ? '#ff4b3e' : j === 'mistake' ? '#ff9b3d' : 'rgba(255,255,255,.85)', j === 'best' || j === 'blunder' ? 0.75 : 0.6);
+      const big = j === 'best' || j === 'blunder' || j === 'brilliant' || j === 'great';
+      this.ring(x, y, (j && RING[j]) || 'rgba(255,255,255,.85)', big ? 0.75 : 0.6);
       if (j === 'best') this.sparkles(x, y);
+      if (j === 'great') this.sparkles(x, y, GREAT);
+      if (j === 'brilliant') {
+        this.sparkles(x, y, BRILLIANT, 18);
+        this.ring(x, y, '#7ff0e8', 1, 0.12);
+      }
       if (j === 'blunder') this.shake();
+      const from = m.rook?.to ?? m.to;
+      this.later(m.rook ? 260 : 80, () => {
+        for (const sq of m.attacks) this.line(from, sq, '#ff4b3e');
+        for (const sq of m.defends) this.line(from, sq, '#4fd18b');
+      });
       if (m.checkSq) {
         const [kx, ky] = this.center(m.checkSq);
         this.ring(kx, ky, '#ff3b30', 0.8, 0.12);
@@ -170,12 +224,12 @@ export class BoardFx {
     }
   }
 
-  private sparkles(x: number, y: number) {
+  private sparkles(x: number, y: number, cols = GOLD, n = 12) {
     const s = this.size / 8;
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2 + rnd(-0.2, 0.2);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + rnd(-0.2, 0.2);
       const v = rnd(0.9, 1.8) * s;
-      this.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: 0, drag: 2.5, t: -rnd(0, 0.08), life: rnd(0.55, 0.8), size: rnd(0.09, 0.16) * s, color: i % 3 ? '#ffd54a' : '#ffffff', shape: 'star', rot: 0, vr: rnd(-4, 4) });
+      this.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: 0, drag: 2.5, t: -rnd(0, 0.08), life: rnd(0.55, 0.8), size: rnd(0.09, 0.16) * s, color: cols[i % cols.length], shape: 'star', rot: 0, vr: rnd(-4, 4) });
     }
   }
 
@@ -201,6 +255,40 @@ export class BoardFx {
         flip: rnd(6, 14),
       });
     }
+  }
+
+  /** Castling: the rook vaults over the king in an arc; dust puffs where both land. */
+  private castle(m: MoveFx) {
+    const rook = [...this.box.querySelectorAll<HTMLElement & { cgKey?: string }>('cg-board piece')].find((p) => p.cgKey === m.rook!.to);
+    if (rook) {
+      // screen direction of travel, so the rook leans into the jump
+      const dir = Math.sign(this.center(m.rook!.to)[0] - this.center(m.rook!.from)[0]) || 1;
+      rook.style.setProperty('--castle-dir', String(dir));
+      rook.classList.remove('fx-castle');
+      void rook.offsetWidth;
+      rook.classList.add('fx-castle');
+      this.later(700, () => rook.classList.remove('fx-castle'));
+    }
+    const s = this.size / 8;
+    for (const sq of [m.to, m.rook!.to]) {
+      const [x, y] = this.center(sq);
+      for (let i = 0; i < 7; i++) {
+        const side = i % 2 ? 1 : -1;
+        this.push({ x: x + side * rnd(0.1, 0.3) * s, y: y + 0.38 * s, vx: side * rnd(0.6, 1.4) * s, vy: -rnd(0.2, 0.6) * s, g: 0, drag: 3, t: -0.2, life: rnd(0.4, 0.6), size: rnd(0.08, 0.14) * s, color: 'rgba(255,255,255,.7)', shape: 'circle', rot: 0, vr: 0 });
+      }
+    }
+    this.later(200, () => {
+      this.ring(...this.center(m.rook!.to), '#ffd54a', 0.6);
+      this.start();
+    });
+  }
+
+  /** Attack / defence path: a line that grows from `a` towards `b`, then fades. */
+  private line(a: string, b: string, color: string) {
+    const [x, y] = this.center(a);
+    const [x2, y2] = this.center(b);
+    this.push({ x, y, x2, y2, vx: 0, vy: 0, g: 0, drag: 0, t: 0, life: 1.3, size: this.size / 8, color, shape: 'line', rot: 0, vr: 0 });
+    this.start();
   }
 
   private shake() {
@@ -232,6 +320,11 @@ export class BoardFx {
       p.rot += p.vr * dt;
       const q = p.t / p.life;
       c.save();
+      if (p.shape === 'line') {
+        this.drawLine(p, q);
+        c.restore();
+        continue;
+      }
       c.globalAlpha = p.shape === 'ring' ? (1 - q) * 0.9 : Math.min(1, (1 - q) * 2.2);
       c.translate(p.x, p.y);
       c.rotate(p.rot);
@@ -266,4 +359,49 @@ export class BoardFx {
     this.raf = this.ps.length ? requestAnimationFrame(this.frame) : 0;
     if (!this.raf) c.clearRect(0, 0, this.canvas.width, this.canvas.height);
   };
+
+  private drawLine(p: Particle, q: number) {
+    const c = this.ctx;
+    const s = p.size;
+    const dx = p.x2! - p.x;
+    const dy = p.y2! - p.y;
+    const len = Math.hypot(dx, dy);
+    const ux = dx / len;
+    const uy = dy / len;
+    // from the piece's edge to just short of the target, growing over the first 30%
+    const start = s * 0.32;
+    const end = len - s * 0.42;
+    const grow = Math.min(1, q / 0.3);
+    const head = start + (end - start) * (1 - (1 - grow) ** 3);
+    c.globalAlpha = q < 0.7 ? 0.9 : ((1 - q) / 0.3) * 0.9;
+    c.strokeStyle = c.fillStyle = p.color;
+    c.lineCap = 'round';
+    c.lineWidth = s * 0.09;
+    c.shadowColor = p.color;
+    c.shadowBlur = s * 0.18;
+    c.setLineDash([s * 0.16, s * 0.12]);
+    c.lineDashOffset = -p.t * s * 0.9;
+    c.beginPath();
+    c.moveTo(p.x + ux * start, p.y + uy * start);
+    c.lineTo(p.x + ux * head, p.y + uy * head);
+    c.stroke();
+    c.setLineDash([]);
+    const hx = p.x + ux * head;
+    const hy = p.y + uy * head;
+    const w = s * 0.14;
+    c.beginPath();
+    c.moveTo(hx + ux * w * 1.4, hy + uy * w * 1.4);
+    c.lineTo(hx - uy * w, hy + ux * w);
+    c.lineTo(hx + uy * w, hy - ux * w);
+    c.closePath();
+    c.fill();
+    // target ring pulses once the line arrives
+    if (grow >= 1) {
+      const k = Math.min(1, (q - 0.3) / 0.15);
+      c.lineWidth = s * 0.06;
+      c.beginPath();
+      c.arc(p.x2!, p.y2!, s * (0.36 + 0.05 * Math.sin(p.t * 12)) * k, 0, Math.PI * 2);
+      c.stroke();
+    }
+  }
 }

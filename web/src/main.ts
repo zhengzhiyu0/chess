@@ -10,8 +10,9 @@ import { MODELS, type MaiaResult } from './maia/maia';
 import { sampleMove } from './maia/sample';
 import type { Stockfish, SfLine } from './engine/stockfish';
 import { flushEvals, getEval, putEval } from './engine/eval-cache';
-import { evalText, judge, JUDGEMENT_INFO, moveAccuracy, whiteWinPct, winPct, type Judgement } from './coach/coach';
-import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, plainEval, type MoveInsight, type Sides } from './coach/explain';
+import { classify, evalText, JUDGEMENTS, JUDGEMENT_INFO, moveAccuracy, SEVERITY, whiteWinPct, winPct, type Judgement } from './coach/coach';
+import { bookReady, inBook, loadBook } from './coach/book';
+import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, isSacrifice, plainEval, type MoveInsight, type Sides } from './coach/explain';
 import { ELO_MAX, ELO_MIN, eloDelta, loadSettings, saveSettings, type Settings } from './settings';
 import { isNative, thermalState } from './native';
 import { GameTree, mainChild, type GNode } from './game/tree';
@@ -940,12 +941,34 @@ function reviewOf(n: Node): MoveReview | null {
   const p = n.parent;
   const a = p?.a.eval;
   const b = n.a.eval;
-  if (!p || !a || !b) return null;
+  if (!p || !a || !b || !n.uci) return null;
   const white = turnOf(p.fen) === 'w';
   const before = white ? a.white : 100 - a.white;
   const after = white ? b.white : 100 - b.white;
-  return { judgement: judge(before, after, n.uci === a.best), before, after, accuracy: moveAccuracy(before, after) };
+  const gp = p.parent?.a.eval;
+  // opponent POV of the previous move = 100 - mover POV
+  const oppDrop = gp ? (white ? a.white - gp.white : gp.white - a.white) : undefined;
+  const live = p.a.live;
+  const secondGap =
+    live && live.length >= 2 && live[0].pv[0] === n.uci ? whiteWinPct(live[0], 'w') - whiteWinPct(live[1], 'w') : undefined;
+  const key = `${before}|${after}|${a.best}|${oppDrop}|${secondGap}|${bookReady()}`;
+  const hit = reviewCache.get(n);
+  if (hit?.key === key) return hit.r;
+  const judgement = classify({
+    before,
+    after,
+    playedBest: n.uci === a.best,
+    book: inBook(n.fen),
+    forced: new Chess(p.fen).moves().length === 1,
+    sacrifice: before - after < 3 && isSacrifice(p.fen, n.uci),
+    oppDrop,
+    secondGap,
+  });
+  const r = { judgement, before, after, accuracy: moveAccuracy(before, after) };
+  reviewCache.set(n, { key, r });
+  return r;
 }
+const reviewCache = new WeakMap<Node, { key: string; r: MoveReview }>();
 
 function setLive(on: boolean) {
   liveOn = on;
@@ -1045,7 +1068,7 @@ function renderGraph() {
     const y = 40 - (e.white / 100) * 40;
     pts.push(`${x.toFixed(2)},${y.toFixed(2)}`);
     const r = showMove(nodes[i]) ? reviewOf(nodes[i]) : null;
-    if (r && ['mistake', 'blunder', 'inaccuracy'].includes(r.judgement)) {
+    if (r && ['mistake', 'miss', 'blunder', 'inaccuracy', 'brilliant'].includes(r.judgement)) {
       dots.push(`<circle cx="${x}" cy="${y}" r="0.9" fill="${judgeColor(r.judgement)}"/>`);
     }
   }
@@ -1087,7 +1110,8 @@ function renderSummary() {
   };
   const line = (k: string, vals: string[], mid = '', cls = '') =>
     `<div class="rp-row${cls}"><span class="rp-k">${k}</span>${vals[0]}<span class="rp-ico">${mid}</span>${vals[1]}</div>`;
-  const rows = (['best', 'good', 'inaccuracy', 'mistake', 'blunder'] as Judgement[])
+  const core: Judgement[] = ['best', 'good', 'inaccuracy', 'mistake', 'blunder'];
+  const rows = JUDGEMENTS.filter((j) => core.includes(j) || stats.w.c[j] || stats.b.c[j])
     .map((j) => line(JUDGEMENT_INFO[j].label, sides.map((c) => cell(c, j)), judgeIcon(j)))
     .join('');
   box.dataset.empty = String(!stats.w.acc.length && !stats.b.acc.length);
@@ -1255,7 +1279,6 @@ function varAction(act: string) {
 
 const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
 const PIECE_GLYPH: Record<string, string> = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛' };
-const SEVERITY: Record<Judgement, number> = { best: 0, good: 0, inaccuracy: 1, mistake: 2, blunder: 3 };
 
 /** 讲解中双方的称呼：`mover` 是走这步棋的一方。 */
 function sidesFor(mover: Color): Sides {
@@ -2132,7 +2155,7 @@ function applySettings(old: Settings) {
 
 // ---------- PGN ----------
 
-const JUDGE_NAG: Partial<Record<Judgement, number>> = { inaccuracy: 6, mistake: 2, blunder: 4 };
+const JUDGE_NAG: Partial<Record<Judgement, number>> = { brilliant: 3, great: 1, inaccuracy: 6, mistake: 2, miss: 2, blunder: 4 };
 
 function gameHeaders(): Record<string, string> {
   const d = new Date(gameDate);
@@ -2632,6 +2655,12 @@ function init() {
     saveSettings(settings);
   };
   renderAutoplay();
+  void loadBook().then(() => {
+    renderMoves();
+    renderSummary();
+    renderGraph();
+    renderCoach();
+  });
   // chessground caches the board rect and only refreshes it on scroll/resize; layout shifts without a
   // size change (e.g. the screen slide-in transition) leave it stale and taps land on the wrong square
   const freshBounds = () => cg.state.dom.bounds.clear();

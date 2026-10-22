@@ -332,6 +332,32 @@ export function hangingSquares(fen: string, color: Color): Square[] {
   return out;
 }
 
+/**
+ * 弃子：走完 `uci` 后，走棋方有一个马/象及以上的棋子能被对方净吃（SEE），且走之前它并不悬着；
+ * 吃子后直接换得更多的不算（如以车换后）。
+ */
+export function isSacrifice(fen: string, uci: string): boolean {
+  const c = new Chess(fen);
+  const mover = c.turn() as Color;
+  let mv;
+  try {
+    mv = c.move(toMove(uci));
+  } catch {
+    return false;
+  }
+  if (c.isCheckmate()) return false;
+  const after = c.fen();
+  const gained = mv.captured ? VALUE[mv.captured] : 0;
+  const before = new Set(hangingSquares(fen, mover));
+  for (const sq of hangingSquares(after, mover)) {
+    const p = c.get(sq);
+    if (!p || VALUE[p.type] < 3) continue;
+    if (before.has(sq) && sq !== mv.to) continue;
+    if ((seeFor(after, sq, other(mover)) ?? 0) - gained >= 2) return true;
+  }
+  return false;
+}
+
 function balance(c: Chess, pov: Color): number {
   let s = 0;
   for (const row of c.board()) for (const p of row) if (p && p.type !== 'k') s += (p.color === pov ? 1 : -1) * VALUE[p.type];

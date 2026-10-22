@@ -58,7 +58,7 @@ export interface Settings {
   avatar: string;
   /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
   engineGen?: number;
-  /** 1 once the sound theme was migrated to the Lichess default */
+  /** sound theme default migration: 1 = Lichess sfx, 2 = wooden board set */
   soundGen?: number;
 }
 
@@ -97,7 +97,7 @@ export function defaultSettings(): Settings {
     coachEval: false,
     timeControl: 'none',
     sound: true,
-    soundTheme: 'sfx',
+    soundTheme: 'board',
     haptics: true,
     boardTheme: 'green',
     customLight: '#ebecd0',
@@ -116,10 +116,10 @@ export function loadSettings(): Settings {
     if (saved.elo === undefined && typeof saved.maiaElo === 'number') saved.elo = saved.maiaElo;
     delete saved.maiaElo;
     delete saved.myElo;
-    // the synthesized wood sound was the only real default before the Lichess sets; switch once
-    if (!saved.soundGen) {
-      if (saved.soundTheme === undefined || saved.soundTheme === 'wood') saved.soundTheme = 'sfx';
-      saved.soundGen = 1;
+    // gen 1 moved the old synthesized default to Lichess sfx; gen 2 moves default users to the wooden board set
+    if ((saved.soundGen ?? 0) < 2) {
+      if (saved.soundTheme === undefined || saved.soundTheme === 'wood' || saved.soundTheme === 'sfx') saved.soundTheme = 'board';
+      saved.soundGen = 2;
     }
     // settings from the WebView-engine app builds (single thread, tiny hash) would cripple the native engines
     if (isNative && saved.engineGen !== 2) {

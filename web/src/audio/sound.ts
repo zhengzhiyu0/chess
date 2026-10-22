@@ -19,17 +19,26 @@ interface Theme {
   bell: OscillatorType;
 }
 
-/** Recorded sound sets from Lichess (public/sounds/<id>/, AGPLv3+ by Enigmahack). */
+/**
+ * Recorded sound sets (public/sounds/<id>/): Lichess sets are AGPLv3+ by Enigmahack;
+ * `board` is Kenney's CC0 wooden impacts for Move / Capture and borrows the rest from `sfx`.
+ */
 const SAMPLE_FILES = ['Move', 'Capture', 'Check', 'GenericNotify', 'Victory', 'Defeat', 'Draw', 'LowTime'] as const;
 type SampleFile = (typeof SAMPLE_FILES)[number];
 
 export const SAMPLE_THEMES = {
+  board: '实木棋盘',
   sfx: 'Lichess 音效',
   piano: 'Lichess 钢琴',
   nes: 'Lichess 8 位',
   futuristic: 'Lichess 未来',
 } as const;
 type SampleThemeId = keyof typeof SAMPLE_THEMES;
+
+/** Files a theme takes from another set instead of shipping its own. */
+const SAMPLE_BORROW: Partial<Record<SampleThemeId, { from: SampleThemeId; files: readonly SampleFile[] }>> = {
+  board: { from: 'sfx', files: ['Check', 'GenericNotify', 'Victory', 'Defeat', 'Draw', 'LowTime'] },
+};
 
 const isSampleTheme = (id: string): id is SampleThemeId => id in SAMPLE_THEMES;
 
@@ -104,7 +113,7 @@ export const SOUND_THEMES: Record<string, { label: string }> = {
   ...SYNTH_THEMES,
 };
 
-export const DEFAULT_SOUND_THEME: SampleThemeId = 'sfx';
+export const DEFAULT_SOUND_THEME: SampleThemeId = 'board';
 
 let ctx: AudioContext | null = null;
 let out: AudioNode | null = null;
@@ -127,7 +136,9 @@ function loadSamples(a: AudioContext, id: SampleThemeId) {
     p = Promise.all(
       SAMPLE_FILES.map(async (f) => {
         try {
-          const res = await fetch(new URL(`sounds/${id}/${f}.mp3`, document.baseURI).href);
+          const borrow = SAMPLE_BORROW[id];
+          const dir = borrow?.files.includes(f) ? borrow.from : id;
+          const res = await fetch(new URL(`sounds/${dir}/${f}.mp3`, document.baseURI).href);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return [f, await a.decodeAudioData(await res.arrayBuffer())] as const;
         } catch (err) {

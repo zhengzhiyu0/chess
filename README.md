@@ -8,7 +8,7 @@
   - 战术识别准确率：`web/test/puzzle-bench.test.ts` 用 3061 道 Lichess 谜题（CC0，`node scripts/build-puzzles.mjs` 生成）统计每类的精确率和召回率，并设置下限防止退化。Lichess 的标签是程序打的、并不完备，所以精确率只是下限。
   - 棋钟：不限时或 3+2 / 5+3 / 10+5 / 15+10 / 30+20，含加秒、超时判负（对方子力不足以将杀时判和）、低时间提醒；Maia 会按剩余时间分配思考时间。
   - 规则：将死、逼和、三次重复、子力不足、50 回合，认输、提和（Maia 依据胜和负概率决定是否接受）。
-  - 预走、走子 / 吃子 / 将军 / 易位 / 升变音效与震动反馈（可在设置中关闭）。默认使用 Lichess 的录制音效（音效 / 钢琴 / 8 位 / 未来四套，[Enigmahack](https://github.com/Enigmahack) 制作，AGPLv3+，见 [web/public/sounds](web/public/sounds/README.md)），也可以换回合成音色；对局结束按胜/负/和播放不同音效。
+  - 预走、走子 / 吃子 / 将军 / 易位 / 升变音效与震动反馈（可在设置中关闭）。默认使用“实木棋盘”音效（走子 / 吃子为 [Kenney](https://kenney.nl/assets/impact-sounds) 的 CC0 木头撞击录音，其余沿用 Lichess 音效），也可选 Lichess 的录制音效（音效 / 钢琴 / 8 位 / 未来四套，[Enigmahack](https://github.com/Enigmahack) 制作，AGPLv3+，见 [web/public/sounds](web/public/sounds/README.md)）或其他合成音色；对局结束按胜/负/和播放不同音效。
   - 复盘：胜率曲线、准确率、不精确 / 错误 / 漏着标注、更好的变化，以及“同水平棋手常走什么”；在棋盘上走子即可添加变着，可设为主线或删除。
   - PGN：导入 / 导出完整变着树、注释、NAG、`[%clk]` 用时和 `[%eval]` 评估；可从任意 PGN / FEN 局面或当前复盘局面开始与 Maia 对弈。
   - 历史与统计：已结束的对局自动保存（最多 300 局），可重新打开复盘；按执色、对手等级分统计胜和负与得分率。

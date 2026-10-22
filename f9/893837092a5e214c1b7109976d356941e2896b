@@ -1,0 +1,48 @@
+web/src/coach/coach.ts
+  s_b7f87d2d7cddd3::t_bfcf2f12b8625e 27-40,43-44,46-47,51,55-68,79-116
+web/src/app/judge-icon.ts
+  s_b7f87d2d7cddd3::t_2ae3b0ac31703e 23-29
+  s_b7f87d2d7cddd3::t_ec21126dcb4b1d 4-8
+web/src/coach/explain.ts
+  s_b7f87d2d7cddd3::t_f12afda00902e0 359-360
+  s_b7f87d2d7cddd3::t_3f8a634827095b 335-358
+web/src/coach/book-data.ts
+  s_b7f87d2d7cddd3::t_d1e6536f2d8670 1-2
+web/src/app/fx.ts
+  s_b7f87d2d7cddd3::t_94c0c19aa54d4c 157-158
+  s_b7f87d2d7cddd3::t_b4bf2f4bc742f4 3,16-21,24-25,35-52,65,82-84,90-102,163-164,166-170,172-176,227,229-230,232,260-293,323-327,362-406
+web/src/style.css
+  s_b7f87d2d7cddd3::t_1a6374a17b819c 1584
+  s_b7f87d2d7cddd3::t_1313ec8c01bfda 1583,1585-1613
+web/src/main.ts
+  s_b7f87d2d7cddd3::t_561a176802f169 1113-1114
+  s_b7f87d2d7cddd3::t_9d023e55abd486 13-15,1071,2158
+  s_b7f87d2d7cddd3::t_aa6b4a5c5a9bac 944,948-969,971
+  s_b7f87d2d7cddd3::t_5529c9db6a2d69 2658-2662
+  s_b7f87d2d7cddd3::t_37448325ab9d4a 2663
+web/src/coach/book.ts
+  s_b7f87d2d7cddd3::t_09a431e109ac25 1-29
+web/test/judge.test.ts
+  s_b7f87d2d7cddd3::t_bbf7b77c3fcebc 27
+  s_b7f87d2d7cddd3::t_9451ac97ea561a 55-56
+  s_b7f87d2d7cddd3::t_4e91800116148c 1-26,28-54,57-58
+web/scripts/build-book.mjs
+  s_b7f87d2d7cddd3::t_78f9756f2452f8 3-4,22,26-33
+  s_b7f87d2d7cddd3::t_18335dad271f27 1-2,5-21,23-25,34-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f9893837092a5e214c1b7109976d356941e2896b",
+  "prompts": {},
+  "sessions": {
+    "s_b7f87d2d7cddd3": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "2d5ef69f-047e-4ff4-a214-323f763ee3ea",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

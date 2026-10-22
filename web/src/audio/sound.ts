@@ -1,5 +1,7 @@
 /** Sounds: recorded Lichess sets (sample playback) or synthesized themes (Web Audio), plus haptics. */
 
+import { configureHaptics, haptic } from './haptics';
+
 export type SoundKind = 'move' | 'capture' | 'check' | 'castle' | 'promote' | 'illegal' | 'start' | 'end' | 'lowtime';
 
 /** 一次落子撞击：低频"砰" + 滤波噪声"咔" + 若干衰减的共振泛音 */
@@ -122,7 +124,6 @@ let pendingSounds: [SoundKind, EndKind | undefined][] = [];
 let resumePending = false;
 let lastMoveAt = 0;
 let enabled = true;
-let hapticsOn = true;
 let themeId: string = DEFAULT_SOUND_THEME;
 
 const synthOf = (id: string): Theme => SYNTH_THEMES[id as SynthThemeId] ?? SYNTH_THEMES.wood;
@@ -154,7 +155,7 @@ function loadSamples(a: AudioContext, id: SampleThemeId) {
 
 export function configureSound(sound: boolean, haptics: boolean, theme: string = DEFAULT_SOUND_THEME) {
   enabled = sound;
-  hapticsOn = haptics;
+  configureHaptics(haptics);
   themeId = theme in SOUND_THEMES ? theme : DEFAULT_SOUND_THEME;
   // decode ahead so the first move isn't silent; needs an AudioContext, which exists after the first tap
   if (ctx && isSampleTheme(themeId)) void loadSamples(ctx, themeId);
@@ -264,14 +265,6 @@ function beep(a: AudioContext, at: number, freq: number, len: number, gain = 0.1
   osc.stop(at + len + 0.02);
 }
 
-const VIBRATE: Partial<Record<SoundKind, number | number[]>> = {
-  capture: 18,
-  check: [20, 40, 20],
-  illegal: [10, 30, 10],
-  end: [30, 60, 30],
-  lowtime: 12,
-};
-
 function synth(a: AudioContext, kind: SoundKind, th: Theme, delay = 0) {
   const t = a.currentTime + 0.005 + delay;
   const h = th.hit;
@@ -358,7 +351,7 @@ async function render(a: AudioContext, kind: SoundKind, id: string, delay = 0, e
 }
 
 export function play(kind: SoundKind, end?: EndKind) {
-  if (hapticsOn && VIBRATE[kind] !== undefined) navigator.vibrate?.(VIBRATE[kind]!);
+  haptic(kind);
   const a = audio();
   if (!a) return;
   const now = performance.now();

@@ -1,0 +1,27 @@
+web/ios/App/CapApp-SPM/Package.swift
+  s_12053ee5df6d4b::t_a7bdb64f25e426 15,25
+web/package.json
+  s_12053ee5df6d4b::t_4302821fb93578 17
+web/src/audio/haptics.ts
+  s_12053ee5df6d4b::t_bda1a7d621974a 1-73
+web/src/audio/sound.ts
+  s_12053ee5df6d4b::t_c3b7ebfeb5f202 3-4,158,354
+web/package-lock.json
+  s_12053ee5df6d4b::t_63d373f2c33d20 13,78-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "678b5b3eee3d0920beddc7b3991ce49162934306",
+  "prompts": {},
+  "sessions": {
+    "s_12053ee5df6d4b": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "8817a461-cb93-48cc-954c-07f92b314950",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

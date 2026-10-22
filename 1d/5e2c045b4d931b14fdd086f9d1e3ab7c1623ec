@@ -1,0 +1,27 @@
+web/src/engine/eval-cache.ts
+  s_3ce749e80efed9::t_5a77d74c1985ba 1-65
+web/src/main.ts
+  s_3ce749e80efed9::t_454ce9eaa1d9d2 12,292,294,297-298,915
+  s_3ce749e80efed9::t_12f8888658a9cd 911,913,959-961,963-970
+  s_3ce749e80efed9::t_f47111ad44fa60 842-844,848-853,859-860,928-930
+  s_3ce749e80efed9::t_9eeb726fcfc46c 847,889,905-910,914,916-927
+  s_3ce749e80efed9::t_14ca20a6bdd122 2529,2535-2538
+  s_3ce749e80efed9::t_8928854b47ef70 912
+  s_3ce749e80efed9::t_9061e7ae0a1203 1023-1024
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1d5e2c045b4d931b14fdd086f9d1e3ab7c1623ec",
+  "prompts": {},
+  "sessions": {
+    "s_3ce749e80efed9": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "a7329e4d-57d0-49ce-8685-412b0d3b4f70",
+        "model": "customendpoint/ufosaga/claude-opus-5.5"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

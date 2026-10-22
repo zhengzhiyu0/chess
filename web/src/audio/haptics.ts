@@ -53,6 +53,27 @@ export function haptic(kind: HapticKind) {
   if (p !== undefined) navigator.vibrate?.(p);
 }
 
+let dragPrepared = false;
+
+/** Selection ticks while dragging a piece across its legal squares (native only; uses a prepared UISelectionFeedbackGenerator). */
+export const dragHaptics = {
+  start() {
+    if (!on || !isNative || dragPrepared) return;
+    dragPrepared = true;
+    Haptics.selectionStart().catch(() => {});
+  },
+  tick() {
+    if (!on || !isNative) return;
+    if (!dragPrepared) this.start();
+    Haptics.selectionChanged().catch(() => {});
+  },
+  end() {
+    if (!dragPrepared) return;
+    dragPrepared = false;
+    Haptics.selectionEnd().catch(() => {});
+  },
+};
+
 const TAPPABLE = 'button, [role="button"], .tool, .coach-line, label.check, select, input[type="checkbox"], input[type="radio"], summary';
 
 /** Light tap on every button press in the native app (UIKit-style feedback). */

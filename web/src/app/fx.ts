@@ -114,6 +114,7 @@ export class BoardFx {
   private last = 0;
   private size = 0;
   private timers: number[] = [];
+  private castleAnim: Animation | null = null;
 
   constructor(
     private box: HTMLElement,
@@ -150,6 +151,7 @@ export class BoardFx {
     for (const t of this.timers) clearTimeout(t);
     this.timers = [];
     this.ps = [];
+    this.castleAnim?.cancel();
     this.box.classList.remove('fx-shake');
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
@@ -157,8 +159,8 @@ export class BoardFx {
   /** Effects for a move that has just been made; `delay` lets the piece slide in first. */
   move(m: MoveFx, delay = 160) {
     if (!this.enabled || !this.size) return;
-    // the rook hops while chessground slides it; wait a frame for the piece element to be keyed
-    if (m.rook) this.later(16, () => this.castle(m));
+    this.castleAnim?.cancel();
+    if (m.rook) this.castle(m);
     this.later(delay, () => {
       const [x, y] = this.center(m.to);
       if (m.captured) this.shards(...this.center(m.captured.square), m.captured.color);
@@ -260,27 +262,62 @@ export class BoardFx {
     }
   }
 
+  /** The rook's flight; chessground must not slide it as well (see `withoutRookSlide` in main). */
+  private rookFlight(m: MoveFx, retry = true) {
+    const rook = [...this.box.querySelectorAll<HTMLElement & { cgKey?: string }>('cg-board piece')].find((p) => p.cgKey === m.rook!.to);
+    if (!rook) {
+      if (retry) requestAnimationFrame(() => this.rookFlight(m, false));
+      return;
+    }
+    const s = this.size / 8;
+    const [fx0] = this.center(m.rook!.from);
+    const [tx, ty] = this.center(m.rook!.to);
+    const dx = (fx0 - tx) / s;
+    const dir = Math.sign(-dx) || 1;
+    // individual translate/rotate/scale compose with chessground's inline transform; pivot at the
+    // rook's own base instead of the board corner the element is laid out at
+    rook.style.transformOrigin = `${tx}px ${ty + s / 2}px`;
+    const frames: Keyframe[] = [];
+    const N = 14;
+    const FLY = 0.78;
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      const u = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      const lift = 4 * u * (1 - u);
+      frames.push({
+        offset: t * FLY,
+        translate: `${(dx * (1 - u) * 100).toFixed(2)}% ${(-lift * 55).toFixed(2)}%`,
+        rotate: `${(dir * 12 * Math.sin(Math.PI * u) * (1 - u * 0.6)).toFixed(2)}deg`,
+        scale: `${(1 + 0.1 * lift).toFixed(3)}`,
+      });
+    }
+    frames.push({ offset: 0.88, translate: '0 0', rotate: '0deg', scale: '1.1 0.88' });
+    frames.push({ offset: 0.95, translate: '0 0', rotate: '0deg', scale: '0.97 1.04' });
+    frames.push({ offset: 1, translate: '0 0', rotate: '0deg', scale: '1' });
+    rook.classList.add('fx-castle');
+    const a = rook.animate(frames, { duration: 460, easing: 'linear' });
+    this.castleAnim = a;
+    const done = () => {
+      rook.classList.remove('fx-castle');
+      rook.style.transformOrigin = '';
+      if (this.castleAnim === a) this.castleAnim = null;
+    };
+    a.onfinish = done;
+    a.oncancel = done;
+  }
+
   /** Castling: the rook vaults over the king in an arc; dust puffs where both land. */
   private castle(m: MoveFx) {
-    const rook = [...this.box.querySelectorAll<HTMLElement & { cgKey?: string }>('cg-board piece')].find((p) => p.cgKey === m.rook!.to);
-    if (rook) {
-      // screen direction of travel, so the rook leans into the jump
-      const dir = Math.sign(this.center(m.rook!.to)[0] - this.center(m.rook!.from)[0]) || 1;
-      rook.style.setProperty('--castle-dir', String(dir));
-      rook.classList.remove('fx-castle');
-      void rook.offsetWidth;
-      rook.classList.add('fx-castle');
-      this.later(700, () => rook.classList.remove('fx-castle'));
-    }
+    this.rookFlight(m);
     const s = this.size / 8;
     for (const sq of [m.to, m.rook!.to]) {
       const [x, y] = this.center(sq);
       for (let i = 0; i < 7; i++) {
         const side = i % 2 ? 1 : -1;
-        this.push({ x: x + side * rnd(0.1, 0.3) * s, y: y + 0.38 * s, vx: side * rnd(0.6, 1.4) * s, vy: -rnd(0.2, 0.6) * s, g: 0, drag: 3, t: -0.2, life: rnd(0.4, 0.6), size: rnd(0.08, 0.14) * s, color: 'rgba(255,255,255,.7)', shape: 'circle', rot: 0, vr: 0 });
+        this.push({ x: x + side * rnd(0.1, 0.3) * s, y: y + 0.38 * s, vx: side * rnd(0.6, 1.4) * s, vy: -rnd(0.2, 0.6) * s, g: 0, drag: 3, t: -0.36, life: rnd(0.4, 0.6), size: rnd(0.08, 0.14) * s, color: 'rgba(255,255,255,.7)', shape: 'circle', rot: 0, vr: 0 });
       }
     }
-    this.later(200, () => {
+    this.later(380, () => {
       this.ring(...this.center(m.rook!.to), '#ffd54a', 0.6);
       this.start();
     });

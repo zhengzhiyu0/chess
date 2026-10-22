@@ -445,6 +445,11 @@ input[type='checkbox'] {
   margin: 0 !important;
   stroke: none;
 }
+/* 对局信息栏头像较小：放大人物、裁掉多余背景 */
+.player .avatar.coach svg {
+  transform: scale(1.22);
+  transform-origin: 50% 22%;
+}
 .avatar.default {
   background: #5a5856;
   color: #a8a6a4;
@@ -1582,34 +1587,6 @@ dialog input[type='color'] {
 }
 .fx-on cg-board piece.fx-castle {
   z-index: 9;
-  animation: fx-castle 0.5s cubic-bezier(0.3, 0.7, 0.4, 1) both;
-}
-/* rook vaults over the king: rise, lean into the jump, land with a squash */
-@keyframes fx-castle {
-  0% {
-    translate: 0 0;
-    rotate: 0deg;
-    scale: 1;
-  }
-  35% {
-    translate: 0 -62%;
-    rotate: calc(var(--castle-dir, 1) * 14deg);
-    scale: 1.12;
-  }
-  70% {
-    translate: 0 0;
-    rotate: calc(var(--castle-dir, 1) * -4deg);
-    scale: 1.12 0.86;
-  }
-  85% {
-    scale: 0.96 1.05;
-    rotate: 0deg;
-  }
-  100% {
-    translate: 0 0;
-    rotate: 0deg;
-    scale: 1;
-  }
 }
 @keyframes fx-nervous {
   0%,
@@ -2067,6 +2044,17 @@ dialog input[type='color'] {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+.rc-opp {
+  display: inline-flex;
+  align-items: center;
+}
+.rc-opp.hidden {
+  display: none;
+}
+.rc-opp .rc-btn,
+.rc-opp .rc-issues {
+  color: var(--muted);
+}
 #btn-report {
   margin-left: auto;
 }
@@ -2226,4 +2214,101 @@ dialog input[type='color'] {
   align-items: center;
   gap: 4px;
   font-size: 13px;
+}
+/* ---------- 训练（谜题 / 错题本） ---------- */
+.train-theme {
+  max-width: 44%;
+  background: var(--panel2);
+  color: var(--text);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+#train[data-kind='mistake'] .train-theme {
+  display: none;
+}
+.train-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.train-board-col {
+  flex: none;
+  align-self: center;
+  width: min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 170px));
+  min-width: 240px;
+}
+.train-side {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--panel);
+}
+.train-sub {
+  font-size: 13px;
+}
+.train-info {
+  font-size: 15px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--panel2);
+  border-left: 3px solid var(--muted);
+}
+.train-info.good {
+  border-left-color: var(--green);
+}
+.train-info.bad {
+  border-left-color: #d9443a;
+}
+.train-info.warn {
+  border-left-color: var(--yellow);
+}
+.train-board-col .board-box {
+  width: 100%;
+}
+#train-board {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+@media (min-aspect-ratio: 1/1) and (min-width: 720px) {
+  .train-main {
+    flex-direction: row;
+  }
+  .train-board-col {
+    align-self: flex-start;
+    width: min(calc(100vw - 340px), calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px));
+  }
+}
+.home-actions + .home-actions {
+  margin-top: -4px;
+}
+.tile.remind svg {
+  color: var(--yellow);
+}
+.tile.remind small::after {
+  content: ' · 建议备份';
+  color: var(--yellow);
+}
+#dlg-data form > button {
+  width: 100%;
+}
+#mistakes-body h4 {
+  margin: 12px 0 4px;
+}
+.mistake-list {
+  margin-top: 8px;
+}
+.result-elo small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
 }

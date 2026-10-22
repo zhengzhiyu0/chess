@@ -9,7 +9,7 @@ export interface FileEntry {
   size: number;
 }
 
-export type PackageId = 'core' | 'stockfish' | `maia-${ModelId}`;
+export type PackageId = 'core' | 'stockfish' | 'puzzles' | `maia-${ModelId}`;
 
 export interface Package {
   id: PackageId;
@@ -49,16 +49,18 @@ export async function listPackages(sfLite: boolean): Promise<Package[]> {
   if (!manifest) return [];
   const cache = await caches.open(CACHE_NAME);
   const have = new Set((await cache.keys()).map((r) => r.url));
-  const groups: Record<string, FileEntry[]> = { core: [], stockfish: [], 'maia-5m': [], 'maia-23m': [], 'maia-79m': [] };
+  const groups: Record<string, FileEntry[]> = { core: [], stockfish: [], puzzles: [], 'maia-5m': [], 'maia-23m': [], 'maia-79m': [] };
   for (const f of manifest.files) {
     const m = /^models\/maia3-(\w+)\//.exec(f.url);
     if (m) groups[`maia-${m[1]}`]?.push(f);
+    else if (f.url.startsWith('puzzles/')) groups.puzzles.push(f);
     else if (f.url.startsWith('engines/')) {
       if (stockfishVariant(f.url, sfLite)) groups.stockfish.push(f);
     } else groups.core.push(f);
   }
   const meta: Record<string, { label: string; desc: string }> = {
     core: { label: '应用本体', desc: '界面 + Maia 推理运行时（离线必需）' },
+    puzzles: { label: '谜题库', desc: '50000 道 Lichess 谜题（CC0），离线做题' },
     stockfish: {
       label: sfLite ? 'Stockfish 19 轻量版' : 'Stockfish 19',
       desc: `${sfLite ? '小型 NNUE' : '完整 NNUE'}，${self.crossOriginIsolated ? '多线程版' : '单线程版'}`,

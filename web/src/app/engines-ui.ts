@@ -28,7 +28,7 @@ async function renderPackages(ctx: EnginesCtx) {
   if (isNative) {
     list.innerHTML =
       '<p class="muted">App 已预装全部原生引擎，无需下载：</p>' +
-      '<ul class="muted"><li>Stockfish 19 满血版（完整 NNUE，C++ 原生多线程 + NEON）</li><li>Stockfish 19 轻量版（小网络，原生）</li><li>Maia-3 5M / 23M / 79M（ONNX Runtime 原生，CoreML 加速）</li></ul>' +
+      '<ul class="muted"><li>Stockfish 19 满血版（完整 NNUE，C++ 原生多线程 + NEON）</li><li>Stockfish 19 轻量版（小网络，原生）</li><li>Maia-3 5M / 23M / 79M（ONNX Runtime 原生，CoreML 加速）</li><li>谜题库（50000 道 Lichess 谜题，内置）</li></ul>' +
       '<p class="muted">在「设置 → Stockfish 版本」中切换满血/轻量。</p>';
     return;
   }
@@ -104,7 +104,7 @@ async function startDownload(ctx: EnginesCtx, p: Package, onProgress?: (loaded: 
 
 async function downloadRecommended(ctx: EnginesCtx) {
   const pkgs = await listPackages(ctx.settings().sfLite);
-  const want: PackageId[] = ['core', 'stockfish', `maia-${ctx.settings().model}`];
+  const want: PackageId[] = ['core', 'stockfish', 'puzzles', `maia-${ctx.settings().model}`];
   // sequential: parallel downloads would only compete for bandwidth
   for (const id of want) {
     const p = pkgs.find((x) => x.id === id);
@@ -122,7 +122,7 @@ export async function autoOffline(ctx: EnginesCtx): Promise<boolean> {
   if (isNative || !('caches' in self) || !(await loadPrecache())) return false;
   await pruneStale();
   const pkgs = await listPackages(ctx.settings().sfLite);
-  const want: PackageId[] = ['core', 'stockfish', `maia-${ctx.settings().model}`];
+  const want: PackageId[] = ['core', 'stockfish', 'puzzles', `maia-${ctx.settings().model}`];
   const todo = pkgs.filter((p) => want.includes(p.id) && !isComplete(p));
   if (!todo.length) return false;
   const total = todo.reduce((a, p) => a + p.size, 0);

@@ -11,6 +11,34 @@ const isolation = {
 
 const NOT_PRECACHED = new Set(['sw.js', 'precache.json']);
 
+/**
+ * Content Security Policy for production builds (dev needs Vite's HMR websocket). Everything is
+ * same-origin; WebAssembly engines need 'wasm-unsafe-eval', emscripten thread pools may use blob:
+ * workers, and the UI sets inline styles. A defence in depth for the innerHTML-rendered UI.
+ */
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval' blob:",
+  "worker-src 'self' blob:",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "media-src 'self' data: blob:",
+  "connect-src 'self' data: blob:",
+  "font-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  // trailing ';': some antivirus proxies append their own directives to the meta tag
+].join('; ') + ';';
+
+function csp(): Plugin {
+  return {
+    name: 'csp',
+    apply: 'build',
+    transformIndexHtml: (html) => html.replace('<meta charset="UTF-8" />', `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`),
+  };
+}
+
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
 /** Changes on every build so the browser sees a new sw.js and the page can show the version. */
 const BUILD_ID = `${pkg.version}+${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '')}`;
@@ -61,7 +89,7 @@ function precacheManifest(): Plugin {
 
 export default defineConfig({
   base: './',
-  plugins: [precacheManifest()],
+  plugins: [csp(), precacheManifest()],
   define: { __APP_VERSION__: JSON.stringify(BUILD_ID) },
   server: { headers: isolation, host: true },
   preview: { headers: isolation, host: true },

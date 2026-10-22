@@ -13,14 +13,21 @@ import { flushEvals, getEval, putEval } from './engine/eval-cache';
 import { classify, evalText, JUDGEMENTS, JUDGEMENT_INFO, moveAccuracy, SEVERITY, whiteWinPct, winPct, type Judgement } from './coach/coach';
 import { bookReady, inBook, loadBook } from './coach/book';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, isSacrifice, plainEval, type MoveInsight, type Sides } from './coach/explain';
-import { ELO_MAX, ELO_MIN, eloDelta, loadSettings, saveSettings, type Settings } from './settings';
+import { ELO_MAX, ELO_MIN, loadSettings, saveSettings, type Settings } from './settings';
+import { assistCount, computeRating, emptyAssists, ratingBreakdown, type Assists, type RatingInfo } from './game/rating';
+import { onStorageFull, readJson, safeSet } from './storage';
+import { addMistakes, loadMistakes, setMistakes, type Mistake } from './training/mistakes';
+import { loadProgress, setProgress } from './training/puzzles';
+import { backupFileName, makeBackup, mergeBackup, parseBackup, pickFile, shareFile, type BackupData } from './backup';
+import { bindTrainer, notebookSummary, openNotebook, openPuzzles, puzzleSummary, trainerRedraw, type TrainerCtx } from './app/trainer-ui';
+import { mistakeTag } from './coach/explain';
 import { isNative, thermalState } from './native';
 import { GameTree, mainChild, type GNode } from './game/tree';
 import { END_REASON_TEXT, START_FEN, moveNumberOf, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
-import { exportPgn as treeToPgn, parsePgn, type Annotation } from './game/pgn';
+import { exportPgn as treeToPgn, parsePgn, splitPgn, type Annotation } from './game/pgn';
 import { ChessClock, TIME_CONTROLS, fmtClockShort, pgnTimeControl, thinkBudget, timeControlOf } from './game/clock';
-import { computeStats, loadHistory, newGameId, saveHistory, upsert, type StoredGame } from './game/history';
-import { installTapHaptics } from './audio/haptics';
+import { computeStats, loadHistory, newGameId, sanitizeGame, saveHistory, upsert, type StoredGame } from './game/history';
+import { dragHaptics, installTapHaptics } from './audio/haptics';
 import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio, type EndKind } from './audio/sound';
 import { $, escapeHtml, setStatus } from './app/dom';
 import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from './app/appearance';
@@ -30,7 +37,7 @@ import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './a
 import { COACHES } from './app/coach-avatars';
 import { findNode, movesHtml } from './app/moves-ui';
 import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
-import { BoardFx, moveFxOf } from './app/fx';
+import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
 
@@ -71,6 +78,11 @@ interface LegacyGame {
 
 const GAME_KEY = 'maia-coach.game';
 
+function isLegacy(v: unknown): v is LegacyGame {
+  const g = v as LegacyGame;
+  return Boolean(v) && typeof v === 'object' && !('tree' in g) && typeof g.startFen === 'string' && Array.isArray(g.moves) && g.moves.every((m) => typeof m === 'string') && (g.userColor === 'w' || g.userColor === 'b');
+}
+
 let settings: Settings = loadSettings();
 let tree = new GameTree<Ann>(START_FEN);
 let node: Node = tree.root;
@@ -99,7 +111,7 @@ let liveLines: SfLine[] = [];
 let batchCtrl: AbortController | null = null;
 /** whole-game analysis interrupted by the app going to the background, resumed on return */
 let pausedBatch = false;
-let screen: 'home' | 'game' = 'home';
+let screen: 'home' | 'game' | 'train' = 'home';
 let shownResult = '';
 let coachOn = false;
 let coachState: 'idle' | 'checking' | 'paused' = 'idle';
@@ -109,6 +121,13 @@ let coachFrom: Node | null = null;
 /** moves taken back with "重走这步", re-attached as variations once a different move is played */
 let retried: { from: Node; nodes: Node[] } | null = null;
 let history: StoredGame[] = loadHistory();
+/** help used in the current game */
+let assists: Assists = emptyAssists();
+/** how the rating change of the current (finished) game was computed */
+let rating: RatingInfo | undefined;
+/** the current game is over but its rating waits for the analysis of the game */
+let ratePending = false;
+let abandoned = false;
 
 const engines = new Engines(
   () => settings,
@@ -181,16 +200,16 @@ function stored(): StoredGame {
     clock: clock && !result ? clock.snapshot(performance.now()) : undefined,
     headers,
     imported: imported || undefined,
+    assists: assistCount(assists) ? assists : undefined,
+    rating,
+    abandoned: abandoned || undefined,
+    ratePending: ratePending || undefined,
   };
 }
 
 function saveGame() {
   const g = stored();
-  try {
-    localStorage.setItem(GAME_KEY, JSON.stringify(g));
-  } catch (err) {
-    console.warn('保存对局失败', err);
-  }
+  safeSet(GAME_KEY, JSON.stringify(g));
   if (result && !imported) {
     history = upsert(history, g);
     saveHistory(history);
@@ -204,6 +223,7 @@ function resetTransient() {
   hintShapes = [];
   retried = null;
   liveLines = [];
+  hintedAt = null;
   coachReset();
   $('hint-box').textContent = '';
 }
@@ -239,6 +259,10 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     gameElo = g.elo ?? (imported ? undefined : settings.elo);
     eloAfter = g.eloAfter;
     gameModel = g.model ?? settings.model;
+    assists = g.assists ? { ...g.assists } : emptyAssists();
+    rating = g.rating;
+    ratePending = Boolean(g.ratePending);
+    abandoned = Boolean(g.abandoned);
     tcId = g.tc ?? 'none';
     const tc = timeControlOf(tcId);
     clock = tc ? new ChessClock(tc, g.clock ?? node.clock) : null;
@@ -399,7 +423,17 @@ function moveFx() {
   }
   const r = mode === 'review' && showMove(node) ? reviewOf(node) : null;
   const m = moveFxOf(prev.fen, node.uci, r?.judgement);
-  if (m) fx.move(m);
+  if (m) playFx(m);
+}
+
+/** Starts move effects right after the board has been set; the rook flight replaces chessground's rook slide. */
+function playFx(m: MoveFx) {
+  if (m.rook && fx.enabled) {
+    cg.state.animation.current?.plan.anims.delete(m.rook.to as Key);
+    // render synchronously so the rook element is already keyed to its new square for the flight
+    cg.state.dom.redrawNow(true);
+  }
+  fx.move(m);
 }
 
 let autoTimer = 0;
@@ -501,6 +535,11 @@ async function onUserMove(orig: Key, dest: Key, meta?: MoveMetadata) {
       renderBoard();
       return;
     }
+    // coach overlays shown while the move was chosen count as help
+    if (coachOn) {
+      if (settings.coachThreats || settings.coachHanging) assists.aids = true;
+      if (settings.coachBest) assists.best = true;
+    }
     if (result) return;
     if (coachOn) void coachCheck(tip().parent!);
     else void maiaTurn();
@@ -584,24 +623,146 @@ function endGame(res: string, why: EndReason) {
   // imported/review games have no "me": treat any decisive end as neutral
   const end: EndKind = res === '1/2-1/2' || imported ? 'draw' : (res === '1-0') === (userColor === 'w') ? 'win' : 'loss';
   setTimeout(() => play('end', end), 250);
-  rateGame();
+  startRating();
+  collectMistakes();
   saveGame();
 }
 
-/** Automatic rating: move the shared Maia/player rating up or down after a finished game. */
-function rateGame() {
+const userMovesOf = (): Node[] => {
+  const out: Node[] = [];
+  for (let n = mainChild(tree.root); n; n = mainChild(n)) if (n.parent && turnOf(n.parent.fen) === userColor) out.push(n);
+  return out;
+};
+
+const MISTAKE_J = new Set<Judgement>(['mistake', 'miss', 'blunder']);
+
+/** Puts the user's analysed mistakes and blunders of this game into the notebook. */
+function collectMistakes() {
+  if (imported) return;
+  const found: Mistake[] = [];
+  for (const n of userMovesOf()) {
+    const p = n.parent!;
+    const r = reviewOf(n);
+    const best = p.a.eval?.best;
+    if (!r || !best || !MISTAKE_J.has(r.judgement) || best === n.uci) continue;
+    const tag = mistakeTag({ fen: p.fen, uci: n.uci, best, bestLine: p.a.eval!.lines[0], replyLine: n.a.eval?.lines[0] });
+    found.push({
+      id: `${gameId}:${n.ply}`,
+      gameId,
+      date: gameDate,
+      fen: p.fen,
+      played: n.uci,
+      playedSan: n.san,
+      best,
+      line: (p.a.eval!.lines[0]?.pv[0] === best ? p.a.eval!.lines[0].pv : [best]).slice(0, 12),
+      judgement: r.judgement as Mistake['judgement'],
+      drop: Math.round(r.before - r.after),
+      tag: tag.id,
+      tagLabel: tag.label,
+      streak: 0,
+      due: Date.now(),
+      tries: 0,
+      solved: 0,
+    });
+  }
+  const added = found.length ? addMistakes(found) : 0;
+  if (added) setStatus(`${added} 步错着已收进错题本`);
+}
+
+/** Automatic rating applies to real games from the standard start in which the user moved (or resigned). */
+function rateable(): boolean {
+  if (!settings.autoElo || imported || gameElo === undefined || tree.root.fen !== START_FEN) return false;
+  return userMovesOf().length >= 1 || reason === 'resign';
+}
+
+let rateCtrl: AbortController | null = null;
+
+/** Average accuracy of the user's moves, from the review evals or a quick dedicated search. */
+async function gameAccuracy(signal: AbortSignal): Promise<number | undefined> {
+  const moves = userMovesOf();
+  if (moves.length < 3) return undefined;
+  const need = new Set<Node>();
+  for (const n of moves) for (const x of [n.parent!, n]) if (!x.a.eval) need.add(x);
+  const white = new Map<Node, number>();
+  if (need.size) {
+    const s = await getSf();
+    for (const x of need) {
+      if (signal.aborted) return undefined;
+      const r = await s.analyse(tree.root.fen, { moves: movesTo(x), movetime: 250, depth: 14, signal });
+      if (signal.aborted) return undefined;
+      white.set(x, posEvalFrom(x, r.lines, r.bestmove).white);
+    }
+  }
+  const w = (x: Node) => x.a.eval?.white ?? white.get(x) ?? 50;
+  const accs = moves.map((n) => {
+    const me = userColor === 'w';
+    const before = me ? w(n.parent!) : 100 - w(n.parent!);
+    const after = me ? w(n) : 100 - w(n);
+    return moveAccuracy(before, after);
+  });
+  return accs.reduce((a, b) => a + b, 0) / accs.length;
+}
+
+function startRating() {
+  rateCtrl?.abort();
   eloAfter = undefined;
-  // only real games from the standard start in which the user actually moved
-  if (!settings.autoElo || imported || gameElo === undefined || tree.root.fen !== START_FEN) return;
-  let userMoves = 0;
-  for (let n = mainChild(tree.root); n; n = mainChild(n)) if (n.parent && turnOf(n.parent.fen) === userColor) userMoves++;
-  if (userMoves < 3) return;
+  rating = undefined;
+  ratePending = rateable();
+  if (!ratePending) return;
+  if (abandoned) {
+    applyRating(undefined);
+    return;
+  }
+  const ctrl = new AbortController();
+  rateCtrl = ctrl;
+  const id = gameId;
+  void gameAccuracy(ctrl.signal)
+    .catch((err) => {
+      console.warn('评估本局表现失败', err);
+      return undefined;
+    })
+    .then((acc) => {
+      if (id !== gameId || !ratePending) return;
+      applyRating(acc);
+    });
+}
+
+function applyRating(accuracy: number | undefined) {
+  if (!ratePending) return;
+  ratePending = false;
+  rateCtrl = null;
   const score = result === '1/2-1/2' ? 0.5 : (result === '1-0') === (userColor === 'w') ? 1 : 0;
-  const next = Math.max(ELO_MIN, Math.min(ELO_MAX, settings.elo + eloDelta(score, settings.ratedGames)));
-  eloAfter = next;
-  settings = { ...settings, elo: next, ratedGames: settings.ratedGames + 1 };
+  rating = computeRating({ result: score, elo: gameElo!, ratedGames: settings.ratedGames, accuracy, assists, abandoned });
+  eloAfter = Math.max(ELO_MIN, Math.min(ELO_MAX, settings.elo + rating.delta));
+  settings = { ...settings, elo: eloAfter, ratedGames: settings.ratedGames + 1 };
   saveSettings(settings);
   clearAnn('human');
+  saveGame();
+  renderRatingResult();
+  if (screen === 'home') renderHome();
+}
+
+/** Rate an unfinished rated game right away (performance unknown) instead of losing it. */
+function flushRating() {
+  if (!ratePending) return;
+  rateCtrl?.abort();
+  applyRating(undefined);
+}
+
+/**
+ * Leaving an unfinished game (new game, another position, opening a record): after a few moves it
+ * counts as a resignation so a bad position can't be escaped for free. Returns false if cancelled.
+ */
+function leaveGame(): boolean {
+  flushRating();
+  if (result || imported || tip() === tree.root) return true;
+  const moved = userMovesOf().length;
+  if (moved < 3 || !rateable()) return true;
+  if (!confirm('当前对局还没下完。离开会按认输记录并计算等级分，确定吗？')) return false;
+  abandoned = true;
+  shownResult = userColor === 'w' ? '0-1' : '1-0';
+  endGame(shownResult, 'resign');
+  return true;
 }
 
 function flag(color: Color) {
@@ -649,7 +810,8 @@ async function maiaTurn(attempt = 0) {
   }
 }
 
-function newGame(fen = START_FEN, color?: Color) {
+function newGame(fen = START_FEN, color?: Color): boolean {
+  if (!leaveGame()) return false;
   gameToken++;
   maiaThinking = false;
   batchCtrl?.abort();
@@ -666,6 +828,10 @@ function newGame(fen = START_FEN, color?: Color) {
   reason = undefined;
   imported = false;
   headers = undefined;
+  assists = emptyAssists();
+  rating = undefined;
+  ratePending = false;
+  abandoned = false;
   tcId = settings.timeControl;
   const tc = timeControlOf(tcId);
   clock = tc ? new ChessClock(tc) : null;
@@ -676,6 +842,18 @@ function newGame(fen = START_FEN, color?: Color) {
   play('start');
   saveGame();
   setMode('play');
+  return true;
+}
+
+let hintedAt: Node | null = null;
+let assistWarned = '';
+
+/** First use of a help in a rated game: say once that it lowers the rating gain. */
+function assistOk(what: string): boolean {
+  if (!rateable() || assistWarned === gameId) return true;
+  if (!confirm(`使用${what}后，本局赢棋的加分会按比例减少（输棋照常扣分）。继续吗？`)) return false;
+  assistWarned = gameId;
+  return true;
 }
 
 function undo() {
@@ -685,6 +863,7 @@ function undo() {
     setStatus('对局已结束，不能悔棋');
     return;
   }
+  if (!assistOk('悔棋')) return;
   gameToken++;
   maiaThinking = false;
   let target: Node = t;
@@ -694,6 +873,7 @@ function undo() {
   retried = null;
   target.children = [];
   node = target;
+  assists.undo++;
   if (clock) clock.set(target.clock ?? [clock.tc.base, clock.tc.base], performance.now());
   cg.cancelPremove();
   hintShapes = [];
@@ -707,8 +887,15 @@ function undo() {
 async function hint() {
   const t = tip();
   if (result !== '' || mode !== 'play') return;
+  if (!assistOk('提示')) return;
   const box = $('hint-box');
   box.textContent = '思考中…';
+  // counted once per position, however often the button is pressed
+  if (hintedAt !== t) {
+    hintedAt = t;
+    assists.hint++;
+    saveGame();
+  }
   try {
     const s = await getSf();
     const r = await s.analyse(tree.root.fen, { moves: movesTo(t), movetime: settings.sfMovetime, depth: depthCap('hint'), multipv: 1 });
@@ -893,6 +1080,7 @@ async function analyseGame() {
       if (nodes[i] === node || i % 4 === 0) update();
     }
     setStatus('分析完成');
+    if (result && !imported) collectMistakes();
   } catch (err) {
     console.error(err);
   } finally {
@@ -1155,17 +1343,23 @@ function renderReportHint() {
   $('report-hint').textContent = analysing ? '正在分析整局…' : empty ? '暂无可统计的着法' : '';
 }
 
-function reviewIssues(): Node[] {
+type IssueSide = 'all' | 'me' | 'opp';
+
+/** With opponent review on, the main issue nav only visits the user's own moves and the opponent's get a separate one. */
+const splitIssueNav = () => settings.reviewOpponent && !imported;
+
+function reviewIssues(side: IssueSide = 'all'): Node[] {
   return gameLine().filter((n) => {
+    if (side !== 'all' && n.parent && (turnOf(n.parent.fen) === userColor) !== (side === 'me')) return false;
     const r = showMove(n) ? reviewOf(n) : null;
     return r && SEVERITY[r.judgement] > 0;
   });
 }
 
-function jumpReviewIssue(direction: -1 | 1) {
-  const issues = reviewIssues();
+function jumpReviewIssue(direction: -1 | 1, side: IssueSide = splitIssueNav() ? 'me' : 'all') {
+  const issues = reviewIssues(side);
   if (!issues.length) {
-    setStatus('还没有可跳转的问题着法');
+    setStatus(side === 'opp' ? '对手没有可跳转的问题着法' : '还没有可跳转的问题着法');
     return;
   }
   let target: Node | undefined;
@@ -1176,13 +1370,22 @@ function jumpReviewIssue(direction: -1 | 1) {
 }
 
 function renderReviewNav() {
-  const issues = reviewIssues();
-  const cur = issues.indexOf(realOf(node));
-  $('review-issues').textContent = issues.length ? `${cur >= 0 ? `${cur + 1}/` : ''}${issues.length}` : '0';
-  $('review-issues').title = '问题着法（不精确/错误/漏着）';
+  const split = splitIssueNav();
+  const counts: Record<'me' | 'opp', Node[]> = { me: reviewIssues(split ? 'me' : 'all'), opp: split ? reviewIssues('opp') : [] };
+  const label = (issues: Node[]) => {
+    const cur = issues.indexOf(realOf(node));
+    return issues.length ? `${cur >= 0 ? `${cur + 1}/` : ''}${issues.length}` : '0';
+  };
+  $('review-issues').textContent = label(counts.me);
+  $('review-issues').title = split ? '我的问题着法（不精确/错误/漏着）' : '问题着法（不精确/错误/漏着）';
+  $('review-issues-opp').textContent = label(counts.opp);
+  $('review-issues-opp').title = '对手的问题着法（不精确/错误/漏着）';
+  $('review-opp-nav').classList.toggle('hidden', !split);
   document.querySelectorAll<HTMLButtonElement>('[data-review-nav]').forEach((button) => {
-    button.disabled = issues.length === 0;
-    button.onclick = () => jumpReviewIssue(button.dataset.reviewNav === 'next' ? 1 : -1);
+    const opp = button.dataset.reviewSide === 'opp';
+    const side: IssueSide = opp ? 'opp' : split ? 'me' : 'all';
+    button.disabled = counts[opp ? 'opp' : 'me'].length === 0;
+    button.onclick = () => jumpReviewIssue(button.dataset.reviewNav === 'next' ? 1 : -1, side);
   });
 }
 
@@ -1367,9 +1570,9 @@ function stepDemo(d: number) {
   demo.idx = idx;
   if (idx > 0 && d > 0) play(soundForSan(sanOf(fenAt(demo.fen, demo.pv, idx - 1), demo.pv[idx - 1])));
   const m = d === 1 && idx > 0 ? moveFxOf(fenAt(demo.fen, demo.pv, idx - 1), demo.pv[idx - 1]) : null;
-  if (m) fx.move(m);
-  else fx.clear();
+  if (!m) fx.clear();
   update();
+  if (m) playFx(m);
 }
 
 function fenAt(fen: string, pv: string[], n: number): string {
@@ -1541,6 +1744,7 @@ function coachRetry() {
   coachReset();
   retried = { from, nodes: from.children.splice(0) };
   node = from;
+  assists.retry++;
   if (clock && from.clock) clock.set(from.clock, performance.now());
   cg.cancelPremove();
   hintShapes = [];
@@ -1871,22 +2075,41 @@ function checkResult() {
   $('result-icon').className = `result-icon ${draw ? 'draw' : win ? 'win' : 'loss'}`;
   $('result-title').textContent = draw ? '和棋' : win ? '你赢了！' : 'Maia 获胜';
   $('result-sub').textContent = resultText();
-  const rating = $('result-elo');
-  if (eloAfter !== undefined && gameElo !== undefined) {
-    const d = eloAfter - gameElo;
-    rating.innerHTML = `等级分 ${gameElo} → <b class="${d > 0 ? 'win' : d < 0 ? 'loss' : ''}">${eloAfter}</b>（${d > 0 ? '+' : ''}${d}），下一局 Maia 将按新分数对弈`;
-    rating.hidden = false;
-  } else rating.hidden = true;
+  renderRatingResult();
   setTimeout(() => $<HTMLDialogElement>('dlg-result').showModal(), 450);
 }
 
-function showScreen(s: 'home' | 'game', push = true) {
+function renderRatingResult() {
+  const box = $('result-elo');
+  if (ratePending) {
+    box.textContent = '正在评估本局表现，稍后计算等级分…';
+    box.hidden = false;
+  } else if (eloAfter !== undefined && gameElo !== undefined && rating) {
+    const d = eloAfter - gameElo;
+    box.innerHTML =
+      `等级分 ${gameElo} → <b class="${d > 0 ? 'win' : d < 0 ? 'loss' : ''}">${eloAfter}</b>（${d > 0 ? '+' : ''}${d}），下一局 Maia 将按新分数对弈` +
+      `<small>${escapeHtml(ratingBreakdown(rating))}</small>`;
+    box.hidden = false;
+  } else box.hidden = true;
+}
+
+function showScreen(s: 'home' | 'game' | 'train', push = true) {
+  const prev = screen;
   screen = s;
-  if (push && s === 'game' && location.hash !== '#game') history_.pushState(null, '', '#game');
-  if (push && s === 'home' && location.hash === '#game') history_.back();
+  const hash = s === 'home' ? '' : `#${s}`;
+  if (push && s !== 'home' && location.hash !== hash) {
+    if (location.hash) history_.replaceState(null, '', hash);
+    else history_.pushState(null, '', hash);
+  }
+  if (push && s === 'home' && location.hash) history_.back();
   $('home').classList.toggle('active', s === 'home');
   $('game').classList.toggle('active', s === 'game');
-  if (s === 'home') {
+  $('train').classList.toggle('active', s === 'train');
+  if (s === 'train') {
+    requestAnimationFrame(trainerRedraw);
+    if (prev !== 'game') return;
+  }
+  if (s !== 'game') {
     stopAutoplay();
     gameToken++;
     maiaThinking = false;
@@ -2202,22 +2425,66 @@ interface Parsed {
   tree: GameTree<Ann>;
   headers: Record<string, string>;
   result: string;
+  truncated?: boolean;
 }
 
-function parseInput(text: string): Parsed | string {
-  const t = text.trim();
-  if (!t) return '内容为空';
-  try {
-    return { tree: new GameTree<Ann>(new Chess(t).fen()), headers: {}, result: '*' };
-  } catch {
-    /* not a FEN */
-  }
+function parseOne(t: string): Parsed | string {
   try {
     const p = parsePgn<Ann>(t);
-    return { tree: p.tree, headers: p.headers, result: p.result };
+    return { tree: p.tree, headers: p.headers, result: p.result, truncated: p.truncated };
   } catch (err) {
     return (err as Error).message;
   }
+}
+
+/** FEN, or every game of a (multi-game) PGN; a string on failure. */
+function parseInput(text: string): Parsed[] | string {
+  const t = text.trim();
+  if (!t) return '内容为空';
+  try {
+    return [{ tree: new GameTree<Ann>(new Chess(t).fen()), headers: {}, result: '*' }];
+  } catch {
+    /* not a FEN */
+  }
+  const parts = splitPgn(t);
+  const games: Parsed[] = [];
+  let firstErr = '';
+  for (const part of parts.slice(0, 500)) {
+    const p = parseOne(part);
+    if (typeof p === 'string') firstErr ||= p;
+    else games.push(p);
+  }
+  return games.length ? games : firstErr || '没有找到着法';
+}
+
+/** Lets the user pick one game of a multi-game PGN. */
+function pickGame(games: Parsed[]): Promise<Parsed | null> {
+  if (games.length === 1) return Promise.resolve(games[0]);
+  return new Promise((resolve) => {
+    const dlg = $<HTMLDialogElement>('dlg-branch');
+    $('branch-title').textContent = `PGN 里有 ${games.length} 局，选择一局`;
+    const list = $('branch-list');
+    list.innerHTML = games
+      .map((g, i) => {
+        const h = g.headers;
+        const name = `${h.White ?? '?'} - ${h.Black ?? '?'}`;
+        const sub = [h.Event, h.Date, g.result !== '*' ? g.result : '', `${Math.ceil(g.tree.mainline().length / 2)} 回合`].filter(Boolean).join(' · ');
+        return `<button data-i="${i}"><b>${escapeHtml(name)}</b><span class="muted">${escapeHtml(sub)}</span></button>`;
+      })
+      .join('');
+    let picked: Parsed | null = null;
+    list.onclick = (e) => {
+      const i = (e.target as HTMLElement).closest<HTMLElement>('button')?.dataset.i;
+      if (i === undefined) return;
+      picked = games[Number(i)];
+      dlg.close();
+    };
+    dlg.onclose = () => {
+      dlg.onclose = null;
+      resolve(picked);
+    };
+    dlg.showModal();
+  });
 }
 
 function loadImported(p: Parsed) {
@@ -2227,6 +2494,10 @@ function loadImported(p: Parsed) {
   gameDate = Date.now();
   gameElo = undefined;
   eloAfter = undefined;
+  assists = emptyAssists();
+  rating = undefined;
+  ratePending = false;
+  abandoned = false;
   userColor = 'w';
   result = p.result === '*' ? '' : p.result;
   reason = undefined;
@@ -2250,31 +2521,34 @@ function playFrom(fens: string[], color?: Color) {
     setStatus('该局面对局已结束，无法继续对弈');
     return false;
   }
-  newGame(fen, color ?? turnOf(fen));
-  return true;
+  return newGame(fen, color ?? turnOf(fen));
 }
 
 function openPgnImport() {
   const dlg = $<HTMLDialogElement>('dlg-pgn');
   const f = dlg.querySelector('form')!;
   dlg.returnValue = '';
-  dlg.onclose = () => {
+  dlg.onclose = async () => {
     const v = dlg.returnValue;
     if (v !== 'ok' && v !== 'play') return;
-    const p = parseInput((f.elements.namedItem('pgn') as HTMLTextAreaElement).value);
-    if (typeof p === 'string') {
-      setStatus('无法解析 PGN/FEN：' + p);
+    const games = parseInput((f.elements.namedItem('pgn') as HTMLTextAreaElement).value);
+    if (typeof games === 'string') {
+      setStatus('无法解析 PGN/FEN：' + games);
       return;
     }
-    gameToken++;
-    maiaThinking = false;
-    batchCtrl?.abort();
+    const p = await pickGame(games);
+    if (!p) return;
+    if (p.truncated) setStatus('PGN 含空着（--），空着之后的那段变化已略过');
     if (v === 'play') {
       const side = (f.elements.namedItem('playAs') as HTMLSelectElement).value;
       const end = p.tree.mainline();
       if (playFrom(end.map((n) => n.fen), side === 'w' || side === 'b' ? side : undefined)) showScreen('game');
       return;
     }
+    if (!leaveGame()) return;
+    gameToken++;
+    maiaThinking = false;
+    batchCtrl?.abort();
     loadImported(p);
     saveGame();
     setMode('review');
@@ -2283,6 +2557,122 @@ function openPgnImport() {
   };
   dlg.showModal();
 }
+
+// ---------- backup ----------
+
+function currentData(): BackupData {
+  return { settings, history, mistakes: loadMistakes(), puzzles: loadProgress() };
+}
+
+async function exportBackup() {
+  flushRating();
+  saveGame();
+  const text = JSON.stringify(makeBackup(currentData(), `${isNative ? 'ios' : 'web'} ${__APP_VERSION__}`));
+  try {
+    const r = await shareFile(backupFileName(), text, 'application/json');
+    if (r !== 'cancelled') {
+      safeSet(BACKUP_AT_KEY, String(Date.now()));
+      setStatus(r === 'downloaded' ? '备份文件已下载' : '备份已导出');
+      renderHome();
+    }
+  } catch (err) {
+    setStatus('导出失败：' + (err as Error).message);
+  }
+}
+
+async function importBackup() {
+  let text: string | null;
+  try {
+    text = await pickFile('.json,application/json');
+  } catch (err) {
+    setStatus('读取文件失败：' + (err as Error).message);
+    return;
+  }
+  if (!text) return;
+  let parsed;
+  try {
+    parsed = parseBackup(text);
+  } catch (err) {
+    setStatus((err as Error).message);
+    return;
+  }
+  const inc = parsed.data;
+  const replace = !confirm(
+    `备份包含 ${inc.history.length} 局对局、${inc.mistakes.length} 道错题、${inc.puzzles.games} 道已做谜题。\n\n` +
+      '点「确定」合并到当前数据（推荐，重复的会自动去重）；点「取消」选择是否覆盖。',
+  );
+  if (replace && !confirm('用备份完全覆盖当前的设置、历史、错题本和谜题进度？此操作不可撤销。')) return;
+  const d = replace ? inc : mergeBackup(currentData(), inc);
+  const old = settings;
+  settings = d.settings;
+  history = d.history;
+  saveHistory(history);
+  setMistakes(d.mistakes);
+  setProgress(d.puzzles);
+  applySettings(old);
+  setStatus(`已${replace ? '覆盖' : '合并'}导入${parsed.skipped ? `（${parsed.skipped} 条损坏的记录已跳过）` : ''}`);
+}
+
+/** All finished games (newest first) as one PGN file. */
+async function exportAllPgn() {
+  if (!history.length) {
+    setStatus('还没有已完成的对局');
+    return;
+  }
+  const out: string[] = [];
+  for (const g of history) {
+    try {
+      const t = GameTree.deserialize(g.startFen, g.tree);
+      const d = new Date(g.date);
+      const p = (n: number) => String(n).padStart(2, '0');
+      const name = `Maia-3 ${g.model ?? ''}`.trim();
+      const h: Record<string, string> = g.imported && g.headers
+        ? { ...g.headers }
+        : {
+            Event: g.coach ? 'Maia 教练对局' : 'Maia 对局',
+            Site: 'Maia Coach',
+            Date: `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`,
+            White: g.userColor === 'w' ? '我' : name,
+            Black: g.userColor === 'b' ? '我' : name,
+            [g.userColor === 'w' ? 'BlackElo' : 'WhiteElo']: String(g.elo ?? ''),
+            TimeControl: pgnTimeControl(timeControlOf(g.tc)),
+          };
+      h.Result = g.result || '*';
+      out.push(treeToPgn(t, h));
+    } catch {
+      /* skip unreadable records */
+    }
+  }
+  try {
+    await shareFile(backupFileName().replace('backup', 'games').replace('.json', '.pgn'), out.join('\n'), 'application/x-chess-pgn');
+  } catch (err) {
+    setStatus('导出失败：' + (err as Error).message);
+  }
+}
+
+const BACKUP_AT_KEY = 'maia-coach.backupAt';
+
+function openData() {
+  const dlg = $<HTMLDialogElement>('dlg-data');
+  const at = Number(localStorage.getItem(BACKUP_AT_KEY) || 0);
+  $('data-info').textContent =
+    `本机数据：${history.length} 局对局 · ${loadMistakes().length} 道错题 · ${loadProgress().games} 道已做谜题。` +
+    (at ? `上次导出备份：${new Date(at).toLocaleString()}` : '还没有导出过备份。');
+  $('btn-backup-export').onclick = () => void exportBackup();
+  $('btn-backup-import').onclick = () => {
+    dlg.close();
+    void importBackup();
+  };
+  $('btn-pgn-all').onclick = () => void exportAllPgn();
+  dlg.showModal();
+}
+
+// ---------- training ----------
+
+const trainerCtx: TrainerCtx = {
+  show: () => showScreen('train'),
+  close: () => showScreen('home'),
+};
 
 // ---------- home ----------
 
@@ -2305,6 +2695,11 @@ function renderHome() {
   $('continue-sub').textContent = has ? `${coachOn ? '教练 · ' : ''}${tc}${Math.ceil(t.ply / 2)} 回合 · ${result || '进行中'}` : '暂无';
   const s = computeStats(history).all;
   $('history-sub').textContent = history.length ? `${history.length} 局${s.games ? ` · 得分 ${s.score.toFixed(0)}%` : ''}` : '暂无';
+  $('puzzle-sub').textContent = puzzleSummary();
+  $('mistake-sub').textContent = notebookSummary();
+  const at = Number(localStorage.getItem(BACKUP_AT_KEY) || 0);
+  // remind to back up once there is something worth keeping and the last backup is old
+  $('btn-data').classList.toggle('remind', history.length >= 5 && Date.now() - at > 14 * 86_400_000);
   homeCg?.set({ fen: t.fen, orientation: userColor === 'w' ? 'white' : 'black', lastMove: undefined });
 }
 
@@ -2319,7 +2714,7 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
     {
       games: () => history,
       open: (g) => {
-        if (result === '' && tip() !== tree.root && !imported && g.id !== gameId && !confirm('当前对局还没下完，打开记录会替换它。继续吗？')) return;
+        if (g.id !== gameId && !leaveGame()) return;
         gameToken++;
         maiaThinking = false;
         batchCtrl?.abort();
@@ -2387,8 +2782,7 @@ function bind() {
 
   $('btn-play').onclick = () => {
     unlockAudio();
-    newGame();
-    showScreen('game');
+    if (newGame()) showScreen('game');
   };
   $('btn-continue').onclick = () => {
     setMode(result === '' && !imported ? 'play' : 'review');
@@ -2396,6 +2790,14 @@ function bind() {
   };
   $('btn-home-import').onclick = openPgnImport;
   $('btn-history').onclick = () => showHistory('list');
+  $('btn-puzzles').onclick = () => {
+    unlockAudio();
+    openPuzzles(trainerCtx);
+  };
+  $('btn-mistakes').onclick = () => openNotebook(trainerCtx);
+  $('btn-data').onclick = openData;
+  $('btn-menu-data').onclick = fromMenu(openData);
+  bindTrainer(trainerCtx);
   $<HTMLInputElement>('home-elo').oninput = (e) => {
     $('home-elo-val').textContent = (e.target as HTMLInputElement).value;
   };
@@ -2438,7 +2840,7 @@ function bind() {
   });
   $('btn-draw').onclick = fromMenu(() => void offerDraw());
   $('btn-play-here').onclick = fromMenu(() => {
-    if (result === '' && !imported && tip() !== tree.root && mode === 'play' && !confirm('从当前局面开始新对局？当前对局会被替换。')) return;
+    if (mode === 'play' && result === '' && !imported && tip() !== tree.root && userMovesOf().length < 3 && !confirm('从当前局面开始新对局？当前对局会被替换。')) return;
     playFrom(fensTo(node));
   });
   $('btn-menu-history').onclick = fromMenu(() => showHistory('list'));
@@ -2537,6 +2939,8 @@ function bind() {
     else if (e.key === 'End') goto(lastOfLine());
     else if (mode === 'review' && e.key === '[') jumpReviewIssue(-1);
     else if (mode === 'review' && e.key === ']') jumpReviewIssue(1);
+    else if (mode === 'review' && e.key === '{' && splitIssueNav()) jumpReviewIssue(-1, 'opp');
+    else if (mode === 'review' && e.key === '}' && splitIssueNav()) jumpReviewIssue(1, 'opp');
   });
   // 对话框里点击包着下拉框/滑块的标签文字时不要激活控件（iOS 会直接弹出选择器）
   document.addEventListener('click', (e) => {
@@ -2642,6 +3046,40 @@ function fitStandalone() {
   addEventListener('orientationchange', () => setTimeout(fit, 300));
 }
 
+/** Tick whenever a dragged piece enters one of its legal (or premove) destination squares. */
+function installDragHaptics() {
+  if (!isNative) return;
+  let lastKey: Key | undefined;
+  const onMove = (e: TouchEvent | MouseEvent) => {
+    const drag = cg.state.draggable.current;
+    if (!drag?.started) {
+      lastKey = undefined;
+      return;
+    }
+    const p = 'touches' in e ? e.touches[0] : e;
+    if (!p) return;
+    const key = cg.getKeyAtDomPos([p.clientX, p.clientY]);
+    if (key === lastKey) return;
+    lastKey = key;
+    if (!key || key === drag.orig) return;
+    const legal = cg.state.movable.dests?.get(drag.orig)?.includes(key) || cg.state.premovable.dests?.includes(key);
+    if (legal) dragHaptics.tick();
+  };
+  const onStart = () => {
+    lastKey = undefined;
+    dragHaptics.start();
+  };
+  const onEnd = () => {
+    lastKey = undefined;
+    dragHaptics.end();
+  };
+  $('board').addEventListener('touchstart', onStart, { capture: true, passive: true });
+  $('board').addEventListener('mousedown', onStart, { capture: true, passive: true });
+  document.addEventListener('touchmove', onMove, { capture: true, passive: true });
+  document.addEventListener('mousemove', onMove, { capture: true, passive: true });
+  for (const ev of ['touchend', 'touchcancel', 'mouseup']) document.addEventListener(ev, onEnd, { capture: true, passive: true });
+}
+
 function init() {
   document.documentElement.classList.add(isNative ? 'native' : 'web');
   fitStandalone();
@@ -2676,11 +3114,13 @@ function init() {
   // size change (e.g. the screen slide-in transition) leave it stale and taps land on the wrong square
   const freshBounds = () => cg.state.dom.bounds.clear();
   for (const ev of ['touchstart', 'mousedown']) $('board').addEventListener(ev, freshBounds, { capture: true, passive: true });
+  installDragHaptics();
   bind();
-  const saved = localStorage.getItem(GAME_KEY);
+  const saved = readJson(GAME_KEY);
   let ok = false;
   try {
-    ok = Boolean(saved) && loadGame(JSON.parse(saved!) as StoredGame | LegacyGame);
+    const g = isLegacy(saved) ? saved : sanitizeGame(saved);
+    ok = Boolean(g) && loadGame(g!);
   } catch {
     ok = false;
   }
@@ -2690,10 +3130,16 @@ function init() {
   setInterval(tickClock, 100);
   // 系统返回键/手势回到主页
   window.addEventListener('popstate', () => {
-    if (screen === 'game' && location.hash !== '#game') showScreen('home', false);
-    else if (screen === 'home' && location.hash === '#game') showScreen('game', false);
+    const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : 'home';
+    if (want !== screen) showScreen(want, false);
   });
   if (location.hash === '#game') showScreen('game', false);
+  else if (location.hash === '#train') history_.replaceState(null, '', location.pathname + location.search);
+  onStorageFull(() => {
+    alert('本机存储空间已满，部分数据可能没能保存。请到「数据与备份」导出备份，然后清理一些历史对局。');
+  });
+  // a rating left pending by closing the app mid-analysis is settled now (performance unknown)
+  if (ratePending) flushRating();
   setStatus(isNative ? '就绪（原生引擎）' : self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
 
   const willReload = import.meta.env.PROD && !isNative && 'serviceWorker' in navigator && !self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded');

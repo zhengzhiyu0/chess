@@ -172,6 +172,8 @@ export interface ParsedGame<A extends object = object> {
   headers: Headers;
   tree: GameTree<A>;
   result: string;
+  /** a null move cut a line short */
+  truncated?: boolean;
 }
 
 /** Parses the first game of `pgn`, keeping variations, comments, NAGs and `[%clk]` times. */
@@ -189,9 +191,24 @@ export function parsePgn<A extends object = object>(pgn: string): ParsedGame<A> 
   const stack: GNode<A>[] = [];
   let result = headers.Result && RESULTS.has(headers.Result) ? headers.Result : '*';
   let moves = 0;
+  // a null move ("--") can't be represented: the rest of its line is skipped (parenthesis depth inside it)
+  let skip = -1;
+  let truncated = false;
   for (; i < tokens.length; i++) {
     const t = tokens[i];
     if (t.k === 'header') break; // next game
+    if (skip >= 0) {
+      if (t.k === 'open') skip++;
+      else if (t.k === 'close' && skip-- === 0) {
+        skip = -1;
+        const back = stack.pop();
+        if (back) cur = back;
+      } else if (t.k === 'result' && stack.length === 0) {
+        result = t.v;
+        break;
+      }
+      continue;
+    }
     if (t.k === 'result') {
       if (stack.length === 0) {
         result = t.v;
@@ -224,7 +241,11 @@ export function parsePgn<A extends object = object>(pgn: string): ParsedGame<A> 
       let san = t.v.replace(/^0-0-0/, 'O-O-O').replace(/^0-0/, 'O-O');
       const suffix = /[!?]+$/.exec(san)?.[0];
       if (suffix) san = san.slice(0, -suffix.length);
-      if (san === '--' || san === 'Z0') throw new Error('不支持空着');
+      if (san === '--' || san === 'Z0') {
+        truncated = true;
+        skip = 0;
+        continue;
+      }
       let uci: string;
       try {
         uci = uciOf(new Chess(cur.fen).move(san));
@@ -237,7 +258,28 @@ export function parsePgn<A extends object = object>(pgn: string): ParsedGame<A> 
     }
   }
   if (moves === 0 && !headers.FEN && !Object.keys(headers).length) throw new Error('没有找到着法');
-  return { headers, tree, result };
+  return { headers, tree, result, truncated };
+}
+
+/** Splits a PGN file into its games (each starting with its tag section). */
+export function splitPgn(pgn: string): string[] {
+  const s = pgn.replace(/\r\n?/g, '\n').trim();
+  if (!s) return [];
+  const out: string[] = [];
+  let cur: string[] = [];
+  let inMoves = false;
+  for (const line of s.split('\n')) {
+    const tag = /^\s*\[\w+\s+"/.test(line);
+    if (tag && inMoves) {
+      out.push(cur.join('\n'));
+      cur = [];
+      inMoves = false;
+    }
+    if (!tag && line.trim()) inMoves = true;
+    cur.push(line);
+  }
+  if (cur.join('').trim()) out.push(cur.join('\n'));
+  return out;
 }
 
 export const NAG_SYMBOL: Record<number, string> = { 1: '!', 2: '?', 3: '!!', 4: '??', 5: '!?', 6: '?!' };

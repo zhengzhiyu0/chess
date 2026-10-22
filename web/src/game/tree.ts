@@ -143,12 +143,14 @@ export class GameTree<A extends object = object> {
 
   static deserialize<A extends object = object>(startFen: string, s: SNode): GameTree<A> {
     const tree = new GameTree<A>(startFen);
+    // stored / imported data: keep only well-formed fields
     const fill = (node: GNode<A>, sn: SNode) => {
-      if (sn.t) node.comment = sn.t;
-      if (sn.n?.length) node.nags = sn.n;
-      if (sn.k) node.clock = sn.k;
-      for (const c of sn.c ?? []) {
-        const child = c.u ? tree.add(node, c.u, Boolean(c.x)) : null;
+      if (!sn || typeof sn !== 'object') throw new Error('对局数据损坏');
+      if (typeof sn.t === 'string' && sn.t) node.comment = sn.t;
+      if (Array.isArray(sn.n) && sn.n.length && sn.n.every((x) => Number.isInteger(x))) node.nags = sn.n;
+      if (Array.isArray(sn.k) && sn.k.length === 2 && sn.k.every((x) => Number.isFinite(x))) node.clock = [sn.k[0], sn.k[1]];
+      for (const c of Array.isArray(sn.c) ? sn.c : []) {
+        const child = c && typeof c.u === 'string' ? tree.add(node, c.u, Boolean(c.x)) : null;
         if (!child) throw new Error(`非法着法：${c.u}`);
         fill(child, c);
       }

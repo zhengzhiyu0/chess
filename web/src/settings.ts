@@ -1,4 +1,5 @@
 import { isNative } from './native';
+import { safeSet } from './storage';
 
 export type Color = 'w' | 'b';
 
@@ -145,7 +146,7 @@ export function loadSettings(): Settings {
       if (typeof saved.sfThreads === 'number' && saved.sfThreads > 2) saved.sfThreads = 2;
       saved.engineGen = 3;
     }
-    return { ...defaultSettings(), ...saved };
+    return sanitizeSettings(saved);
   } catch {
     return defaultSettings();
   }
@@ -153,6 +154,77 @@ export function loadSettings(): Settings {
 
 export const ELO_MIN = 0;
 export const ELO_MAX = 2600;
+
+type Rule = { oneOf: readonly unknown[] } | { num: [number, number]; int?: boolean } | { bool: true } | { str: RegExp } | { optInt: true };
+
+const HEX = /^#[0-9a-f]{6}$/i;
+const ID = /^[\w+-]{1,32}$/;
+const RULES: Record<keyof Settings, Rule> = {
+  model: { oneOf: ['5m', '23m', '79m'] },
+  elo: { num: [ELO_MIN, ELO_MAX], int: true },
+  autoElo: { bool: true },
+  ratedGames: { num: [0, 1e9], int: true },
+  color: { oneOf: ['w', 'b', 'random'] },
+  temperature: { num: [0, 1.5] },
+  useHistory: { bool: true },
+  backend: { oneOf: ['wasm', 'webgpu'] },
+  thinkDelay: { bool: true },
+  sfMovetime: { num: [100, 20000], int: true },
+  sfThreads: { num: [1, 16], int: true },
+  sfHash: { num: [16, 1024], int: true },
+  sfLite: { bool: true },
+  ecoAnalysis: { bool: true },
+  lowMemory: { bool: true },
+  warmup: { bool: true },
+  autoOffline: { bool: true },
+  gameType: { oneOf: ['normal', 'coach'] },
+  coachLevel: { oneOf: ['inaccuracy', 'mistake', 'blunder'] },
+  coachThreats: { bool: true },
+  coachHanging: { bool: true },
+  coachBest: { bool: true },
+  coachEval: { bool: true },
+  timeControl: { str: ID },
+  sound: { bool: true },
+  soundTheme: { str: ID },
+  haptics: { bool: true },
+  boardTheme: { str: ID },
+  customLight: { str: HEX },
+  customDark: { str: HEX },
+  pieceSet: { str: ID },
+  premove: { bool: true },
+  boardFx: { bool: true },
+  boardSizePlay: { num: [60, 100] },
+  boardSizeReview: { num: [60, 100] },
+  autoplayMs: { num: [100, 10000] },
+  reviewOpponent: { bool: true },
+  // '' / '<glyph>|#rrggbb' / small JPEG data URL; rendering validates the format again
+  avatar: { str: /^[^<>"]{0,200000}$/s },
+  coachAvatar: { num: [0, 999], int: true },
+  engineGen: { optInt: true },
+  soundGen: { optInt: true },
+};
+
+function valid(r: Rule, v: unknown): boolean {
+  if ('oneOf' in r) return r.oneOf.includes(v);
+  if ('bool' in r) return typeof v === 'boolean';
+  if ('str' in r) return typeof v === 'string' && r.str.test(v);
+  if ('optInt' in r) return Number.isInteger(v);
+  return typeof v === 'number' && Number.isFinite(v) && v >= r.num[0] && v <= r.num[1] && (!r.int || Number.isInteger(v));
+}
+
+/**
+ * Keeps only well-formed fields of `raw` (corrupted storage or an imported backup), everything else
+ * falls back to the default, so a bad value can never break rendering.
+ */
+export function sanitizeSettings(raw: unknown): Settings {
+  const out = defaultSettings() as unknown as Record<string, unknown>;
+  if (!raw || typeof raw !== 'object') return out as unknown as Settings;
+  const src = raw as Record<string, unknown>;
+  for (const k of Object.keys(RULES) as (keyof Settings)[]) {
+    if (k in src && valid(RULES[k], src[k])) out[k] = src[k];
+  }
+  return out as unknown as Settings;
+}
 
 /**
  * Rating change after a game against an equally rated Maia (expected score 0.5).
@@ -164,5 +236,5 @@ export function eloDelta(score: number, ratedGames: number): number {
 }
 
 export function saveSettings(s: Settings) {
-  localStorage.setItem(KEY, JSON.stringify(s));
+  safeSet(KEY, JSON.stringify(s));
 }

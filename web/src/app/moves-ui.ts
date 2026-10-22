@@ -1,6 +1,7 @@
 import { mainChild, type GameTree, type GNode } from '../game/tree';
 import { moveNumberOf, turnOf } from '../game/rules';
 import { NAG_SYMBOL } from '../game/pgn';
+import { escapeHtml } from './dom';
 
 export interface MoveMark {
   symbol: string;
@@ -32,7 +33,7 @@ export function movesHtml<A extends object>(
     const sym = m?.icon ? '' : m && m.symbol && m.symbol !== '★' ? m.symbol : nag;
     const style = m?.color ? ` style="color:${m.color}"` : '';
     const cls = `mv${n === cur ? ' cur' : ''}${mainIds.has(n.id) ? '' : ' alt'}${n.x ? ' x' : ''}${n.comment ? ' noted' : ''}`;
-    return html + `<span class="${cls}" data-id="${n.id}"${style}>${m?.icon ?? ''}${n.san}${sym}</span>`;
+    return html + `<span class="${cls}" data-id="${n.id}"${style}>${m?.icon ?? ''}${escapeHtml(n.san)}${sym}</span>`;
   };
   if (layout === 'line') {
     // 只显示当前所在的这条线；有分支的着法带一个角标，点开再选

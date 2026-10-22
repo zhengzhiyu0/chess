@@ -617,3 +617,56 @@ export function plainEval(line: SfLine | undefined, turn: Color, pov: Color, s: 
   if (a < 7) return `${who}胜势（约相当于多一个车）`;
   return `${who}几乎必胜`;
 }
+/** 错题本的错误类型：坏棋主要错在哪（优先：被将杀 > 漏杀 > 被对方战术打击 > 漏掉自己的战术 > 丢子 > 局面判断）。 */
+export interface MistakeTag {
+  /** 稳定的类别 id，用于统计 */
+  id: string;
+  label: string;
+}
+
+const KIND_LABEL: Partial<Record<MotifKind, string>> = {
+  'double-check': '双将',
+  fork: '捉双',
+  discovered: '闪击',
+  pin: '牵制',
+  skewer: '串击',
+  'remove-defender': '吃掉保护者',
+  trapped: '困子',
+  'trade-up': '以小换大',
+  free: '白吃子',
+  'mate-threat': '杀棋威胁',
+  promote: '升变',
+};
+
+export function mistakeTag(o: { fen: string; uci: string; best: string | null; bestLine?: SfLine; replyLine?: SfLine }): MistakeTag {
+  const rl = o.replyLine;
+  if (rl?.mate !== undefined && rl.mate > 0) return { id: 'allow-mate', label: '没看到对方的杀棋' };
+  const bl = o.bestLine;
+  if (o.best && o.best !== o.uci && bl?.mate !== undefined && bl.mate > 0) return { id: 'miss-mate', label: '错过将杀' };
+  let after: string;
+  let mover: Color;
+  let to: Square;
+  try {
+    const m = new Chess(o.fen).move(toMove(o.uci));
+    after = m.after;
+    mover = m.color as Color;
+    to = m.to as Square;
+  } catch {
+    return { id: 'other', label: '其他' };
+  }
+  if (rl?.pv.length) {
+    const t = firstTactic(after, rl.pv, '你的', false, PROBLEM);
+    const k = t?.motif.kind;
+    if (k === 'free' || k === 'trade-up') return { id: 'hanging', label: '丢子（没保护好棋子）' };
+    if (k && KIND_LABEL[k]) return { id: `allow-${k}`, label: `被对方${KIND_LABEL[k]}` };
+  }
+  if (o.best && o.best !== o.uci) {
+    const line = bl?.pv[0] === o.best ? bl.pv : [o.best];
+    const t = firstTactic(o.fen, line, '对方的');
+    const k = t?.motif.kind;
+    if (k === 'free' || k === 'trade-up') return { id: 'miss-material', label: '没吃到对方送的子' };
+    if (k && k !== 'mate' && KIND_LABEL[k]) return { id: `miss-${k}`, label: `错过${KIND_LABEL[k]}` };
+  }
+  if (hangingSquares(after, mover).includes(to) || (rl?.pv.length && pvMaterialSwing(after, rl.pv) >= 2)) return { id: 'hanging', label: '丢子（没保护好棋子）' };
+  return { id: 'positional', label: '局面判断失误' };
+}

@@ -1,0 +1,32 @@
+web/src/app/judge-icon.ts
+  s_b7f87d2d7cddd3::t_4cceda209d02d9 41,49,53-54
+web/src/settings.ts
+  s_b7f87d2d7cddd3::t_b46d30dc33d0e8 55-58,111-112
+web/index.html
+  s_b7f87d2d7cddd3::t_1519dadc80196e 118-125,228
+web/src/app/fx.ts
+  s_b7f87d2d7cddd3::t_bf6733f68aba82 3,5,18-39
+  s_b7f87d2d7cddd3::t_1ce865e758292a 1-2,4,6-17,40-269
+web/src/style.css
+  s_b7f87d2d7cddd3::t_1f57755614492c 1502-1649
+web/src/main.ts
+  s_b7f87d2d7cddd3::t_6647582ac2f88f 1230-1232,1733,1755-1756,1771,2153,2306-2311,2435-2442
+  s_b7f87d2d7cddd3::t_8b8e5153b3b8e9 29,366-441,1935,1952
+  s_b7f87d2d7cddd3::t_63fe718bbfccaa 484
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "44b77b6328c2a205bc885a9ca580a537aac54f78",
+  "prompts": {},
+  "sessions": {
+    "s_b7f87d2d7cddd3": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "2d5ef69f-047e-4ff4-a214-323f763ee3ea",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

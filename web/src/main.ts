@@ -26,6 +26,7 @@ import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { AVATAR_PRESETS, avatarFromFile, avatarHtml } from './app/avatar';
 import { findNode, movesHtml } from './app/moves-ui';
 import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
+import { BoardFx, moveFxOf } from './app/fx';
 import { openHistory } from './app/history-ui';
 
 // ---------- state ----------
@@ -362,6 +363,82 @@ function renderBoard() {
     premovable: { enabled: pre },
   });
   cg.setAutoShapes(arrows());
+  moveFx();
+}
+
+// ---------- board effects & autoplay ----------
+
+let fx: BoardFx;
+let fxLast: Node | null = null;
+
+function applyFx() {
+  fx.enabled = settings.boardFx;
+  $('board').parentElement!.classList.toggle('fx-on', settings.boardFx);
+  if (!settings.boardFx) fx.clear();
+}
+
+/** Fires move effects when the shown position advanced by exactly one move; any other jump cancels them. */
+function moveFx() {
+  if (node === fxLast) return;
+  const prev = fxLast;
+  fxLast = node;
+  if (!prev || node.parent !== prev || !node.uci) {
+    fx.clear();
+    return;
+  }
+  const r = mode === 'review' && showMove(node) ? reviewOf(node) : null;
+  const m = moveFxOf(prev.fen, node.uci, r?.judgement);
+  if (m) fx.move(m);
+}
+
+let autoTimer = 0;
+
+function autoplayOn() {
+  return autoTimer !== 0;
+}
+
+function stopAutoplay() {
+  if (!autoTimer) return;
+  clearTimeout(autoTimer);
+  autoTimer = 0;
+  renderAutoplay();
+}
+
+function autoplayStep() {
+  autoTimer = 0;
+  if (mode !== 'review' || screen !== 'game' || document.hidden) return renderAutoplay();
+  if (demo) {
+    if (demo.idx >= demo.pv.length) return renderAutoplay();
+    stepDemo(1);
+  } else {
+    const next = mainChild(node);
+    if (!next) return renderAutoplay();
+    goto(next, true);
+    play(soundForSan(next.san));
+  }
+  autoTimer = window.setTimeout(autoplayStep, settings.autoplayMs);
+  renderAutoplay();
+}
+
+function toggleAutoplay() {
+  if (autoplayOn()) return stopAutoplay();
+  unlockAudio();
+  if (demo ? demo.idx >= demo.pv.length : !mainChild(node)) {
+    if (demo) stepDemo(-99);
+    else goto(tree.root, true);
+  }
+  autoTimer = window.setTimeout(autoplayStep, 350);
+  renderAutoplay();
+}
+
+function renderAutoplay() {
+  const btn = $('btn-autoplay');
+  const on = autoplayOn();
+  btn.classList.toggle('on', on);
+  btn.innerHTML = on
+    ? '<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>暂停'
+    : '<svg viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>自动播放';
+  $<HTMLSelectElement>('autoplay-speed').value = String(settings.autoplayMs);
 }
 
 function askPromotion(color: Color): Promise<string> {
@@ -404,6 +481,7 @@ async function onUserMove(orig: Key, dest: Key, meta?: MoveMetadata) {
     return;
   }
   // review: explore freely; explorations never change the game record
+  stopAutoplay();
   const next = tree.add(from, uci, true);
   if (!next) {
     play('illegal');
@@ -1149,6 +1227,9 @@ function stepDemo(d: number) {
   if (idx === demo.idx) return;
   demo.idx = idx;
   if (idx > 0 && d > 0) play(soundForSan(sanOf(fenAt(demo.fen, demo.pv, idx - 1), demo.pv[idx - 1])));
+  const m = d === 1 && idx > 0 ? moveFxOf(fenAt(demo.fen, demo.pv, idx - 1), demo.pv[idx - 1]) : null;
+  if (m) fx.move(m);
+  else fx.clear();
   update();
 }
 
@@ -1649,6 +1730,7 @@ function showScreen(s: 'home' | 'game', push = true) {
   $('home').classList.toggle('active', s === 'home');
   $('game').classList.toggle('active', s === 'game');
   if (s === 'home') {
+    stopAutoplay();
     gameToken++;
     maiaThinking = false;
     prepCtrl?.abort();
@@ -1670,7 +1752,8 @@ function showScreen(s: 'home' | 'game', push = true) {
 
 const history_ = window.history;
 
-function goto(n: Node | null | undefined) {
+function goto(n: Node | null | undefined, auto = false) {
+  if (!auto) stopAutoplay();
   if (!n || n === node) return;
   node = n;
   hintShapes = [];
@@ -1685,6 +1768,7 @@ function lastOfLine(): Node {
 
 function setMode(m: 'play' | 'review') {
   mode = m;
+  stopAutoplay();
   if (m === 'play' && !tree.isMainline(node)) node = tip();
   $('game').dataset.mode = m;
   document.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === m));
@@ -1848,6 +1932,7 @@ function openSettings() {
       customDark: el('customDark').value,
       pieceSet: el('pieceSet').value,
       premove: el('premove').checked,
+      boardFx: el('boardFx').checked,
       reviewOpponent: el('reviewOpponent').checked,
     };
     applySettings(old);
@@ -1864,6 +1949,7 @@ function applySettings(old: Settings) {
   if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) clearAnn('human');
   if (old.sfMovetime !== settings.sfMovetime || old.sfLite !== settings.sfLite || old.ecoAnalysis !== settings.ecoAnalysis) clearAnn('eval', 'threat');
   if (!settings.premove) cg.cancelPremove();
+  applyFx();
   if (old.reviewOpponent !== settings.reviewOpponent && mode === 'review' && screen === 'game') void analyseGame();
   update();
   renderHome();
@@ -2064,6 +2150,7 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
 function bind() {
   document.querySelectorAll<HTMLButtonElement>('[data-nav]').forEach((b) => {
     b.onclick = () => {
+      stopAutoplay();
       const nav = b.dataset.nav;
       if (demo) {
         stepDemo(nav === 'first' ? -99 : nav === 'prev' ? -1 : nav === 'next' ? 1 : 99);
@@ -2216,6 +2303,12 @@ function bind() {
   reloadBtn.addEventListener('touchend', reloadForUpdate);
   document.addEventListener('keydown', (e) => {
     if (screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
+    if (mode === 'review' && e.key === ' ' && !(e.target as HTMLElement).closest('input, select, textarea, button')) {
+      e.preventDefault();
+      toggleAutoplay();
+      return;
+    }
+    if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'].includes(e.key)) stopAutoplay();
     if (demo) {
       if (e.key === 'ArrowLeft') stepDemo(-1);
       else if (e.key === 'ArrowRight') stepDemo(1);
@@ -2339,6 +2432,14 @@ function init() {
     drawable: { enabled: true, brushes: { ...BRUSHES } as unknown as DrawBrushes },
   });
   homeCg = Chessground($('home-board'), { viewOnly: true, coordinates: false, animation: { enabled: false } });
+  fx = new BoardFx($('board').parentElement!, () => cg.state.orientation);
+  applyFx();
+  $('btn-autoplay').onclick = toggleAutoplay;
+  $<HTMLSelectElement>('autoplay-speed').onchange = (e) => {
+    settings = { ...settings, autoplayMs: Number((e.target as HTMLSelectElement).value) };
+    saveSettings(settings);
+  };
+  renderAutoplay();
   // chessground caches the board rect and only refreshes it on scroll/resize; layout shifts without a
   // size change (e.g. the screen slide-in transition) leave it stale and taps land on the wrong square
   const freshBounds = () => cg.state.dom.bounds.clear();

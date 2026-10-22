@@ -1499,6 +1499,154 @@ dialog input[type='color'] {
   }
 }
 
+/* ---------- 棋盘动效 ---------- */
+.fx-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+.fx-on .fx-badge {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fx-pop 0.42s cubic-bezier(0.2, 1.6, 0.4, 1) 0.12s both;
+}
+.fx-on .fx-badge.fx-best {
+  animation:
+    fx-pop 0.42s cubic-bezier(0.2, 1.6, 0.4, 1) 0.12s both,
+    fx-glint 1.6s ease-in-out 0.6s 2;
+}
+.fx-on .fx-badge.fx-blunder {
+  animation:
+    fx-pop 0.42s cubic-bezier(0.2, 1.6, 0.4, 1) 0.12s both,
+    fx-wobble 0.5s ease-in-out 0.55s;
+}
+.fx-on .fx-hang-glow {
+  animation: fx-breathe 1.6s ease-in-out infinite;
+}
+.fx-on .fx-badge.fx-hang {
+  animation:
+    fx-pop 0.42s cubic-bezier(0.2, 1.6, 0.4, 1) both,
+    fx-beat 1.6s ease-in-out 0.45s infinite;
+}
+.fx-on cg-board square.check {
+  animation: fx-check 1.1s ease-in-out infinite;
+}
+.fx-shake {
+  animation: fx-shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+@keyframes fx-pop {
+  from {
+    transform: scale(0) rotate(-30deg);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes fx-glint {
+  0%,
+  100% {
+    filter: none;
+  }
+  50% {
+    filter: brightness(1.35) drop-shadow(0 0 4px #ffd54a);
+  }
+}
+@keyframes fx-wobble {
+  0%,
+  100% {
+    transform: none;
+  }
+  25% {
+    transform: rotate(-14deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+  75% {
+    transform: rotate(-5deg);
+  }
+}
+@keyframes fx-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes fx-beat {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: scale(1.15);
+  }
+}
+@keyframes fx-check {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes fx-shake {
+  10%,
+  90% {
+    transform: translate(-1px, 0);
+  }
+  20%,
+  80% {
+    transform: translate(2px, 1px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate(-4px, -1px);
+  }
+  40%,
+  60% {
+    transform: translate(4px, 1px);
+  }
+}
+
+/* 复盘自动播放 */
+.autoplay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.autoplay button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.autoplay button svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  stroke: none;
+}
+.autoplay button.on {
+  color: var(--green);
+}
+.autoplay select {
+  width: auto;
+}
+
 /* ---------- 新增：用时、棋钟、变着、历史 ---------- */
 .setup-tc {
   display: flex;

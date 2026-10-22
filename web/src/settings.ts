@@ -52,6 +52,10 @@ export interface Settings {
   pieceSet: string;
   /** queue a move while the opponent is thinking */
   premove: boolean;
+  /** board animations: badge pop-in, capture particles, check pulse, mate confetti */
+  boardFx: boolean;
+  /** review autoplay delay per move in ms */
+  autoplayMs: number;
   /** review: also judge the opponent's moves (default: only mine) */
   reviewOpponent: boolean;
   /** my avatar, see app/avatar.ts ('' = default) */
@@ -104,6 +108,8 @@ export function defaultSettings(): Settings {
     customDark: '#739552',
     pieceSet: 'cburnett',
     premove: true,
+    boardFx: !matchMedia('(prefers-reduced-motion: reduce)').matches,
+    autoplayMs: 1200,
     reviewOpponent: false,
     avatar: '',
   };

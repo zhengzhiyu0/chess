@@ -38,7 +38,7 @@ export function judgeIcon(j: Judgement, cls = 'jicon'): string {
 
 /** chessground customSvg (100×100 = one square, origin at its top-left corner): badge on the top-right corner. */
 export function judgeBoardSvg(j: Judgement): string {
-  return `<g transform="translate(84 16) scale(0.8)">${badge(j)}</g>`;
+  return `<g transform="translate(84 16) scale(0.8)"><g class="fx-badge fx-${j}">${badge(j)}</g></g>`;
 }
 
 export const judgeColor = (j: Judgement) => ICON_COLOR[j];
@@ -46,9 +46,9 @@ export const judgeColor = (j: Judgement) => ICON_COLOR[j];
 /** Under-piece glow for an attacked, under-defended piece (customSvg, drawn below pieces). */
 export const HANGING_GLOW =
   '<defs><radialGradient id="jg-hang"><stop offset="0" stop-color="#ff5a4a" stop-opacity=".75"/><stop offset=".55" stop-color="#e8402f" stop-opacity=".4"/><stop offset="1" stop-color="#e8402f" stop-opacity="0"/></radialGradient></defs>' +
-  '<rect width="100" height="100" fill="url(#jg-hang)"/>';
+  '<rect class="fx-hang-glow" width="100" height="100" fill="url(#jg-hang)"/>';
 
 /** Small warning badge on the bottom-left corner of a threatened piece. */
 export const HANGING_BADGE =
-  '<g transform="translate(16 84) scale(0.62)"><circle cy="1.6" r="18.5" fill="rgba(0,0,0,.35)"/><circle r="18.5" fill="#e8402f"/><circle r="17.6" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.8"/>' +
-  `${emark(0, 1.05)}</g>`;
+  '<g transform="translate(16 84) scale(0.62)"><g class="fx-badge fx-hang"><circle cy="1.6" r="18.5" fill="rgba(0,0,0,.35)"/><circle r="18.5" fill="#e8402f"/><circle r="17.6" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.8"/>' +
+  `${emark(0, 1.05)}</g></g>`;

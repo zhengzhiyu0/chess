@@ -115,6 +115,14 @@
                 <div class="progress hidden" id="analyse-progress"><div></div></div>
                 <svg id="graph" class="graph" viewBox="0 0 100 40" preserveAspectRatio="none"></svg>
                 <div class="summary" id="summary"></div>
+                <div class="autoplay" id="autoplay">
+                  <button type="button" id="btn-autoplay" aria-label="自动播放"></button>
+                  <select id="autoplay-speed" aria-label="播放速度">
+                    <option value="2400">慢</option>
+                    <option value="1200">中</option>
+                    <option value="600">快</option>
+                  </select>
+                </div>
                 <div class="review-nav" id="review-nav">
                   <button type="button" data-review-nav="prev" aria-label="上一个问题">‹ 上一个问题</button>
                   <button type="button" data-review-nav="next" aria-label="下一个问题">下一个问题 ›</button>
@@ -217,6 +225,7 @@
           <select name="soundTheme" id="sound-theme"></select>
         </label>
         <label class="check"><input type="checkbox" name="haptics" /> 震动反馈</label>
+        <label class="check"><input type="checkbox" name="boardFx" /> 棋盘动效（徽标弹出、吃子粒子、将军脉冲、将杀彩带）</label>
         <label>棋盘
           <select name="boardTheme" id="board-theme"></select>
         </label>

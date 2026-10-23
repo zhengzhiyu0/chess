@@ -10,6 +10,7 @@ const NEAR = 0.95;
 export class DodgeFx {
   enabled = true;
   private raf = 0;
+  private poll = 0;
   private marked = new Map<PieceNode, string>();
 
   constructor(
@@ -25,7 +26,9 @@ export class DodgeFx {
   }
 
   private start() {
-    if (!this.enabled || this.raf) return;
+    clearTimeout(this.poll);
+    this.poll = 0;
+    if (this.raf || (!this.enabled && !this.marked.size)) return;
     this.raf = requestAnimationFrame(this.tick);
   }
 
@@ -90,6 +93,9 @@ export class DodgeFx {
       el.style.transformOrigin = '';
       this.marked.delete(el);
     }
-    if (want.size || drag) this.raf = requestAnimationFrame(this.tick);
+    // per-frame only while dragging; a mere selection only changes on input (which kicks us) or on
+    // programmatic board updates, so a slow poll is enough to drop stale classes
+    if (drag) this.raf = requestAnimationFrame(this.tick);
+    else if (want.size) this.poll = window.setTimeout(() => this.start(), 200);
   };
 }

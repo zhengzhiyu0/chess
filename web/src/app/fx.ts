@@ -115,6 +115,9 @@ export class BoardFx {
   private size = 0;
   private timers: number[] = [];
   private castleAnim: Animation | null = null;
+  private orient: 'white' | 'black' = 'white';
+  /** pending start of the paths of the last move */
+  private lineTimer = 0;
 
   constructor(
     private box: HTMLElement,
@@ -131,7 +134,10 @@ export class BoardFx {
   private resize() {
     const r = this.box.getBoundingClientRect();
     const dpr = Math.min(2, devicePixelRatio || 1);
-    this.size = Math.min(r.width, r.height);
+    const size = Math.min(r.width, r.height);
+    // particles are in pixel coordinates of the old size
+    if (size !== this.size) this.ps = [];
+    this.size = size;
     this.canvas.width = Math.round(r.width * dpr);
     this.canvas.height = Math.round(r.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -150,6 +156,7 @@ export class BoardFx {
   clear() {
     for (const t of this.timers) clearTimeout(t);
     this.timers = [];
+    clearTimeout(this.lineTimer);
     this.ps = [];
     this.castleAnim?.cancel();
     this.box.classList.remove('fx-shake');
@@ -159,6 +166,14 @@ export class BoardFx {
   /** Effects for a move that has just been made; `delay` lets the piece slide in first. */
   move(m: MoveFx, delay = 160) {
     if (!this.enabled || !this.size) return;
+    // fast stepping: the previous move's pending bursts would land on squares that changed meanwhile
+    for (const t of this.timers) clearTimeout(t);
+    this.timers = [];
+    clearTimeout(this.lineTimer);
+    // its removal timer was just cancelled
+    this.box.classList.remove('fx-shake');
+    // the previous move's paths point at a position that no longer exists; fade them out now
+    for (const p of this.ps) if (p.shape === 'line') p.life = Math.min(p.life, Math.max(p.t, 0) + 0.15);
     this.castleAnim?.cancel();
     if (m.rook) this.castle(m);
     this.later(delay, () => {
@@ -175,10 +190,11 @@ export class BoardFx {
       }
       if (j === 'blunder') this.shake();
       const from = m.rook?.to ?? m.to;
-      this.later(m.rook ? 260 : 80, () => {
+      // after the rook has landed when castling
+      this.lineTimer = window.setTimeout(() => {
         for (const sq of m.attacks) this.line(from, sq, '#ff4b3e');
         for (const sq of m.defends) this.line(from, sq, '#4fd18b');
-      });
+      }, m.rook ? 320 : 80);
       if (m.checkSq) {
         const [kx, ky] = this.center(m.checkSq);
         this.ring(kx, ky, '#ff3b30', 0.8, 0.12);
@@ -262,7 +278,7 @@ export class BoardFx {
     }
   }
 
-  /** The rook's flight; chessground must not slide it as well (see `withoutRookSlide` in main). */
+  /** The rook's flight; chessground must not slide it as well (see `playFx` in main). */
   private rookFlight(m: MoveFx, retry = true) {
     const rook = [...this.box.querySelectorAll<HTMLElement & { cgKey?: string }>('cg-board piece')].find((p) => p.cgKey === m.rook!.to);
     if (!rook) {
@@ -340,6 +356,7 @@ export class BoardFx {
 
   private start() {
     if (this.raf || !this.ps.length) return;
+    this.orient = this.orientation();
     this.last = performance.now();
     this.raf = requestAnimationFrame(this.frame);
   }
@@ -348,6 +365,12 @@ export class BoardFx {
     const dt = Math.min(0.05, (now - this.last) / 1000);
     this.last = now;
     const c = this.ctx;
+    // board flipped mid-effect: every position is now mirrored
+    const o = this.orientation();
+    if (o !== this.orient) {
+      this.orient = o;
+      this.ps = [];
+    }
     c.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ps = this.ps.filter((p) => (p.t += dt) < p.life);
     for (const p of this.ps) {
@@ -414,17 +437,20 @@ export class BoardFx {
     // fixed-time grow and fade so a longer life only lengthens the hold
     const grow = Math.min(1, p.t / LINE_GROW);
     const head = start + (end - start) * (1 - (1 - grow) ** 3);
-    c.globalAlpha = Math.min(1, (p.life - p.t) / LINE_FADE) * 0.9;
+    const alpha = Math.min(1, (p.life - p.t) / LINE_FADE) * 0.9;
     c.strokeStyle = c.fillStyle = p.color;
     c.lineCap = 'round';
-    c.lineWidth = s * 0.09;
-    c.shadowColor = p.color;
-    c.shadowBlur = s * 0.18;
-    c.setLineDash([s * 0.16, s * 0.12]);
-    c.lineDashOffset = -p.t * s * 0.9;
     c.beginPath();
     c.moveTo(p.x + ux * start, p.y + uy * start);
     c.lineTo(p.x + ux * head, p.y + uy * head);
+    // soft glow as a wide translucent stroke: shadowBlur is a full-canvas blur per draw and drops frames on phones
+    c.globalAlpha = alpha * 0.25;
+    c.lineWidth = s * 0.24;
+    c.stroke();
+    c.globalAlpha = alpha;
+    c.lineWidth = s * 0.09;
+    c.setLineDash([s * 0.16, s * 0.12]);
+    c.lineDashOffset = -p.t * s * 0.9;
     c.stroke();
     c.setLineDash([]);
     const hx = p.x + ux * head;

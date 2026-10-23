@@ -1,0 +1,28 @@
+web/src/app/dodge.ts
+  s_b7f87d2d7cddd3::t_0b19f9160239fd 96-98
+  s_b7f87d2d7cddd3::t_23d2366352ddf4 13,29-31,99
+web/src/app/fx.ts
+  s_b7f87d2d7cddd3::t_5f14d90abd5efb 137-140,176,359,368-373,440,446-453
+  s_b7f87d2d7cddd3::t_b587c385260bda 120
+  s_b7f87d2d7cddd3::t_024d38c0565ba1 159,175
+  s_b7f87d2d7cddd3::t_40ac9d2fb563ce 118-119,172,193-194,197
+  s_b7f87d2d7cddd3::t_67bda972c79c63 169-171
+  s_b7f87d2d7cddd3::t_3094ad3f27b69c 281
+  s_b7f87d2d7cddd3::t_f0a357c25d04ce 173-174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "571a888d318afde66ffd83f9d983c60f839e3db9",
+  "prompts": {},
+  "sessions": {
+    "s_b7f87d2d7cddd3": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "2d5ef69f-047e-4ff4-a214-323f763ee3ea",
+        "model": "customendpoint/ufosaga/claude-opus-5.5"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -2391,7 +2391,7 @@ function gameHeaders(): Record<string, string> {
   const elo = String(gameElo ?? settings.elo);
   const name = `Maia-3 ${gameModel}`;
   const h: Record<string, string> = {
-    Event: coachOn ? 'Maia 教练对局' : 'Maia 对局',
+    Event: coachOn ? 'Maia Coach Game' : 'Maia Game',
     Site: 'Maia Coach',
     Date: `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`,
     White: userColor === 'w' ? '我' : name,
@@ -2629,7 +2629,7 @@ async function exportAllPgn() {
       const h: Record<string, string> = g.imported && g.headers
         ? { ...g.headers }
         : {
-            Event: g.coach ? 'Maia 教练对局' : 'Maia 对局',
+            Event: g.coach ? 'Maia Coach Game' : 'Maia Game',
             Site: 'Maia Coach',
             Date: `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`,
             White: g.userColor === 'w' ? '我' : name,
@@ -2764,6 +2764,29 @@ function bind() {
   });
   document.querySelectorAll<HTMLButtonElement>('dialog [data-close]').forEach((b) => {
     b.onclick = () => b.closest('dialog')!.close();
+  });
+  // iOS：长对话框滚动的惯性还没停时，第一次点按钮只会停下滚动、不触发 click（于是要点两次）。
+  // 用未移动的 touchend 直接提交，preventDefault 避免随后的 click 再提交一次。
+  document.querySelectorAll<HTMLButtonElement>('form[method="dialog"] button[value]').forEach((b) => {
+    let x = 0;
+    let y = 0;
+    let t = 0;
+    b.addEventListener(
+      'touchstart',
+      (e) => {
+        const p = e.touches[0];
+        x = p.clientX;
+        y = p.clientY;
+        t = performance.now();
+      },
+      { passive: true },
+    );
+    b.addEventListener('touchend', (e) => {
+      const p = e.changedTouches[0];
+      if (e.touches.length || b.disabled || !b.form || performance.now() - t > 800 || Math.hypot(p.clientX - x, p.clientY - y) > 10) return;
+      e.preventDefault();
+      b.form.requestSubmit(b);
+    });
   });
   // tap outside a dialog's box closes it
   document.querySelectorAll<HTMLDialogElement>('dialog').forEach((d) => {

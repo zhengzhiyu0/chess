@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'io.github.zhengzhiyu0.maiacoach',
-  appName: 'Maia教练',
+  appName: 'Maia Coach',
   // produced by scripts/prepare-native.mjs from dist/
   webDir: 'dist-native',
   backgroundColor: '#262421',

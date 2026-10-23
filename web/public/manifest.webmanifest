@@ -1,6 +1,6 @@
 {
-  "name": "Maia 教练",
-  "short_name": "Maia教练",
+  "name": "Maia Coach",
+  "short_name": "Maia Coach",
   "description": "离线国际象棋：Maia-3 拟人对手 + Stockfish 19 教练",
   "start_url": "./",
   "scope": "./",

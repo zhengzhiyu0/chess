@@ -36,7 +36,7 @@ export function parseBackup(text: string): { data: BackupData; skipped: number }
   } catch {
     throw new Error('不是有效的备份文件（JSON 解析失败）');
   }
-  if (!isObj(raw) || raw.format !== BACKUP_FORMAT) throw new Error('不是 Maia 教练的备份文件');
+  if (!isObj(raw) || raw.format !== BACKUP_FORMAT) throw new Error('不是 Maia Coach 的备份文件');
   if (typeof raw.version !== 'number' || raw.version > BACKUP_VERSION) throw new Error('备份来自更新版本的应用，请先更新');
   let skipped = 0;
   const list = <T>(v: unknown, f: (x: unknown) => T | null): T[] => {

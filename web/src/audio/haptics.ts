@@ -53,25 +53,14 @@ export function haptic(kind: HapticKind) {
   if (p !== undefined) navigator.vibrate?.(p);
 }
 
-let dragPrepared = false;
-
-/** Selection ticks while dragging a piece across its legal squares (native only; uses a prepared UISelectionFeedbackGenerator). */
+/** Ticks while dragging a piece across its legal squares (native only). Light impact: selectionChanged felt too weak. */
 export const dragHaptics = {
-  start() {
-    if (!on || !isNative || dragPrepared) return;
-    dragPrepared = true;
-    Haptics.selectionStart().catch(() => {});
-  },
+  start() {},
   tick() {
     if (!on || !isNative) return;
-    if (!dragPrepared) this.start();
-    Haptics.selectionChanged().catch(() => {});
+    Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
   },
-  end() {
-    if (!dragPrepared) return;
-    dragPrepared = false;
-    Haptics.selectionEnd().catch(() => {});
-  },
+  end() {},
 };
 
 const TAPPABLE = 'button, [role="button"], .tool, .coach-line, label.check, select, input[type="checkbox"], input[type="radio"], summary';

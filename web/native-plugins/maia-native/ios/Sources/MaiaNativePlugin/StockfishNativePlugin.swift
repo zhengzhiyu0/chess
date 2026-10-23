@@ -1,6 +1,7 @@
 import Foundation
 import os
 import Capacitor
+import UIKit
 import StockfishFull
 import StockfishLite
 
@@ -46,11 +47,13 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         func flush() {
+            // enqueue onto main while still holding the lock: the timer flush and an urgent flush from the
+            // search thread can interleave, and batches must reach JS in the order they were taken out
             lock.lock()
+            defer { lock.unlock() }
             let lines = pending
             pending.removeAll()
             scheduled = false
-            lock.unlock()
             guard !lines.isEmpty, let plugin else { return }
             let flavour = flavour
             DispatchQueue.main.async { plugin.notifyListeners("lines", data: ["engine": flavour, "lines": lines]) }
@@ -60,6 +63,23 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
     // the C engines keep raw pointers to these for the life of the process
     private static let outboxes = ["full": Outbox(flavour: "full"), "lite": Outbox(flavour: "lite")]
     private var started = Set<String>()
+    private var backgroundObserver: NSObjectProtocol?
+
+    override public func load() {
+        backgroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil
+        ) { _ in
+            // 不依赖 WebView 在被挂起前及时发送 visibilitychange。
+            "stop".withCString { cmd in
+                sf_full_send(cmd)
+                sf_lite_send(cmd)
+            }
+        }
+    }
+
+    deinit {
+        if let backgroundObserver { NotificationCenter.default.removeObserver(backgroundObserver) }
+    }
 
     private static let onLine: @convention(c) (UnsafeMutableRawPointer?, UnsafePointer<CChar>) -> Void = { ctx, line in
         guard let ctx else { return }

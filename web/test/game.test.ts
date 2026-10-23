@@ -44,6 +44,17 @@ describe('rules', () => {
     expect(timeoutResult(START_FEN, 'w')).toBe('0-1');
     expect(timeoutResult(START_FEN, 'b')).toBe('1-0');
   });
+
+  it('knows two bishops on one colour cannot mate a bare king', () => {
+    // light-squared bishops on c4 and f1 (e.g. after an underpromotion)
+    expect(canMate('8/8/4k3/8/2B5/3K4/8/5B2 w - - 0 1', 'w')).toBe(false);
+    // a bishop pair on both colours can
+    expect(canMate('8/8/4k3/8/2B5/3K4/8/2B5 w - - 0 1', 'w')).toBe(true);
+    // same-coloured bishops still mate when the opponent has pieces to block its king
+    expect(canMate('8/8/4k3/4p3/2B5/3K4/8/5B2 w - - 0 1', 'w')).toBe(true);
+    // KNN vs K still scores as a win on time, as FIDE has it
+    expect(canMate('8/8/4k3/8/8/3K4/8/5NN1 w - - 0 1', 'w')).toBe(true);
+  });
 });
 
 describe('GameTree', () => {
@@ -78,6 +89,15 @@ describe('GameTree', () => {
     expect(ml[2].nags).toEqual([1]);
     expect(ml[2].clock).toEqual([60000, 59000]);
     expect(ml[1].children.map((n) => n.san)).toEqual(['e5', 'c5']);
+  });
+
+  it('does not count explorations in the serialized main line', () => {
+    const t = new GameTree(START_FEN);
+    const e4 = lineOf(t, 'e2e4');
+    t.add(e4, 'e7e5', true);
+    t.add(t.root, 'd2d4', true);
+    expect(mainlineLength(t.serialize())).toBe(1);
+    expect(mainlineLength({ c: [{ u: 'e2e4', x: 1 }] })).toBe(0);
   });
 
   it('builds the line through a variation', () => {
@@ -140,6 +160,29 @@ describe('PGN', () => {
     const back = parsePgn(text);
     expect(back.tree.root.fen).toBe(fen);
     expect(back.tree.mainline()).toHaveLength(3);
+  });
+
+  it('keeps a "]" inside a tag value and skips stray "}" / "]" in the movetext', () => {
+    const { headers, tree } = parsePgn(String.raw`[Event "Club [A]"]
+[White "Say \"hi\" ]"]
+
+1. e4 } e5 ] 2. Nf3 *`);
+    expect(headers.Event).toBe('Club [A]');
+    expect(headers.White).toBe('Say "hi" ]');
+    expect(tree.mainline().map((n) => n.san).slice(1)).toEqual(['e4', 'e5', 'Nf3']);
+  });
+
+  it('attaches a comment / NAG at the start of a variation to its first move', () => {
+    const a = parsePgn('1. e4 e5 2. Nf3 ({Alternative:} $5 2. f4 {gambit} exf4) 2... Nc6 *');
+    const [, , e5, nf3] = a.tree.mainline();
+    expect(nf3.comment).toBeUndefined();
+    expect(nf3.nags).toBeUndefined();
+    const f4 = e5.children[1];
+    expect(f4.san).toBe('f4');
+    expect(f4.comment).toBe('Alternative: gambit');
+    expect(f4.nags).toEqual([5]);
+    const b = parsePgn(exportPgn(a.tree, a.headers));
+    expect(b.tree.serialize()).toEqual(a.tree.serialize());
   });
 
   it('rejects illegal moves with a readable error', () => {

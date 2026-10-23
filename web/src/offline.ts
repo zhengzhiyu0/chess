@@ -39,16 +39,40 @@ function abs(url: string) {
   return new URL(url, document.baseURI).href;
 }
 
-/** Only the Stockfish build this browser will actually run: (lite | full) × (multi | single-threaded). */
+// keep in sync with public/sw.js: cached copies of files whose URL carries no content hash
+// (engines, puzzles, icons, sounds) are stamped with their precache.json size, so a changed file
+// in a new deployment counts as not downloaded instead of being served stale forever
+const SIZE_HEADER = 'x-precache-size';
+const unversioned = (url: string) =>
+  !url.startsWith('assets/') && !/-[0-9a-f]{8}\.bin$/.test(url) && !/(^|\/)$|\.html$|\.webmanifest$|manifest\.json$/.test(url);
+
+/** Whether a cached copy of `f` belongs to this deployment. */
+async function current(cache: Cache, req: Request | string, f: FileEntry) {
+  if (!unversioned(f.url)) return true;
+  const hit = await cache.match(req);
+  return hit?.headers.get(SIZE_HEADER) === String(f.size);
+}
+
+/** URLs of the manifest files whose cached copy is up to date. */
+async function cachedUrls(cache: Cache): Promise<Set<string>> {
+  const byUrl = new Map((manifest?.files ?? []).map((f) => [abs(f.url), f]));
+  const have = new Set<string>();
+  for (const req of await cache.keys()) {
+    const f = byUrl.get(req.url);
+    if (f && (await current(cache, req, f))) have.add(req.url);
+  }
+  return have;
+}
+
+/** 同时缓存当前版本的单线程后备；多线程初始化失败时仍可离线使用。 */
 function stockfishVariant(url: string, lite: boolean) {
-  const single = url.includes('-single');
-  return url.includes('-lite') === lite && (self.crossOriginIsolated ? !single : single);
+  return url.includes('-lite') === lite && (self.crossOriginIsolated || url.includes('-single'));
 }
 
 export async function listPackages(sfLite: boolean): Promise<Package[]> {
   if (!manifest) return [];
   const cache = await caches.open(CACHE_NAME);
-  const have = new Set((await cache.keys()).map((r) => r.url));
+  const have = await cachedUrls(cache);
   const groups: Record<string, FileEntry[]> = { core: [], stockfish: [], puzzles: [], 'maia-5m': [], 'maia-23m': [], 'maia-79m': [] };
   for (const f of manifest.files) {
     const m = /^models\/maia3-(\w+)\//.exec(f.url);
@@ -63,7 +87,7 @@ export async function listPackages(sfLite: boolean): Promise<Package[]> {
     puzzles: { label: '谜题库', desc: '50000 道 Lichess 谜题（CC0），离线做题' },
     stockfish: {
       label: sfLite ? 'Stockfish 19 轻量版' : 'Stockfish 19',
-      desc: `${sfLite ? '小型 NNUE' : '完整 NNUE'}，${self.crossOriginIsolated ? '多线程版' : '单线程版'}`,
+      desc: `${sfLite ? '小型 NNUE' : '完整 NNUE'}，${self.crossOriginIsolated ? '多线程版 + 单线程后备' : '单线程版'}`,
     },
   };
   for (const id of Object.keys(MODELS) as ModelId[]) {
@@ -98,6 +122,7 @@ async function fetchInto(cache: Cache, f: FileEntry, signal: AbortSignal, onByte
   const headers = new Headers(res.headers);
   headers.delete('content-encoding');
   headers.delete('content-length');
+  if (unversioned(f.url)) headers.set(SIZE_HEADER, String(f.size));
   await cache.put(abs(f.url), new Response(res.body.pipeThrough(counter), { status: 200, headers }));
   const exact = f.size > 0 && !f.url.endsWith('.html') && !f.url.endsWith('/');
   if (exact && got !== f.size) {
@@ -112,7 +137,7 @@ export async function downloadPackage(
   onProgress: (loaded: number, total: number) => void,
 ): Promise<void> {
   const cache = await caches.open(CACHE_NAME);
-  const have = new Set((await cache.keys()).map((r) => r.url));
+  const have = await cachedUrls(cache);
   let loaded = p.files.filter((f) => have.has(abs(f.url))).reduce((a, f) => a + f.size, 0);
   onProgress(loaded, p.size);
   for (const f of p.files) {
@@ -140,16 +165,17 @@ export async function deletePackage(p: Package) {
   await Promise.all(p.files.map((f) => cache.delete(abs(f.url))));
 }
 
-/** Drops cached files from older builds that are no longer part of the deployment. */
+/** Drops cached files from older builds that are no longer part of the deployment, or changed since. */
 export async function pruneStale(): Promise<number> {
   if (!manifest) return 0;
-  const keep = new Set(manifest.files.map((f) => abs(f.url)));
+  const keep = new Map(manifest.files.map((f) => [abs(f.url), f]));
   const cache = await caches.open(CACHE_NAME);
   let n = 0;
   for (const req of await cache.keys()) {
     const u = new URL(req.url);
     if (u.pathname.endsWith('precache.json')) continue;
-    if (!keep.has(u.href.split('?')[0]) && !keep.has(u.href)) {
+    const f = keep.get(u.href.split('?')[0]) ?? keep.get(u.href);
+    if (!f || !(await current(cache, req, f))) {
       await cache.delete(req);
       n++;
     }

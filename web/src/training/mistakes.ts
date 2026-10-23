@@ -1,5 +1,7 @@
 // Mistake notebook: the player's own errors from reviewed games, retrained with spaced repetition.
+import { Chess } from 'chess.js';
 import { isObj, readJson, safeSet } from '../storage';
+import { toMove } from '../game/rules';
 
 export interface Mistake {
   /** game id + ply: the same mistake is only stored once */
@@ -30,13 +32,19 @@ export interface Mistake {
 }
 
 const KEY = 'maia-coach.mistakes';
+/** ids the player deleted, so reviewing the game again does not bring them back */
+const DELETED_KEY = 'maia-coach.mistakes-deleted';
 const CAP = 1000;
-export const MASTER_STREAK = 3;
+export const DELETED_CAP = 2000;
 const DAY = 86_400_000;
+/** days until the next review after 0, 1, 2, 3 correct answers in a row */
 const INTERVALS = [0, 1, 3, 7];
+/** learnt once answered right on time after every interval, the 7-day one included */
+export const MASTER_STREAK = INTERVALS.length;
 const UCI = /^[a-h][1-8][a-h][1-8][qrbn]?$/;
 
 let list: Mistake[] | null = null;
+let deleted: string[] | null = null;
 
 const str = (v: unknown) => typeof v === 'string' && v.length < 300;
 const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
@@ -49,6 +57,8 @@ export function sanitizeMistake(raw: unknown): Mistake | null {
   if (!['mistake', 'miss', 'blunder'].includes(r.judgement as string)) return null;
   if (![r.date, r.drop, r.streak, r.due, r.tries, r.solved].every(num)) return null;
   if (!Array.isArray(r.line) || !r.line.every((u) => typeof u === 'string' && UCI.test(u))) return null;
+  // a broken position would make the trainer throw on every attempt
+  if (!legalIn(r.fen as string, r.best as string) || !legalIn(r.fen as string, r.played as string)) return null;
   return {
     id: r.id as string,
     gameId: r.gameId as string,
@@ -70,6 +80,15 @@ export function sanitizeMistake(raw: unknown): Mistake | null {
   };
 }
 
+function legalIn(fen: string, uci: string): boolean {
+  try {
+    new Chess(fen).move(toMove(uci));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function loadMistakes(): Mistake[] {
   if (list) return list;
   const v = readJson(KEY);
@@ -77,30 +96,56 @@ export function loadMistakes(): Mistake[] {
   return list;
 }
 
-export function setMistakes(ms: Mistake[]) {
+export function setMistakes(ms: Mistake[]): boolean {
   list = ms.slice(0, CAP);
-  safeSet(KEY, JSON.stringify(list));
+  return safeSet(KEY, JSON.stringify(list));
 }
 
-/** Adds new mistakes; existing ones keep their training progress. Returns how many were new. */
+/** Valid, unique deleted ids, oldest first, capped to the newest DELETED_CAP. */
+export function sanitizeDeleted(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const ids = raw.filter((x): x is string => typeof x === 'string' && x.length < 300);
+  // keep the last occurrence of each id so a re-deletion counts as recent
+  return [...new Set(ids.reverse())].reverse().slice(-DELETED_CAP);
+}
+
+export function loadDeletedMistakes(): string[] {
+  deleted ??= sanitizeDeleted(readJson(DELETED_KEY));
+  return deleted;
+}
+
+export function setDeletedMistakes(ids: string[]): boolean {
+  deleted = sanitizeDeleted(ids);
+  return safeSet(DELETED_KEY, JSON.stringify(deleted));
+}
+
+/** Adds new mistakes; existing ones keep their training progress, deleted ones stay deleted. Returns how many were new. */
 export function addMistakes(ms: Mistake[]): number {
   const cur = loadMistakes();
-  const have = new Set(cur.map((m) => m.id));
-  const fresh = ms.filter((m) => !have.has(m.id));
+  const skip = new Set([...cur.map((m) => m.id), ...loadDeletedMistakes()]);
+  const fresh = ms.filter((m) => !skip.has(m.id));
   if (!fresh.length) return 0;
   setMistakes([...fresh, ...cur].sort((a, b) => b.date - a.date));
   return fresh.length;
 }
 
 export function removeMistake(id: string) {
+  setDeletedMistakes([...loadDeletedMistakes(), id]);
   setMistakes(loadMistakes().filter((m) => m.id !== id));
 }
 
-/** Records one training attempt and schedules the next review. */
-export function gradeMistake(id: string, correct: boolean, now = Date.now()) {
+/**
+ * Records one training attempt and schedules the next review. Practice before the review is due
+ * only counts the try: the spacing is what makes a mistake learnt. Returns whether it was graded.
+ */
+export function gradeMistake(id: string, correct: boolean, now = Date.now()): boolean {
   const m = loadMistakes().find((x) => x.id === id);
-  if (!m) return;
+  if (!m) return false;
   m.tries++;
+  if (m.due > now) {
+    setMistakes(loadMistakes());
+    return false;
+  }
   if (correct) {
     m.solved++;
     m.streak++;
@@ -112,6 +157,7 @@ export function gradeMistake(id: string, correct: boolean, now = Date.now()) {
     m.due = now + 10 * 60_000;
   }
   setMistakes(loadMistakes());
+  return true;
 }
 
 /** Training queue: due and not yet learnt, worst errors first. */
@@ -158,4 +204,5 @@ export function mergeMistakes(a: Mistake[], b: Mistake[]): Mistake[] {
 
 export function resetMistakeCache() {
   list = null;
+  deleted = null;
 }

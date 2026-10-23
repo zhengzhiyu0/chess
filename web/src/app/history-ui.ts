@@ -41,10 +41,10 @@ function listHtml(games: StoredGame[]) {
         g.eloAfter !== undefined && g.elo !== undefined ? `等级分 ${g.eloAfter - g.elo >= 0 ? '+' : ''}${g.eloAfter - g.elo}` : '',
       ].filter(Boolean);
       return (
-        `<div class="hg" data-id="${g.id}">` +
+        `<div class="hg" data-id="${escapeHtml(g.id)}">` +
         `<span class="hg-res ${o ?? ''}">${o ? OUTCOME_TEXT[o] : '·'}</span>` +
         `<span class="hg-main"><b>${opponent(g)}</b><small>${fmtDate(g.date)} · ${meta.join(' · ')}</small></span>` +
-        `<button type="button" class="hg-del" data-del="${g.id}" aria-label="删除">✕</button></div>`
+        `<button type="button" class="hg-del" data-del="${escapeHtml(g.id)}" aria-label="删除">✕</button></div>`
       );
     })
     .join('');

@@ -16,7 +16,7 @@ import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, 
 import { ELO_MAX, ELO_MIN, loadSettings, saveSettings, type Settings } from './settings';
 import { assistCount, computeRating, emptyAssists, ratingBreakdown, type Assists, type RatingInfo } from './game/rating';
 import { onStorageFull, readJson, safeSet } from './storage';
-import { addMistakes, loadMistakes, setMistakes, type Mistake } from './training/mistakes';
+import { addMistakes, loadMistakes, setDeletedMistakes, setMistakes, type Mistake } from './training/mistakes';
 import { loadProgress, setProgress } from './training/puzzles';
 import { backupFileName, makeBackup, mergeBackup, parseBackup, pickFile, shareFile, type BackupData } from './backup';
 import { bindTrainer, notebookSummary, openNotebook, openPuzzles, puzzleSummary, trainerRedraw, type TrainerCtx } from './app/trainer-ui';
@@ -104,6 +104,10 @@ let mode: 'play' | 'review' = 'play';
 let flipped = false;
 let gameToken = 0;
 let maiaThinking = false;
+/** Maia gave up after its retries: its clock stops until the user asks for another try */
+let maiaFailed = false;
+/** most user moves the current game ever had, so taking moves back can't dodge "leaving counts as a loss" */
+let peakUserMoves = 0;
 let hintShapes: DrawShape[] = [];
 let liveOn = false;
 let liveCtrl: AbortController | null = null;
@@ -209,7 +213,8 @@ function stored(): StoredGame {
 
 function saveGame() {
   const g = stored();
-  safeSet(GAME_KEY, JSON.stringify(g));
+  peakUserMoves = Math.max(peakUserMoves, userMovesOf().length);
+  safeSet(GAME_KEY, JSON.stringify({ ...g, peak: peakUserMoves }));
   if (result && !imported) {
     history = upsert(history, g);
     saveHistory(history);
@@ -263,6 +268,9 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     rating = g.rating;
     ratePending = Boolean(g.ratePending);
     abandoned = Boolean(g.abandoned);
+    const peak = (raw as { peak?: unknown }).peak;
+    peakUserMoves = Math.max(typeof peak === 'number' ? peak : 0, userMovesOf().length);
+    maiaFailed = false;
     tcId = g.tc ?? 'none';
     const tc = timeControlOf(tcId);
     clock = tc ? new ChessClock(tc, g.clock ?? node.clock) : null;
@@ -348,6 +356,11 @@ function arrows(): DrawShape[] {
     if (r && node.uci) shapes.push({ orig: node.uci.slice(2, 4) as Key, customSvg: { html: judgeBoardSvg(r.judgement) } });
   }
   return shapes;
+}
+
+/** Redraws the arrows for the current position; a running demo owns the board and keeps its own. */
+function refreshShapes() {
+  if (!demo) cg.setAutoShapes(arrows());
 }
 
 function renderLegend() {
@@ -672,7 +685,7 @@ function collectMistakes() {
 /** Automatic rating applies to real games from the standard start in which the user moved (or resigned). */
 function rateable(): boolean {
   if (!settings.autoElo || imported || gameElo === undefined || tree.root.fen !== START_FEN) return false;
-  return userMovesOf().length >= 1 || reason === 'resign';
+  return Math.max(peakUserMoves, userMovesOf().length) >= 1 || reason === 'resign';
 }
 
 let rateCtrl: AbortController | null = null;
@@ -755,8 +768,8 @@ function flushRating() {
  */
 function leaveGame(): boolean {
   flushRating();
-  if (result || imported || tip() === tree.root) return true;
-  const moved = userMovesOf().length;
+  if (result || imported || (tip() === tree.root && !peakUserMoves)) return true;
+  const moved = Math.max(peakUserMoves, userMovesOf().length);
   if (moved < 3 || !rateable()) return true;
   if (!confirm('当前对局还没下完。离开会按认输记录并计算等级分，确定吗？')) return false;
   abandoned = true;
@@ -774,6 +787,7 @@ function flag(color: Color) {
 async function maiaTurn(attempt = 0) {
   const t = tip();
   if (screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle' || turnOf(t.fen) === userColor) return;
+  if (attempt === 0) maiaFailed = false;
   const token = ++gameToken;
   maiaThinking = true;
   update();
@@ -781,7 +795,7 @@ async function maiaTurn(attempt = 0) {
   try {
     const t0 = performance.now();
     const res = await maiaEval(t);
-    if (token !== gameToken) return;
+    if (token !== gameToken || mode !== 'play' || screen !== 'game') return;
     const pick = sampleMove(res.moves, settings.temperature, 1);
     if (settings.thinkDelay) {
       // longer "thinking" when the position is less obvious to a human
@@ -791,7 +805,7 @@ async function maiaTurn(attempt = 0) {
         : 300 + Math.random() * 600 + unclear * 2500;
       const wait = want - (performance.now() - t0);
       if (wait > 0) await sleep(wait);
-      if (token !== gameToken) return;
+      if (token !== gameToken || mode !== 'play' || screen !== 'game') return;
     }
     maiaThinking = false;
     if (playMove(pick.uci) && settings.premove) cg.playPremove();
@@ -799,7 +813,12 @@ async function maiaTurn(attempt = 0) {
     console.error(err);
     // a crashed / hung worker is replaced by getMaia() on the next call
     retry = token === gameToken && attempt < 2;
-    if (token === gameToken) setStatus(retry ? 'Maia 无响应，正在重启…' : 'Maia 出错：' + (err as Error).message);
+    if (token === gameToken) {
+      // out of retries: stop Maia's clock so an engine failure can't turn into a rated win on time
+      maiaFailed = !retry;
+      setStatus(retry ? 'Maia 无响应，正在重启…' : 'Maia 出错：' + (err as Error).message + '（返回首页再进入对局可重试）');
+      if (maiaFailed) syncClock();
+    }
   } finally {
     if (token === gameToken) {
       maiaThinking = false;
@@ -832,6 +851,8 @@ function newGame(fen = START_FEN, color?: Color): boolean {
   rating = undefined;
   ratePending = false;
   abandoned = false;
+  peakUserMoves = 0;
+  maiaFailed = false;
   tcId = settings.timeControl;
   const tc = timeControlOf(tcId);
   clock = tc ? new ChessClock(tc) : null;
@@ -848,9 +869,10 @@ function newGame(fen = START_FEN, color?: Color): boolean {
 let hintedAt: Node | null = null;
 let assistWarned = '';
 
-/** First use of a help in a rated game: say once that it lowers the rating gain. */
+/** First use of a help in a game that will be rated: say once that it lowers the rating gain. */
 function assistOk(what: string): boolean {
-  if (!rateable() || assistWarned === gameId) return true;
+  const willRate = settings.autoElo && !imported && gameElo !== undefined && tree.root.fen === START_FEN;
+  if (!willRate || assistWarned === gameId) return true;
   if (!confirm(`使用${what}后，本局赢棋的加分会按比例减少（输棋照常扣分）。继续吗？`)) return false;
   assistWarned = gameId;
   return true;
@@ -887,7 +909,11 @@ function undo() {
 async function hint() {
   const t = tip();
   if (result !== '' || mode !== 'play') return;
+  // a hint is for the user's own move; while Maia thinks or the coach is judging it would show Maia's best
+  if (turnOf(t.fen) !== userColor || maiaThinking || coachState !== 'idle') return;
   if (!assistOk('提示')) return;
+  const token = gameToken;
+  const stale = () => token !== gameToken || t !== tip() || mode !== 'play' || screen !== 'game';
   const box = $('hint-box');
   box.textContent = '思考中…';
   // counted once per position, however often the button is pressed
@@ -899,21 +925,21 @@ async function hint() {
   try {
     const s = await getSf();
     const r = await s.analyse(tree.root.fen, { moves: movesTo(t), movetime: settings.sfMovetime, depth: depthCap('hint'), multipv: 1 });
-    if (t !== tip()) return;
+    if (stale()) return;
     const best = r.bestmove;
     hintShapes = best ? [arrow(best, 'green')] : [];
     let text = best ? `Stockfish 推荐：${sanOf(t.fen, best)}（${r.lines[0] ? evalText(r.lines[0], turnOf(t.fen)) : ''}）` : '';
     if (!settings.lowMemory) {
       const h = await maiaEval(t);
-      if (t !== tip()) return;
+      if (stale()) return;
       const top = h.moves[0];
       if (top.uci !== best) hintShapes.push(arrow(top.uci, 'blue'));
       text += `\n${settings.elo} 分棋手最常走：` + h.moves.slice(0, 3).map((x) => `${sanOf(t.fen, x.uci)} ${(x.p * 100).toFixed(0)}%`).join('，');
     }
     box.textContent = text;
-    cg.setAutoShapes(arrows());
+    refreshShapes();
   } catch (err) {
-    box.textContent = '提示失败：' + (err as Error).message;
+    if (!stale()) box.textContent = '提示失败：' + (err as Error).message;
   }
 }
 
@@ -937,9 +963,15 @@ async function offerDraw() {
   }
   drawOfferPly = t.ply;
   setStatus('Maia 正在考虑和棋…');
+  const token = gameToken;
+  // the answer only counts while the user is still at the board, in the same game and position
+  const stale = () => token !== gameToken || t !== tip() || result !== '' || mode !== 'play' || screen !== 'game';
   try {
     const [w, d, l] = (await maiaEval(t)).wdl;
-    if (t !== tip() || result) return;
+    if (stale()) {
+      setStatus('和棋提议已作废');
+      return;
+    }
     const maiaToMove = turnOf(t.fen) !== userColor;
     const maiaScore = maiaToMove ? w + d / 2 : l + d / 2;
     if (maiaScore <= 0.55) {
@@ -948,14 +980,14 @@ async function offerDraw() {
       setStatus('Maia 接受了和棋');
     } else setStatus('Maia 拒绝了和棋');
   } catch (err) {
-    setStatus('求和失败：' + (err as Error).message);
+    if (!stale()) setStatus('求和失败：' + (err as Error).message);
   }
 }
 
 // ---------- clock ----------
 
 function clockShouldRun(): Color | null {
-  if (!clock || result || screen !== 'game' || mode !== 'play' || coachState !== 'idle' || document.hidden) return null;
+  if (!clock || result || maiaFailed || screen !== 'game' || mode !== 'play' || coachState !== 'idle' || document.hidden) return null;
   const t = tip();
   // the clock starts after White's first move
   if (t === tree.root) return null;
@@ -1075,14 +1107,19 @@ async function analyseGame() {
     const s = await getSf();
     for (let i = 0; i < n; i++) {
       if (ctrl.signal.aborted) return;
+      // killed by the watchdog: its searches now return nothing at once; don't report a hollow "done"
+      if (!s.alive) throw new Error('Stockfish 中途退出');
       await evalNode(s, nodes[i], ctrl.signal);
       setFill(((i + 1) / n) * 100);
       if (nodes[i] === node || i % 4 === 0) update();
     }
+    // aborted during the last position: the game (and `result`) may already be another one
+    if (ctrl.signal.aborted) return;
     setStatus('分析完成');
     if (result && !imported) collectMistakes();
   } catch (err) {
     console.error(err);
+    if (!ctrl.signal.aborted) setStatus('分析中断：' + (err as Error).message);
   } finally {
     if (batchCtrl === ctrl) {
       batchCtrl = null;
@@ -1106,9 +1143,13 @@ async function reviewHuman() {
   const want = [n.parent && showMove(n) ? n.parent : null, showSide(n) && !chessOf(n).isGameOver() ? n : null];
   const todo = want.filter((x): x is Node => Boolean(x) && !x!.a.human);
   if (!todo.length) return;
+  // settings changed while Maia ran: the answers belong to the old rating / model
+  const sig = () => `${settings.elo}|${settings.model}|${settings.useHistory}`;
+  const asked = sig();
   try {
     const m = await getMaia();
     const res = await m.evaluateMany(todo.map((x) => ({ chess: chessOf(x), fens: maiaFens(x), selfElo: settings.elo, oppoElo: settings.elo })));
+    if (sig() !== asked) return;
     todo.forEach((x, i) => (x.a.human = res[i]));
   } catch (err) {
     console.error(err);
@@ -1116,7 +1157,7 @@ async function reviewHuman() {
   }
   if (n === node && mode === 'review') {
     renderCoach();
-    cg.setAutoShapes(arrows());
+    refreshShapes();
     renderLegend();
   }
 }
@@ -1192,7 +1233,7 @@ async function liveSearch() {
     liveLines = n.a.live;
     renderLines();
     renderEvalBar();
-    cg.setAutoShapes(arrows());
+    refreshShapes();
     renderLegend();
     return;
   }
@@ -1210,7 +1251,7 @@ async function liveSearch() {
     pending = null;
     renderLines();
     renderEvalBar();
-    cg.setAutoShapes(arrows());
+    refreshShapes();
     renderLegend();
   };
   try {
@@ -1453,7 +1494,9 @@ function renderVarActions() {
     box.innerHTML = `<span class="muted">试走中（从 ${escapeHtml(where)}），不影响对局记录</span><button class="primary" data-va="back">回到对局</button><button data-va="del">删除试走</button>`;
     return;
   }
-  box.innerHTML = '<span class="muted">变着</span><button data-va="back">回到主线</button><button data-va="main">设为主线</button><button data-va="del">删除变着</button>';
+  // in a game played here the record is what happened; only imported games can have their main line rewritten
+  const main = imported ? '<button data-va="main">设为主线</button>' : '';
+  box.innerHTML = `<span class="muted">变着</span><button data-va="back">回到主线</button>${main}<button data-va="del">删除变着</button>`;
 }
 
 function varAction(act: string) {
@@ -1464,8 +1507,10 @@ function varAction(act: string) {
     goto(v);
     return;
   }
-  if (act === 'main') tree.makeMainline(node);
-  else if (act === 'del') {
+  if (act === 'main') {
+    if (!imported) return;
+    tree.makeMainline(node);
+  } else if (act === 'del') {
     let v = node;
     if (v.x) while (v.parent?.x) v = v.parent;
     // remove the innermost variation that contains the current position
@@ -1479,7 +1524,7 @@ function varAction(act: string) {
   if (!imported && end && !result) ({ result, reason } = end);
   saveGame();
   update();
-  if (liveOn) void runLive();
+  if (!analyseMissing() && liveOn) void runLive();
 }
 
 // ---------- coach ----------
@@ -1665,6 +1710,8 @@ async function computeThreat(s: Stockfish, n: Node, signal: AbortSignal) {
   const r = await s.analyse(nf, { movetime: Math.min(settings.sfMovetime, 600), depth: depthCap('threat'), signal });
   if (signal.aborted) return;
   const line = r.lines[0];
+  // no bestmove with legal moves left means the engine died mid-search: leave it unknown so it is searched again
+  if (!r.bestmove && new Chess(nf).moves().length) return;
   if (!r.bestmove || !line) {
     n.a.threat = null;
     return;
@@ -2076,7 +2123,10 @@ function checkResult() {
   $('result-title').textContent = draw ? '和棋' : win ? '你赢了！' : 'Maia 获胜';
   $('result-sub').textContent = resultText();
   renderRatingResult();
-  setTimeout(() => $<HTMLDialogElement>('dlg-result').showModal(), 450);
+  setTimeout(() => {
+    const dlg = $<HTMLDialogElement>('dlg-result');
+    if (screen === 'game' && !dlg.open) dlg.showModal();
+  }, 450);
 }
 
 function renderRatingResult() {
@@ -2138,7 +2188,15 @@ function goto(n: Node | null | undefined, auto = false) {
   node = n;
   hintShapes = [];
   update();
-  if (liveOn) void runLive();
+  if (!analyseMissing() && liveOn) void runLive();
+}
+
+/** Starts the whole-game analysis when the shown game line (e.g. a PGN variation) has unanalysed positions. */
+function analyseMissing(): boolean {
+  if (mode !== 'review' || screen !== 'game' || (batchCtrl && !batchCtrl.signal.aborted)) return false;
+  if (!gameLine().some((x) => !x.a.eval)) return false;
+  void analyseGame();
+  return true;
 }
 
 function lastOfLine(): Node {
@@ -2161,12 +2219,15 @@ function setMode(m: 'play' | 'review') {
   if (m === 'play') {
     setLive(false);
     batchCtrl?.abort();
-  } else if (coachState !== 'idle') coachReset();
+  } else {
+    // a Maia move arriving now would yank the review back to the tip and change the tree under the analysis
+    gameToken++;
+    maiaThinking = false;
+    if (coachState !== 'idle') coachReset();
+  }
   update();
-  if (m === 'play') {
-    void maiaTurn();
-    coachTurn();
-  } else startReview();
+  if (m === 'play') resumeCoach();
+  else startReview();
 }
 
 // ---------- avatar ----------
@@ -2316,17 +2377,20 @@ function openSettings() {
     `${layoutDiag()}<br>` +
     `版本：${__APP_VERSION__}`;
   dlg.returnValue = '';
+  // the rating can move while the dialog is open (a finished game's analysis completes): only an edit counts
+  const openElo = settings.elo;
   dlg.onclose = () => {
     if (dlg.returnValue !== 'ok') return;
     const old = settings;
     const num = (n: string) => Number(el(n).value);
+    const eloEdited = num('elo') !== openElo;
     settings = {
       ...old,
       model: el('model').value as Settings['model'],
-      elo: num('elo'),
+      elo: eloEdited ? num('elo') : old.elo,
       autoElo: el('autoElo').checked,
       // a manually chosen rating restarts the fast early calibration
-      ratedGames: num('elo') !== old.elo ? 0 : old.ratedGames,
+      ratedGames: eloEdited ? 0 : old.ratedGames,
       color: el('color').value as Settings['color'],
       temperature: num('temperature'),
       backend: el('backend').value as Settings['backend'],
@@ -2369,13 +2433,24 @@ function applySettings(old: Settings) {
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);
   applyBoardSize();
-  if (old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash || old.sfLite !== settings.sfLite) engines.unloadSf();
+  const sfChanged = old.sfThreads !== settings.sfThreads || old.sfHash !== settings.sfHash || old.sfLite !== settings.sfLite;
+  const evalChanged = old.sfMovetime !== settings.sfMovetime || old.sfLite !== settings.sfLite || old.ecoAnalysis !== settings.ecoAnalysis;
+  const humanChanged = old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory;
+  // searches started under the old settings would write stale results into the cleared annotations
+  if (sfChanged || evalChanged) {
+    batchCtrl?.abort();
+    liveCtrl?.abort();
+  }
+  if (sfChanged) engines.unloadSf();
   if (old.model !== settings.model || old.backend !== settings.backend) engines.unloadMaia();
-  if (old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory) clearAnn('human');
-  if (old.sfMovetime !== settings.sfMovetime || old.sfLite !== settings.sfLite || old.ecoAnalysis !== settings.ecoAnalysis) clearAnn('eval', 'threat', 'live');
+  if (humanChanged) clearAnn('human');
+  if (evalChanged) clearAnn('eval', 'threat', 'live');
   if (!settings.premove) cg.cancelPremove();
   applyFx();
-  if (old.reviewOpponent !== settings.reviewOpponent && mode === 'review' && screen === 'game') void analyseGame();
+  const inReview = mode === 'review' && screen === 'game';
+  // the batch skips positions that still have an eval, so restarting it only fills what is missing
+  if (inReview && (sfChanged || evalChanged || old.reviewOpponent !== settings.reviewOpponent)) void analyseGame();
+  else if (inReview && humanChanged && liveOn) void runLive();
   update();
   renderHome();
 }
@@ -2388,6 +2463,7 @@ function gameHeaders(): Record<string, string> {
   const d = new Date(gameDate);
   const p = (n: number) => String(n).padStart(2, '0');
   if (imported && headers) return { ...headers, Result: result || '*' };
+  if (imported) return { Event: '?', Site: '?', Date: '????.??.??', White: '?', Black: '?', Result: result || '*' };
   const elo = String(gameElo ?? settings.elo);
   const name = `Maia-3 ${gameModel}`;
   const h: Record<string, string> = {
@@ -2498,6 +2574,8 @@ function loadImported(p: Parsed) {
   rating = undefined;
   ratePending = false;
   abandoned = false;
+  peakUserMoves = 0;
+  maiaFailed = false;
   userColor = 'w';
   result = p.result === '*' ? '' : p.result;
   reason = undefined;
@@ -2606,10 +2684,14 @@ async function importBackup() {
   const old = settings;
   settings = d.settings;
   history = d.history;
-  saveHistory(history);
-  setMistakes(d.mistakes);
-  setProgress(d.puzzles);
+  // every store is written even if one fails, so as much as fits is kept
+  const saved = [saveHistory(history), setMistakes(d.mistakes), setDeletedMistakes(d.deletedMistakes ?? []), setProgress(d.puzzles)];
   applySettings(old);
+  if (saved.includes(false)) {
+    // a toast vanishes in seconds; losing data on the next reload deserves a dialog
+    alert('导入未完整保存：本机存储空间不足，刷新后部分数据会丢失。请清理一些历史对局后重新导入。');
+    return;
+  }
   setStatus(`已${replace ? '覆盖' : '合并'}导入${parsed.skipped ? `（${parsed.skipped} 条损坏的记录已跳过）` : ''}`);
 }
 
@@ -2651,10 +2733,18 @@ async function exportAllPgn() {
 }
 
 const BACKUP_AT_KEY = 'maia-coach.backupAt';
+/** localStorage can throw (blocked site data, some WebView policies); the home screen must still render */
+const backupAt = () => {
+  try {
+    return Number(localStorage.getItem(BACKUP_AT_KEY) || 0);
+  } catch {
+    return 0;
+  }
+};
 
 function openData() {
   const dlg = $<HTMLDialogElement>('dlg-data');
-  const at = Number(localStorage.getItem(BACKUP_AT_KEY) || 0);
+  const at = backupAt();
   $('data-info').textContent =
     `本机数据：${history.length} 局对局 · ${loadMistakes().length} 道错题 · ${loadProgress().games} 道已做谜题。` +
     (at ? `上次导出备份：${new Date(at).toLocaleString()}` : '还没有导出过备份。');
@@ -2673,6 +2763,7 @@ const trainerCtx: TrainerCtx = {
   show: () => showScreen('train'),
   close: () => showScreen('home'),
   elo: () => settings.elo,
+  askPromotion,
 };
 
 // ---------- home ----------
@@ -2698,7 +2789,7 @@ function renderHome() {
   $('history-sub').textContent = history.length ? `${history.length} 局${s.games ? ` · 得分 ${s.score.toFixed(0)}%` : ''}` : '暂无';
   $('puzzle-sub').textContent = puzzleSummary();
   $('mistake-sub').textContent = notebookSummary();
-  const at = Number(localStorage.getItem(BACKUP_AT_KEY) || 0);
+  const at = backupAt();
   // remind to back up once there is something worth keeping and the last backup is old
   $('btn-data').classList.toggle('remind', history.length >= 5 && Date.now() - at > 14 * 86_400_000);
   homeCg?.set({ fen: t.fen, orientation: userColor === 'w' ? 'white' : 'black', lastMove: undefined });
@@ -2937,11 +3028,13 @@ function bind() {
   reloadBtn.addEventListener('touchend', reloadForUpdate);
   document.addEventListener('keydown', (e) => {
     if (screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
+    // Alt+← is the browser's back; arrows in a select / input belong to that control
+    if (e.altKey || e.ctrlKey || e.metaKey || (e.target as HTMLElement).closest('input, select, textarea, [contenteditable]')) return;
     if (reportOpen) {
       if (e.key === 'Escape' || e.key === 'Enter') closeReport();
       return;
     }
-    if (mode === 'review' && e.key === ' ' && !(e.target as HTMLElement).closest('input, select, textarea, button')) {
+    if (mode === 'review' && e.key === ' ' && !(e.target as HTMLElement).closest('button')) {
       e.preventDefault();
       toggleAutoplay();
       return;
@@ -3000,27 +3093,42 @@ function bind() {
   });
 }
 
+function coiReloaded(): boolean {
+  try {
+    return Boolean(sessionStorage.getItem('coi-reloaded'));
+  } catch {
+    // without session storage a reload can't be remembered: don't risk a reload loop
+    return true;
+  }
+}
+
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator) || !import.meta.env.PROD || isNative) return;
   const hadController = Boolean(navigator.serviceWorker.controller);
-  // a new deployment's SW took over: the running page is the old version
+  // 首次接管后再刷新；已有控制器时仅提示更新，避免中断对局。
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController) return;
+    if (!navigator.serviceWorker.controller) return;
+    if (!hadController) {
+      if (self.crossOriginIsolated !== false || self.top !== self || screen !== 'home' || coiReloaded()) return;
+      try {
+        sessionStorage.setItem('coi-reloaded', '1');
+      } catch {
+        return;
+      }
+      location.reload();
+      return;
+    }
     const dlg = $<HTMLDialogElement>('dlg-update');
     if (!dlg.open) dlg.showModal();
   });
-  navigator.serviceWorker.register('./sw.js').then((reg) => {
-    // first visit: reload once so the SW can add COOP/COEP headers (enables multi-threading)
-    if (!self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded')) {
-      navigator.serviceWorker.ready.then(() => {
-        sessionStorage.setItem('coi-reloaded', '1');
-        location.reload();
+  navigator.serviceWorker
+    .register('./sw.js')
+    .then((reg) => {
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) reg.update().catch(() => {});
       });
-    }
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) reg.update().catch(() => {});
-    });
-  });
+    })
+    .catch((err) => console.warn('Service Worker 注册失败', err));
 }
 
 /** 布局诊断：各容器的 top/bottom，用于排查实机上的底部空白 */
@@ -3166,7 +3274,9 @@ function init() {
   if (ratePending) flushRating();
   setStatus(isNative ? '就绪（原生引擎）' : self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
 
-  const willReload = import.meta.env.PROD && !isNative && 'serviceWorker' in navigator && !self.crossOriginIsolated && !sessionStorage.getItem('coi-reloaded');
+  // mirrors registerServiceWorker: only the first install reloads for COOP/COEP
+  const willReload =
+    import.meta.env.PROD && !isNative && 'serviceWorker' in navigator && !navigator.serviceWorker.controller && self.crossOriginIsolated === false && self.top === self && screen === 'home' && !coiReloaded();
   const idle = (cb: () => void) => ('requestIdleCallback' in self ? requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));
   if (!willReload) {
     idle(async () => {

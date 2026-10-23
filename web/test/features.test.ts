@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 // settings.ts reads a few browser globals for its defaults
 Object.assign(globalThis, { matchMedia: () => ({ matches: false }) });
-import { assistFactor, computeRating, emptyAssists, expectedAccuracy } from '../src/game/rating';
+import { assistFactor, computeRating, emptyAssists, expectedAccuracy, ratingBreakdown } from '../src/game/rating';
 import { sanitizeSettings, defaultSettings } from '../src/settings';
 import { sanitizeGame } from '../src/game/history';
 import { parsePgn, splitPgn } from '../src/game/pgn';
@@ -40,6 +40,13 @@ describe('rating', () => {
     expect(computeRating({ ...base, result: 0, accuracy: 80, assists: a }).delta).toBe(loss.delta);
     expect(assistFactor({ undo: 10, hint: 0, retry: 0 })).toBe(0);
     expect(assistFactor({ undo: 0, hint: 0, retry: 0, best: true })).toBeCloseTo(0.2);
+  });
+  it('explains a gain wiped out by help as a scaled gain, not as "losses unchanged"', () => {
+    const r = computeRating({ ...base, result: 1, accuracy: 80, assists: { undo: 5, hint: 0, retry: 0 } });
+    expect(r.delta).toBe(0);
+    expect(ratingBreakdown(r)).toContain('加分 ×0.00');
+    const loss = computeRating({ ...base, result: 0, accuracy: 80, assists: { undo: 1, hint: 0, retry: 0 } });
+    expect(ratingBreakdown(loss)).toContain('不减少扣分');
   });
   it('abandoning is the worst loss', () => {
     const r = computeRating({ ...base, result: 0, accuracy: 95, abandoned: true });

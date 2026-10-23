@@ -29,12 +29,12 @@ export const PIECE_SETS: Record<string, string> = {
 const ROLE: Record<string, string> = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 
 export function pieceUrl(set: string, color: 'w' | 'b', role: string) {
-  return `pieces/${PIECE_SETS[set] ? set : 'cburnett'}/${color}${role.toUpperCase()}.svg`;
+  return `pieces/${Object.hasOwn(PIECE_SETS, set) ? set : 'cburnett'}/${color}${role.toUpperCase()}.svg`;
 }
 
 export function boardColors(theme: string, light: string, dark: string) {
   if (theme === 'custom') return { light, dark };
-  return BOARD_THEMES[theme] ?? BOARD_THEMES.green;
+  return Object.hasOwn(BOARD_THEMES, theme) ? BOARD_THEMES[theme] : BOARD_THEMES.green;
 }
 
 let styleEl: HTMLStyleElement | null = null;

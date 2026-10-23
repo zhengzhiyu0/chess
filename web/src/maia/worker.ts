@@ -8,6 +8,8 @@ export type WorkerIn =
 
 export type WorkerOut =
   | { type: 'progress'; loaded: number; total: number }
+  /** the worker took the request off its queue; the page times the request from here */
+  | { type: 'started'; reqId: number }
   | { type: 'loaded'; reqId: number; backend: string }
   | { type: 'result'; reqId: number; logits: Float32Array; wdl: [number, number, number]; ms: number }
   | { type: 'error'; reqId: number; message: string };
@@ -55,9 +57,8 @@ async function fetchModel(base: string): Promise<Uint8Array> {
   return buf;
 }
 
-// ORT spawns its pthread workers from this same script; leave those to emscripten.
-if (!self.name?.startsWith('em-pthread')) ctx.onmessage = async (e) => {
-  const msg = e.data;
+async function handle(msg: WorkerIn) {
+  ctx.postMessage({ type: 'started', reqId: msg.reqId });
   try {
     if (msg.type === 'load') {
       if (!envConfigured) {
@@ -111,4 +112,13 @@ if (!self.name?.startsWith('em-pthread')) ctx.onmessage = async (e) => {
   } catch (err) {
     ctx.postMessage({ type: 'error', reqId: msg.reqId, message: err instanceof Error ? err.message : String(err) });
   }
+}
+
+// one request at a time: a session must not run concurrently (WebGPU: "Session already started")
+let chain: Promise<void> = Promise.resolve();
+
+// ORT spawns its pthread workers from this same script; leave those to emscripten.
+if (!self.name?.startsWith('em-pthread')) ctx.onmessage = (e) => {
+  const msg = e.data;
+  chain = chain.then(() => handle(msg));
 };

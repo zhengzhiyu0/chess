@@ -1,5 +1,5 @@
 import { isNative } from '../native';
-import type { SfFlavour } from 'maia-native';
+import type { SfFlavour, StockfishNativePlugin } from 'maia-native';
 
 export interface SfLine {
   multipv: number;
@@ -7,6 +7,7 @@ export interface SfLine {
   /** side-to-move POV */
   cp?: number;
   mate?: number;
+  bound?: 'lowerbound' | 'upperbound';
   wdl?: [number, number, number];
   pv: string[];
 }
@@ -46,6 +47,10 @@ export function parseInfo(line: string): SfLine | null {
         else out.mate = v;
         break;
       }
+      case 'lowerbound':
+      case 'upperbound':
+        out.bound = t[i] as SfLine['bound'];
+        break;
       case 'wdl': {
         const w = Number(t[++i]);
         const d = Number(t[++i]);
@@ -88,14 +93,14 @@ class WorkerTransport implements Transport {
 
 /**
  * The in-app native engine (see native-plugins/maia-native). Each flavour is a process-wide
- * singleton that can't be torn down, so closing just stops the search and detaches listeners.
+ * singleton that can't be torn down; closing stops search, shrinks Hash, and detaches listeners.
  */
 class NativeTransport implements Transport {
   private static subs: Record<SfFlavour, Set<(l: string) => void>> = { full: new Set(), lite: new Set() };
   private static hooked: Promise<unknown> | null = null;
   private onLine: (l: string) => void;
 
-  private constructor(private flavour: SfFlavour, onLine: (l: string) => void) {
+  private constructor(private flavour: SfFlavour, onLine: (l: string) => void, private plugin: StockfishNativePlugin) {
     this.onLine = onLine;
   }
 
@@ -103,33 +108,46 @@ class NativeTransport implements Transport {
     const { StockfishNative } = await import('maia-native');
     NativeTransport.hooked ??= StockfishNative.addListener('lines', (e) => {
       for (const h of [...NativeTransport.subs[e.engine]]) for (const l of e.lines) h(l);
+    }).catch((err) => {
+      NativeTransport.hooked = null;
+      throw err;
     });
     await NativeTransport.hooked;
     // a previous instance may have been dropped mid-search; it must not see this one's output
     NativeTransport.subs[flavour].clear();
-    const t = new NativeTransport(flavour, onLine);
+    const t = new NativeTransport(flavour, onLine, StockfishNative);
     NativeTransport.subs[flavour].add(onLine);
-    await StockfishNative.start({ engine: flavour });
-    t.post('stop');
-    t.post('ucinewgame');
-    return t;
+    try {
+      await StockfishNative.start({ engine: flavour });
+      if (!NativeTransport.subs[flavour].has(onLine)) throw new Error('Stockfish 已卸载');
+      t.post('stop');
+      t.post('ucinewgame');
+      return t;
+    } catch (err) {
+      NativeTransport.subs[flavour].delete(onLine);
+      throw err;
+    }
   }
 
   post(cmd: string) {
-    void import('maia-native').then(({ StockfishNative }) =>
-      StockfishNative.send({ engine: this.flavour, cmd }).catch((e) => console.error('Stockfish native', e)),
-    );
+    void this.plugin.send({ engine: this.flavour, cmd }).catch((e) => console.error('Stockfish native', e));
   }
 
   close() {
-    this.post('stop');
-    NativeTransport.subs[this.flavour].delete(this.onLine);
+    // a newer instance has taken over this engine; stopping it would cut that one's search short
+    if (NativeTransport.subs[this.flavour].delete(this.onLine)) {
+      this.post('stop');
+      this.post('setoption name Hash value 1');
+      this.post('ucinewgame');
+    }
   }
 }
 
 export class Stockfish {
   private transport!: Transport;
   private listeners = new Set<(line: string) => void>();
+  /** rejects of pending waitFor() calls, so terminate() can fail them instead of leaving them hanging */
+  private waiters = new Set<(e: Error) => void>();
   private queue: Promise<unknown> = Promise.resolve();
   private failed: ((e: Error) => void) | null = null;
   private dead = false;
@@ -190,16 +208,21 @@ export class Stockfish {
           else setTimeout(tick, 1000);
         };
         setTimeout(tick, 1000);
-        this.waitFor('uci', (l) => l === 'uciok').then(resolve, reject);
+        // the timeout and crash detection stay armed until readyok, not just uciok
+        this.waitFor('uci', (l) => l === 'uciok')
+          .then(() => {
+            if (this.multiThreaded) this.send(`setoption name Threads value ${threads}`);
+            this.send(`setoption name Hash value ${hash}`);
+            this.send('setoption name UCI_ShowWDL value true');
+            return this.waitFor('isready', (l) => l === 'readyok');
+          })
+          .then(resolve, reject);
       });
-      this.failed = null;
-      if (this.multiThreaded) this.send(`setoption name Threads value ${threads}`);
-      this.send(`setoption name Hash value ${hash}`);
-      this.send('setoption name UCI_ShowWDL value true');
-      await this.waitFor('isready', (l) => l === 'readyok');
     } catch (err) {
       this.terminate();
       throw err;
+    } finally {
+      this.failed = null;
     }
     return this;
   }
@@ -209,14 +232,21 @@ export class Stockfish {
   }
 
   private waitFor(cmd: string, done: (line: string) => boolean): Promise<void> {
-    return new Promise((resolve) => {
+    if (this.dead) return Promise.reject(new Error('Stockfish 已终止'));
+    return new Promise((resolve, reject) => {
+      const fail = (e: Error) => {
+        this.listeners.delete(h);
+        reject(e);
+      };
       const h = (l: string) => {
         if (done(l)) {
           this.listeners.delete(h);
+          this.waiters.delete(fail);
           resolve();
         }
       };
       this.listeners.add(h);
+      this.waiters.add(fail);
       this.send(cmd);
     });
   }
@@ -249,6 +279,8 @@ export class Stockfish {
         const h = (l: string) => {
           const info = parseInfo(l);
           if (info) {
+            const previous = lines.get(info.multipv);
+            if (info.bound && previous && !previous.bound) return;
             lines.set(info.multipv, info);
             opts.onInfo?.(sorted());
             return;
@@ -277,7 +309,9 @@ export class Stockfish {
     if (this.dead) return;
     this.dead = true;
     this.transport?.close();
-    // flush pending searches so awaiting callers resolve instead of hanging
+    // fail pending handshake steps and flush pending searches so awaiting callers don't hang
+    for (const w of [...this.waiters]) w(new Error('Stockfish 已终止'));
+    this.waiters.clear();
     for (const h of [...this.listeners]) h('bestmove (none)');
     this.listeners.clear();
   }

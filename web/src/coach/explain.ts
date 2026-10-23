@@ -1,4 +1,4 @@
-import { Chess, type Square } from 'chess.js';
+import { Chess, type Move, type Square } from 'chess.js';
 import type { SfLine } from '../engine/stockfish';
 import { toMove, type Color } from '../game/rules';
 
@@ -144,6 +144,14 @@ function pinsBy(c: Chess, by: Color): Pin[] {
   return out;
 }
 
+/** `sq` 上的子是否被 `by` 一方牵制在王前：把它拿掉，`king` 就会多受到攻击。兵也算。 */
+function pinnedToKing(fen: string, sq: Square, king: Square, by: Color): boolean {
+  const c = new Chess(fen);
+  const n = c.attackers(king, by).length;
+  c.remove(sq);
+  return c.attackers(king, by).length > n;
+}
+
 /** 值得攻击的目标：王，或者用 `from` 上的子吃它能净得子力。 */
 function worthHitting(fen: string, from: Square, sq: Square, by: Color, c: Chess): boolean {
   return c.get(sq)!.type === 'k' || (seeWith(fen, from, sq, by) ?? 0) > 0;
@@ -271,14 +279,18 @@ export function detectMotifs(fen: string, uci: string, victim = '对方的'): Mo
     const rec = exchange(after, to);
     const net = VALUE[m.captured] - Math.max(0, rec ?? 0);
     if (VALUE[m.captured] > VALUE[m.piece] && net > 0) out.push({ kind: 'trade-up', text: `用${PIECE_NAME[m.piece]}吃${victim}${PIECE_NAME[m.captured]}，以小换大` });
-    else if (rec === null && after.attackers(to, enemy).some((s) => after.get(s)!.type !== 'k')) {
-      const pinned = after.attackers(to, enemy).find((s) => after.get(s)!.type !== 'k')!;
-      out.push({
-        kind: 'pin',
-        text: `${victim}${name(pinned)}被牵制，不能回吃，${PIECE_NAME[m.captured]}白白丢掉`,
-        immediate: true,
-      });
-    } else if (rec === null) out.push({ kind: 'free', text: `免费吃掉${victim}${PIECE_NAME[m.captured]}（它没有保护）` });
+    else if (rec === null) {
+      const guards = after.attackers(to, enemy).filter((s) => after.get(s)!.type !== 'k');
+      // 能回吃的子却不能合法回吃：要么它被牵制在王前，要么对方正被将军（闪将、双将）得先应将
+      const pinned = guards.find((s) => kingSq && pinnedToKing(m.after, s, kingSq, mover));
+      // 闪将、双将本身已经是讲解的重点，把“无法回吃”补在它后面
+      const checker = check && out.find((x) => x.kind === 'discovered' || x.kind === 'double-check');
+      const lost = `${PIECE_NAME[m.captured]}白白丢掉`;
+      if (pinned) out.push({ kind: 'pin', text: `${victim}${name(pinned)}被牵制，不能回吃，${lost}`, immediate: true });
+      else if (guards.length && checker) checker.text += `，${victim.replace(/的$/, '')}正被将军，无法回吃，${lost}`;
+      else if (guards.length && check) out.push({ kind: 'free', text: `${victim.replace(/的$/, '')}正被将军，${name(guards[0])}无法回吃，${lost}` });
+      else out.push({ kind: 'free', text: `免费吃掉${victim}${PIECE_NAME[m.captured]}（它没有保护）` });
+    }
 
     // 吃掉保护者：被吃的子原本保护着另一个子，现在那个子可以被白吃
     for (const sq of enemySquares(after, enemy)) {
@@ -366,7 +378,8 @@ function balance(c: Chess, pov: Color): number {
 
 /**
  * 沿着引擎变化走下去，走棋方（`fen` 中轮到的一方）净得的子力分数。
- * 只在“交换告一段落”（下一步不是吃子）的位置结算，避免停在换子中途。
+ * 只在“交换告一段落”（下一步不是吃子）的位置结算，避免停在换子中途；
+ * 走到 `maxPly` 时还在吃子，就接着往后走，直到出现不吃子的一步（或变化结束）。
  */
 export function pvMaterialSwing(fen: string, pv: string[], maxPly = 8): number {
   const c = new Chess(fen);
@@ -374,9 +387,9 @@ export function pvMaterialSwing(fen: string, pv: string[], maxPly = 8): number {
   const base = balance(c, pov);
   const deltas: number[] = [];
   const caps: boolean[] = [];
-  for (const u of pv.slice(0, maxPly)) {
+  for (let i = 0; i < pv.length && (i < maxPly || caps[i - 1]); i++) {
     try {
-      caps.push(Boolean(c.move(toMove(u)).captured));
+      caps.push(Boolean(c.move(toMove(pv[i])).captured));
     } catch {
       break;
     }
@@ -392,6 +405,8 @@ const FOLLOW_UP: MotifKind[] = ['double-check', 'fork', 'discovered', 'pin', 'sk
 const WEAK: MotifKind[] = ['free', 'trade-up'];
 /** 讲对手的应对时第一步就值得说的（除了单纯将军） */
 const PROBLEM: MotifKind[] = PRIORITY.filter((k) => k !== 'check');
+/** 对手只是回吃完成换子时，第一步不算白吃、以小换大 */
+const EVEN: MotifKind[] = PROBLEM.filter((k) => !WEAK.includes(k));
 /** 只靠局面本身就能确定、不需要验证的事实 */
 const FACTUAL: MotifKind[] = ['mate', 'double-check', 'mate-threat', 'promote', 'check'];
 
@@ -421,11 +436,12 @@ function wonTarget(fen: string, line: string[], targets: Square[], maxPly = 8): 
  * 只保留引擎变化里真正兑现了的战术：`line` 以要讲解的着法开头，后面是引擎主变。
  * 得子类战术要求走棋方最终净得子力，并且吃到了战术针对的棋子；
  * 变化导向将杀（`mates`）时也算兑现。验证不了的就不说，宁可少说也不说错。
+ * `owed` 是对方上一步刚得到的子力（讲对方应对时），要先扣掉，免得把换子算成得子。
  */
-export function confirmedMotifs(fen: string, line: string[], victim = '对方的', mates = false): Motif[] {
+export function confirmedMotifs(fen: string, line: string[], victim = '对方的', mates = false, owed = 0): Motif[] {
   if (!line.length) return [];
   const all = detectMotifs(fen, line[0], victim);
-  const gain = pvMaterialSwing(fen, line);
+  const gain = pvMaterialSwing(fen, line) - owed;
   return all.filter((x) => {
     const capture = x.immediate || x.kind === 'free' || x.kind === 'trade-up';
     if (FACTUAL.includes(x.kind)) return true;
@@ -446,13 +462,13 @@ export interface Tactic {
 
 /**
  * 沿着变化找走棋方第一个兑现了的战术：第一步没有，就看它后面自己的几步棋。
- * 这样“先弃子、再捉双”这类组合也能讲出关键的那一步。
+ * 这样“先弃子、再捉双”这类组合也能讲出关键的那一步。`owed` 见 confirmedMotifs，只用于第一步。
  */
-export function firstTactic(fen: string, line: string[], victim = '对方的', mates = false, kinds: MotifKind[] = TACTICAL, maxPly = 4): Tactic | null {
+export function firstTactic(fen: string, line: string[], victim = '对方的', mates = false, kinds: MotifKind[] = TACTICAL, maxPly = 4, owed = 0): Tactic | null {
   const c = new Chess(fen);
   let fallback: Tactic | null = null;
   for (let i = 0; i < line.length && i <= maxPly; i += 2) {
-    const ms = confirmedMotifs(c.fen(), line.slice(i), victim, mates);
+    const ms = confirmedMotifs(c.fen(), line.slice(i), victim, mates, i ? 0 : owed);
     const motif = ms.find((x) => (i ? FOLLOW_UP : kinds).includes(x.kind));
     if (motif) {
       const t = { motif, ply: i, san: i ? sanOrNull(c.fen(), line[i]) : null };
@@ -468,6 +484,19 @@ export function firstTactic(fen: string, line: string[], victim = '对方的', m
     }
   }
   return fallback;
+}
+
+/**
+ * `m` 本身吃了子，对方的应对 `reply` 又在同一格回吃：这是换子，不能讲成“免费吃子”“以小换大”
+ * （换亏了的话，后面“会丢掉多少”那句会说）。
+ */
+function isRecapture(m: Move, reply: string | undefined): boolean {
+  return Boolean(m.captured) && reply?.slice(2, 4) === m.to;
+}
+
+/** 这步棋本身得到的子力：吃到的子，加上升变多出来的。 */
+function gainOf(m: Move): number {
+  return (m.captured ? VALUE[m.captured] : 0) + (m.promotion ? VALUE[m.promotion] - 1 : 0);
 }
 
 /** 对方在变化里是否吃掉了 `sq` 上的那个子（在它离开 `sq` 之前）。 */
@@ -558,7 +587,7 @@ export function explainMove(o: MoveInsightInput): MoveInsight {
   if (allowsMate) {
     res.problem.push(`${opp}有 ${rl!.mate} 步杀${replySan ? `，从 <b>${replySan}</b> 开始` : ''}`);
   } else if (reply && replySan) {
-    const t = firstTactic(afterFen, rl!.pv, `${me}的`, false, PROBLEM);
+    const t = firstTactic(afterFen, rl!.pv, `${me}的`, false, isRecapture(m, reply) ? EVEN : PROBLEM, undefined, gainOf(m));
     if (!t) res.problem.push(`${opp}的最佳应对是 <b>${replySan}</b>`);
     else if (!t.ply) res.problem.push(`${opp}可以走 <b>${replySan}</b>：${t.motif.text}`);
     else res.problem.push(`${opp}可以走 <b>${replySan}</b>，接着 <b>${t.san}</b>：${t.motif.text}`);
@@ -566,7 +595,8 @@ export function explainMove(o: MoveInsightInput): MoveInsight {
     if (reply.slice(2, 4) !== to && hangingSquares(afterFen, m.color as Color).includes(to as Square) && capturedOn(afterFen, rl!.pv, to)) {
       res.problem.push(`${me}刚走的${PIECE_NAME[m.promotion ?? m.piece]}在 ${to} 没有足够的保护`);
     }
-    const lost = pvMaterialSwing(afterFen, rl!.pv);
+    // 以走棋前为基准：这步棋自己吃到的子也算进去
+    const lost = -pvMaterialSwing(o.fen, [o.uci, ...rl!.pv]);
     if (lost >= 1) res.problem.push(`照这样走下去，${me}会丢掉${materialWords(lost)}`);
   }
 
@@ -643,19 +673,16 @@ export function mistakeTag(o: { fen: string; uci: string; best: string | null; b
   if (rl?.mate !== undefined && rl.mate > 0) return { id: 'allow-mate', label: '没看到对方的杀棋' };
   const bl = o.bestLine;
   if (o.best && o.best !== o.uci && bl?.mate !== undefined && bl.mate > 0) return { id: 'miss-mate', label: '错过将杀' };
-  let after: string;
-  let mover: Color;
-  let to: Square;
+  let m: Move;
   try {
-    const m = new Chess(o.fen).move(toMove(o.uci));
-    after = m.after;
-    mover = m.color as Color;
-    to = m.to as Square;
+    m = new Chess(o.fen).move(toMove(o.uci));
   } catch {
     return { id: 'other', label: '其他' };
   }
+  const after = m.after;
+  const to = m.to as Square;
   if (rl?.pv.length) {
-    const t = firstTactic(after, rl.pv, '你的', false, PROBLEM);
+    const t = firstTactic(after, rl.pv, '你的', false, isRecapture(m, rl.pv[0]) ? EVEN : PROBLEM, undefined, gainOf(m));
     const k = t?.motif.kind;
     if (k === 'free' || k === 'trade-up') return { id: 'hanging', label: '丢子（没保护好棋子）' };
     if (k && KIND_LABEL[k]) return { id: `allow-${k}`, label: `被对方${KIND_LABEL[k]}` };
@@ -667,6 +694,8 @@ export function mistakeTag(o: { fen: string; uci: string; best: string | null; b
     if (k === 'free' || k === 'trade-up') return { id: 'miss-material', label: '没吃到对方送的子' };
     if (k && k !== 'mate' && KIND_LABEL[k]) return { id: `miss-${k}`, label: `错过${KIND_LABEL[k]}` };
   }
-  if (hangingSquares(after, mover).includes(to) || (rl?.pv.length && pvMaterialSwing(after, rl.pv) >= 2)) return { id: 'hanging', label: '丢子（没保护好棋子）' };
+  // 刚走的子被吃要扣掉这步自己吃到的；变化里的得失也以走棋前为基准
+  const exposed = (seeFor(after, to, other(m.color as Color)) ?? 0) - gainOf(m) > 0;
+  if (exposed || (rl?.pv.length && -pvMaterialSwing(o.fen, [o.uci, ...rl.pv]) >= 2)) return { id: 'hanging', label: '丢子（没保护好棋子）' };
   return { id: 'positional', label: '局面判断失误' };
 }

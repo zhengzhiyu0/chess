@@ -104,6 +104,7 @@ export function ratingBreakdown(r: RatingInfo): string {
   if (r.abandoned) parts.push('中途离开，按认输且最低表现计算');
   else if (r.accuracy !== undefined) parts.push(`准确率 ${r.accuracy.toFixed(0)}%（该分段平均约 ${r.expected!.toFixed(0)}%）`);
   else parts.push('分析未完成，按平均表现计算');
-  if (r.assist < 1) parts.push(r.delta > 0 ? `用了辅助，加分 ×${r.assist.toFixed(2)}` : '用了辅助（不减少扣分）');
+  // by the sign of the unscaled change: a gain cut to 0 by heavy help is still a gain that was cut
+  if (r.assist < 1) parts.push(r.score > 0.5 ? `用了辅助，加分 ×${r.assist.toFixed(2)}` : '用了辅助（不减少扣分）');
   return parts.join(' · ');
 }

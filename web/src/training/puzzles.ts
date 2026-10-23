@@ -84,7 +84,7 @@ export function sanitizeProgress(raw: unknown): PuzzleProgress {
   if (Array.isArray(raw.recent)) d.recent = raw.recent.filter((x) => typeof x === 'string' && x.length < 16).slice(-RECENT);
   if (isObj(raw.byTheme))
     for (const [k, v] of Object.entries(raw.byTheme))
-      if (k in THEME_LABEL && Array.isArray(v) && v.length === 2 && v.every(num)) d.byTheme[k] = [v[0], v[1]];
+      if (Object.hasOwn(THEME_LABEL, k) && Array.isArray(v) && v.length === 2 && v.every(num)) d.byTheme[k] = [v[0], v[1]];
   return d;
 }
 
@@ -95,9 +95,9 @@ export function loadProgress(): PuzzleProgress {
   return progress;
 }
 
-export function setProgress(p: PuzzleProgress) {
+export function setProgress(p: PuzzleProgress): boolean {
   progress = p;
-  safeSet(KEY, JSON.stringify(p));
+  return safeSet(KEY, JSON.stringify(p));
 }
 
 /** Merge for backup import: the side with more puzzles played wins, history is united. */
@@ -182,12 +182,19 @@ export function recordPuzzle(pz: Puzzle, solved: boolean): number {
   else p.failed++;
   p.recent = [...p.recent.filter((x) => x !== pz.id), pz.id].slice(-RECENT);
   for (const t of pz.themes) {
-    if (!(t in THEME_LABEL)) continue;
+    if (!Object.hasOwn(THEME_LABEL, t)) continue;
     const s = (p.byTheme[t] ??= [0, 0]);
     s[solved ? 0 : 1]++;
   }
   setProgress(p);
   return d;
+}
+
+/** A puzzle left unanswered after the opponent's move: not rated, but not served again soon either. */
+export function markPuzzleSeen(pz: Puzzle) {
+  const p = loadProgress();
+  p.recent = [...p.recent.filter((x) => x !== pz.id), pz.id].slice(-RECENT);
+  setProgress(p);
 }
 
 /**

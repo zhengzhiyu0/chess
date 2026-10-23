@@ -12,6 +12,11 @@ export class Engines {
   /** backend the current Maia was requested with (it may have fallen back to WASM) */
   private maiaWanted: Settings['backend'] | null = null;
   private sfLoading: Promise<Stockfish> | null = null;
+  /** bumped by every unload: a load that finishes under an older generation is stale */
+  private maiaGen = 0;
+  private sfGen = 0;
+  /** WebGPU failed to load or crashed mid-game this session; use WASM from now on */
+  private webgpuFailed = false;
 
   constructor(
     private settings: () => Settings,
@@ -31,6 +36,7 @@ export class Engines {
   }
 
   unloadMaia() {
+    this.maiaGen++;
     this.maia?.dispose();
     this.maia = null;
     this.maiaLoading = null;
@@ -38,6 +44,7 @@ export class Engines {
 
   unloadSf() {
     this.beforeSfUnload();
+    this.sfGen++;
     this.sf?.terminate();
     this.sf = null;
     this.sfLoading = null;
@@ -45,26 +52,31 @@ export class Engines {
 
   async getMaia(): Promise<Maia> {
     const st = this.settings();
+    if (this.maia?.crashed && this.maia.backend === 'webgpu') this.webgpuFailed = true;
     if (this.maia?.alive && this.maia.model === st.model && this.maiaWanted === st.backend) return this.maia;
     if (this.maiaLoading) {
       const m = await this.maiaLoading;
+      if (m.crashed && m.backend === 'webgpu') this.webgpuFailed = true;
       if (m.alive && m.model === st.model && this.maiaWanted === st.backend) return m;
     }
     this.unloadMaia();
     this.maiaWanted = st.backend;
     if (this.exclusive()) this.unloadSf();
+    const gen = this.maiaGen;
+    const backend = st.backend === 'webgpu' && this.webgpuFailed ? 'wasm' : st.backend;
     const model = st.model;
     const lean = st.lowMemory;
     const progress = (l: number, t: number) => setStatus(`加载 Maia ${((l / t) * 100).toFixed(0)}%（${(t / 1048576).toFixed(0)}MB）`);
     setStatus(`加载 ${MODELS[model].label}…`);
-    this.maiaLoading = Maia.create(model, st.backend, progress, lean)
+    this.maiaLoading = Maia.create(model, backend, progress, lean)
       .catch(async (err) => {
-        if (isNative || st.backend !== 'webgpu') throw err;
+        if (isNative || backend !== 'webgpu' || gen !== this.maiaGen) throw err;
         console.warn('WebGPU 失败，回退 WASM', err);
+        this.webgpuFailed = true;
         return Maia.create(model, 'wasm', progress, lean);
       })
       .catch(async (err) => {
-        if (isNative) throw err;
+        if (isNative || gen !== this.maiaGen) throw err;
         // iOS: ORT's wasm init fails ("no available backend found") when memory is tight,
         // typically with multi-threaded Stockfish resident; free it and retry single-threaded
         console.warn('Maia 加载失败，释放 Stockfish 后以单线程重试', err);
@@ -73,13 +85,22 @@ export class Engines {
         return Maia.create(model, 'wasm', progress, true, 1);
       })
       .then((m) => {
+        if (gen !== this.maiaGen) {
+          // unloaded (or superseded) while loading: don't resurrect it
+          m.dispose();
+          if (this.maiaLoading) return this.maiaLoading;
+          throw new Error('Maia 已卸载');
+        }
         this.maia = m;
         setStatus(`${MODELS[model].label} 就绪${isNative ? `（原生 · ${m.provider === 'coreml' ? 'CoreML' : 'CPU'}）` : ''}`);
         return m;
       })
       .catch((err) => {
-        this.maiaLoading = null;
-        setStatus('Maia 加载失败：' + (err as Error).message);
+        // a stale load must not clear the handle of a newer one
+        if (gen === this.maiaGen) {
+          this.maiaLoading = null;
+          setStatus('Maia 加载失败：' + (err as Error).message);
+        }
         throw err;
       });
     return this.maiaLoading;
@@ -96,15 +117,24 @@ export class Engines {
     const st = this.settings();
     if (this.exclusive()) this.unloadMaia();
     setStatus(`加载 Stockfish 19${st.sfLite ? ' 轻量版' : ''}…`);
+    const gen = this.sfGen;
     this.sfLoading = Stockfish.create(st.sfThreads, st.sfHash, st.sfLite)
       .then((s) => {
+        if (gen !== this.sfGen) {
+          // unloaded (or superseded) while booting: don't resurrect it
+          s.terminate();
+          if (this.sfLoading) return this.sfLoading;
+          throw new Error('Stockfish 已卸载');
+        }
         this.sf = s;
         setStatus(`Stockfish 19${s.lite ? ' 轻量版' : ' 满血版'} 就绪（${s.native ? '原生 · ' : ''}${s.multiThreaded ? s.threads + ' 线程' : '单线程'}）`);
         return s;
       })
       .catch((err) => {
-        this.sfLoading = null;
-        setStatus('Stockfish 加载失败：' + (err as Error).message);
+        if (gen === this.sfGen) {
+          this.sfLoading = null;
+          setStatus('Stockfish 加载失败：' + (err as Error).message);
+        }
         throw err;
       });
     return this.sfLoading;

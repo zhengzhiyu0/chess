@@ -4,6 +4,7 @@ import { softmaxMoves, type ScoredMove } from './sample';
 import type { WorkerIn, WorkerOut } from './worker';
 import { wdlFromValue } from './wdl';
 import { isNative } from '../native';
+import type { MaiaNativePlugin } from 'maia-native';
 
 export type ModelId = '5m' | '23m' | '79m';
 
@@ -27,7 +28,7 @@ export interface MaiaJob {
   oppoElo: number;
 }
 
-type Pending = { resolve: (v: WorkerOut) => void; reject: (e: Error) => void };
+type Pending = { resolve: (v: WorkerOut) => void; reject: (e: Error) => void; type: WorkerIn['type']; timeout: number };
 type Req = WorkerIn extends infer T ? (T extends { reqId: number } ? Omit<T, 'reqId'> : never) : never;
 
 export type MaiaBackend = 'wasm' | 'webgpu' | 'native';
@@ -45,9 +46,11 @@ function toBase64(f: Float32Array): string {
 
 /** The app's native Maia (ONNX Runtime + CoreML, see native-plugins/maia-native). */
 class NativeMaia {
+  /** the plugin holds one process-wide session; only its newest owner may unload it */
+  private static current: NativeMaia | null = null;
   private dead = false;
   provider = '';
-  private constructor(readonly model: ModelId) {}
+  private constructor(readonly model: ModelId, private plugin: MaiaNativePlugin) {}
 
   get alive() {
     return !this.dead;
@@ -55,7 +58,8 @@ class NativeMaia {
 
   static async create(model: ModelId): Promise<NativeMaia> {
     const { MaiaNative } = await import('maia-native');
-    const m = new NativeMaia(model);
+    const m = new NativeMaia(model, MaiaNative);
+    NativeMaia.current = m;
     const res = await MaiaNative.load({
       model,
       probeTokens: toBase64(buildTokens([START])),
@@ -76,14 +80,21 @@ class NativeMaia {
     const live = jobs.map((_, i) => i).filter((i) => legal[i].length > 0);
     const out: MaiaResult[] = jobs.map(() => ({ moves: [], wdl: [0, 1, 0], ms: 0 }));
     if (!live.length) return out;
-    const { MaiaNative } = await import('maia-native');
     const items = live.map((i) => ({
       tokens: toBase64(buildTokens(jobs[i].fens)),
       indices: legal[i].map((l) => l.index),
       selfElo: jobs[i].selfElo,
       oppoElo: jobs[i].oppoElo,
     }));
-    const results = items.length === 1 ? [await MaiaNative.eval(items[0])] : (await MaiaNative.evalBatch({ items })).results;
+    if (this.dead || NativeMaia.current !== this) throw new Error('Maia 已卸载');
+    let results;
+    try {
+      results = items.length === 1 ? [await this.plugin.eval(items[0])] : (await this.plugin.evalBatch({ items })).results;
+    } catch (err) {
+      this.dispose();
+      throw err;
+    }
+    if (this.dead || NativeMaia.current !== this) throw new Error('Maia 已卸载');
     live.forEach((i, k) => {
       const res = results[k];
       const moves = softmaxMoves(legal[i].map((l, j) => ({ uci: l.uci, logit: res.logits[j] })));
@@ -95,7 +106,10 @@ class NativeMaia {
   dispose() {
     if (this.dead) return;
     this.dead = true;
-    void import('maia-native').then(({ MaiaNative }) => MaiaNative.unload());
+    // a stale instance (superseded while loading) must not unload its successor's session
+    if (NativeMaia.current !== this) return;
+    NativeMaia.current = null;
+    void this.plugin.unload().catch((err) => console.warn('Maia 卸载失败', err));
   }
 }
 
@@ -105,6 +119,8 @@ export class Maia {
   private pending = new Map<number, Pending>();
   private nextId = 1;
   private dead = false;
+  /** died from an inference error, a worker crash or a timeout (not a plain dispose) */
+  crashed = false;
   onProgress: ((loaded: number, total: number) => void) | null = null;
 
   private constructor(readonly model: ModelId, readonly backend: MaiaBackend) {
@@ -118,12 +134,21 @@ export class Maia {
       }
       const p = this.pending.get(msg.reqId);
       if (!p) return;
+      if (msg.type === 'started') {
+        if (p.timeout) this.watch(msg.reqId, p.timeout);
+        return;
+      }
       this.pending.delete(msg.reqId);
-      if (msg.type === 'error') p.reject(new Error(msg.message));
-      else p.resolve(msg);
+      if (msg.type !== 'error') p.resolve(msg);
+      else if (p.type !== 'eval') p.reject(new Error(msg.message));
+      else {
+        // a failed run (lost WebGPU device, wasm OOM) tends to fail every time; let the caller rebuild
+        p.reject(new Error(msg.message));
+        this.fail(msg.message, true);
+      }
     };
     // a crashed worker (e.g. killed for memory on iOS) never answers again
-    this.worker.onerror = (e) => this.fail(e.message || 'Maia worker error');
+    this.worker.onerror = (e) => this.fail(e.message || 'Maia worker error', true);
   }
 
   /** false once disposed or crashed; callers should create a new instance */
@@ -136,7 +161,8 @@ export class Maia {
     return this.native?.provider ?? this.backend;
   }
 
-  private fail(message: string) {
+  private fail(message: string, crashed = false) {
+    if (crashed && !this.dead) this.crashed = true;
     this.dead = true;
     if (this.native) this.native.dispose();
     else this.worker.terminate();
@@ -144,21 +170,24 @@ export class Maia {
     this.pending.clear();
   }
 
+  /** `timeout` counts from when the worker starts the request, not from when it was queued. */
   private call(msg: Req, timeout = 0): Promise<WorkerOut> {
     if (this.dead) return Promise.reject(new Error('Maia 已卸载'));
     const reqId = this.nextId++;
     return new Promise((resolve, reject) => {
-      this.pending.set(reqId, { resolve, reject });
+      this.pending.set(reqId, { resolve, reject, type: msg.type, timeout });
       this.worker.postMessage({ ...msg, reqId });
-      if (!timeout) return;
-      const check = () => {
-        if (!this.pending.has(reqId)) return;
-        // the page may be suspended in the background; only count visible time
-        if (document.hidden) setTimeout(check, timeout);
-        else this.fail('Maia 无响应');
-      };
-      setTimeout(check, timeout);
     });
+  }
+
+  private watch(reqId: number, timeout: number) {
+    const check = () => {
+      if (!this.pending.has(reqId)) return;
+      // the page may be suspended in the background; only count visible time
+      if (document.hidden) setTimeout(check, timeout);
+      else this.fail('Maia 无响应', true);
+    };
+    setTimeout(check, timeout);
   }
 
   /** In the iOS app `backend` is ignored: the native engine is always used. */

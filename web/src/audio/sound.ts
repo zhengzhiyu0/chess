@@ -42,7 +42,7 @@ const SAMPLE_BORROW: Partial<Record<SampleThemeId, { from: SampleThemeId; files:
   board: { from: 'sfx', files: ['Check', 'GenericNotify', 'Victory', 'Defeat', 'Draw', 'LowTime'] },
 };
 
-const isSampleTheme = (id: string): id is SampleThemeId => id in SAMPLE_THEMES;
+const isSampleTheme = (id: string): id is SampleThemeId => Object.hasOwn(SAMPLE_THEMES, id);
 
 /** How a game ended, from the player's point of view; picks Victory / Defeat / Draw. */
 export type EndKind = 'win' | 'loss' | 'draw';
@@ -120,8 +120,32 @@ export const DEFAULT_SOUND_THEME: SampleThemeId = 'board';
 let ctx: AudioContext | null = null;
 let out: AudioNode | null = null;
 let noiseBuf: AudioBuffer | null = null;
-let pendingSounds: [SoundKind, EndKind | undefined][] = [];
+let pendingSounds: [SoundKind, EndKind | undefined, number][] = [];
 let resumePending = false;
+let soundEpoch = 0;
+let hasRun = false;
+const activeSources = new Set<AudioScheduledSourceNode>();
+
+function discardSounds() {
+  pendingSounds = [];
+  soundEpoch++;
+  for (const source of activeSources) {
+    try { source.stop(); } catch { /* 已结束的音源无需再次停止。 */ }
+  }
+  activeSources.clear();
+}
+
+function trackSource<T extends AudioScheduledSourceNode>(source: T): T {
+  activeSources.add(source);
+  source.addEventListener('ended', () => activeSources.delete(source), { once: true });
+  return source;
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) discardSounds();
+  });
+}
 let lastMoveAt = 0;
 let enabled = true;
 let themeId: string = DEFAULT_SOUND_THEME;
@@ -154,9 +178,10 @@ function loadSamples(a: AudioContext, id: SampleThemeId) {
 }
 
 export function configureSound(sound: boolean, haptics: boolean, theme: string = DEFAULT_SOUND_THEME) {
+  if (!sound || themeId !== theme) discardSounds();
   enabled = sound;
   configureHaptics(haptics);
-  themeId = theme in SOUND_THEMES ? theme : DEFAULT_SOUND_THEME;
+  themeId = Object.hasOwn(SOUND_THEMES, theme) ? theme : DEFAULT_SOUND_THEME;
   // decode ahead so the first move isn't silent; needs an AudioContext, which exists after the first tap
   if (ctx && isSampleTheme(themeId)) void loadSamples(ctx, themeId);
 }
@@ -166,6 +191,11 @@ function audio(force = false): AudioContext | null {
   try {
     if (!ctx) {
       ctx = new AudioContext();
+      hasRun = ctx.state === 'running';
+      ctx.addEventListener('statechange', () => {
+        if (ctx?.state === 'running') hasRun = true;
+        else discardSounds();
+      });
       // 轻压缩，避免多个声音叠加时破音
       const comp = ctx.createDynamicsCompressor();
       comp.threshold.value = -10;
@@ -189,10 +219,13 @@ export function unlockAudio() {
   if (!a) return;
   const flush = () => {
     resumePending = false;
-    if (a.state !== 'running') return;
+    if (a.state !== 'running' || document.hidden) return;
+    hasRun = true;
     const sounds = pendingSounds;
     pendingSounds = [];
-    for (const [kind, end] of sounds) void render(a, kind, themeId, 0, end);
+    for (const [kind, end, at] of sounds) {
+      if (performance.now() - at < 500) void render(a, kind, themeId, 0, end);
+    }
   };
   if (a.state === 'running') {
     flush();
@@ -220,7 +253,7 @@ function hit(a: AudioContext, at: number, h: Hit, force = 1, pitch = 1) {
   const dest = out!;
   if (h.body) {
     const b = h.body;
-    const osc = a.createOscillator();
+    const osc = trackSource(a.createOscillator());
     osc.type = b.type;
     osc.frequency.setValueAtTime(b.f * pitch, at);
     if (b.f2 !== b.f) osc.frequency.exponentialRampToValueAtTime(b.f2 * pitch, at + b.decay);
@@ -230,7 +263,7 @@ function hit(a: AudioContext, at: number, h: Hit, force = 1, pitch = 1) {
   }
   if (h.noise && noiseBuf) {
     const n = h.noise;
-    const src = a.createBufferSource();
+    const src = trackSource(a.createBufferSource());
     src.buffer = noiseBuf;
     const f = a.createBiquadFilter();
     f.type = n.type;
@@ -241,7 +274,7 @@ function hit(a: AudioContext, at: number, h: Hit, force = 1, pitch = 1) {
     src.stop(at + n.len + 0.03);
   }
   for (const [freq, gain, decay] of h.modes ?? []) {
-    const osc = a.createOscillator();
+    const osc = trackSource(a.createOscillator());
     osc.type = 'sine';
     osc.frequency.value = freq * pitch;
     osc.connect(env(a, at, gain * force, decay)).connect(dest);
@@ -251,7 +284,7 @@ function hit(a: AudioContext, at: number, h: Hit, force = 1, pitch = 1) {
 }
 
 function beep(a: AudioContext, at: number, freq: number, len: number, gain = 0.15, type: OscillatorType = 'sine') {
-  const osc = a.createOscillator();
+  const osc = trackSource(a.createOscillator());
   osc.type = type;
   osc.frequency.value = freq;
   const g = a.createGain();
@@ -339,18 +372,22 @@ async function render(a: AudioContext, kind: SoundKind, id: string, delay = 0, e
   }
   const file = sampleFor(kind, end);
   // Lichess has no "illegal move" sound; keep the short synthesized buzz
+  const epoch = soundEpoch;
+  const requestedAt = performance.now();
   const buf = file ? (await loadSamples(a, id))[file] : undefined;
+  if (epoch !== soundEpoch || document.hidden || a.state !== 'running' || performance.now() - requestedAt >= 500) return;
   if (!buf) {
     synth(a, kind, SYNTH_THEMES.wood, delay);
     return;
   }
-  const src = a.createBufferSource();
+  const src = trackSource(a.createBufferSource());
   src.buffer = buf;
   src.connect(out!);
   src.start(a.currentTime + 0.005 + delay);
 }
 
 export function play(kind: SoundKind, end?: EndKind) {
+  if (document.hidden) return;
   haptic(kind);
   const a = audio();
   if (!a) return;
@@ -363,17 +400,23 @@ export function play(kind: SoundKind, end?: EndKind) {
     void render(a, kind, themeId, 0, end);
     return;
   }
-  pendingSounds.push([kind, end]);
+  if (hasRun) return;
+  pendingSounds.push([kind, end, now]);
   if (pendingSounds.length > 4) pendingSounds.shift();
 }
 
 /** Plays a short sample (move, then capture) of a theme, even when sound is switched off. */
 export function previewTheme(id: string) {
   const a = audio(true);
-  if (!a) return;
-  if (a.state !== 'running') void a.resume();
-  void render(a, 'move', id);
-  void render(a, 'capture', id, 0.45);
+  if (!a || document.hidden) return;
+  const epoch = soundEpoch;
+  const preview = () => {
+    if (epoch !== soundEpoch || document.hidden || a.state !== 'running') return;
+    void render(a, 'move', id);
+    void render(a, 'capture', id, 0.45);
+  };
+  if (a.state === 'running') preview();
+  else void a.resume().then(preview, () => {});
 }
 
 /** Picks the sound for a move from its SAN. */

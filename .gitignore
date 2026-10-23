@@ -2,3 +2,5 @@ _ckpt/
 _onnx/
 _maia3/
 .venv/
+__pycache__/
+*.py[cod]

@@ -127,7 +127,15 @@ function tokenize(pgn: string): Token[] {
     if (/\s/.test(ch)) {
       i++;
     } else if (ch === '[') {
-      const end = s.indexOf(']', i);
+      // the tag value may itself contain ']' (and escaped quotes): only a ']' outside the quotes ends the tag
+      let end = i + 1;
+      for (let quoted = false; end < s.length && (quoted || s[end] !== ']'); end++) {
+        if (s[end] === '\\' && quoted) end++;
+        else if (s[end] === '"') quoted = !quoted;
+        else if (s[end] === '\n' && quoted) break;
+      }
+      // unterminated value: fall back to the first ']' rather than swallowing the movetext
+      if (s[end] !== ']') end = s.indexOf(']', i);
       const body = s.slice(i + 1, end < 0 ? s.length : end);
       const m = /^\s*(\w+)\s+"((?:[^"\\]|\\.)*)"\s*$/.exec(body);
       if (m) out.push({ k: 'header', name: m[1], value: m[2].replace(/\\(.)/g, '$1') });
@@ -154,7 +162,12 @@ function tokenize(pgn: string): Token[] {
       if (m) out.push({ k: 'nag', n: Number(m[1]) });
       i += m ? m[0].length : 1;
     } else {
-      const m = /^[^\s{}()[\];$]+/.exec(s.slice(i))!;
+      const m = /^[^\s{}()[\];$]+/.exec(s.slice(i));
+      // a stray '}' or ']' outside any comment / tag: skip it
+      if (!m) {
+        i++;
+        continue;
+      }
       i += m[0].length;
       const word = m[0];
       if (RESULTS.has(word)) out.push({ k: 'result', v: word });
@@ -194,6 +207,8 @@ export function parsePgn<A extends object = object>(pgn: string): ParsedGame<A> 
   // a null move ("--") can't be represented: the rest of its line is skipped (parenthesis depth inside it)
   let skip = -1;
   let truncated = false;
+  // comments / NAGs between '(' and the variation's first move belong to that move, not to the one before
+  let lead: { comment?: string; nags: number[] } | null = null;
   for (; i < tokens.length; i++) {
     const t = tokens[i];
     if (t.k === 'header') break; // next game
@@ -218,16 +233,19 @@ export function parsePgn<A extends object = object>(pgn: string): ParsedGame<A> 
       if (!cur.parent) throw new Error('变着位置错误');
       stack.push(cur);
       cur = cur.parent;
+      lead = { nags: [] };
     } else if (t.k === 'close') {
       const back = stack.pop();
       if (back) cur = back;
+      lead = null;
     } else if (t.k === 'nag') {
-      if (cur !== tree.root) (cur.nags ??= []).push(t.n);
+      if (lead) lead.nags.push(t.n);
+      else if (cur !== tree.root) (cur.nags ??= []).push(t.n);
     } else if (t.k === 'comment') {
       let text = t.text;
       text = text.replace(/\[%clk\s+([^\]]+)\]/g, (_, v: string) => {
         const ms = parseClock(v);
-        if (ms !== null && cur.parent) {
+        if (ms !== null && cur.parent && !lead) {
           const prev = cur.parent.clock ?? [ms, ms];
           const mover = turnOf(cur.parent.fen);
           cur.clock = mover === 'w' ? [ms, prev[1]] : [prev[0], ms];
@@ -236,7 +254,8 @@ export function parsePgn<A extends object = object>(pgn: string): ParsedGame<A> 
       });
       // engine evals are recomputed by the app; drop other unknown commands too
       text = text.replace(/\[%[^\]]*\]/g, '').replace(/\s+/g, ' ').trim();
-      if (text) cur.comment = cur.comment ? `${cur.comment} ${text}` : text;
+      if (text && lead) lead.comment = lead.comment ? `${lead.comment} ${text}` : text;
+      else if (text) cur.comment = cur.comment ? `${cur.comment} ${text}` : text;
     } else if (t.k === 'san') {
       let san = t.v.replace(/^0-0-0/, 'O-O-O').replace(/^0-0/, 'O-O');
       const suffix = /[!?]+$/.exec(san)?.[0];
@@ -253,6 +272,10 @@ export function parsePgn<A extends object = object>(pgn: string): ParsedGame<A> 
         throw new Error(`第 ${moveNumberOf(cur.fen)} 回合着法非法：${t.v}`);
       }
       cur = tree.add(cur, uci)!;
+      // the tree has no "before the move" slot: a leading comment goes in front of the move's own comment
+      if (lead?.comment) cur.comment = cur.comment ? `${lead.comment} ${cur.comment}` : lead.comment;
+      if (lead?.nags.length) (cur.nags ??= []).push(...lead.nags);
+      lead = null;
       if (suffix && SUFFIX_NAG[suffix]) (cur.nags ??= []).push(SUFFIX_NAG[suffix]);
       moves++;
     }

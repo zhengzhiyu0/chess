@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { confirmedMotifs, detectMotifs, explainMove, hangingSquares, materialWords, plainEval, pvMaterialSwing } from '../src/coach/explain';
+import { confirmedMotifs, detectMotifs, explainMove, hangingSquares, materialWords, mistakeTag, plainEval, pvMaterialSwing } from '../src/coach/explain';
 
 const S = { me: '你', opp: '对手' };
 const kinds = (fen: string, uci: string) => detectMotifs(fen, uci).map((m) => m.kind);
@@ -42,6 +42,13 @@ describe('detectMotifs', () => {
     expect(kinds('b3k3/1p6/8/8/2N5/8/8/4K3 w - - 0 1', 'c4d6')).not.toContain('fork');
   });
 
+  it('does not call a capture with discovered check a pin', () => {
+    // 象吃 d5 马闪将，c6 兵不能回吃是因为黑方正被将军
+    const ms = detectMotifs('4k3/8/2p5/3n4/4B3/8/8/4R2K w - - 0 1', 'e4d5');
+    expect(ms.map((m) => m.kind)).not.toContain('pin');
+    expect(ms.find((m) => m.kind === 'discovered')?.text).toContain('正被将军，无法回吃');
+  });
+
   it('finds a double check', () => {
     expect(kinds('4k3/8/8/8/4N3/8/8/4R2K w - - 0 1', 'e4f6')).toContain('double-check');
     expect(kinds('4k3/8/8/8/4N3/8/8/4R2K w - - 0 1', 'e4c5')).not.toContain('double-check');
@@ -63,6 +70,12 @@ describe('material and words', () => {
     expect(pvMaterialSwing('4k3/8/8/3n4/8/8/8/3RK3 w - - 0 1', ['d1d5'])).toBe(3);
     // 后吃兵被兵回吃：净亏 8
     expect(pvMaterialSwing('4k3/8/2p5/3p4/8/8/8/3QK3 w - - 0 1', ['d1d5', 'c6d5'])).toBe(-8);
+  });
+
+  it('does not stop in the middle of an exchange at the ply limit', () => {
+    // 王来回走 7 步，第 8 步黑后吃车、第 9 步兵回吃：白方净得 4
+    const shuffle = ['e1f1', 'e8f8', 'f1e1', 'f8e8', 'e1f1', 'e8f8', 'f1e1'];
+    expect(pvMaterialSwing('3qk3/8/8/8/3R4/2P5/8/4K3 w - - 0 1', [...shuffle, 'd8d4', 'c3d4'])).toBe(4);
   });
 
   it('describes evaluations in plain words', () => {
@@ -117,6 +130,32 @@ describe('explainMove', () => {
     expect(r.problem[0]).toContain('捉双');
     expect(r.problem[0]).toContain('你的王和车');
     expect(r.problem.join()).toContain('大约一个车');
+  });
+
+  it('treats a recapture as an even trade, not a free piece', () => {
+    // Bxf6 Qxf6：象换马，不是“免费吃掉你的象”，也没有丢子
+    const o = {
+      fen: 'rnbqkb1r/pppp1ppp/5n2/4p1B1/4P3/8/PPPP1PPP/RN1QKBNR w KQkq - 0 3',
+      uci: 'g5f6',
+      best: 'g1f3',
+      replyLine: { multipv: 1, depth: 10, cp: 30, pv: ['d8f6', 'g1f3', 'b8c6'] },
+    };
+    const r = explainMove({ ...o, bad: true, sides: S });
+    expect(r.problem).toEqual(['对手的最佳应对是 <b>Qxf6</b>']);
+    expect(mistakeTag(o).id).not.toBe('hanging');
+  });
+
+  it('still counts a losing capture as losing material', () => {
+    // 后吃兵被兵回吃：净亏 8
+    const r = explainMove({
+      fen: '4k3/8/2p5/3p4/8/8/8/3QK3 w - - 0 1',
+      uci: 'd1d5',
+      best: 'e1e2',
+      replyLine: { multipv: 1, depth: 10, cp: 800, pv: ['c6d5'] },
+      bad: true,
+      sides: S,
+    });
+    expect(r.problem.join()).toContain('会丢掉大约一个车');
   });
 
   it('praises a good fork', () => {

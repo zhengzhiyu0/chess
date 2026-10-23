@@ -21,7 +21,7 @@ export interface EnginesCtx {
   warmup(): Promise<void>;
 }
 
-const downloads = new Map<PackageId, AbortController>();
+const downloads = new Map<PackageId, { ctrl: AbortController; done: Promise<boolean> }>();
 
 async function renderPackages(ctx: EnginesCtx) {
   const list = $('pkg-list');
@@ -54,7 +54,7 @@ async function renderPackages(ctx: EnginesCtx) {
       btn.type = 'button';
       btn.textContent = busy ? '取消' : done ? '删除' : '下载';
       btn.onclick = async () => {
-        if (busy) downloads.get(p.id)!.abort();
+        if (busy) downloads.get(p.id)?.ctrl.abort();
         else if (done) {
           if (p.id === 'core' && !confirm('删除应用本体后需联网才能打开，确定？')) return;
           await deletePackage(p);
@@ -75,10 +75,17 @@ function pkgRow(id: PackageId) {
   return document.querySelector<HTMLElement>(`#pkg-list .pkg[data-id="${id}"]`);
 }
 
-async function startDownload(ctx: EnginesCtx, p: Package, onProgress?: (loaded: number) => void): Promise<boolean> {
-  if (downloads.has(p.id)) return false;
+/** A package that is already downloading is not started twice; its download's result is returned. */
+function startDownload(ctx: EnginesCtx, p: Package, onProgress?: (loaded: number) => void): Promise<boolean> {
+  const running = downloads.get(p.id);
+  if (running) return running.done;
   const ctrl = new AbortController();
-  downloads.set(p.id, ctrl);
+  const done = runDownload(ctx, p, ctrl, onProgress);
+  downloads.set(p.id, { ctrl, done });
+  return done;
+}
+
+async function runDownload(ctx: EnginesCtx, p: Package, ctrl: AbortController, onProgress?: (loaded: number) => void): Promise<boolean> {
   void requestPersistence();
   try {
     await downloadPackage(p, ctrl.signal, (l, t) => {

@@ -66,13 +66,20 @@ export const SEVERITY: Record<Judgement, number> = {
   blunder: 3,
 };
 
-/** Lichess thresholds: drop in mover's win% of 10/20/30 points. */
+/**
+ * Lichess thresholds (lila `CpAdvice`): a drop in winning chances of .1/.2/.3 on its [-1, +1] scale,
+ * i.e. 5/10/15 points of the mover's 0..100 win% used here.
+ */
+const INACCURACY = 5;
+const MISTAKE = 10;
+const BLUNDER = 15;
+
 export function judge(moverBefore: number, moverAfter: number, playedBest: boolean): Judgement {
   if (playedBest) return 'best';
   const drop = moverBefore - moverAfter;
-  if (drop >= 30) return 'blunder';
-  if (drop >= 20) return 'mistake';
-  if (drop >= 10) return 'inaccuracy';
+  if (drop >= BLUNDER) return 'blunder';
+  if (drop >= MISTAKE) return 'mistake';
+  if (drop >= INACCURACY) return 'inaccuracy';
   return 'good';
 }
 
@@ -105,12 +112,14 @@ export function classify(m: MoveContext): Judgement {
   const base = judge(m.before, m.after, m.playedBest);
   const drop = m.before - m.after;
   if (m.sacrifice && drop < 3 && m.after >= 50 && m.before < 97) return 'brilliant';
+  // "the opponent just erred" = their previous move was at least a Lichess mistake
+  const oppErred = (m.oppDrop ?? 0) >= MISTAKE;
   if (m.playedBest) {
     if ((m.secondGap ?? 0) >= 20 && m.after >= 40) return 'great';
-    if ((m.oppDrop ?? 0) >= 20 && m.after >= 60 && m.before < 97) return 'great';
+    if (oppErred && m.after >= 60 && m.before < 97) return 'great';
     return 'best';
   }
-  if ((base === 'inaccuracy' || base === 'mistake') && (m.oppDrop ?? 0) >= 20) return 'miss';
+  if ((base === 'inaccuracy' || base === 'mistake') && oppErred) return 'miss';
   return base;
 }
 

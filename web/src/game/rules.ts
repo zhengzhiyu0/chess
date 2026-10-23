@@ -61,16 +61,23 @@ export function isThreefold(fens: string[]): boolean {
 /** Whether `color` could still deliver mate (a flag fall against a side that can't is a draw). */
 export function canMate(fen: string, color: Color): boolean {
   const own: string[] = [];
+  const bishopSquares = new Set<number>();
   let oppPieces = 0;
-  for (const row of new Chess(fen).board())
-    for (const sq of row) {
-      if (!sq || sq.type === 'k') continue;
-      if (sq.color === color) own.push(sq.type);
-      else oppPieces++;
-    }
+  new Chess(fen).board().forEach((row, r) =>
+    row.forEach((sq, f) => {
+      if (!sq || sq.type === 'k') return;
+      if (sq.color === color) {
+        own.push(sq.type);
+        if (sq.type === 'b') bishopSquares.add((r + f) % 2);
+      } else oppPieces++;
+    }),
+  );
   if (own.some((t) => t === 'p' || t === 'r' || t === 'q')) return true;
+  // bishops all on one colour (e.g. an underpromotion) never mate a bare king, any more than one bishop
+  const onlySameColourBishops = own.every((t) => t === 'b') && bishopSquares.size === 1;
   // a lone minor piece can only mate with help from the opponent's own pieces
-  return own.length > 1 || (own.length === 1 && oppPieces > 0);
+  if (own.length > 1 && !onlySameColourBishops) return true;
+  return own.length >= 1 && oppPieces > 0;
 }
 
 export type EndReason = 'checkmate' | 'stalemate' | 'threefold' | 'insufficient' | 'fifty' | 'resign' | 'timeout' | 'agreement';

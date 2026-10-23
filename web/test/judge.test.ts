@@ -7,9 +7,12 @@ import { moveFxOf } from '../src/app/fx';
 const base: MoveContext = { before: 50, after: 50, playedBest: true, book: false, forced: false, sacrifice: false };
 
 describe('classify', () => {
-  it('keeps the Lichess thresholds', () => {
+  it('keeps the Lichess thresholds (5/10/15 win% = .1/.2/.3 winning chances)', () => {
     expect(classify({ ...base, before: 80, after: 45, playedBest: false })).toBe('blunder');
-    expect(classify({ ...base, before: 60, after: 55, playedBest: false })).toBe('good');
+    expect(classify({ ...base, before: 60, after: 45, playedBest: false })).toBe('blunder');
+    expect(classify({ ...base, before: 60, after: 50, playedBest: false })).toBe('mistake');
+    expect(classify({ ...base, before: 60, after: 55, playedBest: false })).toBe('inaccuracy');
+    expect(classify({ ...base, before: 60, after: 56, playedBest: false })).toBe('good');
     expect(classify(base)).toBe('best');
   });
   it('book and forced win over the eval', () => {
@@ -18,14 +21,15 @@ describe('classify', () => {
   });
   it('sound sacrifice is brilliant, an unsound one is not', () => {
     expect(classify({ ...base, sacrifice: true, before: 55, after: 56 })).toBe('brilliant');
-    expect(classify({ ...base, sacrifice: true, before: 55, after: 40, playedBest: false })).toBe('inaccuracy');
+    expect(classify({ ...base, sacrifice: true, before: 55, after: 48, playedBest: false })).toBe('inaccuracy');
     expect(classify({ ...base, sacrifice: true, before: 99, after: 99 })).toBe('best');
   });
   it('only move and punishing a mistake are great; failing to punish is a miss', () => {
     expect(classify({ ...base, secondGap: 25, after: 55 })).toBe('great');
-    expect(classify({ ...base, oppDrop: 30, before: 75, after: 75 })).toBe('great');
-    expect(classify({ ...base, oppDrop: 30, before: 75, after: 52, playedBest: false })).toBe('miss');
-    expect(classify({ ...base, oppDrop: 30, before: 75, after: 30, playedBest: false })).toBe('blunder');
+    expect(classify({ ...base, oppDrop: 12, before: 75, after: 75 })).toBe('great');
+    expect(classify({ ...base, oppDrop: 8, before: 75, after: 75 })).toBe('best');
+    expect(classify({ ...base, oppDrop: 12, before: 75, after: 63, playedBest: false })).toBe('miss');
+    expect(classify({ ...base, oppDrop: 12, before: 75, after: 55, playedBest: false })).toBe('blunder');
   });
 });
 

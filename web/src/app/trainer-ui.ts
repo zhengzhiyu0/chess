@@ -3,10 +3,10 @@ import { Chess } from 'chess.js';
 import { Chessground } from '@lichess-org/chessground';
 import type { Api } from '@lichess-org/chessground/api';
 import type { Key } from '@lichess-org/chessground/types';
-import { sanOf, toMove, turnOf } from '../game/rules';
+import { sanOf, toMove, turnOf, type Color } from '../game/rules';
 import { play, soundForSan, unlockAudio } from '../audio/sound';
 import { $, escapeHtml } from './dom';
-import { THEME_LABEL, acceptsMove, loadIndex, loadProgress, nextPuzzle, recordPuzzle, type Puzzle } from '../training/puzzles';
+import { THEME_LABEL, acceptsMove, loadIndex, loadProgress, markPuzzleSeen, nextPuzzle, recordPuzzle, type Puzzle } from '../training/puzzles';
 import { MASTER_STREAK, dueMistakes, gradeMistake, loadMistakes, mistakeStats, removeMistake, type Mistake } from '../training/mistakes';
 import { JUDGEMENT_INFO } from '../coach/coach';
 import { confirmedMotifs } from '../coach/explain';
@@ -25,6 +25,8 @@ interface Task {
   sub: string;
   /** called once with the first-attempt outcome */
   grade(correct: boolean): string;
+  /** the position is on the board for the player to solve (after the setup move) */
+  shown?(): void;
   next(): void;
 }
 
@@ -34,6 +36,8 @@ export interface TrainerCtx {
   show(): void;
   /** the player's game rating */
   elo(): number;
+  /** promotion piece picker (q / r / b / n); without it pawns always become queens */
+  askPromotion?(color: Color): Promise<string>;
 }
 
 let cg: Api | null = null;
@@ -60,7 +64,7 @@ function board(): Api {
   cg ??= Chessground($('train-board'), {
     animation: { duration: 200 },
     highlight: { lastMove: true, check: true },
-    movable: { free: false, showDests: true, events: { after: (o, d) => onMove(o, d) } },
+    movable: { free: false, showDests: true, events: { after: (o, d) => void onMove(o, d) } },
     drawable: { enabled: true },
   });
   return cg;
@@ -97,6 +101,20 @@ function apply(uci: string): string {
 }
 
 function start(t: Task) {
+  try {
+    begin(t);
+  } catch (err) {
+    // a corrupted task must not block the queue: skip to the next one
+    console.warn('训练题数据有误，已跳过', err);
+    if (task !== t) return;
+    task = null;
+    pos = new Chess().fen();
+    t.shown?.();
+    t.next();
+  }
+}
+
+function begin(t: Task) {
   task = t;
   step = 0;
   graded = false;
@@ -116,14 +134,25 @@ function start(t: Task) {
     info(`你执${you}，等对手走…`);
     setTimeout(() => {
       if (task !== t) return;
-      const san = apply(t.setup!.uci);
+      let san: string;
+      try {
+        san = apply(t.setup!.uci);
+      } catch (err) {
+        console.warn('训练题数据有误，已跳过', err);
+        task = null;
+        t.shown?.();
+        t.next();
+        return;
+      }
       render(t.setup!.uci);
       info(`对手走了 <b>${escapeHtml(san)}</b>，轮到你：找出最好的一步`);
+      t.shown?.();
     }, 600);
   } else {
     pos = t.fen;
     render();
     info(`你执${you}：找出最好的一步`);
+    t.shown?.();
   }
 }
 
@@ -142,14 +171,20 @@ function finish(text: string, cls: string) {
   render(undefined);
 }
 
-function onMove(orig: Key, dest: Key) {
+async function onMove(orig: Key, dest: Key) {
   if (!task || finished) return;
+  const t = task;
+  const before = pos;
   unlockAudio();
-  const want = task.solution[step];
   let uci = orig + dest;
-  const c = new Chess(pos);
-  const p = c.get(orig as never);
-  if (p?.type === 'p' && (dest[1] === '8' || dest[1] === '1')) uci += want?.slice(0, 4) === uci ? want[4] : 'q';
+  const p = new Chess(pos).get(orig as never);
+  if (p?.type === 'p' && (dest[1] === '8' || dest[1] === '1')) {
+    const piece = ctx.askPromotion ? await ctx.askPromotion(p.color) : 'q';
+    // the task may have been left / switched / solved while the picker was open
+    if (task !== t || finished || pos !== before) return;
+    uci += /^[qrbn]$/.test(piece) ? piece : 'q';
+  }
+  const want = t.solution[step];
   if (!acceptsMove(pos, uci, want)) {
     play('illegal');
     const msg = grade(false);
@@ -159,7 +194,7 @@ function onMove(orig: Key, dest: Key) {
   }
   apply(uci);
   step++;
-  const done = step >= task.solution.length || new Chess(pos).isGameOver();
+  const done = step >= t.solution.length || new Chess(pos).isGameOver();
   if (done) {
     const msg = grade(true);
     finish(`正确！${msg}`, 'good');
@@ -168,9 +203,9 @@ function onMove(orig: Key, dest: Key) {
   }
   render(uci);
   info('对，继续…', 'good');
-  const reply = task.solution[step];
+  const reply = t.solution[step];
   setTimeout(() => {
-    if (!task || finished) return;
+    if (task !== t || finished) return;
     apply(reply);
     step++;
     render(reply);
@@ -303,6 +338,8 @@ function puzzleTask(pz: Puzzle): Task {
       $('train-sub').innerHTML = `谜题 ${pz.rating} 分 · ${themes.slice(0, 3).join('、') || '综合'} · 我的谜题等级分 <b>${loadProgress().rating}</b>（${d >= 0 ? '+' : ''}${d}）`;
       return ok ? `谜题等级分 +${d}。` : `谜题等级分 ${d}。`;
     },
+    // seen once the opponent's move is played: leaving without answering doesn't bring it back next time
+    shown: () => markPuzzleSeen(pz),
     next: () => void nextPz(),
   };
 }
@@ -402,7 +439,7 @@ function mistakeTask(m: Mistake): Task {
     title: '错题重练',
     sub: `${d.getMonth() + 1}月${d.getDate()}日的对局 · 当时走了 <b style="color:${info_.color}">${escapeHtml(m.playedSan)}</b>（${info_.label}：${escapeHtml(m.tagLabel)}）· 剩 ${queue.length} 题`,
     grade: (ok) => {
-      gradeMistake(m.id, ok);
+      if (!gradeMistake(m.id, ok)) return '还没到复习时间，这次练习不计入掌握进度。';
       const left = loadMistakes().find((x) => x.id === m.id);
       if (!ok) return '这题稍后会再出现。';
       return left?.mastered ? '已连续答对，移出重练队列。' : `再答对 ${MASTER_STREAK - (left?.streak ?? 0)} 次就算掌握。`;

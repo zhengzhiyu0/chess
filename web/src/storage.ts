@@ -13,11 +13,25 @@ export function storageFull(key: string) {
   onFull?.(key);
 }
 
+/** Rebuildable analysis cache (engine/eval-cache.ts): the first thing to give up when storage is full. */
+const EVAL_CACHE_KEY = 'maia-coach.evals';
+
 export function safeSet(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value);
     return true;
   } catch (err) {
+    if (key !== EVAL_CACHE_KEY) {
+      try {
+        if (localStorage.getItem(EVAL_CACHE_KEY) !== null) {
+          localStorage.removeItem(EVAL_CACHE_KEY);
+          localStorage.setItem(key, value);
+          return true;
+        }
+      } catch {
+        // still full: report below
+      }
+    }
     console.warn('写入本地存储失败', key, err);
     storageFull(key);
     return false;

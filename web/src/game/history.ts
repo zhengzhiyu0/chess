@@ -117,10 +117,11 @@ export function upsert(history: StoredGame[], g: StoredGame, cap = 300): StoredG
   return [g, ...rest].sort((a, b) => b.date - a.date).slice(0, cap);
 }
 
-/** Plies on the main line of a serialized tree. */
+/** Plies on the main line of a serialized tree (same as GameTree.mainline: explorations are not part of it). */
 export function mainlineLength(s: SNode): number {
+  const next = (n: SNode) => n.c?.find((c) => !c.x);
   let n = 0;
-  for (let c = s.c?.[0]; c; c = c.c?.[0]) n++;
+  for (let c = next(s); c; c = next(c)) n++;
   return n;
 }
 
@@ -147,7 +148,8 @@ const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
 export function sanitizeGame(raw: unknown): StoredGame | null {
   if (!isObj(raw)) return null;
   const r = raw;
-  if (!str(r.id, 64) || !num(r.date) || !str(r.startFen) || !isObj(r.tree) || (r.userColor !== 'w' && r.userColor !== 'b')) return null;
+  // ids come from newGameId() (base-36 time + random); anything else could break the markup they end up in
+  if (typeof r.id !== 'string' || !/^[\w-]{1,64}$/.test(r.id) || !num(r.date) || !str(r.startFen) || !isObj(r.tree) || (r.userColor !== 'w' && r.userColor !== 'b')) return null;
   const g: StoredGame = {
     id: r.id as string,
     date: r.date as number,

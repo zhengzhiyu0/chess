@@ -119,6 +119,7 @@ describe('helpers', () => {
   it('coach thresholds', () => {
     expect(winPct(0)).toBeCloseTo(50);
     expect(judge(80, 45, false)).toBe('blunder');
-    expect(judge(60, 55, false)).toBe('good');
+    expect(judge(60, 55, false)).toBe('inaccuracy');
+    expect(judge(60, 56, false)).toBe('good');
   });
 });

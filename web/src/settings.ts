@@ -1,5 +1,8 @@
 import { isNative } from './native';
 import { safeSet } from './storage';
+import { BOARD_THEMES, PIECE_SETS } from './app/appearance';
+import { SOUND_THEMES } from './audio/sound';
+import { TIME_CONTROLS } from './game/clock';
 
 export type Color = 'w' | 'b';
 
@@ -137,7 +140,7 @@ export function loadSettings(): Settings {
       saved.soundGen = 2;
     }
     // settings from the WebView-engine app builds (single thread, tiny hash) would cripple the native engines
-    if (isNative && saved.engineGen !== 2) {
+    if (isNative && (saved.engineGen ?? 0) < 2) {
       const d = defaultSettings();
       Object.assign(saved, { sfThreads: d.sfThreads, sfHash: d.sfHash, lowMemory: d.lowMemory, warmup: d.warmup, engineGen: 2 });
     }
@@ -158,7 +161,6 @@ export const ELO_MAX = 2600;
 type Rule = { oneOf: readonly unknown[] } | { num: [number, number]; int?: boolean } | { bool: true } | { str: RegExp } | { optInt: true };
 
 const HEX = /^#[0-9a-f]{6}$/i;
-const ID = /^[\w+-]{1,32}$/;
 const RULES: Record<keyof Settings, Rule> = {
   model: { oneOf: ['5m', '23m', '79m'] },
   elo: { num: [ELO_MIN, ELO_MAX], int: true },
@@ -183,14 +185,14 @@ const RULES: Record<keyof Settings, Rule> = {
   coachHanging: { bool: true },
   coachBest: { bool: true },
   coachEval: { bool: true },
-  timeControl: { str: ID },
+  timeControl: { oneOf: TIME_CONTROLS.map((t) => t.id) },
   sound: { bool: true },
-  soundTheme: { str: ID },
+  soundTheme: { oneOf: Object.keys(SOUND_THEMES) },
   haptics: { bool: true },
-  boardTheme: { str: ID },
+  boardTheme: { oneOf: [...Object.keys(BOARD_THEMES), 'custom'] },
   customLight: { str: HEX },
   customDark: { str: HEX },
-  pieceSet: { str: ID },
+  pieceSet: { oneOf: Object.keys(PIECE_SETS) },
   premove: { bool: true },
   boardFx: { bool: true },
   boardSizePlay: { num: [60, 100] },
@@ -221,7 +223,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== 'object') return out as unknown as Settings;
   const src = raw as Record<string, unknown>;
   for (const k of Object.keys(RULES) as (keyof Settings)[]) {
-    if (k in src && valid(RULES[k], src[k])) out[k] = src[k];
+    if (Object.hasOwn(src, k) && valid(RULES[k], src[k])) out[k] = src[k];
   }
   return out as unknown as Settings;
 }

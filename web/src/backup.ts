@@ -2,19 +2,23 @@
 // The same file works in both directions between the PWA and the iOS app.
 import { sanitizeSettings, type Settings } from './settings';
 import { sanitizeGame, type StoredGame } from './game/history';
-import { mergeMistakes, sanitizeMistake, type Mistake } from './training/mistakes';
+import { loadDeletedMistakes, mergeMistakes, sanitizeDeleted, sanitizeMistake, type Mistake } from './training/mistakes';
 import { mergeProgress, sanitizeProgress, type PuzzleProgress } from './training/puzzles';
 import { isObj } from './storage';
 import { isNative } from './native';
 
 export const BACKUP_FORMAT = 'maia-coach-backup';
 export const BACKUP_VERSION = 1;
+/** same cap as the history list (game/history.ts upsert) */
+const HISTORY_CAP = 300;
 
 export interface BackupData {
   settings: Settings;
   history: StoredGame[];
   mistakes: Mistake[];
   puzzles: PuzzleProgress;
+  /** ids of deleted mistakes, kept so they don't come back (absent in older backups) */
+  deletedMistakes?: string[];
 }
 
 export interface Backup extends BackupData {
@@ -25,7 +29,23 @@ export interface Backup extends BackupData {
 }
 
 export function makeBackup(d: BackupData, app: string): Backup {
-  return { format: BACKUP_FORMAT, version: BACKUP_VERSION, exported: new Date().toISOString(), app, ...d };
+  return { format: BACKUP_FORMAT, version: BACKUP_VERSION, exported: new Date().toISOString(), app, ...d, deletedMistakes: d.deletedMistakes ?? loadDeletedMistakes() };
+}
+
+/**
+ * Brings backup data within what the app stores: games unique by id, newest first, capped;
+ * mistakes unique by id (more training wins), deleted ones dropped, capped.
+ */
+export function normalizeBackup(d: BackupData): BackupData {
+  const seen = new Set<string>();
+  const history = [...d.history]
+    .sort((a, b) => b.date - a.date)
+    .filter((g) => !seen.has(g.id) && Boolean(seen.add(g.id)))
+    .slice(0, HISTORY_CAP);
+  const deletedMistakes = sanitizeDeleted(d.deletedMistakes ?? []);
+  const gone = new Set(deletedMistakes);
+  const mistakes = mergeMistakes([], d.mistakes.filter((m) => !gone.has(m.id)));
+  return { ...d, history, mistakes, deletedMistakes };
 }
 
 /** Parses and validates a backup file; malformed entries are dropped, not fatal. */
@@ -50,26 +70,33 @@ export function parseBackup(text: string): { data: BackupData; skipped: number }
     return out;
   };
   return {
-    data: {
+    data: normalizeBackup({
       settings: sanitizeSettings(raw.settings),
       history: list(raw.history, sanitizeGame),
       mistakes: list(raw.mistakes, sanitizeMistake),
       puzzles: sanitizeProgress(raw.puzzles),
-    },
+      deletedMistakes: sanitizeDeleted(raw.deletedMistakes),
+    }),
     skipped,
   };
 }
 
 /**
- * Merge (default): games and mistakes are united by id; the rating and settings come from the
- * side that has played more rated games, so restoring an old backup never resets progress.
+ * Merge (default): games and mistakes are united by id (a mistake deleted on either side stays
+ * deleted); the rating and settings come from the side that has played more rated games, so
+ * restoring an old backup never resets progress.
  */
 export function mergeBackup(cur: BackupData, inc: BackupData): BackupData {
   const games = new Map(cur.history.map((g) => [g.id, g]));
   for (const g of inc.history) if (!games.has(g.id)) games.set(g.id, g);
-  const history = [...games.values()].sort((a, b) => b.date - a.date).slice(0, 300);
   const settings = inc.settings.ratedGames > cur.settings.ratedGames ? { ...cur.settings, elo: inc.settings.elo, ratedGames: inc.settings.ratedGames, autoElo: inc.settings.autoElo } : cur.settings;
-  return { settings, history, mistakes: mergeMistakes(cur.mistakes, inc.mistakes), puzzles: mergeProgress(cur.puzzles, inc.puzzles) };
+  return normalizeBackup({
+    settings,
+    history: [...games.values()],
+    mistakes: mergeMistakes(cur.mistakes, inc.mistakes),
+    puzzles: mergeProgress(cur.puzzles, inc.puzzles),
+    deletedMistakes: [...(cur.deletedMistakes ?? loadDeletedMistakes()), ...(inc.deletedMistakes ?? [])],
+  });
 }
 
 export function backupFileName(d = new Date()) {

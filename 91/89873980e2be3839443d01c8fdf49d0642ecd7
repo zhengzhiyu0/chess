@@ -1,0 +1,44 @@
+web/test/features.test.ts
+  s_c8fd84f3c0985f::t_94395433bca9b0 11,141-152,156-161
+  s_c8fd84f3c0985f::t_79b32004e804b6 153-155
+web/src/app/trainer-ui.ts
+  s_c8fd84f3c0985f::t_39395b20ae228e 12,22-23,197-236,238-286,401,516
+  s_c8fd84f3c0985f::t_d3455488999df6 181-185,187,195
+  s_c8fd84f3c0985f::t_ab568554ee4b61 6
+  s_c8fd84f3c0985f::t_d26d000b459887 314
+  s_c8fd84f3c0985f::t_f7283591b5cc84 107-109,237
+  s_c8fd84f3c0985f::t_68c7cc2aae6607 325-371,373-375,379-385,390
+  s_c8fd84f3c0985f::t_8c9756f184704e 299,316,428,496-500,504-509
+  s_c8fd84f3c0985f::t_6fce37e324487d 510-513
+  s_c8fd84f3c0985f::t_96d5a45a4368a2 13,35-36
+web/index.html
+  s_c8fd84f3c0985f::t_eaf29bdcdf5ad8 195
+  s_c8fd84f3c0985f::t_0fbd8b46e00f00 186
+web/src/training/recommend.ts
+  s_c8fd84f3c0985f::t_3eb43226742334 1-117,119-129
+  s_c8fd84f3c0985f::t_02b38bf965bd14 118
+README.md
+  s_c8fd84f3c0985f::t_f09ba5899fc17d 17
+web/src/main.ts
+  s_c8fd84f3c0985f::t_68e6b620b119cd 2675
+web/src/style.css
+  s_c8fd84f3c0985f::t_ab85380f46eb25 48-49
+  s_c8fd84f3c0985f::t_91662b13ea25f8 2218-2268,2270,2272-2302
+  s_c8fd84f3c0985f::t_f9bc70d04fe2fd 2345-2368
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9189873980e2be3839443d01c8fdf49d0642ecd7",
+  "prompts": {},
+  "sessions": {
+    "s_c8fd84f3c0985f": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "e64ef7f0-1cdc-41bc-9d16-ebcbcf235a7e",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

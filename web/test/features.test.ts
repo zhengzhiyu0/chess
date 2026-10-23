@@ -8,6 +8,7 @@ import { sanitizeGame } from '../src/game/history';
 import { parsePgn, splitPgn } from '../src/game/pgn';
 import { mergeMistakes, mistakeStats, sanitizeMistake, type Mistake } from '../src/training/mistakes';
 import { acceptsMove, parsePuzzles, puzzleDelta, sanitizeProgress } from '../src/training/puzzles';
+import { SETTLED, recommendThemes, themesForTag, trainingLevel } from '../src/training/recommend';
 import { mergeBackup, parseBackup, makeBackup } from '../src/backup';
 import { mistakeTag } from '../src/coach/explain';
 import { GameTree } from '../src/game/tree';
@@ -134,6 +135,27 @@ describe('puzzles', () => {
     const fen = '6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1';
     expect(acceptsMove(fen, 'd1d8', 'd1d8')).toBe(true);
     expect(acceptsMove(fen, 'd1d2', 'd1d8')).toBe(false);
+  });
+});
+
+describe('puzzle recommendations', () => {
+  const available = Object.fromEntries(['mateIn1', 'hangingPiece', 'fork', 'backRankMate', 'pin', 'skewer', 'mateIn2', 'deflection', 'quietMove', 'endgame'].map((t) => [t, 500]));
+  const stat = (tag: string, total: number) => ({ tag, label: tag, total, recent: total, previous: 0, mastered: 0 });
+  it('new players get the curriculum of their game rating', () => {
+    const r = recommendThemes({ progress: sanitizeProgress({}), elo: 800, mistakes: [], available });
+    expect(r.map((x) => x.theme)).toEqual(['mateIn1', 'hangingPiece', 'fork']);
+    expect(trainingLevel(sanitizeProgress({ games: 5, rating: 1700 }), 800)).toBe(800);
+    expect(trainingLevel(sanitizeProgress({ games: SETTLED, rating: 1700 }), 800)).toBe(1700);
+  });
+  it('weak themes and game errors come first', () => {
+    const progress = sanitizeProgress({ games: 60, solved: 40, failed: 20, rating: 1300, byTheme: { pin: [2, 8], fork: [18, 2] } });
+    const r = recommendThemes({ progress, elo: 1300, mistakes: [stat('allow-skewer', 4)], available });
+    expect(r.slice(0, 2).map((x) => x.theme).sort()).toEqual(['pin', 'skewer']);
+    expect(r.find((x) => x.theme === 'skewer')!.reasons[0]).toContain('错题');
+    expect(r.find((x) => x.theme === 'pin')!.reasons[0]).toContain('正确率 20%');
+    expect(r.map((x) => x.theme)).not.toContain('fork');
+    expect(themesForTag('hanging', 1000)).toEqual(['hangingPiece']);
+    expect(themesForTag('positional', 1000)).toEqual([]);
   });
 });
 

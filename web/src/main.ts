@@ -2672,6 +2672,7 @@ function openData() {
 const trainerCtx: TrainerCtx = {
   show: () => showScreen('train'),
   close: () => showScreen('home'),
+  elo: () => settings.elo,
 };
 
 // ---------- home ----------

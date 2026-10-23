@@ -182,8 +182,8 @@
         <header class="appbar">
           <button id="btn-train-back" class="icon" title="返回主页" aria-label="返回主页"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg></button>
           <div class="brand"><span id="train-title">谜题训练</span></div>
-          <select id="train-theme" class="train-theme" aria-label="谜题主题"><option value="">全部主题</option></select>
         </header>
+        <div class="train-catalog" id="train-catalog"></div>
         <div class="train-main">
           <div class="train-board-col"><div class="board-box"><div id="train-board" class="cg-wrap"></div></div></div>
           <div class="train-side">
@@ -192,6 +192,7 @@
             <div class="row">
               <button type="button" id="btn-train-hint">提示</button>
               <button type="button" id="btn-train-solution">看答案</button>
+              <button type="button" id="btn-train-replay" class="hidden">重播</button>
               <button type="button" id="btn-train-next" class="primary hidden">下一题</button>
             </div>
           </div>

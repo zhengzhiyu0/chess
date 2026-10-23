@@ -1,0 +1,208 @@
+web/test/judge.test.ts
+  s_bfea8d0a5a3f64::t_b32e26b18228e1 10,12-15,24,29-32
+web/src/training/puzzles.ts
+  s_bfea8d0a5a3f64::t_c7d2b9da786b72 193-199
+  s_bfea8d0a5a3f64::t_fb7ec44fb962c2 98,100
+  s_bfea8d0a5a3f64::t_e5b0807ab2dd22 87,185
+web/test/maia.test.ts
+  s_0aa240bd3a0f30::t_c8ede160dc30cd 122-123
+web/test/native-maia.test.ts
+  s_0aa240bd3a0f30::t_fbd4380226d416 13-16
+  s_0aa240bd3a0f30::t_d179e98cadcf2e 8-9
+  s_0aa240bd3a0f30::t_982006ae4c462a 1-7,10-12,17-65
+web/src/app/trainer-ui.ts
+  s_bfea8d0a5a3f64::t_4eccae32422435 6,9,28-29,39-40,67,104-110,112-117,137-146,149,155,174,176-177,180-187,197,206,208,341-342,442
+  s_bfea8d0a5a3f64::t_73e4d0582332ce 111
+web/src/engine/stockfish.ts
+  s_0aa240bd3a0f30::t_61482ae4795005 96
+  s_0aa240bd3a0f30::t_46e2284bdeb12e 282-283
+  s_0aa240bd3a0f30::t_5cceef584d6b7d 10
+  s_0aa240bd3a0f30::t_299fd605e9df57 50-53
+  s_0aa240bd3a0f30::t_d652d0c0a1bd2c 103
+  s_0aa240bd3a0f30::t_fbc390003138aa 118,120-129
+  s_0aa240bd3a0f30::t_66a82e7eab482a 138-142
+  s_0aa240bd3a0f30::t_394f29a32630ce 133
+  s_0aa240bd3a0f30::t_16810876126ac7 111-113
+  s_bfea8d0a5a3f64::t_031fe89696cc5c 137,149-150,211-219,224-225,235-240,244,249,312-314
+  s_0aa240bd3a0f30::t_177b5a0453aaf3 2
+web/test/stockfish.test.ts
+  s_0aa240bd3a0f30::t_02c1552d8531e9 1-120
+web/src/game/history.ts
+  s_bfea8d0a5a3f64::t_cd0982a6efd2bc 120,122,124
+  s_bfea8d0a5a3f64::t_aa8d9d1b659854 151-152
+README.md
+  s_0aa240bd3a0f30::t_2540a7a2e7827e 1,12,68
+  s_0aa240bd3a0f30::t_2fcf69868cdfb9 87,90
+  s_0aa240bd3a0f30::t_827f305e390d32 3-4
+.gitignore
+  s_0aa240bd3a0f30::t_6e501a6a630bd0 5-6
+web/src/training/mistakes.ts
+  s_bfea8d0a5a3f64::t_9581e7fee866fa 35-36,38,40,42-43,47
+  s_bfea8d0a5a3f64::t_2bcd30c8170c28 83-91
+  s_bfea8d0a5a3f64::t_35e126092dc327 2,4,102-103
+  s_bfea8d0a5a3f64::t_0383ca6e684862 117,119
+  s_bfea8d0a5a3f64::t_622517dec419e3 104-109,112-116,118,120-122,125-126,133,137-141,143,145-148,160
+  s_bfea8d0a5a3f64::t_b47f9979e58af2 60-61
+  s_bfea8d0a5a3f64::t_77f17708569ff6 99,101
+  s_bfea8d0a5a3f64::t_511ec8935f6930 207
+web/src/maia/worker.ts
+  s_bfea8d0a5a3f64::t_4064e2777a88b1 11-12,60-61,115-123
+web/src/coach/coach.ts
+  s_bfea8d0a5a3f64::t_247364aed3a27e 73-76,80-82
+  s_bfea8d0a5a3f64::t_65bc34f19de3e8 69-72
+  s_bfea8d0a5a3f64::t_4fde044e94d9cd 115-116,119,122
+web/public/sw.js
+  s_bfea8d0a5a3f64::t_8f1f797ca8cf8d 8-12,15-31,33-35,40-45,52-53,55,78-95,98,100,104-129,134-135,150
+  s_bfea8d0a5a3f64::t_617cc0cebc443a 96
+web/src/offline.ts
+  s_0aa240bd3a0f30::t_41391634e37936 90
+  s_bfea8d0a5a3f64::t_617cc0cebc443a 42-66,75,125,140,168,171,177-178
+  s_0aa240bd3a0f30::t_17f35b29189059 67,69
+web/test/features.test.ts
+  s_bfea8d0a5a3f64::t_3177c471c4bfb3 44-50
+  s_bfea8d0a5a3f64::t_2a0e5c5a07e2e5 5
+web/test/engines.test.ts
+  s_bfea8d0a5a3f64::t_bda2ba58b97b4a 1-180
+web/src/main.ts
+  s_bfea8d0a5a3f64::t_281401abcc041c 2466
+  s_bfea8d0a5a3f64::t_1ee8d1c9f3a687 1146-1148,1152
+  s_bfea8d0a5a3f64::t_00eefb5ad0b10c 2191-2199
+  s_bfea8d0a5a3f64::t_8e6ea29e99ee9b 1122
+  s_bfea8d0a5a3f64::t_804d5e01c89e89 2766
+  s_bfea8d0a5a3f64::t_e76ed7ec732713 1110-1111
+  s_bfea8d0a5a3f64::t_e145b0c91e0b51 2736-2743
+  s_bfea8d0a5a3f64::t_6bcd9534c29f5e 1527
+  s_bfea8d0a5a3f64::t_f785d75061982c 3031-3032
+  s_0aa240bd3a0f30::t_0d09d3edeab254 3279
+  s_bfea8d0a5a3f64::t_6f71f050aac8b2 361-365
+  s_bfea8d0a5a3f64::t_c7293775037b48 2436-2444,2446-2447,2450-2453
+  s_bfea8d0a5a3f64::t_f216955944a41d 2126-2129
+  s_bfea8d0a5a3f64::t_a71ced61268b62 2687-2688,2690,2693-2694
+  s_bfea8d0a5a3f64::t_ef3348721639a7 2227,3096-3104
+  s_0aa240bd3a0f30::t_760c8d8f568ce3 821,973-974,3108,3110-3120
+  s_bfea8d0a5a3f64::t_9494b5225cf75c 2380-2381,2386,2390,2393
+  s_bfea8d0a5a3f64::t_9affebdb7f2e5c 3037
+  s_bfea8d0a5a3f64::t_c10769330e0d4f 3124-3128,3130-3131
+  s_bfea8d0a5a3f64::t_6d1c03b5786218 1497-1499
+  s_bfea8d0a5a3f64::t_f0c5f2b9df9ad8 3277-3278
+  s_bfea8d0a5a3f64::t_148f4a0ce86ba0 854-855,2577-2578
+  s_bfea8d0a5a3f64::t_200834c1ce5d9d 2691-2692
+  s_bfea8d0a5a3f64::t_7a0c63eae4499c 2747,2792
+  s_bfea8d0a5a3f64::t_33c1d6b620abed 19
+  s_bfea8d0a5a3f64::t_2d520f24ad9a5f 1510-1513
+  s_0aa240bd3a0f30::t_80acc32771f154 818-820
+  s_0aa240bd3a0f30::t_a01b463aefa785 971-972
+  s_bfea8d0a5a3f64::t_9de969435aa0d8 2224-2226
+  s_0aa240bd3a0f30::t_3ed0ced19ca08a 107-110,216-217,271-273,688,771-772,790,798,808,816-817,872,874-875,912-913,915-916,928,934,940,942,966-968,983,990,1116-1117,1160,1236,1254,1713-1714,2222-2223,2229-2230
+web/test/settings-migration.test.ts
+  s_bfea8d0a5a3f64::t_353f1edcf76d2f 1-61
+web/src/audio/sound.ts
+  s_0aa240bd3a0f30::t_26444b06b1d674 181
+  s_0aa240bd3a0f30::t_e616b8b04e1402 390
+  s_0aa240bd3a0f30::t_bfae4e0c9c06c0 403-404
+  s_0aa240bd3a0f30::t_8e43cdecbf6901 411-419
+  s_0aa240bd3a0f30::t_ba423fed1e32b7 144-148
+  s_0aa240bd3a0f30::t_156f609e755c3b 375-376,378
+  s_0aa240bd3a0f30::t_fc498485fc4bb7 123,125-143
+  s_0aa240bd3a0f30::t_3192f18042b84c 194-198
+  s_0aa240bd3a0f30::t_5a9d9dc0acb087 256,266,277,287,383
+  s_0aa240bd3a0f30::t_ab0bf6b3275a79 222-223,226-228
+  s_daa8cada10d799::t_2db3fc1a16b934 45,184
+web/src/maia/maia.ts
+  s_0aa240bd3a0f30::t_633a146c301140 61
+  s_bfea8d0a5a3f64::t_4064e2777a88b1 31,122-123,137-140,142-148,151,164-165,173,178,183-192
+  s_bfea8d0a5a3f64::t_bdc277465c39b9 49-50,62,109-111
+  s_0aa240bd3a0f30::t_5521510cbc5b5c 92
+  s_0aa240bd3a0f30::t_aa4f66638e71fb 89-91,93-97
+  s_0aa240bd3a0f30::t_edb549f6def429 7
+  s_0aa240bd3a0f30::t_bb16b0c9feae86 53
+  s_0aa240bd3a0f30::t_49ff4882f53bfd 112
+web/src/game/rating.ts
+  s_bfea8d0a5a3f64::t_62b7b75ae1b978 107-108
+web/src/backup.ts
+  s_bfea8d0a5a3f64::t_52a26c164e080e 73,78-79,85-87,93-99
+  s_bfea8d0a5a3f64::t_0cc889196dc413 5,12-13,20-21,32-48
+web/test/data-integrity.test.ts
+  s_bfea8d0a5a3f64::t_b835bbbfd3a828 1-189
+web/src/coach/explain.ts
+  s_bfea8d0a5a3f64::t_9dfa05e2ffccfe 439,441,444,465,467,471,490-491,494-499,590,685,698
+  s_bfea8d0a5a3f64::t_29d6593b338638 1,381-382,390,392,408-409,489,492-493,500-501,598-599,676,678,682-683,697,699
+  s_bfea8d0a5a3f64::t_2169027db4210d 286-291
+  s_bfea8d0a5a3f64::t_09379dfa667b28 147-154,282-285,292-293
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/StockfishNativePlugin.swift
+  s_0aa240bd3a0f30::t_19fb2d91d9dc74 66-82
+  s_0aa240bd3a0f30::t_d4d467d8d961ff 4
+  s_bfea8d0a5a3f64::t_576d13749984e7 50-51,53
+web/test/sound.test.ts
+  s_0aa240bd3a0f30::t_4c70e00573a447 1-126
+web/src/game/rules.ts
+  s_bfea8d0a5a3f64::t_f911af38a2ec4c 64,66-74,76-77,79-80
+web/test/game.test.ts
+  s_bfea8d0a5a3f64::t_d43399b6c2e014 47-57
+  s_bfea8d0a5a3f64::t_4a33d331b4c0e1 94-102,165,168,170-186
+  s_bfea8d0a5a3f64::t_8368b6c29b6850 166-167,169
+  s_bfea8d0a5a3f64::t_0b0e9afd9609cd 187
+web/test/explain.test.ts
+  s_bfea8d0a5a3f64::t_aeb4553e3c7126 2,45-48,50-51,75-80,135-159
+  s_bfea8d0a5a3f64::t_af4f6196b33fe6 49
+  s_bfea8d0a5a3f64::t_d438a8047150de 160
+web/src/game/pgn.ts
+  s_bfea8d0a5a3f64::t_36741d4bce71d8 130-132,134,136,165-170
+  s_bfea8d0a5a3f64::t_000dcdceb6a31a 133,135,137-138
+  s_bfea8d0a5a3f64::t_49589eff4d9122 248
+  s_bfea8d0a5a3f64::t_7e4dad298df7d1 236,240,242-243
+  s_bfea8d0a5a3f64::t_fa1317cbca7bb0 210-211
+  s_bfea8d0a5a3f64::t_f900efa6e9aae5 257-258
+  s_bfea8d0a5a3f64::t_8daec84e95fe6c 275-278
+web/src/app/engines.ts
+  s_bfea8d0a5a3f64::t_f384829ddf74b4 59
+  s_bfea8d0a5a3f64::t_7126ab334631d5 15-19,39,47,55,65-66,71,73,75,79,88-93,99-103,120,123-128,134-137
+web/test/offline.test.ts
+  s_0aa240bd3a0f30::t_7dfc43365b8fd1 1-45
+web/src/app/engines-ui.ts
+  s_bfea8d0a5a3f64::t_617cc0cebc443a 24,57,78-81,83-88
+.github/workflows/deploy.yml
+  s_bfea8d0a5a3f64::t_bf2f0fbde430a6 38-40
+.github/workflows/ios.yml
+  s_bfea8d0a5a3f64::t_86a0b2dbdebdaa 9-11
+web/src/app/appearance.ts
+  s_bfea8d0a5a3f64::t_cae7f8ba684452 32,37
+web/src/app/history-ui.ts
+  s_bfea8d0a5a3f64::t_ea0c26511b3146 44,47
+web/src/settings.ts
+  s_bfea8d0a5a3f64::t_24fd5a90e9cf66 3-5,143,188,190,192,195,226
+web/src/storage.ts
+  s_bfea8d0a5a3f64::t_91a00195e83f6e 16-18,24-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "83ae4af0c2c190a09aee54a25c58bf4dfcef6fca",
+  "prompts": {},
+  "sessions": {
+    "s_0aa240bd3a0f30": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "887b7a89-b29b-49f0-a22f-49ea0bd8d9df",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_bfea8d0a5a3f64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "407a32d9-e969-4573-a751-79d345b44a9b",
+        "model": "anthropic.claude-opus-5-5:1m"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_daa8cada10d799": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "5d70d398-6457-484e-b8d0-d38a7302ed0d",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

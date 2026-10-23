@@ -1,0 +1,50 @@
+README.md
+  s_a385285a9f0e21::t_5295cc550b99fc 1
+web/src/backup.ts
+  s_a385285a9f0e21::t_4c58c7f1104542 39
+web/index.html
+  s_a385285a9f0e21::t_4b4ebbce9ed768 10,15,22
+web/ios/App/App/Info.plist
+  s_a385285a9f0e21::t_06cfa1b8748a76 10
+web/src/audio/haptics.ts
+  s_da237411b2ed4e::t_301655eabd205a 56,58,61,63
+web/public/manifest.webmanifest
+  s_a385285a9f0e21::t_ab38e9269d9fcc 2-3
+web/capacitor.config.ts
+  s_a385285a9f0e21::t_51a8f4875b524c 5
+web/src/main.ts
+  s_a385285a9f0e21::t_eea39f179743dc 2394,2632
+  s_45746c919c0f28::t_bfa36961c23af5 2768-2790
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cce7fa03119dac2ddf75d6a1dd453311b444258a",
+  "prompts": {},
+  "sessions": {
+    "s_45746c919c0f28": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "77cd0be3-25e3-41b6-909b-03baa65b4609",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_a385285a9f0e21": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "5040c659-5307-4feb-bc82-54f137beb29d",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_da237411b2ed4e": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "4e61fd91-055e-454d-a175-68b04d901dcc",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

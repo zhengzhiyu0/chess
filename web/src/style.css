@@ -221,6 +221,12 @@ button svg {
   font-size: 22px;
   box-shadow: 0 3px 0 var(--green-dark);
 }
+.logo svg {
+  width: 24px;
+  height: 24px;
+  fill: #fff;
+  stroke: none;
+}
 
 /* ---------- 主页 ---------- */
 .home-body {

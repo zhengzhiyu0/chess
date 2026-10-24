@@ -268,7 +268,9 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     gameModel = g.model ?? settings.model;
     assists = g.assists ? { ...g.assists } : emptyAssists();
     rating = g.rating;
-    ratePending = Boolean(g.ratePending);
+    // Older saved games may have a pending rating from before coach games were
+    // excluded. Never apply that pending adjustment when reopening a coach game.
+    ratePending = Boolean(g.ratePending) && !coachOn;
     abandoned = Boolean(g.abandoned);
     const peak = (raw as { peak?: unknown }).peak;
     peakUserMoves = Math.max(typeof peak === 'number' ? peak : 0, userMovesOf().length);
@@ -692,9 +694,15 @@ function collectMistakes() {
   if (added) setStatus(`${added} 步错着已收进错题本`);
 }
 
-/** Automatic rating applies to real games from the standard start in which the user moved (or resigned). */
+/** Automatic rating applies only to formal games from the standard start in which the user moved (or resigned). */
+function ratingEnabled(): boolean {
+  // Coach games are training sessions: hints, retries and explanations make their
+  // results incomparable with a normal game, so they must never change Elo.
+  return !coachOn && settings.autoElo && !imported && gameElo !== undefined && tree.root.fen === START_FEN;
+}
+
 function rateable(): boolean {
-  if (!settings.autoElo || imported || gameElo === undefined || tree.root.fen !== START_FEN) return false;
+  if (!ratingEnabled()) return false;
   return Math.max(peakUserMoves, userMovesOf().length) >= 1 || reason === 'resign';
 }
 
@@ -881,7 +889,7 @@ let assistWarned = '';
 
 /** First use of a help in a game that will be rated: say once that it lowers the rating gain. */
 function assistOk(what: string): boolean {
-  const willRate = settings.autoElo && !imported && gameElo !== undefined && tree.root.fen === START_FEN;
+  const willRate = ratingEnabled();
   if (!willRate || assistWarned === gameId) return true;
   if (!confirm(`使用${what}后，本局赢棋的加分会按比例减少（输棋照常扣分）。继续吗？`)) return false;
   assistWarned = gameId;
@@ -2144,7 +2152,7 @@ function renderRatingResult() {
   if (ratePending) {
     box.textContent = '正在评估本局表现，稍后计算等级分…';
     box.hidden = false;
-  } else if (eloAfter !== undefined && gameElo !== undefined && rating) {
+  } else if (!coachOn && eloAfter !== undefined && gameElo !== undefined && rating) {
     const d = eloAfter - gameElo;
     box.innerHTML =
       `等级分 ${gameElo} → <b class="${d > 0 ? 'win' : d < 0 ? 'loss' : ''}">${eloAfter}</b>（${d > 0 ? '+' : ''}${d}），下一局 Maia 将按新分数对弈` +

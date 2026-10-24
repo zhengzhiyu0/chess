@@ -158,8 +158,8 @@ export async function autoOffline(ctx: EnginesCtx): Promise<boolean> {
 export function openEngines(ctx: EnginesCtx) {
   const dlg = $<HTMLDialogElement>('dlg-engines');
   const chk = $<HTMLInputElement>('chk-warm');
-  chk.checked = ctx.settings().warmup;
-  chk.onchange = () => ctx.patchSettings({ warmup: chk.checked });
+  chk.checked = true;
+  chk.onchange = () => ctx.patchSettings({ warmup: true });
   const auto = $<HTMLInputElement>('chk-auto-offline');
   auto.checked = ctx.settings().autoOffline;
   auto.onchange = () => ctx.patchSettings({ autoOffline: auto.checked });

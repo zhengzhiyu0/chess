@@ -580,6 +580,15 @@ export function explainMove(o: MoveInsightInput): MoveInsight {
     if (o.uci === o.best && rl) {
       const gain = pvMaterialSwing(o.fen, line);
       if (gain >= 2) res.praise = `好棋！照这样下去${me}能赢得${materialWords(gain)}`;
+      else {
+        // A best move can still leave the player worse (for example, a forced defence).
+        // Do not praise it just because it is first in the engine's move ordering.
+        const moverCp = -(rl.cp ?? 0);
+        if (rl.mate !== undefined ? rl.mate < 0 : moverCp >= -60) {
+          const position = plainEval(rl, other(m.color as Color), m.color as Color, { me, opp });
+          res.praise = `引擎认可的好棋。按主变，${position || '局面保持平衡'}`;
+        }
+      }
     }
     return res;
   }
@@ -588,7 +597,13 @@ export function explainMove(o: MoveInsightInput): MoveInsight {
     res.problem.push(`${opp}有 ${rl!.mate} 步杀${replySan ? `，从 <b>${replySan}</b> 开始` : ''}`);
   } else if (reply && replySan) {
     const t = firstTactic(afterFen, rl!.pv, `${me}的`, false, isRecapture(m, reply) ? EVEN : PROBLEM, undefined, gainOf(m));
-    if (!t) res.problem.push(`${opp}的最佳应对是 <b>${replySan}</b>`);
+    if (!t) {
+      // Avoid decorating a nearly equal recapture with noisy centipawn prose.
+      const result = Math.abs(rl!.cp ?? 0) >= 60 || rl!.mate !== undefined
+        ? plainEval(rl!, other(m.color as Color), m.color as Color, { me, opp })
+        : '';
+      res.problem.push(`${opp}的最佳应对是 <b>${replySan}</b>${result ? `；照主变发展，${result}` : ''}`);
+    }
     else if (!t.ply) res.problem.push(`${opp}可以走 <b>${replySan}</b>：${t.motif.text}`);
     else res.problem.push(`${opp}可以走 <b>${replySan}</b>，接着 <b>${t.san}</b>：${t.motif.text}`);
     const to = o.uci.slice(2, 4);
@@ -600,9 +615,15 @@ export function explainMove(o: MoveInsightInput): MoveInsight {
     if (lost >= 1) res.problem.push(`照这样走下去，${me}会丢掉${materialWords(lost)}`);
   }
 
+  if (o.bad && (!rl || !rl.pv.length)) {
+    res.problem.push(`${opp}的后续变化数据不足，暂时无法可靠确认这步棋具体输在哪里。`);
+  }
+
   if (o.best && o.best !== o.uci) {
     const bl = o.bestLine;
-    if (bl?.mate !== undefined && bl.mate > 0) res.better.push(`${bl.mate} 步杀`);
+    if (!bl) {
+      res.better.push(`Stockfish 建议尝试 <b>${sanOrNull(o.fen, o.best) ?? '候选着法'}</b>，但当前没有足够的主变数据说明它具体好在哪里。`);
+    } else if (bl.mate !== undefined && bl.mate > 0) res.better.push(`${bl.mate} 步杀`);
     else {
       const line = bl?.pv[0] === o.best ? bl.pv : [o.best];
       const first = confirmedMotifs(o.fen, line, `${opp}的`).slice(0, 2);
@@ -612,6 +633,12 @@ export function explainMove(o: MoveInsightInput): MoveInsight {
       const gain = pvMaterialSwing(o.fen, line);
       if (gain >= 1) res.better.push(`能赢得${materialWords(gain)}`);
     }
+    if (!res.better.length && bl) {
+      const position = plainEval(bl, m.color as Color, m.color as Color, { me, opp });
+      res.better.push(position ? `引擎主变评估：${position}` : 'Stockfish 在当前分析深度下更倾向这步棋');
+    }
+  } else if (o.bad && !o.best) {
+    res.better.push('当前分析没有可靠的最佳着法，建议加深 Stockfish 分析后再比较。');
   }
   return res;
 }

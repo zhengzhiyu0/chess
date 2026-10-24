@@ -159,6 +159,63 @@ button svg {
 .row button {
   flex: 1;
 }
+.ai-settings {
+  margin: 18px 0 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+.ai-settings legend { padding: 0 5px; color: var(--green-hover); font-weight: 800; }
+.ai-settings-fields { display: grid; gap: 9px; margin: 8px 0; }
+.ai-settings-actions { margin-top: 2px; }
+.ai-settings-actions button { font-size: 13px; padding: 8px 10px; }
+.ai-screen { background: var(--bg); }
+.ai-page-body { width: min(760px, 100%); flex: 1; overflow: auto; padding: 18px max(16px, 4vw) calc(28px + var(--safe-b)); margin: 0 auto; }
+.ai-model-badge { flex: none; max-width: 42vw; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.ai-context-card { padding: 14px 15px; border: 1px solid rgba(129, 182, 76, 0.28); border-radius: 13px; background: linear-gradient(135deg, rgba(129, 182, 76, 0.14), rgba(60, 58, 55, 0.7)); }
+.ai-context-card .ai-kicker { margin: 0 0 5px; color: var(--green-hover); font-size: 11px; font-weight: 900; letter-spacing: .12em; }
+.ai-context-card h2 { margin: 0; font-size: 20px; }
+.ai-context-card p { margin: 6px 0 0; color: var(--text2); }
+.ai-context-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+.ai-context-meta span { padding: 3px 8px; border-radius: 999px; background: rgba(0, 0, 0, .18); color: var(--text2); font-size: 12px; }
+.ai-answer { min-height: 210px; margin-top: 12px; padding: 18px; border-radius: 13px; background: var(--panel); }
+.ai-empty { min-height: 172px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: var(--text2); text-align: center; }
+.ai-empty small { max-width: 330px; color: var(--muted); }
+.ai-empty-mark { color: var(--green-hover); font-size: 30px; }
+.ai-answer h3 { margin: 0 0 12px; color: var(--green-hover); font-size: 19px; }
+.ai-answer section { margin-top: 14px; }
+.ai-answer section > b { display: block; margin-bottom: 4px; color: var(--muted); font-size: 12px; }
+.ai-answer p { margin: 5px 0; color: var(--text2); line-height: 1.65; }
+.ai-move { display: inline-flex; align-items: center; gap: 7px; margin: 3px 0; padding: 7px 10px; border-radius: 8px; background: var(--panel2); color: var(--text); font-weight: 800; }
+.ai-page-actions { display: flex; gap: 8px; margin-top: 12px; }
+.ai-page-actions button { flex: 1; }
+.ai-summary-list { display: grid; gap: 9px; margin-top: 20px; }
+.ai-summary-list:empty { display: none; }
+.ai-summary-title { color: var(--muted); font-size: 12px; font-weight: 800; }
+.ai-summary-item { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); }
+.ai-summary-item > span { flex: 1; }
+.ai-summary-item small { display: block; margin-top: 2px; color: var(--muted); }
+.ai-summary-item button { padding: 7px 9px; font-size: 12px; }
+.ai-report-summary { margin-top: 14px; padding: 14px; border: 1px solid rgba(129, 182, 76, 0.28); border-radius: 12px; background: linear-gradient(135deg, rgba(129, 182, 76, 0.11), rgba(60, 58, 55, 0.7)); }
+.ai-report-summary h3 { margin: 0 0 7px; color: var(--green-hover); }
+.ai-report-summary p { margin: 6px 0; color: var(--text2); }
+.ai-report-summary .ai-summary-item { margin-top: 8px; background: rgba(0, 0, 0, 0.14); }
+.ai-inline-btn { align-self: flex-start; margin-top: 8px; padding: 7px 10px; color: var(--green-hover); background: rgba(129, 182, 76, 0.12); font-size: 12px; }
+.learning-report-summary { display: grid; gap: 10px; margin-top: 14px; padding: 14px; border: 1px solid rgba(129, 182, 76, 0.32); border-radius: 12px; background: linear-gradient(135deg, rgba(129, 182, 76, 0.14), rgba(60, 58, 55, 0.72)); }
+.learning-report-summary h3 { margin: 0; color: var(--green-hover); font-size: 18px; }
+.learning-kicker { color: var(--green-hover); font-size: 11px; font-weight: 900; letter-spacing: .12em; }
+.learning-issue, .learning-good, .learning-next { padding: 10px 11px; border-radius: 10px; background: rgba(0, 0, 0, .16); }
+.learning-issue-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.learning-issue-head > span { color: var(--muted); font-size: 12px; }
+.learning-report-summary p { margin: 5px 0 0; color: var(--text2); line-height: 1.55; }
+.learning-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.learning-actions button, .learning-next button { padding: 6px 9px; font-size: 12px; }
+.learning-actions button[data-learning-theme], .learning-next button { color: var(--green-hover); background: rgba(129, 182, 76, .13); }
+.learning-good > b, .learning-next > b { color: var(--muted); font-size: 12px; }
+.ai-error { min-height: 172px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; color: var(--text2); text-align: center; }
+.ai-error b { color: #e5675a; }
+.ai-error p { margin: 0; }
 
 /* ---------- 屏幕 ---------- */
 .screen {
@@ -440,6 +497,33 @@ input[type='checkbox'] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* When a game is in progress, make resuming it the primary home action while
+   keeping the move count and coach context visible in the same button. */
+.tile.resume-primary {
+  justify-content: center;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 4px 0 0 var(--green-dark);
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+.tile.resume-primary:hover {
+  background: var(--green-hover);
+}
+.tile.resume-primary:active {
+  box-shadow: 0 1px 0 0 var(--green-dark);
+}
+.tile.resume-primary svg {
+  color: #fff;
+}
+.tile.resume-primary span {
+  align-items: center;
+}
+.tile.resume-primary small {
+  color: rgba(255, 255, 255, 0.82);
 }
 .home-foot {
   text-align: center;
@@ -1154,6 +1238,13 @@ html:not(.native) .native-only {
   font-size: 13px;
   color: var(--text2);
 }
+.cc-prompt {
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--panel3) 70%, transparent);
+  color: var(--text2);
+  font-size: 13px;
+}
 .demo-btn {
   display: inline;
   padding: 2px 0;
@@ -1239,6 +1330,96 @@ html:not(.native) .native-only {
 .toast.show {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+/* ---------- 引擎等待页 ---------- */
+.engine-loading {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: calc(var(--safe-t) + 32px) 24px calc(var(--safe-b) + 32px);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 32%, rgba(129, 182, 76, 0.16), transparent 32%), var(--bg-dark);
+  color: var(--text);
+  opacity: 1;
+  transition: opacity 0.22s ease, visibility 0.22s;
+}
+.engine-loading.hidden {
+  display: flex !important;
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+.engine-loading::before,
+.engine-loading::after {
+  content: '';
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.engine-loading::before { width: 420px; height: 420px; }
+.engine-loading::after { width: 620px; height: 620px; opacity: 0.6; }
+.engine-loading-orbit {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(129, 182, 76, 0.35);
+  border-radius: 50%;
+  box-shadow: 0 0 0 12px rgba(129, 182, 76, 0.05), 0 0 48px rgba(129, 182, 76, 0.13);
+  animation: engine-breathe 2.2s ease-in-out infinite;
+}
+.orbit-core {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, var(--green-hover), var(--green-dark));
+  color: #fff;
+  font-size: 32px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+}
+.orbit-dot {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--panel2);
+  color: var(--text2);
+  font-size: 17px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.28);
+  animation: engine-orbit 3.2s linear infinite;
+}
+.orbit-dot-a { top: -9px; left: 40px; }
+.orbit-dot-b { right: -9px; bottom: 14px; animation-delay: -1.6s; }
+.engine-loading-copy { position: relative; text-align: center; max-width: 360px; }
+.engine-loading-kicker { margin: 0 0 5px; color: var(--green-hover); font-size: 11px; font-weight: 900; letter-spacing: 0.22em; }
+.engine-loading-copy h1 { margin: 0; font-size: clamp(24px, 7vw, 34px); letter-spacing: -0.03em; }
+.engine-loading-copy p:last-child { margin: 8px 0 0; color: var(--text2); font-size: 14px; }
+.engine-loading-engines { position: relative; width: min(100%, 360px); display: grid; gap: 8px; }
+.engine-loading-engine { display: flex; align-items: center; gap: 10px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 12px; background: rgba(60, 58, 55, 0.78); text-align: left; }
+.engine-loading-engine > span:nth-child(2) { display: grid; flex: 1; gap: 1px; }
+.engine-loading-engine small { color: var(--muted); font-size: 12px; }
+.engine-loading-engine em { color: var(--green-hover); font-size: 12px; font-style: normal; }
+.engine-loading-pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 0 rgba(129, 182, 76, 0.45); animation: engine-pulse 1.5s infinite; }
+.engine-loading-track { position: relative; width: min(100%, 360px); height: 3px; overflow: hidden; border-radius: 3px; background: var(--panel3); }
+.engine-loading-track span { position: absolute; inset: 0 auto 0 -35%; width: 35%; border-radius: inherit; background: linear-gradient(90deg, transparent, var(--green-hover), transparent); animation: engine-progress 1.35s ease-in-out infinite; }
+@keyframes engine-breathe { 0%, 100% { transform: scale(0.98); } 50% { transform: scale(1.03); } }
+@keyframes engine-orbit { from { transform: rotate(0deg) translateX(57px) rotate(0deg); } to { transform: rotate(360deg) translateX(57px) rotate(-360deg); } }
+@keyframes engine-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(129, 182, 76, 0.45); } 50% { box-shadow: 0 0 0 6px rgba(129, 182, 76, 0); } }
+@keyframes engine-progress { from { left: -35%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .engine-loading-orbit, .orbit-dot, .engine-loading-pulse, .engine-loading-track span { animation: none; }
 }
 
 /* ---------- 棋盘（绿白） ---------- */

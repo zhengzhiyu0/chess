@@ -199,11 +199,33 @@
             <div class="report-hint muted" id="report-hint"></div>
             <svg id="graph" class="graph" viewBox="0 0 100 40" preserveAspectRatio="none"></svg>
             <div class="summary" id="summary"></div>
+            <div class="learning-report-summary hidden" id="learning-report-summary"></div>
+            <div class="ai-report-summary hidden" id="ai-report-summary"></div>
           </div>
           <div class="report-foot">
             <button type="button" id="btn-report-start" class="primary big">开始回顾</button>
           </div>
         </div>
+      </section>
+
+      <!-- ========== AI 讲解 ========== -->
+      <section id="ai" class="screen ai-screen">
+        <header class="appbar">
+          <button id="btn-ai-back" class="icon" title="返回复盘" aria-label="返回复盘"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg></button>
+          <div class="brand"><span>AI 讲解</span></div>
+          <span class="ai-model-badge" id="ai-model-badge"></span>
+        </header>
+        <main class="ai-page-body">
+          <div class="ai-context-card" id="ai-context-card"></div>
+          <div class="ai-answer" id="ai-answer" aria-live="polite">
+            <div class="ai-empty"><span class="ai-empty-mark">✦</span><b>让 AI 把这步棋讲清楚</b><small>它会结合 Stockfish 的变化，告诉你正确走法、原因和下次该检查什么。</small></div>
+          </div>
+          <div class="ai-page-actions" id="ai-page-actions">
+            <button type="button" id="btn-ai-hint">只给提示</button>
+            <button type="button" id="btn-ai-explain" class="primary">完整讲解</button>
+          </div>
+          <div class="ai-summary-list" id="ai-summary-list"></div>
+        </main>
       </section>
 
       <!-- ========== 训练（谜题 / 错题） ========== -->
@@ -230,6 +252,24 @@
 
       <div id="status" class="toast" role="status" aria-live="polite"></div>
       <button id="offline-bar" class="offline-bar hidden" type="button"><span></span><div class="progress"><div></div></div></button>
+    </div>
+
+    <div id="engine-loading" class="engine-loading hidden" role="status" aria-live="polite" aria-busy="true">
+      <div class="engine-loading-orbit" aria-hidden="true">
+        <span class="orbit-dot orbit-dot-a">♞</span>
+        <span class="orbit-dot orbit-dot-b">♜</span>
+        <span class="orbit-core">♟</span>
+      </div>
+      <div class="engine-loading-copy">
+        <p class="engine-loading-kicker">MAIA COACH</p>
+        <h1>正在准备你的棋局</h1>
+        <p>引擎首次启动需要一点时间，准备好后会自动进入对局。</p>
+      </div>
+      <div class="engine-loading-engines">
+        <div class="engine-loading-engine"><span class="engine-loading-pulse"></span><span><b>Maia-3</b><small>人类棋手模型</small></span><em>准备中</em></div>
+        <div class="engine-loading-engine"><span class="engine-loading-pulse"></span><span><b>Stockfish 19</b><small>教练分析引擎</small></span><em>准备中</em></div>
+      </div>
+      <div class="engine-loading-track" aria-hidden="true"><span></span></div>
     </div>
 
     <dialog id="dlg-menu" class="sheet">
@@ -356,8 +396,30 @@
         </label>
         <label class="check web-only"><input type="checkbox" name="lowMemory" /> 省内存模式（切换对弈/复盘时卸载另一个引擎，iPhone 推荐）</label>
         <label class="check"><input type="checkbox" name="ecoAnalysis" /> 节能分析（达到足够深度即停止，复盘实时分析最长 15 秒；手机明显降温，评判结果基本不变）</label>
-        <label class="check"><input type="checkbox" name="warmup" /> 启动时在后台预加载当前模型与 Stockfish</label>
+        <label class="check"><input type="checkbox" name="warmup" checked disabled /> 启动时自动在后台预加载 Maia 与 Stockfish</label>
         <label class="check"><input type="checkbox" name="reviewOpponent" /> 复盘时也分析对手的着法（默认只看自己的）</label>
+        <fieldset class="ai-settings">
+          <legend>AI 讲解（可选）</legend>
+          <label class="check"><input type="checkbox" name="aiEnabled" /> 开启 AI 讲解</label>
+          <div class="ai-settings-fields">
+            <label>服务商
+              <select name="aiProvider" id="ai-provider">
+                <option value="deepseek">DeepSeek</option>
+                <option value="custom">自定义 OpenAI 兼容接口</option>
+              </select>
+            </label>
+            <label>API 地址 <input type="url" name="aiBaseUrl" id="ai-base-url" placeholder="https://api.deepseek.com" /></label>
+            <label>API Key <input type="password" id="ai-key" autocomplete="off" placeholder="输入后仅保存在本机" /></label>
+            <label>模型 <select name="aiModel" id="ai-model"><option value="deepseek-flash">deepseek-flash</option></select></label>
+            <div class="row ai-settings-actions">
+              <button type="button" id="btn-ai-models">获取模型列表</button>
+              <button type="button" id="btn-ai-test">测试连接</button>
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" name="aiShareGame" /> 允许发送完整对局（默认只发送当前局面和相关变化）</label>
+          <label class="check"><input type="checkbox" name="aiSaveKey" /> 在本机保存 API Key</label>
+          <p class="muted">训练总结、错题分类与训练建议都在本机完成。AI 仅作为可选的进一步讲解，不参与棋局评判或训练推荐；关闭后所有 AI 入口都会隐藏。</p>
+        </fieldset>
         <div class="env" id="env-info"></div>
         <div class="row">
           <button value="cancel">取消</button>
@@ -375,7 +437,7 @@
         <div id="pkg-list" class="pkg-list"></div>
         <div class="env web-only" id="storage-info"></div>
         <label class="check web-only"><input type="checkbox" id="chk-auto-offline" /> 启动时自动下载离线包（应用本体 + Stockfish + 当前模型）</label>
-        <label class="check"><input type="checkbox" id="chk-warm" /> 启动时在后台预加载当前模型与 Stockfish</label>
+        <label class="check"><input type="checkbox" id="chk-warm" checked disabled /> 启动时自动在后台预加载 Maia 与 Stockfish</label>
         <div class="row">
           <button type="button" id="btn-dl-rec" class="primary web-only">下载推荐组合</button>
           <button type="button" id="btn-warm">立即预加载</button>
@@ -428,7 +490,7 @@
         <label class="check"><input type="checkbox" name="coachHanging" /> 标出保护不足的棋子（红圈）</label>
         <label class="check"><input type="checkbox" name="coachBest" /> 全程显示最佳着法（绿色箭头）</label>
         <label class="check"><input type="checkbox" name="coachEval" /> 显示评估条</label>
-        <p class="muted">走出达到标准的坏棋时，教练会暂停对局，解释问题并给出更好的走法，你可以选择重走或继续。</p>
+        <p class="muted">走出达到标准的坏棋时，教练会先指出问题并让你思考；点击“查看更好的走法”后才显示答案。你可以重走或继续对局。</p>
         <div class="row">
           <button value="cancel">取消</button>
           <button value="ok" class="primary">保存</button>

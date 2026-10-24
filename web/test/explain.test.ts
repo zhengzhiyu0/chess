@@ -106,7 +106,7 @@ describe('confirmedMotifs', () => {
 describe('explainMove', () => {
   it('explains a bad move and the better one', () => {
     const r = explainMove({
-      fen: '6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1',
+      fen: '4k3/7p/8/8/8/8/8/R3K3 w - - 0 1',
       uci: 'a1a2',
       best: 'a1a8',
       bestLine: { multipv: 1, depth: 10, mate: 1, pv: ['a1a8'] },
@@ -116,6 +116,46 @@ describe('explainMove', () => {
     });
     expect(r.better).toEqual(['1 步杀']);
     expect(r.problem[0]).toContain('h6');
+  });
+
+  it('uses engine evaluation as an honest fallback when no tactical motif is found', () => {
+    const r = explainMove({
+      fen: '4k3/7p/8/8/8/8/8/R3K3 w - - 0 1',
+      uci: 'a1a2',
+      best: 'a1a4',
+      bestLine: { multipv: 1, depth: 12, cp: 180, pv: ['a1a4'] },
+      replyLine: { multipv: 1, depth: 12, cp: 220, pv: ['h7h6'] },
+      bad: true,
+      sides: S,
+    });
+    expect(r.problem.join(' ')).toContain('最佳应对');
+    expect(r.problem.join(' ')).toContain('照主变发展');
+    expect(r.better.join(' ')).toContain('引擎主变评估');
+  });
+
+  it('does not invent a reason when the engine provided no usable reply line', () => {
+    const r = explainMove({
+      fen: '4k3/7p/8/8/8/8/8/R3K3 w - - 0 1',
+      uci: 'a1a2',
+      best: 'a1a4',
+      bad: true,
+      sides: S,
+    });
+    expect(r.problem.join(' ')).toContain('无法可靠确认');
+    expect(r.better.join(' ')).toContain('没有足够的主变数据');
+  });
+
+  it('explains a non-tactical best move with the evaluated position', () => {
+    const r = explainMove({
+      fen: '4k3/7p/8/8/8/8/8/R3K3 w - - 0 1',
+      uci: 'a1a4',
+      best: 'a1a4',
+      replyLine: { multipv: 1, depth: 12, cp: -150, pv: ['e8f8'] },
+      bad: false,
+      sides: S,
+    });
+    expect(r.praise).toContain('引擎认可的好棋');
+    expect(r.praise).toContain('优势');
   });
 
   it('explains a blunder that allows a knight fork', () => {

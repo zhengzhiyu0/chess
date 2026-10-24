@@ -76,6 +76,13 @@ export interface Settings {
   avatar: string;
   /** Maia's coach portrait, index into COACHES (app/coach-avatars.ts) */
   coachAvatar: number;
+  /** optional remote language-model explanation layer; disabled by default */
+  aiEnabled: boolean;
+  aiProvider: 'deepseek' | 'custom';
+  aiBaseUrl: string;
+  aiModel: string;
+  aiShareGame: boolean;
+  aiSaveKey: boolean;
   /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
   engineGen?: number;
   /** sound theme default migration: 1 = Lichess sfx, 2 = wooden board set */
@@ -137,6 +144,12 @@ export function defaultSettings(): Settings {
     reviewOpponent: false,
     avatar: '',
     coachAvatar: 0,
+    aiEnabled: false,
+    aiProvider: 'deepseek',
+    aiBaseUrl: 'https://api.deepseek.com',
+    aiModel: 'deepseek-flash',
+    aiShareGame: false,
+    aiSaveKey: false,
   };
 }
 
@@ -220,6 +233,12 @@ const RULES: Record<keyof Settings, Rule> = {
   // '' / '<glyph>|#rrggbb' / small JPEG data URL; rendering validates the format again
   avatar: { str: /^[^<>"]{0,200000}$/s },
   coachAvatar: { num: [0, 999], int: true },
+  aiEnabled: { bool: true },
+  aiProvider: { oneOf: ['deepseek', 'custom'] },
+  aiBaseUrl: { str: /^https?:\/\/[^\s<>]{1,500}$/ },
+  aiModel: { str: /^[^\s<>]{1,200}$/ },
+  aiShareGame: { bool: true },
+  aiSaveKey: { bool: true },
   engineGen: { optInt: true },
   soundGen: { optInt: true },
 };

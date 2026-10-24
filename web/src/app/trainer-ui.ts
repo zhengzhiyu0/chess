@@ -427,6 +427,15 @@ export function openPuzzles(c: TrainerCtx) {
   void showCatalog();
 }
 
+/** Open a puzzle session focused on one locally known error theme. */
+export function openPuzzlesForTheme(c: TrainerCtx, selected: string) {
+  ctx = c;
+  $('train').dataset.kind = 'puzzle';
+  theme = Object.hasOwn(THEME_LABEL, selected) ? selected : null;
+  ctx.show();
+  startTheme(theme);
+}
+
 // ---------- mistakes ----------
 
 function mistakeTask(m: Mistake): Task {
@@ -525,6 +534,14 @@ export function openNotebook(c: TrainerCtx) {
   };
   draw();
   dlg.showModal();
+}
+
+/** Start one notebook entry directly from a post-game learning summary. */
+export function openMistake(c: TrainerCtx, id: string) {
+  ctx = c;
+  const m = loadMistakes().find((x) => x.id === id);
+  if (!m) return;
+  startMistakes([m]);
 }
 
 export function bindTrainer(c: TrainerCtx) {

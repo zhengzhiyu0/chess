@@ -16,10 +16,11 @@ import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, 
 import { ELO_MAX, ELO_MIN, isIOS, loadSettings, saveSettings, type Settings } from './settings';
 import { assistCount, computeRating, emptyAssists, ratingBreakdown, type Assists, type RatingInfo } from './game/rating';
 import { onStorageFull, readJson, safeSet } from './storage';
-import { addMistakes, loadMistakes, setDeletedMistakes, setMistakes, type Mistake } from './training/mistakes';
-import { loadProgress, setProgress } from './training/puzzles';
+import { addMistakes, loadMistakes, mistakeStats, setDeletedMistakes, setMistakes, type Mistake } from './training/mistakes';
+import { loadProgress, setProgress, THEME_LABEL } from './training/puzzles';
+import { themesForTag } from './training/recommend';
 import { backupFileName, makeBackup, mergeBackup, parseBackup, pickFile, shareFile, type BackupData } from './backup';
-import { bindTrainer, notebookSummary, openNotebook, openPuzzles, puzzleSummary, trainerRedraw, type TrainerCtx } from './app/trainer-ui';
+import { bindTrainer, notebookSummary, openMistake, openNotebook, openPuzzles, openPuzzlesForTheme, puzzleSummary, trainerRedraw, type TrainerCtx } from './app/trainer-ui';
 import { mistakeTag } from './coach/explain';
 import { isNative, thermalState } from './native';
 import { GameTree, mainChild, type GNode } from './game/tree';
@@ -40,6 +41,7 @@ import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } fro
 import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
+import { clearAiKey, explainWithAi, fetchAiModels, loadAiKey, saveAiKey, type AiConfig, type AiExplanation, type AiExplanationContext } from './ai/llm';
 
 // ---------- state ----------
 
@@ -115,15 +117,22 @@ let liveLines: SfLine[] = [];
 let batchCtrl: AbortController | null = null;
 /** whole-game analysis interrupted by the app going to the background, resumed on return */
 let pausedBatch = false;
-let screen: 'home' | 'game' | 'train' = 'home';
+let screen: 'home' | 'game' | 'train' | 'ai' = 'home';
 type HomeTab = 'play' | 'train' | 'data';
 let homeTab: HomeTab = 'play';
+let aiAnchor: Node | null = null;
+let aiExplanation: AiExplanation | null = null;
+let aiBusy = false;
+let aiError = '';
+let aiSessionKey = loadAiKey();
 let shownResult = '';
 let coachOn = false;
 let coachState: 'idle' | 'checking' | 'paused' = 'idle';
 let coachCtrl: AbortController | null = null;
 /** position before the user's move that the coach is judging */
 let coachFrom: Node | null = null;
+/** The answer stays hidden until the player explicitly asks to reveal it. */
+let coachReveal = false;
 /** moves taken back with "重走这步", re-attached as variations once a different move is played */
 let retried: { from: Node; nodes: Node[] } | null = null;
 let history: StoredGame[] = loadHistory();
@@ -149,7 +158,7 @@ const enginesCtx: EnginesCtx = {
     settings = { ...settings, ...patch };
     saveSettings(settings);
   },
-  warmup: () => engines.warmup(),
+  warmup: () => engines.warmup().catch(() => {}),
 };
 
 // ---------- game helpers ----------
@@ -1333,6 +1342,108 @@ function renderGraph() {
     `<line x1="${cx}" y1="0" x2="${cx}" y2="40" stroke="#f7c045" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
 }
 
+const LEARNING_JUDGEMENTS = new Set<Judgement>(['inaccuracy', 'mistake', 'miss', 'blunder']);
+const SERIOUS_JUDGEMENTS = new Set<Judgement>(['mistake', 'miss', 'blunder']);
+
+function learningTag(n: Node): { id: string; label: string } {
+  const saved = loadMistakes().find((m) => m.gameId === gameId && m.id === `${gameId}:${n.ply}`);
+  if (saved) return { id: saved.tag, label: saved.tagLabel };
+  const p = n.parent;
+  const best = p?.a.eval?.best;
+  return best && p?.a.eval?.lines[0]
+    ? mistakeTag({ fen: p.fen, uci: n.uci, best, bestLine: p.a.eval.lines[0], replyLine: n.a.eval?.lines[0] })
+    : { id: 'other', label: '局面判断失误' };
+}
+
+function learningIssues(): Node[] {
+  const side: IssueSide = imported ? 'all' : 'me';
+  return reviewIssues(side)
+    .filter((n) => {
+      const r = reviewOf(n);
+      return Boolean(r && LEARNING_JUDGEMENTS.has(r.judgement));
+    })
+    .sort((a, b) => {
+      const ra = reviewOf(a)!;
+      const rb = reviewOf(b)!;
+      return SEVERITY[rb.judgement] - SEVERITY[ra.judgement] || rb.before - rb.after - (ra.before - ra.after) || b.ply - a.ply;
+    });
+}
+
+function checkForTag(tag: string): string {
+  if (tag.includes('mate')) return '走棋前先检查对方的将军、杀棋威胁和王的安全。';
+  if (tag.includes('fork')) return '先问自己：对方下一步能否同时攻击两个目标？';
+  if (tag.includes('pin') || tag.includes('skewer')) return '检查被牵制或串击的子，确认它是否真的能移动或回吃。';
+  if (tag.includes('hanging') || tag.includes('free') || tag.includes('trade-up')) return '落子后再扫一遍对方的将军、吃子和直接威胁。';
+  if (tag.includes('discovered') || tag.includes('double-check')) return '检查移动一个棋子后是否打开了另一条攻击线。';
+  if (tag.includes('trapped')) return '走之前确认自己的棋子是否还有安全的退路。';
+  return '用 CCT 快速检查：对方的将军、吃子和直接威胁。';
+}
+
+function trendRecommendation(): { label: string; tag: string; theme?: string; reason: string } | null {
+  const stats = mistakeStats(loadMistakes());
+  const candidates = stats
+    .filter((s) => s.recent > 0)
+    .sort((a, b) => b.recent - b.previous - (a.recent - a.previous) || b.recent - a.recent || b.total - a.total);
+  const s = candidates[0];
+  if (!s) return null;
+  const theme = themesForTag(s.tag, settings.elo).find((t) => THEME_LABEL[t]);
+  const trend = s.recent > s.previous ? `近 30 天出现 ${s.recent} 次，比之前 30 天更多` : `近 30 天出现 ${s.recent} 次`;
+  return { label: s.label, tag: s.tag, theme, reason: trend };
+}
+
+function renderLearningSummary() {
+  const box = $('learning-report-summary');
+  const issues = learningIssues().slice(0, 3);
+  const serious = issues.filter((n) => SERIOUS_JUDGEMENTS.has(reviewOf(n)!.judgement));
+  const focus = serious[0] ?? issues[0];
+  const good = gameLine()
+    .filter((n) => !imported ? turnOf(n.parent?.fen ?? n.fen) === userColor : true)
+    .map((n) => ({ n, r: reviewOf(n) }))
+    .filter((x): x is { n: Node; r: MoveReview } => Boolean(x.r && ['brilliant', 'great', 'best'].includes(x.r.judgement)))
+    .sort((a, b) => b.r.accuracy - a.r.accuracy)[0];
+  const trend = trendRecommendation();
+  if (!gameLine().length || (!issues.length && !good && !trend)) {
+    box.classList.add('hidden');
+    box.innerHTML = '';
+    return;
+  }
+
+  const issueCards = issues.length
+    ? issues
+        .map((n, i) => {
+          const r = reviewOf(n)!;
+          const tag = learningTag(n);
+          const insight = insightOf(n);
+          const best = n.parent?.a.eval?.best;
+          const themes = themesForTag(tag.id, settings.elo).filter((t) => THEME_LABEL[t]);
+          const saved = loadMistakes().find((m) => m.gameId === gameId && m.id === `${gameId}:${n.ply}`);
+          const theme = themes[0];
+          const explanation = insight?.problem.length ? insight.problem.join('；') : `这步棋被归类为“${tag.label}”。${checkForTag(tag.id)}`;
+          return (
+            `<div class="learning-issue"><div class="learning-issue-head"><b>${i + 1}. ${escapeHtml(n.san)} · ${escapeHtml(JUDGEMENT_INFO[r.judgement].label)}</b>` +
+            `<span>${escapeHtml(tag.label)}</span></div><p>${escapeHtml(explanation)}</p>` +
+            `<p>行棋方胜率 ${r.before.toFixed(0)}% → ${r.after.toFixed(0)}%</p>` +
+            (best && best !== n.uci ? `<p><b>更好的着法：${escapeHtml(sanOf(n.parent!.fen, best))}</b>${insight?.better.length ? ` · ${escapeHtml(insight.better.join('；'))}` : ' · Stockfish 在当前分析深度下更倾向这步棋'}</p>` : '') +
+            `<div class="learning-actions"><button type="button" data-learning-jump="${n.id}">回到这一步</button>` +
+            (saved ? `<button type="button" data-learning-mistake="${escapeHtml(saved.id)}">重练错题</button>` : '') +
+            (theme ? `<button type="button" data-learning-theme="${theme}">练${escapeHtml(THEME_LABEL[theme])}题</button>` : '') +
+            `</div></div>`
+          );
+        })
+        .join('')
+    : '<p class="muted">这局没有明显的错误着法，继续保持落子前的检查习惯。</p>';
+  const goodPraise = good ? insightOf(good.n)?.praise : null;
+  const goodHtml = good
+    ? `<p><b>${escapeHtml(good.n.san)}</b> · ${escapeHtml(goodPraise || '这步棋符合 Stockfish 当前分析的优秀选择。')}</p>`
+    : '<p class="muted">本局暂时没有足够的引擎数据标出代表性好棋。</p>';
+  const next = focus ? checkForTag(learningTag(focus).id) : trend ? `重点练习${escapeHtml(trend.label)}相关的局面。` : '继续做一次 CCT 检查：将军、吃子和直接威胁。';
+  const trendHtml = trend
+    ? `<div class="learning-next"><b>下一步练什么</b><p>${escapeHtml(trend.label)} · ${escapeHtml(trend.reason)}</p>${trend.theme ? `<button type="button" data-learning-theme="${trend.theme}">练${escapeHtml(THEME_LABEL[trend.theme])}题</button>` : ''}</div>`
+    : '';
+  box.classList.remove('hidden');
+  box.innerHTML = `<div class="learning-kicker">本地学习总结</div><h3>本局最值得学习的 ${issues.length ? `${issues.length} 个问题` : '问题'}</h3>${issueCards}<div class="learning-good"><b>值得保留的好棋</b>${goodHtml}</div><div class="learning-next"><b>下一次检查点</b><p>${escapeHtml(next)}</p></div>${trendHtml}`;
+}
+
 function renderSummary() {
   const box = $('summary');
   const stats = { w: { acc: [] as number[], c: {} as Record<string, number> }, b: { acc: [] as number[], c: {} as Record<string, number> } };
@@ -1370,6 +1481,8 @@ function renderSummary() {
     line('', sides.map((c) => `<div class="rp-who">${sideAvatar(c, 'rp-ava')}<b class="rp-name">${who(c)}</b></div>`), '', ' rp-head') +
     line('准确率', sides.map((c) => `<span class="rp-accv${c === 'w' ? ' w' : ''}">${acc(c)}</span>`), '', ' rp-acc') +
     rows;
+  renderLearningSummary();
+  renderAiReportEntry();
   box.querySelectorAll<HTMLButtonElement>('.rp-cnt').forEach((button) => {
     button.onclick = () => {
       const side = button.dataset.side as Color;
@@ -1701,6 +1814,7 @@ function coachReset() {
   prep = null;
   coachState = 'idle';
   coachFrom = null;
+  coachReveal = false;
   coachNote = '';
 }
 
@@ -1813,6 +1927,7 @@ function coachRetry() {
   if (clock && from.clock) clock.set(from.clock, performance.now());
   cg.cancelPremove();
   hintShapes = [];
+  coachReveal = false;
   coachNote = '再想一想，找一步更好的棋。';
   $('hint-box').textContent = '';
   saveGame();
@@ -1834,6 +1949,7 @@ function resumeCoach() {
 function coachContinue() {
   coachState = 'idle';
   coachFrom = null;
+  coachReveal = false;
   update();
   void maiaTurn();
 }
@@ -1854,7 +1970,7 @@ function coachShapes(): DrawShape[] {
     const ref = bad?.a.eval?.best;
     if (ref) out.push(arrow(ref, 'red'));
     const better = coachFrom.a.eval?.best;
-    if (better && better !== bad?.uci) out.push({ ...arrow(better, 'green'), modifiers: { lineWidth: 8 } });
+    if (coachReveal && better && better !== bad?.uci) out.push({ ...arrow(better, 'green'), modifiers: { lineWidth: 8 } });
     return out;
   }
   if (coachState !== 'idle' || turnOf(t.fen) !== userColor) return [];
@@ -1867,7 +1983,7 @@ function coachShapes(): DrawShape[] {
   return out;
 }
 
-function explainMistake(from: Node): string {
+function explainMistake(from: Node, reveal = false): string {
   const mv = from.children[0];
   const r = mv && reviewOf(mv);
   const before = from.a.eval;
@@ -1882,11 +1998,15 @@ function explainMistake(from: Node): string {
     `<div class="cc-plain">走完这步后：${plainOf(mv)}</div>`,
   ];
   const l = after.lines[0];
-  if (after.best && ins?.problem.length) {
+  if (reveal && after.best && ins?.problem.length) {
     parts.push(
       `<div class="cc-why"><span class="tag bad">问题</span><span>${ins.problem.join('；')}</span></div>`,
       `<div class="cc-pv">${demoControls(mv.fen, l?.pv ?? [], 'bad', `演示对手的应对：${pvToSan(mv.fen, l?.pv ?? [], 6)}`)}</div>`,
     );
+  }
+  if (!reveal) {
+    parts.push('<div class="cc-prompt"><b>先想一想：</b>你能找出这步棋漏掉的威胁，以及更安全的候选着吗？</div>');
+    return parts.join('');
   }
   if (before.best && before.best !== mv.uci) {
     const good = sanOf(from.fen, before.best);
@@ -1914,8 +2034,10 @@ function renderCoachLive() {
   }
   if (coachState === 'paused' && coachFrom) {
     box.innerHTML =
-      `<div class="coach-card">${explainMistake(coachFrom)}` +
-      `<div class="cc-actions"><button class="primary" data-act="retry">重走这步</button><button data-act="go">继续对局</button></div></div>`;
+      `<div class="coach-card">${explainMistake(coachFrom, coachReveal)}` +
+      `<div class="cc-actions">${
+        coachReveal ? '' : '<button data-act="reveal">查看更好的走法</button>'
+      }<button class="primary" data-act="retry">重走这步</button><button data-act="go">继续对局</button></div></div>`;
     return;
   }
   const parts: string[] = [];
@@ -2161,7 +2283,150 @@ function renderRatingResult() {
   } else box.hidden = true;
 }
 
-function showScreen(s: 'home' | 'game' | 'train', push = true) {
+function aiConfig(): AiConfig {
+  return {
+    enabled: settings.aiEnabled,
+    provider: settings.aiProvider,
+    baseUrl: settings.aiBaseUrl,
+    model: settings.aiModel,
+    shareGame: settings.aiShareGame,
+    saveKey: settings.aiSaveKey,
+  };
+}
+
+/** Build the small, engine-backed payload sent to the language model. */
+function aiContextFor(n: Node | null): AiExplanationContext | null {
+  if (!n?.parent || !n.uci) return null;
+  const before = n.parent.a.eval;
+  const after = n.a.eval;
+  const review = reviewOf(n);
+  if (!before || !after || !review) return null;
+  const insight = insightOf(n);
+  const bestMove = before.best;
+  return {
+    fen: n.parent.fen,
+    move: n.uci,
+    moveSan: n.san || sanOf(n.parent.fen, n.uci),
+    bestMove,
+    bestMoveSan: bestMove ? sanOf(n.parent.fen, bestMove) : null,
+    judgement: review.judgement,
+    before: review.before,
+    after: review.after,
+    pv: (before.lines[0]?.pv ?? after.lines[0]?.pv ?? []).slice(0, 8),
+    motifs: [...(insight?.problem ?? []), ...(insight?.better ?? [])].slice(0, 8),
+    playerRating: settings.elo,
+    gameContext: settings.aiShareGame ? exportPgn() : undefined,
+  };
+}
+
+function aiTarget(): Node | null {
+  const candidate = aiAnchor ?? realOf(node);
+  return aiContextFor(candidate) ? candidate : null;
+}
+
+function aiAnswerHtml(e: AiExplanation): string {
+  const pv = e.pv.length ? `<p class="ai-move">${escapeHtml(pvToSan(aiAnchor?.parent?.fen ?? '', e.pv))}</p>` : '';
+  const correct = e.correct_move_san || e.correct_move;
+  return (
+    `<h3>${escapeHtml(e.title)}</h3>` +
+    (e.question ? `<section><b>思考问题</b><p>${escapeHtml(e.question)}</p></section>` : '') +
+    (e.hint ? `<section><b>提示</b><p>${escapeHtml(e.hint)}</p></section>` : '') +
+    (correct ? `<section><b>更好的走法</b><p class="ai-move">${escapeHtml(correct)}</p></section>` : '') +
+    (e.why ? `<section><b>为什么</b><p>${escapeHtml(e.why)}</p></section>` : '') +
+    (e.next_check ? `<section><b>下次检查</b><p>${escapeHtml(e.next_check)}</p></section>` : '') +
+    pv
+  );
+}
+
+function renderAiPage() {
+  const target = aiTarget();
+  const context = aiContextFor(target);
+  $('ai-model-badge').textContent = settings.aiEnabled ? settings.aiModel : 'AI 未开启';
+  const card = $('ai-context-card');
+  if (!context || !target) {
+    card.innerHTML = '<p>请先在复盘中完成 Stockfish 分析，再选择一条有问题的着法。</p>';
+  } else {
+    const info = JUDGEMENT_INFO[context.judgement as Judgement];
+    card.innerHTML =
+      `<p class="ai-kicker">AI COACH</p><h2>${escapeHtml(context.moveSan)} · ${escapeHtml(info?.label ?? context.judgement)}</h2>` +
+      `<p>胜率 ${context.before.toFixed(0)}% → ${context.after.toFixed(0)}%，等级分 ${context.playerRating}</p>` +
+      `<div class="ai-context-meta"><span>最佳：${escapeHtml(context.bestMoveSan ?? '暂无')}</span><span>置信度由 AI 返回</span></div>`;
+  }
+  const answer = $('ai-answer');
+  if (aiBusy) answer.innerHTML = '<div class="ai-empty"><span class="ai-empty-mark">…</span><b>AI 正在整理这步棋</b><small>只会发送 Stockfish 已确认的局面和变化。</small></div>';
+  else if (aiError) answer.innerHTML = `<div class="ai-error"><b>AI 讲解失败</b><p>${escapeHtml(aiError)}</p></div>`;
+  else if (aiExplanation) answer.innerHTML = aiAnswerHtml(aiExplanation);
+  else answer.innerHTML = '<div class="ai-empty"><span class="ai-empty-mark">✦</span><b>让 AI 把这步棋讲清楚</b><small>它会结合 Stockfish 的变化，告诉你正确走法、原因和下次该检查什么。</small></div>';
+  const actions = $('ai-page-actions');
+  actions.classList.toggle('hidden', !context || !settings.aiEnabled);
+  actions.querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.disabled = aiBusy));
+
+  const list = $('ai-summary-list');
+  const issues = reviewIssues('all').slice(0, 5);
+  list.innerHTML = issues.length
+    ? `<div class="ai-summary-title">复盘中的其他问题</div>${issues
+        .map((n) => `<div class="ai-summary-item"><span><b>${n.ply}. ${escapeHtml(n.san)}</b><small>${escapeHtml(JUDGEMENT_INFO[reviewOf(n)!.judgement].label)}</small></span><button type="button" data-ai-issue="${n.id}">讲解</button></div>`)
+        .join('')}`
+    : '';
+}
+
+function openAi(target: Node | null = realOf(node)) {
+  aiAnchor = target;
+  aiExplanation = null;
+  aiError = '';
+  if (location.hash !== '#ai') history_.pushState(null, '', '#ai');
+  showScreen('ai', false);
+}
+
+async function requestAi(mode: 'hint' | 'full') {
+  const target = aiTarget();
+  const context = aiContextFor(target);
+  if (!context) {
+    aiError = '当前着法还没有完整的 Stockfish 前后评估。';
+    renderAiPage();
+    return;
+  }
+  if (!settings.aiEnabled) {
+    aiError = '请先在设置中开启 AI 讲解。';
+    renderAiPage();
+    return;
+  }
+  if (!aiSessionKey.trim()) {
+    aiError = '请先在设置中填写 API Key。';
+    renderAiPage();
+    return;
+  }
+  aiBusy = true;
+  aiError = '';
+  renderAiPage();
+  try {
+    aiExplanation = await explainWithAi(aiConfig(), aiSessionKey, context, mode);
+  } catch (err) {
+    aiError = (err as Error).message || '请求失败';
+  } finally {
+    aiBusy = false;
+    renderAiPage();
+  }
+}
+
+function renderAiReportEntry() {
+  const box = $('ai-report-summary');
+  if (!settings.aiEnabled) {
+    box.classList.add('hidden');
+    box.innerHTML = '';
+    return;
+  }
+  const first = reviewIssues('all')[0];
+  if (!first) {
+    box.classList.add('hidden');
+    box.innerHTML = '';
+    return;
+  }
+  box.classList.remove('hidden');
+  box.innerHTML = `<h3>进一步解释（可选）</h3><p>本地总结和针对性训练已在上方生成。如果还想用自然语言追问这步棋，可以请求 AI 讲解。</p><button type="button" class="ai-inline-btn" data-ai-report="${first.id}">进一步解释这一步</button>`;
+}
+
+function showScreen(s: 'home' | 'game' | 'train' | 'ai', push = true) {
   const prev = screen;
   screen = s;
   const hash = s === 'home' ? '' : `#${s}`;
@@ -2173,11 +2438,12 @@ function showScreen(s: 'home' | 'game' | 'train', push = true) {
   $('home').classList.toggle('active', s === 'home');
   $('game').classList.toggle('active', s === 'game');
   $('train').classList.toggle('active', s === 'train');
+  $('ai').classList.toggle('active', s === 'ai');
   if (s === 'train') {
     requestAnimationFrame(trainerRedraw);
     if (prev !== 'game') return;
   }
-  if (s !== 'game') {
+  if (s !== 'game' && s !== 'ai') {
     stopAutoplay();
     gameToken++;
     maiaThinking = false;
@@ -2188,13 +2454,15 @@ function showScreen(s: 'home' | 'game' | 'train', push = true) {
     syncClock();
     saveGame();
     renderHome();
-  } else {
+  } else if (s === 'game') {
     requestAnimationFrame(() => {
       cg.redrawAll();
       update();
       resumeCoach();
       startReview();
     });
+  } else {
+    renderAiPage();
   }
 }
 
@@ -2341,6 +2609,55 @@ function openSettings() {
     if (input.type === 'checkbox') input.checked = Boolean(v);
     else input.value = String(v);
   }
+  // Engine warmup is now always enabled; keep the legacy setting checked for old backups.
+  el('warmup').checked = true;
+  const aiKey = $<HTMLInputElement>('ai-key');
+  aiKey.value = aiSessionKey;
+  const aiModel = $<HTMLSelectElement>('ai-model');
+  if (!aiModel.options.length) aiModel.add(new Option(settings.aiModel || 'deepseek-flash', settings.aiModel || 'deepseek-flash'));
+  aiModel.value = settings.aiModel || 'deepseek-flash';
+  const aiBase = $<HTMLInputElement>('ai-base-url');
+  const aiProvider = $<HTMLSelectElement>('ai-provider');
+  const syncAiProvider = () => {
+    aiBase.disabled = aiProvider.value === 'deepseek';
+    if (aiProvider.value === 'deepseek') aiBase.value = 'https://api.deepseek.com';
+  };
+  aiProvider.onchange = syncAiProvider;
+  syncAiProvider();
+  const aiDraft = (): AiConfig => ({
+    enabled: el('aiEnabled').checked,
+    provider: aiProvider.value as AiConfig['provider'],
+    baseUrl: aiBase.value,
+    model: aiModel.value,
+    shareGame: el('aiShareGame').checked,
+    saveKey: el('aiSaveKey').checked,
+  });
+  $('btn-ai-models').onclick = async () => {
+    const b = $<HTMLButtonElement>('btn-ai-models');
+    b.disabled = true;
+    try {
+      const models = await fetchAiModels(aiDraft(), aiKey.value);
+      aiModel.replaceChildren(...models.map((m) => new Option(m.name ? `${m.name} · ${m.id}` : m.id, m.id)));
+      if (models.length) aiModel.value = models.some((m) => m.id === settings.aiModel) ? settings.aiModel : models[0].id;
+      setStatus(models.length ? `已获取 ${models.length} 个模型` : '接口没有返回可用模型');
+    } catch (err) {
+      setStatus('获取模型失败：' + (err as Error).message);
+    } finally {
+      b.disabled = false;
+    }
+  };
+  $('btn-ai-test').onclick = async () => {
+    const b = $<HTMLButtonElement>('btn-ai-test');
+    b.disabled = true;
+    try {
+      const models = await fetchAiModels(aiDraft(), aiKey.value);
+      setStatus(models.length ? 'AI 接口连接成功' : '连接成功，但没有返回模型');
+    } catch (err) {
+      setStatus('AI 连接失败：' + (err as Error).message);
+    } finally {
+      b.disabled = false;
+    }
+  };
   const outs = () => {
     const v = Number(el('elo').value);
     (f.elements.namedItem('eloOut') as HTMLOutputElement).value = v < 600 ? `${v}（低于 600 为模型外推）` : String(v);
@@ -2426,7 +2743,7 @@ function openSettings() {
       sfLite: el('sfLite').value === 'true',
       ecoAnalysis: el('ecoAnalysis').checked,
       lowMemory: el('lowMemory').checked,
-      warmup: el('warmup').checked,
+      warmup: true,
       sound: el('sound').checked,
       soundTheme: el('soundTheme').value,
       haptics: el('haptics').checked,
@@ -2444,7 +2761,16 @@ function openSettings() {
       boardSizePlay: num('boardSizePlay'),
       boardSizeReview: num('boardSizeReview'),
       reviewOpponent: el('reviewOpponent').checked,
+      aiEnabled: el('aiEnabled').checked,
+      aiProvider: aiProvider.value as Settings['aiProvider'],
+      aiBaseUrl: aiBase.value,
+      aiModel: aiModel.value,
+      aiShareGame: el('aiShareGame').checked,
+      aiSaveKey: el('aiSaveKey').checked,
     };
+    aiSessionKey = aiKey.value.trim();
+    if (settings.aiSaveKey) saveAiKey(aiSessionKey);
+    else clearAiKey();
     applySettings(old);
   };
   dlg.showModal();
@@ -2822,9 +3148,16 @@ function renderHome() {
   $('home-coach-desc').textContent = settings.gameType === 'coach' ? '走出' + JUDGEMENT_INFO[settings.coachLevel].label + '时暂停讲解，可重走' : '无提示，自由对弈';
   const t = tip();
   const has = t !== tree.root;
+  const canContinue = has && result === '' && !imported;
   const btn = $<HTMLButtonElement>('btn-continue');
+  const play = $<HTMLButtonElement>('btn-play');
   btn.disabled = !has;
-  $('continue-title').textContent = has && result === '' ? '继续对局' : '上一局';
+  btn.classList.toggle('primary', canContinue);
+  btn.classList.toggle('big', canContinue);
+  btn.classList.toggle('resume-primary', canContinue);
+  play.classList.toggle('primary', !canContinue);
+  play.classList.toggle('big', !canContinue);
+  $('continue-title').textContent = canContinue ? '继续对局' : '上一局';
   const tc = clock ? `${tcId} · ` : '';
   $('continue-sub').textContent = has ? `${coachOn ? '教练 · ' : ''}${tc}${Math.ceil(t.ply / 2)} 回合 · ${result || '进行中'}` : '暂无';
   const s = computeStats(history).all;
@@ -2836,6 +3169,36 @@ function renderHome() {
   $('btn-data').classList.toggle('remind', history.length >= 5 && Date.now() - at > 14 * 86_400_000);
   homeCg?.set({ fen: t.fen, orientation: userColor === 'w' ? 'white' : 'black', lastMove: undefined });
   setHomeTab(homeTab);
+}
+
+let startingGame = false;
+
+function setEngineLoading(show: boolean) {
+  const page = $('engine-loading');
+  page.classList.toggle('hidden', !show);
+  page.setAttribute('aria-hidden', show ? 'false' : 'true');
+}
+
+/** Engine preload is intentionally invisible at startup, but starting a game waits for it. */
+function startWhenReady(button: HTMLButtonElement, start: () => void) {
+  if (startingGame) return;
+  startingGame = true;
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  setEngineLoading(true);
+  const loadingText = '正在加载棋力引擎，请稍候…';
+  setStatus(loadingText);
+  const keepVisible = window.setInterval(() => setStatus(loadingText), 1800);
+  void engines.ensureReady()
+    .then(start)
+    .catch(() => setStatus('引擎加载失败，请稍后重试'))
+    .finally(() => {
+      window.clearInterval(keepVisible);
+      setEngineLoading(false);
+      startingGame = false;
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+    });
 }
 
 function saveHomeSettings(patch: Partial<Settings>) {
@@ -2943,11 +3306,15 @@ function bind() {
 
   $('btn-play').onclick = () => {
     unlockAudio();
-    if (newGame()) showScreen('game');
+    startWhenReady($<HTMLButtonElement>('btn-play'), () => {
+      if (newGame()) showScreen('game');
+    });
   };
   $('btn-continue').onclick = () => {
-    setMode(result === '' && !imported ? 'play' : 'review');
-    showScreen('game');
+    startWhenReady($<HTMLButtonElement>('btn-continue'), () => {
+      setMode(result === '' && !imported ? 'play' : 'review');
+      showScreen('game');
+    });
   };
   $('btn-home-import').onclick = () => {
     setHomeTab('data');
@@ -2988,7 +3355,10 @@ function bind() {
     if (onDemoClick(e)) return;
     const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
     demo = null;
-    if (act === 'retry') coachRetry();
+    if (act === 'reveal') {
+      coachReveal = true;
+      update();
+    } else if (act === 'retry') coachRetry();
     else if (act === 'go') coachContinue();
   };
   $('coach-box').onclick = (e) => void onDemoClick(e);
@@ -3008,15 +3378,19 @@ function bind() {
     $<HTMLButtonElement>('btn-draw').disabled = !live;
     menu.showModal();
   };
-  $('btn-new').onclick = fromMenu(() => newGame());
+  $('btn-new').onclick = () => {
+    menu.close();
+    startWhenReady($<HTMLButtonElement>('btn-new'), () => void newGame());
+  };
   $('btn-resign').onclick = fromMenu(() => {
     if (result === '' && confirm('确定认输？')) resign();
   });
   $('btn-draw').onclick = fromMenu(() => void offerDraw());
-  $('btn-play-here').onclick = fromMenu(() => {
+  $('btn-play-here').onclick = () => {
+    $<HTMLDialogElement>('dlg-menu').close();
     if (mode === 'play' && result === '' && !imported && tip() !== tree.root && userMovesOf().length < 3 && !confirm('从当前局面开始新对局？当前对局会被替换。')) return;
-    playFrom(fensTo(node));
-  });
+    startWhenReady($<HTMLButtonElement>('btn-play-here'), () => void playFrom(fensTo(node)));
+  };
   $('btn-menu-history').onclick = fromMenu(() => showHistory('list'));
   $('btn-menu-settings').onclick = fromMenu(openSettings);
   $('btn-undo').onclick = undo;
@@ -3038,7 +3412,7 @@ function bind() {
   };
   $('btn-result-new').onclick = () => {
     $<HTMLDialogElement>('dlg-result').close();
-    newGame();
+    startWhenReady($<HTMLButtonElement>('btn-result-new'), () => void newGame());
   };
   $('moves').onclick = (e) => {
     const t = e.target as HTMLElement;
@@ -3062,6 +3436,45 @@ function bind() {
   };
   $('btn-report').onclick = openReport;
   $('btn-report-start').onclick = closeReport;
+  $('btn-ai-back').onclick = () => {
+    if (location.hash === '#ai') history_.back();
+    else showScreen('game');
+  };
+  $('btn-ai-hint').onclick = () => void requestAi('hint');
+  $('btn-ai-explain').onclick = () => void requestAi('full');
+  $('ai-summary-list').onclick = (e) => {
+    const id = Number((e.target as HTMLElement).closest<HTMLElement>('[data-ai-issue]')?.dataset.aiIssue);
+    if (!id) return;
+    const target = findNode(tree, id);
+    if (target) openAi(target);
+  };
+  $('ai-report-summary').onclick = (e) => {
+    const id = Number((e.target as HTMLElement).closest<HTMLElement>('[data-ai-report]')?.dataset.aiReport);
+    if (!id) return;
+    const target = findNode(tree, id);
+    if (target) openAi(target);
+  };
+  $('learning-report-summary').onclick = (e) => {
+    const t = e.target as HTMLElement;
+    const jump = Number(t.closest<HTMLElement>('[data-learning-jump]')?.dataset.learningJump);
+    if (jump) {
+      closeReport();
+      const target = findNode(tree, jump);
+      if (target) goto(target);
+      return;
+    }
+    const mistake = t.closest<HTMLElement>('[data-learning-mistake]')?.dataset.learningMistake;
+    if (mistake) {
+      closeReport();
+      openMistake(trainerCtx, mistake);
+      return;
+    }
+    const theme = t.closest<HTMLElement>('[data-learning-theme]')?.dataset.learningTheme;
+    if (theme) {
+      closeReport();
+      openPuzzlesForTheme(trainerCtx, theme);
+    }
+  };
   $('btn-pgn-copy').onclick = fromMenu(async () => {
     const pgn = exportPgn();
     try {
@@ -3405,10 +3818,11 @@ function init() {
   setInterval(tickClock, 100);
   // 系统返回键/手势回到主页
   window.addEventListener('popstate', () => {
-    const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : 'home';
+    const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : location.hash === '#ai' ? 'ai' : 'home';
     if (want !== screen) showScreen(want, false);
   });
   if (location.hash === '#game') showScreen('game', false);
+  else if (location.hash === '#ai') showScreen('ai', false);
   else if (location.hash === '#train') history_.replaceState(null, '', location.pathname + location.search);
   onStorageFull(() => {
     alert('本机存储空间已满，部分数据可能没能保存。请到「数据与备份」导出备份，然后清理一些历史对局。');
@@ -3425,9 +3839,12 @@ function init() {
     idle(async () => {
       // download first so warmup reads from the local cache instead of fetching the same files twice
       if (settings.autoOffline && import.meta.env.PROD) await autoOffline(enginesCtx).catch(() => false);
-      if (settings.warmup) void engines.warmup();
+       void engines.warmup(true);
     });
   }
+  // Start immediately when no offline package download is needed. With auto-download enabled,
+  // the idle task warms the engines after the files are cached so the model is fetched only once.
+  if (!settings.autoOffline || !import.meta.env.PROD) void engines.warmup(true).catch(() => {});
   registerServiceWorker();
 }
 

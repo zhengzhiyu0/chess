@@ -13,7 +13,7 @@ import { flushEvals, getEval, putEval } from './engine/eval-cache';
 import { classify, evalText, JUDGEMENTS, JUDGEMENT_INFO, moveAccuracy, SEVERITY, whiteWinPct, winPct, type Judgement } from './coach/coach';
 import { bookReady, inBook, loadBook } from './coach/book';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, isSacrifice, plainEval, type MoveInsight, type Sides } from './coach/explain';
-import { ELO_MAX, ELO_MIN, loadSettings, saveSettings, type Settings } from './settings';
+import { ELO_MAX, ELO_MIN, isIOS, loadSettings, saveSettings, type Settings } from './settings';
 import { assistCount, computeRating, emptyAssists, ratingBreakdown, type Assists, type RatingInfo } from './game/rating';
 import { onStorageFull, readJson, safeSet } from './storage';
 import { addMistakes, loadMistakes, setDeletedMistakes, setMistakes, type Mistake } from './training/mistakes';
@@ -422,8 +422,16 @@ let fxLast: Node | null = null;
 
 function applyFx() {
   fx.enabled = settings.boardFx;
+  fx.badgeEnabled = settings.boardFxBadge;
+  fx.captureEnabled = settings.boardFxCapture;
+  fx.checkEnabled = settings.boardFxCheck;
+  fx.mateEnabled = settings.boardFxMate;
+  fx.arrowStyle = settings.boardFxArrowStyle;
   dodge.enabled = settings.boardFx;
-  $('board').parentElement!.classList.toggle('fx-on', settings.boardFx);
+  const wrap = $('board').parentElement!;
+  wrap.classList.toggle('fx-on', settings.boardFx);
+  wrap.classList.toggle('fx-badge-on', settings.boardFx && settings.boardFxBadge);
+  wrap.classList.toggle('fx-check-on', settings.boardFx && settings.boardFxCheck);
   if (!settings.boardFx) fx.clear();
 }
 
@@ -2332,6 +2340,10 @@ function openSettings() {
     (f.elements.namedItem('bsPlayOut') as HTMLOutputElement).value = `${el('boardSizePlay').value}%`;
     (f.elements.namedItem('bsReviewOut') as HTMLOutputElement).value = `${el('boardSizeReview').value}%`;
   };
+  const syncFxDetailControls = () => {
+    const on = el('boardFx').checked;
+    for (const name of ['boardFxBadge', 'boardFxCapture', 'boardFxCheck', 'boardFxMate', 'boardFxArrowStyle']) el(name).disabled = !on;
+  };
   let prevBoard = settings.boardTheme;
   boardSel.onchange = () => {
     // 切到自定义时，以刚才选中的预设颜色为起点
@@ -2359,9 +2371,11 @@ function openSettings() {
   f.oninput = () => {
     outs();
     look();
+    syncFxDetailControls();
   };
   outs();
   look();
+  syncFxDetailControls();
   $('set-avatar').innerHTML = avatarHtml(settings.avatar);
   $('btn-set-avatar').onclick = openAvatar;
   $('set-coach').innerHTML = coachAvatarHtml(settings.coachAvatar);
@@ -2414,6 +2428,11 @@ function openSettings() {
       pieceSet: el('pieceSet').value,
       premove: el('premove').checked,
       boardFx: el('boardFx').checked,
+      boardFxBadge: el('boardFxBadge').checked,
+      boardFxCapture: el('boardFxCapture').checked,
+      boardFxCheck: el('boardFxCheck').checked,
+      boardFxMate: el('boardFxMate').checked,
+      boardFxArrowStyle: el('boardFxArrowStyle').value as Settings['boardFxArrowStyle'],
       boardSizePlay: num('boardSizePlay'),
       boardSizeReview: num('boardSizeReview'),
       reviewOpponent: el('reviewOpponent').checked,
@@ -3244,6 +3263,89 @@ function installDragHaptics() {
   for (const ev of ['touchend', 'touchcancel', 'mouseup']) document.addEventListener(ev, onEnd, { capture: true, passive: true });
 }
 
+/** iOS-style interactive back gesture: start at the left edge, follow the finger, and commit on release. */
+function installIOSBackGesture() {
+  if (!isIOS) return;
+  let startX = 0;
+  let startY = 0;
+  let lastX = 0;
+  let current: HTMLElement | null = null;
+  let tracking = false;
+  let horizontal = false;
+
+  const clear = (animate: boolean) => {
+    if (!current) return;
+    const el = current;
+    el.classList.toggle('edge-swipe-return', animate);
+    el.classList.remove('edge-swipe');
+    el.style.removeProperty('transform');
+    if (animate) window.setTimeout(() => el.classList.remove('edge-swipe-return'), 220);
+    current = null;
+    tracking = false;
+    horizontal = false;
+  };
+
+  document.addEventListener(
+    'touchstart',
+    (e) => {
+      if (e.touches.length !== 1 || e.touches[0].clientX > 28) return;
+      current = document.querySelector<HTMLElement>('.screen.active');
+      if (!current || current.id === 'home') {
+        current = null;
+        return;
+      }
+      startX = lastX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      tracking = true;
+      horizontal = false;
+    },
+    { capture: true, passive: true },
+  );
+  document.addEventListener(
+    'touchmove',
+    (e) => {
+      if (!tracking || !current || e.touches.length !== 1) return;
+      const p = e.touches[0];
+      const dx = p.clientX - startX;
+      const dy = p.clientY - startY;
+      if (!horizontal && (Math.abs(dy) > 24 || (dx < 8 && Math.abs(dy) > Math.abs(dx) * 1.2))) return clear(true);
+      if (dx < 8) return;
+      horizontal = true;
+      lastX = p.clientX;
+      e.preventDefault();
+      current.classList.add('edge-swipe');
+      current.style.transform = `translateX(${dx}px)`;
+    },
+    { capture: true, passive: false },
+  );
+  const end = () => {
+    if (!tracking || !current) return;
+    const commit = horizontal && lastX - startX >= Math.max(80, innerWidth * 0.22);
+    if (!commit) return clear(true);
+    const open = [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].filter((d) => d.id !== 'dlg-update').pop();
+    if (open) {
+      clear(false);
+      open.close();
+      return;
+    }
+    const el = current;
+    el.classList.remove('edge-swipe');
+    el.classList.add('edge-swipe-commit');
+    el.style.transform = 'translateX(100%)';
+    current = null;
+    tracking = false;
+    horizontal = false;
+    window.setTimeout(() => {
+      el.classList.remove('edge-swipe-commit');
+      el.style.removeProperty('transform');
+      if (location.hash) history_.back();
+      else showScreen('home');
+    }, 180);
+  };
+  document.addEventListener('touchend', end, { capture: true, passive: true });
+  document.addEventListener('touchcancel', () => clear(true), { capture: true, passive: true });
+}
+
 function init() {
   document.documentElement.classList.add(isNative ? 'native' : 'web');
   fitStandalone();
@@ -3279,6 +3381,7 @@ function init() {
   const freshBounds = () => cg.state.dom.bounds.clear();
   for (const ev of ['touchstart', 'mousedown']) $('board').addEventListener(ev, freshBounds, { capture: true, passive: true });
   installDragHaptics();
+  installIOSBackGesture();
   bind();
   const saved = readJson(GAME_KEY);
   let ok = false;

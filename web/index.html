@@ -309,7 +309,19 @@
           <select name="soundTheme" id="sound-theme"></select>
         </label>
         <label class="check"><input type="checkbox" name="haptics" /> 震动反馈</label>
-        <label class="check"><input type="checkbox" name="boardFx" /> 棋盘动效（徽标弹出、吃子粒子、将军脉冲、将杀彩带）</label>
+        <label class="check"><input type="checkbox" name="boardFx" /> 棋盘动效</label>
+        <div class="settings-subgroup" aria-label="棋盘动效详细设置">
+          <label class="check"><input type="checkbox" name="boardFxBadge" /> 徽标弹出与优秀着法闪光</label>
+          <label class="check"><input type="checkbox" name="boardFxCapture" /> 吃子粒子</label>
+          <label class="check"><input type="checkbox" name="boardFxCheck" /> 将军脉冲</label>
+          <label class="check"><input type="checkbox" name="boardFxMate" /> 将杀彩带</label>
+          <label>威胁/保护箭头动效
+            <select name="boardFxArrowStyle">
+              <option value="line">路径箭头</option>
+              <option value="fill">逐格铺色后淡出</option>
+            </select>
+          </label>
+        </div>
         <label>棋盘
           <select name="boardTheme" id="board-theme"></select>
         </label>

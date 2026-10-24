@@ -184,6 +184,16 @@ button svg {
     opacity 0.22s,
     transform 0.22s;
 }
+.screen.edge-swipe {
+  transition: none !important;
+}
+.screen.edge-swipe-return {
+  transition: transform 0.2s ease !important;
+  transform: translateX(0) !important;
+}
+.screen.edge-swipe-commit {
+  transition: transform 0.18s ease-out !important;
+}
 #home:not(.active) {
   transform: translateX(-24px);
 }
@@ -1352,6 +1362,16 @@ dialog label.check input {
   margin: 0;
   accent-color: var(--green);
 }
+.settings-subgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: -4px 0 2px 28px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--panel3);
+  border-radius: 0 8px 8px 0;
+  background: rgba(255, 255, 255, 0.025);
+}
 dialog select,
 dialog input[type='number'],
 dialog textarea {
@@ -1650,17 +1670,17 @@ dialog input[type='color'] {
   pointer-events: none;
   z-index: 10;
 }
-.fx-on .fx-badge {
+.fx-on.fx-badge-on .fx-badge {
   transform-box: fill-box;
   transform-origin: center;
   animation: fx-pop 0.42s cubic-bezier(0.2, 1.6, 0.4, 1) 0.12s both;
 }
-.fx-on .fx-badge.fx-best {
+.fx-on.fx-badge-on .fx-badge.fx-best {
   animation:
     fx-pop 0.42s cubic-bezier(0.2, 1.6, 0.4, 1) 0.12s both,
     fx-glint 1.6s ease-in-out 0.6s 2;
 }
-.fx-on .fx-badge.fx-blunder {
+.fx-on.fx-badge-on .fx-badge.fx-blunder {
   animation:
     fx-pop 0.42s cubic-bezier(0.2, 1.6, 0.4, 1) 0.12s both,
     fx-wobble 0.5s ease-in-out 0.55s;
@@ -1668,12 +1688,12 @@ dialog input[type='color'] {
 .fx-on .fx-hang-glow {
   animation: fx-breathe 1.6s ease-in-out 3;
 }
-.fx-on .fx-badge.fx-hang {
+.fx-on.fx-badge-on .fx-badge.fx-hang {
   animation:
     fx-pop 0.42s cubic-bezier(0.2, 1.6, 0.4, 1) both,
     fx-beat 1.6s ease-in-out 0.45s 2;
 }
-.fx-on cg-board square.check {
+.fx-on.fx-check-on cg-board square.check {
   animation: fx-check 1.1s ease-in-out 3;
 }
 .fx-shake {

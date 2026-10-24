@@ -58,6 +58,13 @@ export interface Settings {
   premove: boolean;
   /** board animations: badge pop-in, capture particles, check pulse, mate confetti */
   boardFx: boolean;
+  /** individual board effects; kept separate so motion can be reduced without disabling the board */
+  boardFxBadge: boolean;
+  boardFxCapture: boolean;
+  boardFxCheck: boolean;
+  boardFxMate: boolean;
+  /** threat/protection animation: a growing arrow or a square-by-square colour wash */
+  boardFxArrowStyle: 'line' | 'fill';
   /** board size in % of the largest size that fits (play / review layouts) */
   boardSizePlay: number;
   boardSizeReview: number;
@@ -83,6 +90,7 @@ export const isIOS =
 export function defaultSettings(): Settings {
   // the iOS app runs native engines with real threads and no WebView memory cap
   const cores = navigator.hardwareConcurrency || 2;
+  const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   return {
     model: isNative ? '23m' : isIOS ? '5m' : '23m',
     elo: 1500,
@@ -117,7 +125,12 @@ export function defaultSettings(): Settings {
     customDark: '#739552',
     pieceSet: 'cburnett',
     premove: true,
-    boardFx: !matchMedia('(prefers-reduced-motion: reduce)').matches,
+    boardFx: motion,
+    boardFxBadge: motion,
+    boardFxCapture: motion,
+    boardFxCheck: motion,
+    boardFxMate: motion,
+    boardFxArrowStyle: 'line',
     boardSizePlay: 100,
     boardSizeReview: 100,
     autoplayMs: 1200,
@@ -195,6 +208,11 @@ const RULES: Record<keyof Settings, Rule> = {
   pieceSet: { oneOf: Object.keys(PIECE_SETS) },
   premove: { bool: true },
   boardFx: { bool: true },
+  boardFxBadge: { bool: true },
+  boardFxCapture: { bool: true },
+  boardFxCheck: { bool: true },
+  boardFxMate: { bool: true },
+  boardFxArrowStyle: { oneOf: ['line', 'fill'] },
   boardSizePlay: { num: [60, 100] },
   boardSizeReview: { num: [60, 100] },
   autoplayMs: { num: [100, 10000] },

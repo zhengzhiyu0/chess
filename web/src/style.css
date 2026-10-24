@@ -234,11 +234,67 @@ button svg {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
   padding: 14px 16px 12px;
+}
+.home-panel {
+  min-height: 0;
+}
+.home-panel.active {
+  display: flex;
+}
+.home-panel:not(.active) {
+  display: none;
+}
+.home-panel-play {
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.home-panel-library {
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  padding: 10px 2px 4px;
+}
+.home-panel-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 2px 2px;
+}
+.home-panel-title h2 {
+  margin: 2px 0 4px;
+  font-size: 26px;
+  line-height: 1.15;
+}
+.home-panel-title p {
+  max-width: 300px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.home-kicker {
+  color: var(--green-hover);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.home-panel-mark {
+  flex: none;
+  margin-top: 4px;
+  padding: 5px 8px;
+  border: 1px solid rgba(129, 182, 76, 0.32);
+  border-radius: 999px;
+  color: var(--green-hover);
+  font-size: 12px;
+  font-weight: 700;
 }
 .hero {
   flex: 1;
@@ -338,6 +394,10 @@ input[type='checkbox'] {
   display: flex;
   gap: 10px;
 }
+.home-actions-stack {
+  flex-direction: column;
+  gap: 10px;
+}
 .tile {
   flex: 1;
   justify-content: flex-start;
@@ -356,6 +416,13 @@ input[type='checkbox'] {
   flex-direction: column;
   min-width: 0;
 }
+.tile-arrow {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+}
 .tile small {
   font-weight: 400;
   font-size: 12px;
@@ -372,6 +439,38 @@ input[type='checkbox'] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.home-nav {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-dark);
+}
+.home-nav button {
+  flex-direction: column;
+  gap: 2px;
+  min-height: 48px;
+  padding: 5px 8px 4px;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font-size: 11px;
+}
+.home-nav button svg {
+  width: 21px;
+  height: 21px;
+}
+.home-nav button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+.home-nav button.active {
+  background: rgba(129, 182, 76, 0.14);
+  color: var(--green-hover);
 }
 
 /* ---------- 对局页 ---------- */
@@ -2414,4 +2513,44 @@ dialog input[type='color'] {
   margin-top: 4px;
   color: var(--muted);
   font-size: 12px;
+}
+
+/* 主页在横屏时仍保留棋盘主视觉，训练与资料页使用同一条内容列。 */
+@media (min-aspect-ratio: 1/1) and (min-width: 720px) {
+  .home-body {
+    display: flex;
+    max-width: 880px;
+    overflow-y: auto;
+  }
+  .home-panel-play.active {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: auto auto auto;
+    align-content: center;
+    column-gap: 24px;
+    row-gap: 14px;
+    overflow-y: visible;
+  }
+  .home-panel-play .hero {
+    grid-row: 1 / 4;
+    height: min(70dvh, 520px);
+  }
+  .home-panel-play .setup {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .home-panel-play #btn-play {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .home-panel-play .home-actions {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .home-panel-library {
+    width: min(100%, 560px);
+    align-self: center;
+    justify-content: center;
+    padding-bottom: 24px;
+  }
 }

@@ -29,60 +29,89 @@
         </header>
 
         <div class="home-body">
-          <div class="hero"><div class="hero-board"><div id="home-board" class="cg-wrap"></div></div></div>
+          <section class="home-panel home-panel-play active" data-home-panel="play">
+            <div class="hero"><div class="hero-board"><div id="home-board" class="cg-wrap"></div></div></div>
 
-          <div class="card setup">
-            <div class="seg type" id="home-type">
-              <button data-type="normal"><b>普通对局</b></button>
-              <button data-type="coach"><b>教练对局</b></button>
+            <div class="card setup">
+              <div class="seg type" id="home-type">
+                <button data-type="normal"><b>普通对局</b></button>
+                <button data-type="coach"><b>教练对局</b></button>
+              </div>
+              <button class="coach-line" id="btn-home-coach"><span id="home-coach-desc"></span><span class="link">教练设置 ›</span></button>
+              <div class="setup-head">
+                <span>对手水平</span>
+                <b id="home-elo-val"></b>
+              </div>
+              <input type="range" id="home-elo" min="0" max="2600" step="50" />
+              <div class="seg" id="home-color">
+                <button data-color="w"><span class="pc w">♚</span>执白</button>
+                <button data-color="random"><span class="pc r">?</span>随机</button>
+                <button data-color="b"><span class="pc b">♚</span>执黑</button>
+              </div>
+              <label class="setup-tc"><span>用时</span><select id="home-tc"></select></label>
             </div>
-            <button class="coach-line" id="btn-home-coach"><span id="home-coach-desc"></span><span class="link">教练设置 ›</span></button>
-            <div class="setup-head">
-              <span>对手水平</span>
-              <b id="home-elo-val"></b>
+
+            <button id="btn-play" class="primary big">开始对局</button>
+
+            <div class="home-actions">
+              <button id="btn-continue" class="tile">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                <span><b id="continue-title">继续对局</b><small id="continue-sub"></small></span>
+              </button>
             </div>
-            <input type="range" id="home-elo" min="0" max="2600" step="50" />
-            <div class="seg" id="home-color">
-              <button data-color="w"><span class="pc w">♚</span>执白</button>
-              <button data-color="random"><span class="pc r">?</span>随机</button>
-              <button data-color="b"><span class="pc b">♚</span>执黑</button>
+          </section>
+
+          <section class="home-panel home-panel-library" data-home-panel="train">
+            <div class="home-panel-title">
+              <div><span class="home-kicker">专注提升</span><h2>训练中心</h2><p>用短练习巩固计算力，把对局中的问题变成进步。</p></div>
+              <span class="home-panel-mark">2 项</span>
             </div>
-            <label class="setup-tc"><span>用时</span><select id="home-tc"></select></label>
-          </div>
+            <div class="home-actions home-actions-stack">
+              <button id="btn-puzzles" class="tile">
+                <svg viewBox="0 0 24 24"><path d="M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3h7z" /></svg>
+                <span><b>谜题训练</b><small id="puzzle-sub"></small></span><span class="tile-arrow">›</span>
+              </button>
+              <button id="btn-mistakes" class="tile">
+                <svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5zM9 9l6 6M15 9l-6 6" /></svg>
+                <span><b>错题本</b><small id="mistake-sub"></small></span><span class="tile-arrow">›</span>
+              </button>
+            </div>
+          </section>
 
-          <button id="btn-play" class="primary big">开始对局</button>
-
-          <div class="home-actions">
-            <button id="btn-continue" class="tile">
-              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-              <span><b id="continue-title">继续对局</b><small id="continue-sub"></small></span>
-            </button>
-            <button id="btn-home-import" class="tile">
-              <svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6" /></svg>
-              <span><b>导入复盘</b><small>PGN / FEN</small></span>
-            </button>
-            <button id="btn-history" class="tile">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
-              <span><b>历史与统计</b><small id="history-sub"></small></span>
-            </button>
-          </div>
-          <div class="home-actions">
-            <button id="btn-puzzles" class="tile">
-              <svg viewBox="0 0 24 24"><path d="M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3h7z" /></svg>
-              <span><b>谜题训练</b><small id="puzzle-sub"></small></span>
-            </button>
-            <button id="btn-mistakes" class="tile">
-              <svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5zM9 9l6 6M15 9l-6 6" /></svg>
-              <span><b>错题本</b><small id="mistake-sub"></small></span>
-            </button>
-            <button id="btn-data" class="tile">
-              <svg viewBox="0 0 24 24"><path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zm0 0v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" /></svg>
-              <span><b>数据备份</b><small>导入 / 导出</small></span>
-            </button>
-          </div>
-
-          <div class="home-foot" id="home-env"></div>
+          <section class="home-panel home-panel-library" data-home-panel="data">
+            <div class="home-panel-title">
+              <div><span class="home-kicker">回顾与管理</span><h2>资料中心</h2><p>查看战绩，导入棋局，并把训练数据安全保存下来。</p></div>
+              <span class="home-panel-mark">本机</span>
+            </div>
+            <div class="home-actions home-actions-stack">
+              <button id="btn-history" class="tile">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                <span><b>历史与统计</b><small id="history-sub"></small></span><span class="tile-arrow">›</span>
+              </button>
+              <button id="btn-home-import" class="tile">
+                <svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6" /></svg>
+                <span><b>导入复盘</b><small>PGN / FEN</small></span><span class="tile-arrow">›</span>
+              </button>
+              <button id="btn-data" class="tile">
+                <svg viewBox="0 0 24 24"><path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zm0 0v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" /></svg>
+                <span><b>数据备份</b><small>导入 / 导出</small></span><span class="tile-arrow">›</span>
+              </button>
+            </div>
+            <div class="home-foot" id="home-env"></div>
+          </section>
         </div>
+
+        <nav class="home-nav" aria-label="主页导航">
+          <button type="button" class="active" data-home-tab="play" aria-current="page">
+            <svg viewBox="0 0 24 24"><path d="m12 3 2.2 5.1L20 10l-4.2 3.5L17 19l-5-2.8L7 19l1.2-5.5L4 10l5.8-1.9L12 3z" /></svg><span>对弈</span>
+          </button>
+          <button type="button" data-home-tab="train">
+            <svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5zM4 5.5V21" /></svg><span>训练</span>
+          </button>
+          <button type="button" data-home-tab="data">
+            <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg><span>资料</span>
+          </button>
+        </nav>
       </section>
 
       <!-- ========== 对局页 ========== -->

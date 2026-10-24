@@ -116,6 +116,8 @@ let batchCtrl: AbortController | null = null;
 /** whole-game analysis interrupted by the app going to the background, resumed on return */
 let pausedBatch = false;
 let screen: 'home' | 'game' | 'train' = 'home';
+type HomeTab = 'play' | 'train' | 'data';
+let homeTab: HomeTab = 'play';
 let shownResult = '';
 let coachOn = false;
 let coachState: 'idle' | 'checking' | 'paused' = 'idle';
@@ -2770,6 +2772,19 @@ const trainerCtx: TrainerCtx = {
 
 let homeCg: Api;
 
+function setHomeTab(tab: HomeTab) {
+  homeTab = tab;
+  document.querySelectorAll<HTMLButtonElement>('[data-home-tab]').forEach((button) => {
+    const active = button.dataset.homeTab === tab;
+    button.classList.toggle('active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  document.querySelectorAll<HTMLElement>('[data-home-panel]').forEach((panel) => {
+    panel.classList.toggle('active', panel.dataset.homePanel === tab);
+  });
+}
+
 function renderHome() {
   const elo = $<HTMLInputElement>('home-elo');
   elo.value = String(settings.elo);
@@ -2793,6 +2808,7 @@ function renderHome() {
   // remind to back up once there is something worth keeping and the last backup is old
   $('btn-data').classList.toggle('remind', history.length >= 5 && Date.now() - at > 14 * 86_400_000);
   homeCg?.set({ fen: t.fen, orientation: userColor === 'w' ? 'white' : 'black', lastMove: undefined });
+  setHomeTab(homeTab);
 }
 
 function saveHomeSettings(patch: Partial<Settings>) {
@@ -2839,6 +2855,9 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
 // ---------- init ----------
 
 function bind() {
+  document.querySelectorAll<HTMLButtonElement>('[data-home-tab]').forEach((button) => {
+    button.onclick = () => setHomeTab(button.dataset.homeTab as HomeTab);
+  });
   document.querySelectorAll<HTMLButtonElement>('[data-nav]').forEach((b) => {
     b.onclick = () => {
       stopAutoplay();
@@ -2903,14 +2922,27 @@ function bind() {
     setMode(result === '' && !imported ? 'play' : 'review');
     showScreen('game');
   };
-  $('btn-home-import').onclick = openPgnImport;
-  $('btn-history').onclick = () => showHistory('list');
+  $('btn-home-import').onclick = () => {
+    setHomeTab('data');
+    openPgnImport();
+  };
+  $('btn-history').onclick = () => {
+    setHomeTab('data');
+    showHistory('list');
+  };
   $('btn-puzzles').onclick = () => {
+    setHomeTab('train');
     unlockAudio();
     openPuzzles(trainerCtx);
   };
-  $('btn-mistakes').onclick = () => openNotebook(trainerCtx);
-  $('btn-data').onclick = openData;
+  $('btn-mistakes').onclick = () => {
+    setHomeTab('train');
+    openNotebook(trainerCtx);
+  };
+  $('btn-data').onclick = () => {
+    setHomeTab('data');
+    openData();
+  };
   $('btn-menu-data').onclick = fromMenu(openData);
   bindTrainer(trainerCtx);
   $<HTMLInputElement>('home-elo').oninput = (e) => {

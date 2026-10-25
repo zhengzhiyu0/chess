@@ -2346,6 +2346,12 @@ function renderPlayers() {
   const actions = $('my-actions');
   $('player-top').innerHTML = card(flipped ? 'me' : 'maia');
   $('player-bottom').innerHTML = card(flipped ? 'maia' : 'me');
+  // Keep the newest captured pieces visible while allowing older pieces to be
+  // inspected with a horizontal swipe when the player bar is narrow.
+  for (const id of ['player-top', 'player-bottom']) {
+    const caps = document.querySelector<HTMLElement>(`#${id} .caps`);
+    if (caps) caps.scrollLeft = caps.scrollWidth;
+  }
   // 手机对弈：提示/悔棋/教练放在“我”的信息栏里（时钟左侧）
   const mine = $(flipped ? 'player-top' : 'player-bottom');
   mine.insertBefore(actions, mine.querySelector('.clock'));

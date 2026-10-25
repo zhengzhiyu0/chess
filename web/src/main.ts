@@ -41,7 +41,6 @@ import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } fro
 import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
-import { clearAiKey, explainWithAi, fetchAiModels, loadAiKey, saveAiKey, type AiConfig, type AiExplanation, type AiExplanationContext } from './ai/llm';
 import { opponentTalk, OPPONENT_PERSONALITIES, type OpponentPersonality } from './opponent';
 
 // ---------- state ----------
@@ -118,14 +117,9 @@ let liveLines: SfLine[] = [];
 let batchCtrl: AbortController | null = null;
 /** whole-game analysis interrupted by the app going to the background, resumed on return */
 let pausedBatch = false;
-let screen: 'home' | 'game' | 'train' | 'ai' = 'home';
+let screen: 'home' | 'game' | 'train' = 'home';
 type HomeTab = 'play' | 'train' | 'data';
 let homeTab: HomeTab = 'play';
-let aiAnchor: Node | null = null;
-let aiExplanation: AiExplanation | null = null;
-let aiBusy = false;
-let aiError = '';
-let aiSessionKey = loadAiKey();
 let opponentLine = '';
 let opponentTalkSeed = 0;
 let shownResult = '';
@@ -1528,7 +1522,6 @@ function renderSummary() {
     line('准确率', sides.map((c) => `<span class="rp-accv${c === 'w' ? ' w' : ''}">${acc(c)}</span>`), '', ' rp-acc') +
     rows;
   renderLearningSummary();
-  renderAiReportEntry();
   box.querySelectorAll<HTMLButtonElement>('.rp-cnt').forEach((button) => {
     button.onclick = () => {
       const side = button.dataset.side as Color;
@@ -2342,150 +2335,7 @@ function renderRatingResult() {
   } else box.hidden = true;
 }
 
-function aiConfig(): AiConfig {
-  return {
-    enabled: settings.aiEnabled,
-    provider: settings.aiProvider,
-    baseUrl: settings.aiBaseUrl,
-    model: settings.aiModel,
-    shareGame: settings.aiShareGame,
-    saveKey: settings.aiSaveKey,
-  };
-}
-
-/** Build the small, engine-backed payload sent to the language model. */
-function aiContextFor(n: Node | null): AiExplanationContext | null {
-  if (!n?.parent || !n.uci) return null;
-  const before = n.parent.a.eval;
-  const after = n.a.eval;
-  const review = reviewOf(n);
-  if (!before || !after || !review) return null;
-  const insight = insightOf(n);
-  const bestMove = before.best;
-  return {
-    fen: n.parent.fen,
-    move: n.uci,
-    moveSan: n.san || sanOf(n.parent.fen, n.uci),
-    bestMove,
-    bestMoveSan: bestMove ? sanOf(n.parent.fen, bestMove) : null,
-    judgement: review.judgement,
-    before: review.before,
-    after: review.after,
-    pv: (before.lines[0]?.pv ?? after.lines[0]?.pv ?? []).slice(0, 8),
-    motifs: [...(insight?.problem ?? []), ...(insight?.better ?? [])].slice(0, 8),
-    playerRating: settings.elo,
-    gameContext: settings.aiShareGame ? exportPgn() : undefined,
-  };
-}
-
-function aiTarget(): Node | null {
-  const candidate = aiAnchor ?? realOf(node);
-  return aiContextFor(candidate) ? candidate : null;
-}
-
-function aiAnswerHtml(e: AiExplanation): string {
-  const pv = e.pv.length ? `<p class="ai-move">${escapeHtml(pvToSan(aiAnchor?.parent?.fen ?? '', e.pv))}</p>` : '';
-  const correct = e.correct_move_san || e.correct_move;
-  return (
-    `<h3>${escapeHtml(e.title)}</h3>` +
-    (e.question ? `<section><b>思考问题</b><p>${escapeHtml(e.question)}</p></section>` : '') +
-    (e.hint ? `<section><b>提示</b><p>${escapeHtml(e.hint)}</p></section>` : '') +
-    (correct ? `<section><b>更好的走法</b><p class="ai-move">${escapeHtml(correct)}</p></section>` : '') +
-    (e.why ? `<section><b>为什么</b><p>${escapeHtml(e.why)}</p></section>` : '') +
-    (e.next_check ? `<section><b>下次检查</b><p>${escapeHtml(e.next_check)}</p></section>` : '') +
-    pv
-  );
-}
-
-function renderAiPage() {
-  const target = aiTarget();
-  const context = aiContextFor(target);
-  $('ai-model-badge').textContent = settings.aiEnabled ? settings.aiModel : 'AI 未开启';
-  const card = $('ai-context-card');
-  if (!context || !target) {
-    card.innerHTML = '<p>请先在复盘中完成 Stockfish 分析，再选择一条有问题的着法。</p>';
-  } else {
-    const info = JUDGEMENT_INFO[context.judgement as Judgement];
-    card.innerHTML =
-      `<p class="ai-kicker">AI COACH</p><h2>${escapeHtml(context.moveSan)} · ${escapeHtml(info?.label ?? context.judgement)}</h2>` +
-      `<p>胜率 ${context.before.toFixed(0)}% → ${context.after.toFixed(0)}%，等级分 ${context.playerRating}</p>` +
-      `<div class="ai-context-meta"><span>最佳：${escapeHtml(context.bestMoveSan ?? '暂无')}</span><span>置信度由 AI 返回</span></div>`;
-  }
-  const answer = $('ai-answer');
-  if (aiBusy) answer.innerHTML = '<div class="ai-empty"><span class="ai-empty-mark">…</span><b>AI 正在整理这步棋</b><small>只会发送 Stockfish 已确认的局面和变化。</small></div>';
-  else if (aiError) answer.innerHTML = `<div class="ai-error"><b>AI 讲解失败</b><p>${escapeHtml(aiError)}</p></div>`;
-  else if (aiExplanation) answer.innerHTML = aiAnswerHtml(aiExplanation);
-  else answer.innerHTML = '<div class="ai-empty"><span class="ai-empty-mark">✦</span><b>让 AI 把这步棋讲清楚</b><small>它会结合 Stockfish 的变化，告诉你正确走法、原因和下次该检查什么。</small></div>';
-  const actions = $('ai-page-actions');
-  actions.classList.toggle('hidden', !context || !settings.aiEnabled);
-  actions.querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.disabled = aiBusy));
-
-  const list = $('ai-summary-list');
-  const issues = reviewIssues('all').slice(0, 5);
-  list.innerHTML = issues.length
-    ? `<div class="ai-summary-title">复盘中的其他问题</div>${issues
-        .map((n) => `<div class="ai-summary-item"><span><b>${n.ply}. ${escapeHtml(n.san)}</b><small>${escapeHtml(JUDGEMENT_INFO[reviewOf(n)!.judgement].label)}</small></span><button type="button" data-ai-issue="${n.id}">讲解</button></div>`)
-        .join('')}`
-    : '';
-}
-
-function openAi(target: Node | null = realOf(node)) {
-  aiAnchor = target;
-  aiExplanation = null;
-  aiError = '';
-  if (location.hash !== '#ai') history_.pushState(null, '', '#ai');
-  showScreen('ai', false);
-}
-
-async function requestAi(mode: 'hint' | 'full') {
-  const target = aiTarget();
-  const context = aiContextFor(target);
-  if (!context) {
-    aiError = '当前着法还没有完整的 Stockfish 前后评估。';
-    renderAiPage();
-    return;
-  }
-  if (!settings.aiEnabled) {
-    aiError = '请先在设置中开启 AI 讲解。';
-    renderAiPage();
-    return;
-  }
-  if (!aiSessionKey.trim()) {
-    aiError = '请先在设置中填写 API Key。';
-    renderAiPage();
-    return;
-  }
-  aiBusy = true;
-  aiError = '';
-  renderAiPage();
-  try {
-    aiExplanation = await explainWithAi(aiConfig(), aiSessionKey, context, mode);
-  } catch (err) {
-    aiError = (err as Error).message || '请求失败';
-  } finally {
-    aiBusy = false;
-    renderAiPage();
-  }
-}
-
-function renderAiReportEntry() {
-  const box = $('ai-report-summary');
-  if (!settings.aiEnabled) {
-    box.classList.add('hidden');
-    box.innerHTML = '';
-    return;
-  }
-  const first = reviewIssues('all')[0];
-  if (!first) {
-    box.classList.add('hidden');
-    box.innerHTML = '';
-    return;
-  }
-  box.classList.remove('hidden');
-  box.innerHTML = `<h3>进一步解释（可选）</h3><p>本地总结和针对性训练已在上方生成。如果还想用自然语言追问这步棋，可以请求 AI 讲解。</p><button type="button" class="ai-inline-btn" data-ai-report="${first.id}">进一步解释这一步</button>`;
-}
-
-function showScreen(s: 'home' | 'game' | 'train' | 'ai', push = true) {
+function showScreen(s: 'home' | 'game' | 'train', push = true) {
   const prev = screen;
   screen = s;
   const hash = s === 'home' ? '' : `#${s}`;
@@ -2497,12 +2347,11 @@ function showScreen(s: 'home' | 'game' | 'train' | 'ai', push = true) {
   $('home').classList.toggle('active', s === 'home');
   $('game').classList.toggle('active', s === 'game');
   $('train').classList.toggle('active', s === 'train');
-  $('ai').classList.toggle('active', s === 'ai');
   if (s === 'train') {
     requestAnimationFrame(trainerRedraw);
     if (prev !== 'game') return;
   }
-  if (s !== 'game' && s !== 'ai') {
+  if (s !== 'game') {
     stopAutoplay();
     gameToken++;
     maiaThinking = false;
@@ -2520,8 +2369,6 @@ function showScreen(s: 'home' | 'game' | 'train' | 'ai', push = true) {
       resumeCoach();
       startReview();
     });
-  } else {
-    renderAiPage();
   }
 }
 
@@ -2670,53 +2517,6 @@ function openSettings() {
   }
   // Engine warmup is now always enabled; keep the legacy setting checked for old backups.
   el('warmup').checked = true;
-  const aiKey = $<HTMLInputElement>('ai-key');
-  aiKey.value = aiSessionKey;
-  const aiModel = $<HTMLSelectElement>('ai-model');
-  if (!aiModel.options.length) aiModel.add(new Option(settings.aiModel || 'deepseek-flash', settings.aiModel || 'deepseek-flash'));
-  aiModel.value = settings.aiModel || 'deepseek-flash';
-  const aiBase = $<HTMLInputElement>('ai-base-url');
-  const aiProvider = $<HTMLSelectElement>('ai-provider');
-  const syncAiProvider = () => {
-    aiBase.disabled = aiProvider.value === 'deepseek';
-    if (aiProvider.value === 'deepseek') aiBase.value = 'https://api.deepseek.com';
-  };
-  aiProvider.onchange = syncAiProvider;
-  syncAiProvider();
-  const aiDraft = (): AiConfig => ({
-    enabled: el('aiEnabled').checked,
-    provider: aiProvider.value as AiConfig['provider'],
-    baseUrl: aiBase.value,
-    model: aiModel.value,
-    shareGame: el('aiShareGame').checked,
-    saveKey: el('aiSaveKey').checked,
-  });
-  $('btn-ai-models').onclick = async () => {
-    const b = $<HTMLButtonElement>('btn-ai-models');
-    b.disabled = true;
-    try {
-      const models = await fetchAiModels(aiDraft(), aiKey.value);
-      aiModel.replaceChildren(...models.map((m) => new Option(m.name ? `${m.name} · ${m.id}` : m.id, m.id)));
-      if (models.length) aiModel.value = models.some((m) => m.id === settings.aiModel) ? settings.aiModel : models[0].id;
-      setStatus(models.length ? `已获取 ${models.length} 个模型` : '接口没有返回可用模型');
-    } catch (err) {
-      setStatus('获取模型失败：' + (err as Error).message);
-    } finally {
-      b.disabled = false;
-    }
-  };
-  $('btn-ai-test').onclick = async () => {
-    const b = $<HTMLButtonElement>('btn-ai-test');
-    b.disabled = true;
-    try {
-      const models = await fetchAiModels(aiDraft(), aiKey.value);
-      setStatus(models.length ? 'AI 接口连接成功' : '连接成功，但没有返回模型');
-    } catch (err) {
-      setStatus('AI 连接失败：' + (err as Error).message);
-    } finally {
-      b.disabled = false;
-    }
-  };
   const outs = () => {
     const v = Number(el('elo').value);
     (f.elements.namedItem('eloOut') as HTMLOutputElement).value = v < 600 ? `${v}（低于 600 为模型外推）` : String(v);
@@ -2820,18 +2620,9 @@ function openSettings() {
       boardSizePlay: num('boardSizePlay'),
       boardSizeReview: num('boardSizeReview'),
       reviewOpponent: el('reviewOpponent').checked,
-      aiEnabled: el('aiEnabled').checked,
-      aiProvider: aiProvider.value as Settings['aiProvider'],
-      aiBaseUrl: aiBase.value,
-      aiModel: aiModel.value,
-      aiShareGame: el('aiShareGame').checked,
-      aiSaveKey: el('aiSaveKey').checked,
       opponentTalk: el('opponentTalk').checked,
       opponentPersonality: el('opponentPersonality').value as Settings['opponentPersonality'],
     };
-    aiSessionKey = aiKey.value.trim();
-    if (settings.aiSaveKey) saveAiKey(aiSessionKey);
-    else clearAiKey();
     applySettings(old);
   };
   dlg.showModal();
@@ -3497,24 +3288,6 @@ function bind() {
   };
   $('btn-report').onclick = openReport;
   $('btn-report-start').onclick = closeReport;
-  $('btn-ai-back').onclick = () => {
-    if (location.hash === '#ai') history_.back();
-    else showScreen('game');
-  };
-  $('btn-ai-hint').onclick = () => void requestAi('hint');
-  $('btn-ai-explain').onclick = () => void requestAi('full');
-  $('ai-summary-list').onclick = (e) => {
-    const id = Number((e.target as HTMLElement).closest<HTMLElement>('[data-ai-issue]')?.dataset.aiIssue);
-    if (!id) return;
-    const target = findNode(tree, id);
-    if (target) openAi(target);
-  };
-  $('ai-report-summary').onclick = (e) => {
-    const id = Number((e.target as HTMLElement).closest<HTMLElement>('[data-ai-report]')?.dataset.aiReport);
-    if (!id) return;
-    const target = findNode(tree, id);
-    if (target) openAi(target);
-  };
   $('learning-report-summary').onclick = (e) => {
     const t = e.target as HTMLElement;
     const jump = Number(t.closest<HTMLElement>('[data-learning-jump]')?.dataset.learningJump);
@@ -3879,11 +3652,10 @@ function init() {
   setInterval(tickClock, 100);
   // 系统返回键/手势回到主页
   window.addEventListener('popstate', () => {
-    const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : location.hash === '#ai' ? 'ai' : 'home';
+    const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : 'home';
     if (want !== screen) showScreen(want, false);
   });
   if (location.hash === '#game') showScreen('game', false);
-  else if (location.hash === '#ai') showScreen('ai', false);
   else if (location.hash === '#train') history_.replaceState(null, '', location.pathname + location.search);
   onStorageFull(() => {
     alert('本机存储空间已满，部分数据可能没能保存。请到「数据与备份」导出备份，然后清理一些历史对局。');

@@ -14,8 +14,8 @@ const NOT_PRECACHED = new Set(['sw.js', 'precache.json']);
 /**
  * Content Security Policy for production builds (dev needs Vite's HMR websocket). Everything is
  * WebAssembly engines need 'wasm-unsafe-eval', emscripten thread pools may use blob: workers,
- * and the UI sets inline styles. AI providers are user-configured, so HTTPS connections are
- * allowed for DeepSeek and custom OpenAI-compatible endpoints.
+ * and the UI sets inline styles. HTTPS connections remain allowed for optional engine/model
+ * downloads and other app resources.
  */
 const CSP = [
   "default-src 'self'",

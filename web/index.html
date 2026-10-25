@@ -201,7 +201,6 @@
             <svg id="graph" class="graph" viewBox="0 0 100 40" preserveAspectRatio="none"></svg>
             <div class="summary" id="summary"></div>
             <div class="learning-report-summary hidden" id="learning-report-summary"></div>
-            <div class="ai-report-summary hidden" id="ai-report-summary"></div>
           </div>
           <div class="report-foot">
             <button type="button" id="btn-report-start" class="primary big">开始回顾</button>
@@ -209,27 +208,6 @@
         </div>
       </section>
 
-      <!-- ========== AI 讲解 ========== -->
-      <section id="ai" class="screen ai-screen">
-        <header class="appbar">
-          <button id="btn-ai-back" class="icon" title="返回复盘" aria-label="返回复盘"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg></button>
-          <div class="brand"><span>AI 讲解</span></div>
-          <span class="ai-model-badge" id="ai-model-badge"></span>
-        </header>
-        <main class="ai-page-body">
-          <div class="ai-context-card" id="ai-context-card"></div>
-          <div class="ai-answer" id="ai-answer" aria-live="polite">
-            <div class="ai-empty"><span class="ai-empty-mark">✦</span><b>让 AI 把这步棋讲清楚</b><small>它会结合 Stockfish 的变化，告诉你正确走法、原因和下次该检查什么。</small></div>
-          </div>
-          <div class="ai-page-actions" id="ai-page-actions">
-            <button type="button" id="btn-ai-hint">只给提示</button>
-            <button type="button" id="btn-ai-explain" class="primary">完整讲解</button>
-          </div>
-          <div class="ai-summary-list" id="ai-summary-list"></div>
-        </main>
-      </section>
-
-      <!-- ========== 训练（谜题 / 错题） ========== -->
       <section id="train" class="screen" data-kind="puzzle">
         <header class="appbar">
           <button id="btn-train-back" class="icon" title="返回主页" aria-label="返回主页"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg></button>
@@ -399,28 +377,6 @@
         <label class="check"><input type="checkbox" name="ecoAnalysis" /> 节能分析（达到足够深度即停止，复盘实时分析最长 15 秒；手机明显降温，评判结果基本不变）</label>
         <label class="check"><input type="checkbox" name="warmup" checked disabled /> 启动时自动在后台预加载 Maia 与 Stockfish</label>
         <label class="check"><input type="checkbox" name="reviewOpponent" /> 复盘时也分析对手的着法（默认只看自己的）</label>
-        <fieldset class="ai-settings">
-          <legend>AI 讲解（可选）</legend>
-          <label class="check"><input type="checkbox" name="aiEnabled" /> 开启 AI 讲解</label>
-          <div class="ai-settings-fields">
-            <label>服务商
-              <select name="aiProvider" id="ai-provider">
-                <option value="deepseek">DeepSeek</option>
-                <option value="custom">自定义 OpenAI 兼容接口</option>
-              </select>
-            </label>
-            <label>API 地址 <input type="url" name="aiBaseUrl" id="ai-base-url" placeholder="https://api.deepseek.com" /></label>
-            <label>API Key <input type="password" id="ai-key" autocomplete="off" placeholder="输入后仅保存在本机" /></label>
-            <label>模型 <select name="aiModel" id="ai-model"><option value="deepseek-flash">deepseek-flash</option></select></label>
-            <div class="row ai-settings-actions">
-              <button type="button" id="btn-ai-models">获取模型列表</button>
-              <button type="button" id="btn-ai-test">测试连接</button>
-            </div>
-          </div>
-          <label class="check"><input type="checkbox" name="aiShareGame" /> 允许发送完整对局（默认只发送当前局面和相关变化）</label>
-          <label class="check"><input type="checkbox" name="aiSaveKey" /> 在本机保存 API Key</label>
-          <p class="muted">训练总结、错题分类与训练建议都在本机完成。AI 仅作为可选的进一步讲解，不参与棋局评判或训练推荐；关闭后所有 AI 入口都会隐藏。</p>
-        </fieldset>
         <fieldset class="opponent-settings">
           <legend>对手发言（仅普通对弈）</legend>
           <label class="check"><input type="checkbox" name="opponentTalk" /> 开启对手即时发言</label>
@@ -432,7 +388,7 @@
               <option value="snarky">阴阳怪气 · 表面客气</option>
             </select>
           </label>
-          <p class="muted">使用本地预置话术，立即显示，不调用 AI。教练、复盘和导入棋局不会触发。</p>
+          <p class="muted">使用本地预置话术，立即显示。教练、复盘和导入棋局都在本机完成。</p>
         </fieldset>
         <div class="env" id="env-info"></div>
         <div class="row">

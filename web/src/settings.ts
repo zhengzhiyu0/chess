@@ -76,13 +76,6 @@ export interface Settings {
   avatar: string;
   /** Maia's coach portrait, index into COACHES (app/coach-avatars.ts) */
   coachAvatar: number;
-  /** optional remote language-model explanation layer; disabled by default */
-  aiEnabled: boolean;
-  aiProvider: 'deepseek' | 'custom';
-  aiBaseUrl: string;
-  aiModel: string;
-  aiShareGame: boolean;
-  aiSaveKey: boolean;
   /** instant local taunts in normal games only */
   opponentTalk: boolean;
   opponentPersonality: 'sharp' | 'deadpan' | 'theatrical' | 'snarky';
@@ -147,12 +140,6 @@ export function defaultSettings(): Settings {
     reviewOpponent: false,
     avatar: '',
     coachAvatar: 0,
-    aiEnabled: false,
-    aiProvider: 'deepseek',
-    aiBaseUrl: 'https://api.deepseek.com',
-    aiModel: 'deepseek-flash',
-    aiShareGame: false,
-    aiSaveKey: false,
     opponentTalk: true,
     opponentPersonality: 'sharp',
   };
@@ -160,6 +147,8 @@ export function defaultSettings(): Settings {
 
 export function loadSettings(): Settings {
   try {
+    // AI coach was removed; discard any API key left by older builds.
+    localStorage.removeItem('maia-coach.ai-key');
     const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
     // migrate settings saved by the earlier two-rating version
     if (saved.elo === undefined && typeof saved.maiaElo === 'number') saved.elo = saved.maiaElo;
@@ -238,12 +227,6 @@ const RULES: Record<keyof Settings, Rule> = {
   // '' / '<glyph>|#rrggbb' / small JPEG data URL; rendering validates the format again
   avatar: { str: /^[^<>"]{0,200000}$/s },
   coachAvatar: { num: [0, 999], int: true },
-  aiEnabled: { bool: true },
-  aiProvider: { oneOf: ['deepseek', 'custom'] },
-  aiBaseUrl: { str: /^https?:\/\/[^\s<>]{1,500}$/ },
-  aiModel: { str: /^[^\s<>]{1,200}$/ },
-  aiShareGame: { bool: true },
-  aiSaveKey: { bool: true },
   opponentTalk: { bool: true },
   opponentPersonality: { oneOf: ['sharp', 'deadpan', 'theatrical', 'snarky'] },
   engineGen: { optInt: true },

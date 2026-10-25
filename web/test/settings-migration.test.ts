@@ -42,6 +42,12 @@ describe('settings engine migration (iOS app)', () => {
     mem.set(KEY, JSON.stringify({ engineGen: 2, sfThreads: 5, sfHash: 256, warmup: false }));
     expect(loadSettings()).toMatchObject({ sfThreads: 2, sfHash: 256, warmup: false, engineGen: 3 });
   });
+
+  it('clears an API key left by the removed AI coach', () => {
+    mem.set('maia-coach.ai-key', 'legacy-secret');
+    loadSettings();
+    expect(mem.has('maia-coach.ai-key')).toBe(false);
+  });
 });
 
 describe('settings whitelist', () => {

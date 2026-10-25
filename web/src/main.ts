@@ -3222,8 +3222,6 @@ function updateEngineLoading(state: EngineLoadState) {
 function startWhenReady(button: HTMLButtonElement, start: () => void, requireStockfish = false) {
   if (startingGame) return;
   startingGame = true;
-  const loadingStartedAt = performance.now();
-  const minimumVisibleMs = 420;
   button.disabled = true;
   button.setAttribute('aria-busy', 'true');
   setEngineLoading(true, requireStockfish);
@@ -3232,9 +3230,7 @@ function startWhenReady(button: HTMLButtonElement, start: () => void, requireSto
   void engines.ensureReady(requireStockfish)
     .then(start)
     .catch(() => setStatus('引擎加载失败，请稍后重试'))
-    .finally(async () => {
-      const remaining = minimumVisibleMs - (performance.now() - loadingStartedAt);
-      if (remaining > 0) await sleep(remaining);
+    .finally(() => {
       setEngineLoading(false);
       startingGame = false;
       button.disabled = false;

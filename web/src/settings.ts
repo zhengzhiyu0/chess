@@ -78,7 +78,8 @@ export interface Settings {
   coachAvatar: number;
   /** instant local taunts in normal games only */
   opponentTalk: boolean;
-  opponentPersonality: 'sharp' | 'deadpan' | 'theatrical' | 'snarky';
+  /** personality selected for the whole game */
+  opponentPersonality: 'sharp' | 'deadpan' | 'theatrical' | 'snarky' | 'arrogant' | 'playful' | 'poetic' | 'commentator';
   /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
   engineGen?: number;
   /** sound theme default migration: 1 = Lichess sfx, 2 = wooden board set */
@@ -228,7 +229,7 @@ const RULES: Record<keyof Settings, Rule> = {
   avatar: { str: /^[^<>"]{0,200000}$/s },
   coachAvatar: { num: [0, 999], int: true },
   opponentTalk: { bool: true },
-  opponentPersonality: { oneOf: ['sharp', 'deadpan', 'theatrical', 'snarky'] },
+  opponentPersonality: { oneOf: ['sharp', 'deadpan', 'theatrical', 'snarky', 'arrogant', 'playful', 'poetic', 'commentator'] },
   engineGen: { optInt: true },
   soundGen: { optInt: true },
 };

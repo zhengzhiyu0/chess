@@ -41,7 +41,7 @@ import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } fro
 import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
-import { opponentTalk, OPPONENT_PERSONALITIES, type OpponentPersonality } from './opponent';
+import { opponentTalk, type OpponentPersonality } from './opponent';
 
 // ---------- state ----------
 
@@ -135,7 +135,7 @@ type HomeTab = 'play' | 'train' | 'data';
 let homeTab: HomeTab = 'play';
 let opponentLine = '';
 let lastOpponentLine = '';
-let opponentTalkSeed = 0;
+let gameOpponentPersonality: OpponentPersonality = settings.opponentPersonality as OpponentPersonality;
 let shownResult = '';
 let coachOn = false;
 let coachState: 'idle' | 'checking' | 'paused' = 'idle';
@@ -253,7 +253,6 @@ function resetTransient() {
   hintedAt = null;
   opponentLine = '';
   lastOpponentLine = '';
-  opponentTalkSeed = 0;
   coachReset();
   $('hint-box').textContent = '';
 }
@@ -286,6 +285,7 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     imported = Boolean(g.imported);
     headers = g.headers;
     coachOn = Boolean(g.coach);
+    gameOpponentPersonality = settings.opponentPersonality as OpponentPersonality;
     gameElo = g.elo ?? (imported ? undefined : settings.elo);
     eloAfter = g.eloAfter;
     gameModel = g.model ?? settings.model;
@@ -651,9 +651,8 @@ function opponentSpeak(n: Node) {
       /* an already finished position has no legal move to inspect */
     }
   }
-  const personality = settings.opponentPersonality as OpponentPersonality;
   opponentLine = opponentTalk(
-    personality,
+    gameOpponentPersonality,
     {
       userSan: userMove?.san,
       opponentSan: n.san,
@@ -663,8 +662,8 @@ function opponentSpeak(n: Node) {
       userMaterialSwing: beforeMaterial === undefined || afterMaterial === undefined ? undefined : afterMaterial - beforeMaterial,
       opening: parent === tree.root,
     },
-    opponentTalkSeed++,
     lastOpponentLine,
+    Math.random(),
   );
   lastOpponentLine = opponentLine;
 }
@@ -959,6 +958,7 @@ function newGame(fen = START_FEN, color?: Color): boolean {
   clock = tc ? new ChessClock(tc) : null;
   if (clock) tree.root.clock = [...clock.remaining];
   coachOn = settings.gameType === 'coach';
+  gameOpponentPersonality = settings.opponentPersonality as OpponentPersonality;
   resetTransient();
   cg.cancelPremove();
   play('start');
@@ -2356,8 +2356,7 @@ function renderOpponentDialogue() {
     box.innerHTML = '';
     return;
   }
-  const personality = OPPONENT_PERSONALITIES[settings.opponentPersonality as OpponentPersonality] ?? OPPONENT_PERSONALITIES.sharp;
-  box.innerHTML = `<span class="opponent-label">${escapeHtml(personality.label)} · Maia</span>${escapeHtml(opponentLine)}`;
+  box.innerHTML = escapeHtml(opponentLine);
 }
 
 function update() {
@@ -3073,6 +3072,9 @@ function renderHome() {
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => b.classList.toggle('active', b.dataset.color === settings.color));
   document.querySelectorAll<HTMLButtonElement>('#home-type button').forEach((b) => b.classList.toggle('active', b.dataset.type === settings.gameType));
   $<HTMLSelectElement>('home-tc').value = settings.timeControl;
+  const personality = $<HTMLSelectElement>('home-opponent-personality');
+  personality.value = settings.opponentPersonality;
+  $('home-opponent-personality-wrap').hidden = settings.gameType !== 'normal';
   $('home-coach-desc').textContent = settings.gameType === 'coach' ? '走出' + JUDGEMENT_INFO[settings.coachLevel].label + '时暂停讲解，可重走' : '无提示，自由对弈';
   const t = tip();
   const has = t !== tree.root;
@@ -3231,6 +3233,8 @@ function bind() {
   const tcSel = $<HTMLSelectElement>('home-tc');
   tcSel.innerHTML = TIME_CONTROLS.map((t) => `<option value="${t.id}">${t.label}</option>`).join('');
   tcSel.onchange = () => saveHomeSettings({ timeControl: tcSel.value });
+  $<HTMLSelectElement>('home-opponent-personality').onchange = (e) =>
+    saveHomeSettings({ opponentPersonality: (e.target as HTMLSelectElement).value as Settings['opponentPersonality'] });
 
   $('btn-play').onclick = () => {
     unlockAudio();

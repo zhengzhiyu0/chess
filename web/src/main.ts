@@ -2263,7 +2263,11 @@ function material(n: Node, color: Color): { html: string; diff: number } {
   let score = 0;
   for (const t of ['p', 'n', 'b', 'r', 'q']) {
     const taken = Math.max(0, full[t] - count[opp][t]);
-    html += PIECE_GLYPH[t].repeat(taken);
+    const pieceClass = opp === 'b' ? 'black' : 'white';
+    html += Array.from(
+      { length: taken },
+      () => `<span class="cap-piece ${pieceClass}" aria-hidden="true">${PIECE_GLYPH[t]}</span>`,
+    ).join('');
     score += PIECE_VALUE[t] * (count[color][t] - count[opp][t]);
   }
   return { html, diff: score };

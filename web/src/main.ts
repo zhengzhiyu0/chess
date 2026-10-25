@@ -2301,18 +2301,40 @@ function material(n: Node, color: Color): { html: string; diff: number } {
   for (const row of chessOf(n).board()) for (const sq of row) if (sq && sq.type !== 'k') count[sq.color][sq.type]++;
   const full: Record<string, number> = { p: 8, n: 2, b: 2, r: 2, q: 1 };
   const opp: Color = color === 'w' ? 'b' : 'w';
-  let html = '';
   let score = 0;
-  for (const t of ['p', 'n', 'b', 'r', 'q']) {
-    const taken = Math.max(0, full[t] - count[opp][t]);
-    const pieceClass = opp === 'b' ? 'black' : 'white';
-    html += Array.from(
-      { length: taken },
-      () =>
-        `<img class="cap-piece ${pieceClass}" src="${pieceUrl(settings.pieceSet, opp, t)}" alt="" aria-hidden="true" draggable="false">`,
-    ).join('');
+  const types = ['p', 'n', 'b', 'r', 'q'];
+  const taken: Record<string, number> = {};
+  for (const t of types) {
+    taken[t] = Math.max(0, full[t] - count[opp][t]);
     score += PIECE_VALUE[t] * (count[color][t] - count[opp][t]);
   }
+  // Preserve capture order so the right edge is always the latest captured
+  // piece, while still accounting for missing pieces in imported positions.
+  const captured: string[] = [];
+  for (const move of tree.pathTo(n).slice(1)) {
+    if (!move.parent || turnOf(move.parent.fen) !== color) continue;
+    try {
+      const capturedType = chessOf(move.parent).move(toMove(move.uci)).captured;
+      if (capturedType) captured.push(capturedType);
+    } catch {
+      /* Ignore a stale annotation; material totals below remain authoritative. */
+    }
+  }
+  const used: Record<string, number> = {};
+  const ordered = captured.filter((t) => {
+    used[t] = used[t] ?? 0;
+    if (used[t] >= taken[t]) return false;
+    used[t]++;
+    return true;
+  });
+  for (const t of types) for (let i = used[t] ?? 0; i < taken[t]; i++) ordered.push(t);
+  const pieceClass = opp === 'b' ? 'black' : 'white';
+  const html = ordered
+    .map(
+      (t) =>
+        `<img class="cap-piece ${pieceClass}" src="${pieceUrl(settings.pieceSet, opp, t)}" alt="" aria-hidden="true" draggable="false">`,
+    )
+    .join('');
   return { html, diff: score };
 }
 
@@ -2340,7 +2362,7 @@ function renderPlayers() {
     const v = clockView(color);
     return (
       `${avatar}<div class="pinfo"><div class="pname">${name} <span class="elo">${elo}</span>${thinking}</div>` +
-      `<div class="caps ${color === 'w' ? 'by-w' : 'by-b'}">${m.html}${m.diff > 0 ? `<span class="adv">+${m.diff}</span>` : ''}</div></div>` +
+      `<div class="caps ${color === 'w' ? 'by-w' : 'by-b'}"><div class="caps-track">${m.html}</div>${m.diff > 0 ? `<span class="adv">+${m.diff}</span>` : ''}</div></div>` +
       `<div class="clock${v.active ? ' active' : ''}${v.low ? ' low' : ''}${clock || node.clock ? ' timed' : ''}" data-clock="${color}">${v.text}</div>`
     );
   };
@@ -2355,8 +2377,8 @@ function renderPlayers() {
   // is clamped before the captured-piece strip becomes narrow.
   requestAnimationFrame(() => {
     for (const id of ['player-top', 'player-bottom']) {
-      const caps = document.querySelector<HTMLElement>(`#${id} .caps`);
-      if (caps) caps.scrollLeft = caps.scrollWidth;
+      const track = document.querySelector<HTMLElement>(`#${id} .caps-track`);
+      if (track) track.scrollLeft = track.scrollWidth;
     }
   });
 }
@@ -3148,6 +3170,7 @@ function setEngineLoading(show: boolean, requireStockfish = false) {
     engineLoadingElement('engine-loading-detail').textContent = requireStockfish
       ? '正在准备对局与教练分析引擎…'
       : '正在准备你的专属对手，首次启动会稍久一些。';
+    page.style.setProperty('--engine-progress', '0deg');
     engineLoadingElement('engine-loading-percent').textContent = '0%';
     engineLoadingElement('engine-loading-track-fill').style.width = '0%';
     engineLoadingElement('engine-loading-maia-status').textContent = '准备中';
@@ -3155,6 +3178,12 @@ function setEngineLoading(show: boolean, requireStockfish = false) {
     engineLoadingElement('engine-loading-maia-detail').textContent = '人类棋手模型 · 当前对局';
     engineLoadingElement('engine-loading-stockfish-detail').textContent = requireStockfish ? '教练与复盘分析 · 当前对局' : '教练与复盘分析 · 后台准备';
     document.querySelectorAll<HTMLElement>('.engine-loading-engine').forEach((el) => el.classList.remove('is-ready'));
+    if (engines.maia?.alive) {
+      updateEngineLoading({ engine: 'maia', text: 'Maia 已就绪', progress: 1, ready: true });
+    }
+    if (engines.sf?.alive) {
+      updateEngineLoading({ engine: 'stockfish', text: 'Stockfish 已就绪', progress: 1, ready: true });
+    }
   }
 }
 
@@ -3179,6 +3208,7 @@ function updateEngineLoading(state: EngineLoadState) {
   const sfProgress = sf ?? (engines.sf?.alive ? 1 : 0);
   const requireSf = page.dataset.requireStockfish === 'true';
   const progress = requireSf ? (maiaProgress + sfProgress) / 2 : maiaProgress;
+  page.style.setProperty('--engine-progress', `${Math.round(progress * 360)}deg`);
   engineLoadingElement('engine-loading-percent').textContent = `${Math.round(progress * 100)}%`;
   engineLoadingElement('engine-loading-track-fill').style.width = `${Math.round(progress * 100)}%`;
   engineLoadingElement('engine-loading-detail').textContent = state.ready
@@ -3192,6 +3222,8 @@ function updateEngineLoading(state: EngineLoadState) {
 function startWhenReady(button: HTMLButtonElement, start: () => void, requireStockfish = false) {
   if (startingGame) return;
   startingGame = true;
+  const loadingStartedAt = performance.now();
+  const minimumVisibleMs = 420;
   button.disabled = true;
   button.setAttribute('aria-busy', 'true');
   setEngineLoading(true, requireStockfish);
@@ -3200,7 +3232,9 @@ function startWhenReady(button: HTMLButtonElement, start: () => void, requireSto
   void engines.ensureReady(requireStockfish)
     .then(start)
     .catch(() => setStatus('引擎加载失败，请稍后重试'))
-    .finally(() => {
+    .finally(async () => {
+      const remaining = minimumVisibleMs - (performance.now() - loadingStartedAt);
+      if (remaining > 0) await sleep(remaining);
       setEngineLoading(false);
       startingGame = false;
       button.disabled = false;

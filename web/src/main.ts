@@ -134,6 +134,7 @@ let screen: 'home' | 'game' | 'train' = 'home';
 type HomeTab = 'play' | 'train' | 'data';
 let homeTab: HomeTab = 'play';
 let opponentLine = '';
+let lastOpponentLine = '';
 let opponentTalkSeed = 0;
 let shownResult = '';
 let coachOn = false;
@@ -251,6 +252,7 @@ function resetTransient() {
   liveLines = [];
   hintedAt = null;
   opponentLine = '';
+  lastOpponentLine = '';
   opponentTalkSeed = 0;
   coachReset();
   $('hint-box').textContent = '';
@@ -622,10 +624,23 @@ function clearOpponentLine() {
 function opponentSpeak(n: Node) {
   if (!settings.opponentTalk || coachOn || imported || mode !== 'play' || !n.parent) return;
   const parent = n.parent;
-  const userMove = turnOf(parent.fen) === userColor ? parent : undefined;
+  const userMove = parent.parent && turnOf(parent.parent.fen) === userColor ? parent : undefined;
   const beforeUser = userMove?.parent;
   const beforeMaterial = beforeUser ? material(beforeUser, userColor).diff : undefined;
   const afterMaterial = userMove ? material(userMove, userColor).diff : undefined;
+  let userCaptured: string | undefined;
+  let userCapturedValue = 0;
+  if (userMove?.uci && userMove.parent) {
+    try {
+      const captured = chessOf(userMove.parent).move(toMove(userMove.uci)).captured;
+      if (captured) {
+        userCaptured = PIECE_NAME[captured];
+        userCapturedValue = PIECE_VALUE[captured] ?? 0;
+      }
+    } catch {
+      /* an invalid/stale annotation should not prevent a reply */
+    }
+  }
   const c = chessOf(parent);
   let captured: string | undefined;
   if (n.uci) {
@@ -643,11 +658,15 @@ function opponentSpeak(n: Node) {
       userSan: userMove?.san,
       opponentSan: n.san,
       captured,
+      userCaptured,
+      userCapturedValue,
       userMaterialSwing: beforeMaterial === undefined || afterMaterial === undefined ? undefined : afterMaterial - beforeMaterial,
       opening: parent === tree.root,
     },
     opponentTalkSeed++,
+    lastOpponentLine,
   );
+  lastOpponentLine = opponentLine;
 }
 
 async function maiaEval(n: Node): Promise<MaiaResult> {

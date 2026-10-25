@@ -25,6 +25,11 @@ export const OPPONENT_PERSONALITIES: Record<OpponentPersonality, { label: string
   commentator: { label: '赛事解说', description: '像直播一样点评局面' },
 };
 
+export function randomOpponentPersonality(): OpponentPersonality {
+  const personalities = Object.keys(OPPONENT_PERSONALITIES) as OpponentPersonality[];
+  return personalities[Math.floor(Math.random() * personalities.length)] ?? 'sharp';
+}
+
 const EXTRA_LINES: Partial<Record<OpponentPersonality, Record<TemplateKind, string[]>>> = {
   arrogant: {
     opening: ['我先走，因为这盘棋需要一个可靠的开场。', '开局而已，我已经看到中局了。', '别担心，我会把优势控制在礼貌范围内。', '这一手当然在我的计划里。', '你可以放心，我的计算通常不会迟到。'],

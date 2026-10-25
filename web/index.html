@@ -49,18 +49,6 @@
                 <button data-color="b"><span class="pc b">♚</span>执黑</button>
               </div>
               <label class="setup-tc"><span>用时</span><select id="home-tc"></select></label>
-              <label class="setup-tc" id="home-opponent-personality-wrap"><span>对手性格</span>
-                <select id="home-opponent-personality">
-                  <option value="sharp">直球毒舌</option>
-                  <option value="deadpan">冷面高手</option>
-                  <option value="theatrical">戏精挑衅</option>
-                  <option value="snarky">阴阳怪气</option>
-                  <option value="arrogant">自信狂</option>
-                  <option value="playful">玩世不恭</option>
-                  <option value="poetic">诗人</option>
-                  <option value="commentator">赛事解说</option>
-                </select>
-              </label>
             </div>
 
             <button id="btn-play" class="primary big">开始对局</button>
@@ -392,19 +380,7 @@
         <fieldset class="opponent-settings">
           <legend>对手发言（仅普通对弈）</legend>
           <label class="check"><input type="checkbox" name="opponentTalk" /> 开启对手即时发言</label>
-          <label>本局对手性格
-            <select name="opponentPersonality">
-              <option value="sharp">直球毒舌 · 失误就直说</option>
-              <option value="deadpan">冷面高手 · 冷静但扎心</option>
-              <option value="theatrical">戏精挑衅 · 把对局说成大戏</option>
-              <option value="snarky">阴阳怪气 · 表面客气</option>
-              <option value="arrogant">自信狂 · 觉得自己早已算尽</option>
-              <option value="playful">玩世不恭 · 把棋局当恶作剧</option>
-              <option value="poetic">诗人 · 夸张又带刺的比喻</option>
-              <option value="commentator">赛事解说 · 像直播一样点评</option>
-            </select>
-          </label>
-          <p class="muted">性格在开始本局时确定，整局沿用；每次发言从该性格的本地语录中随机选择，不调用 AI。</p>
+          <p class="muted">每局开始时自动随机一种性格，整局沿用；每次发言从该性格的本地语录中随机选择，不调用 AI。</p>
         </fieldset>
         <div class="env" id="env-info"></div>
         <div class="row">

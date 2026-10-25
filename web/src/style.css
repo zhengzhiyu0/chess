@@ -721,26 +721,18 @@ html:not(.native) .native-only {
   overflow: hidden;
 }
 .caps .cap-piece {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 15px;
-  width: 15px;
-  height: 16px;
-  border-radius: 3px;
-  font-size: 16px;
-  line-height: 1;
-  letter-spacing: 0;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  display: block;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 .caps .cap-piece.black {
-  color: #262421;
-  background: #e7e5e2;
-  border: 1px solid #fff;
+  /* Keep outline-only black piece sets visible without adding a badge or ring. */
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px rgba(255, 255, 255, 0.65)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
 }
 .caps .cap-piece.white {
-  color: #fff;
-  background: #262421;
-  border: 1px solid #b8b4af;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
 }
 .caps .adv {
   flex: none;

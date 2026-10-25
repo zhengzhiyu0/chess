@@ -3782,11 +3782,22 @@ function installIOSBackGesture() {
     current = null;
     tracking = false;
     horizontal = false;
+
+    // Update the route while the outgoing page is still moving. Waiting until
+    // the animation ends briefly restores the active page before `popstate`
+    // can switch to the destination, which is visible as a one-frame flash.
+    if (location.hash) history_.back();
+    else showScreen('home');
+
     window.setTimeout(() => {
+      // The page is inactive now. Move the inline transform to its normal
+      // inactive offset before removing it, so cleanup cannot animate it back
+      // across the screen or leave a stale transform when it is opened again.
+      el.classList.add('edge-swipe-cleanup');
+      el.style.transform = 'translateX(24px)';
       el.classList.remove('edge-swipe-commit');
       el.style.removeProperty('transform');
-      if (location.hash) history_.back();
-      else showScreen('home');
+      requestAnimationFrame(() => el.classList.remove('edge-swipe-cleanup'));
     }, 180);
   };
   document.addEventListener('touchend', end, { capture: true, passive: true });

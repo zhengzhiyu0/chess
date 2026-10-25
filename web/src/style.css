@@ -236,6 +236,9 @@ button svg {
 .screen.edge-swipe-commit {
   transition: transform 0.18s ease-out !important;
 }
+.screen.edge-swipe-cleanup {
+  transition: none !important;
+}
 #home:not(.active) {
   transform: translateX(-24px);
 }

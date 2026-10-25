@@ -4,6 +4,13 @@ import type { Settings } from '../settings';
 import { setStatus } from './dom';
 import { isNative } from '../native';
 
+export type EngineLoadState = {
+  engine: 'maia' | 'stockfish';
+  text: string;
+  progress?: number;
+  ready?: boolean;
+};
+
 /** Lazily loaded, cached engine instances; honours the low-memory setting. */
 export class Engines {
   maia: Maia | null = null;
@@ -27,6 +34,7 @@ export class Engines {
     /** coached play alternates Maia and Stockfish every move, so both must stay resident */
     private needBoth: () => boolean,
     private beforeSfUnload: () => void,
+    private onLoadState?: (state: EngineLoadState) => void,
   ) {}
 
   /**
@@ -39,8 +47,9 @@ export class Engines {
     return !this.preloadBoth && !isNative && st.lowMemory && !st.sfLite && !this.needBoth();
   }
 
-  private status(text: string) {
+  private status(text: string, state?: EngineLoadState) {
     if (!this.silentDepth) setStatus(text);
+    if (state) this.onLoadState?.(state);
   }
 
   unloadMaia() {
@@ -76,8 +85,12 @@ export class Engines {
     const backend = st.backend === 'webgpu' && this.webgpuFailed ? 'wasm' : st.backend;
     const model = st.model;
     const lean = st.lowMemory;
-    const progress = (l: number, t: number) => this.status(`加载 Maia ${((l / t) * 100).toFixed(0)}%（${(t / 1048576).toFixed(0)}MB）`);
-    this.status(`加载 ${MODELS[model].label}…`);
+    const progress = (l: number, t: number) => {
+      const text = `加载 Maia ${((l / t) * 100).toFixed(0)}%（${(t / 1048576).toFixed(0)}MB）`;
+      this.status(text, { engine: 'maia', text, progress: t ? l / t : undefined });
+    };
+    const loadingText = `加载 ${MODELS[model].label}…`;
+    this.status(loadingText, { engine: 'maia', text: loadingText, progress: 0 });
     this.maiaLoading = Maia.create(model, backend, progress, lean)
       .catch(async (err) => {
         if (isNative || backend !== 'webgpu' || gen !== this.maiaGen) throw err;
@@ -102,7 +115,8 @@ export class Engines {
           throw new Error('Maia 已卸载');
         }
         this.maia = m;
-        this.status(`${MODELS[model].label} 就绪${isNative ? `（原生 · ${m.provider === 'coreml' ? 'CoreML' : 'CPU'}）` : ''}`);
+        const readyText = `${MODELS[model].label} 就绪${isNative ? `（原生 · ${m.provider === 'coreml' ? 'CoreML' : 'CPU'}）` : ''}`;
+        this.status(readyText, { engine: 'maia', text: readyText, progress: 1, ready: true });
         return m;
       })
       .catch((err) => {
@@ -126,7 +140,8 @@ export class Engines {
     if (this.sfLoading) return this.sfLoading;
     const st = this.settings();
     if (this.exclusive()) this.unloadMaia();
-    this.status(`加载 Stockfish 19${st.sfLite ? ' 轻量版' : ''}…`);
+    const loadingText = `加载 Stockfish 19${st.sfLite ? ' 轻量版' : ''}…`;
+    this.status(loadingText, { engine: 'stockfish', text: loadingText });
     const gen = this.sfGen;
     this.sfLoading = Stockfish.create(st.sfThreads, st.sfHash, st.sfLite)
       .then((s) => {
@@ -137,7 +152,8 @@ export class Engines {
           throw new Error('Stockfish 已卸载');
         }
         this.sf = s;
-        this.status(`Stockfish 19${s.lite ? ' 轻量版' : ' 满血版'} 就绪（${s.native ? '原生 · ' : ''}${s.multiThreaded ? s.threads + ' 线程' : '单线程'}）`);
+        const readyText = `Stockfish 19${s.lite ? ' 轻量版' : ' 满血版'} 就绪（${s.native ? '原生 · ' : ''}${s.multiThreaded ? s.threads + ' 线程' : '单线程'}）`;
+        this.status(readyText, { engine: 'stockfish', text: readyText, progress: 1, ready: true });
         return s;
       })
       .catch((err) => {
@@ -173,8 +189,9 @@ export class Engines {
     return this.preloadPromise;
   }
 
-  /** Wait until both engines are ready before entering a game. */
-  ensureReady() {
-    return this.warmup(true);
+  /** Wait only for engines needed by the destination screen. */
+  async ensureReady(requireStockfish = false) {
+    if (requireStockfish) return this.warmup(true);
+    await this.getMaia();
   }
 }

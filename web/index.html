@@ -237,21 +237,31 @@
     </div>
 
     <div id="engine-loading" class="engine-loading hidden" role="status" aria-live="polite" aria-busy="true">
-      <div class="engine-loading-orbit" aria-hidden="true">
-        <span class="orbit-dot orbit-dot-a">♞</span>
-        <span class="orbit-dot orbit-dot-b">♜</span>
-        <span class="orbit-core">♟</span>
+      <div class="engine-loading-shell">
+        <div class="engine-loading-brand"><span class="engine-loading-mark" aria-hidden="true">♞</span><span><b>MAIA COACH</b><small>本地棋力引擎</small></span></div>
+        <div class="engine-loading-copy">
+          <p class="engine-loading-kicker">正在进入对战</p>
+          <h1>棋局马上开始</h1>
+          <p id="engine-loading-detail">正在准备你的专属对手，首次启动会稍久一些。</p>
+        </div>
+        <div class="engine-loading-progress">
+          <div><span>引擎准备进度</span><b id="engine-loading-percent">0%</b></div>
+          <div class="engine-loading-track"><span id="engine-loading-track-fill"></span></div>
+        </div>
+        <div class="engine-loading-engines">
+          <div class="engine-loading-engine is-loading" data-engine-state="maia">
+            <span class="engine-engine-icon" aria-hidden="true">♟</span>
+            <span><b>Maia-3</b><small id="engine-loading-maia-detail">人类棋手模型 · 当前对局</small></span>
+            <em id="engine-loading-maia-status">等待</em>
+          </div>
+          <div class="engine-loading-engine is-background" data-engine-state="stockfish">
+            <span class="engine-engine-icon" aria-hidden="true">♜</span>
+            <span><b>Stockfish 19</b><small id="engine-loading-stockfish-detail">教练与复盘分析</small></span>
+            <em id="engine-loading-stockfish-status">后台准备</em>
+          </div>
+        </div>
+        <p class="engine-loading-footnote">所有计算都在本机完成 · 不需要联网</p>
       </div>
-      <div class="engine-loading-copy">
-        <p class="engine-loading-kicker">MAIA COACH</p>
-        <h1>正在准备你的棋局</h1>
-        <p>引擎首次启动需要一点时间，准备好后会自动进入对局。</p>
-      </div>
-      <div class="engine-loading-engines">
-        <div class="engine-loading-engine"><span class="engine-loading-pulse"></span><span><b>Maia-3</b><small>人类棋手模型</small></span><em>准备中</em></div>
-        <div class="engine-loading-engine"><span class="engine-loading-pulse"></span><span><b>Stockfish 19</b><small>教练分析引擎</small></span><em>准备中</em></div>
-      </div>
-      <div class="engine-loading-track" aria-hidden="true"><span></span></div>
     </div>
 
     <dialog id="dlg-menu" class="sheet">

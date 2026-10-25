@@ -32,7 +32,7 @@ import { dragHaptics, installTapHaptics } from './audio/haptics';
 import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio, type EndKind } from './audio/sound';
 import { $, escapeHtml, setStatus } from './app/dom';
 import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from './app/appearance';
-import { Engines } from './app/engines';
+import { Engines, type EngineLoadState } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './app/avatar';
 import { COACHES } from './app/coach-avatars';
@@ -183,6 +183,7 @@ const engines = new Engines(
   // coached play alternates Maia and Stockfish every move; see Engines
   () => coachOn && mode === 'play',
   () => liveCtrl?.abort(),
+  (state) => updateEngineLoading(state),
 );
 const getMaia = () => engines.getMaia();
 const getSf = () => engines.getSf();
@@ -3129,27 +3130,74 @@ function renderHome() {
 
 let startingGame = false;
 
-function setEngineLoading(show: boolean) {
+function engineLoadingElement(id: string): HTMLElement {
+  return $(id);
+}
+
+function setEngineLoading(show: boolean, requireStockfish = false) {
   const page = $('engine-loading');
   page.classList.toggle('hidden', !show);
   page.setAttribute('aria-hidden', show ? 'false' : 'true');
+  page.dataset.requireStockfish = requireStockfish ? 'true' : 'false';
+  const sf = document.querySelector<HTMLElement>('[data-engine-state="stockfish"]');
+  sf?.classList.toggle('is-required', requireStockfish);
+  if (show) {
+    engineLoadingElement('engine-loading-detail').textContent = requireStockfish
+      ? '正在准备对局与教练分析引擎…'
+      : '正在准备你的专属对手，首次启动会稍久一些。';
+    engineLoadingElement('engine-loading-percent').textContent = '0%';
+    engineLoadingElement('engine-loading-track-fill').style.width = '0%';
+    engineLoadingElement('engine-loading-maia-status').textContent = '准备中';
+    engineLoadingElement('engine-loading-stockfish-status').textContent = requireStockfish ? '准备中' : '后台准备';
+    engineLoadingElement('engine-loading-maia-detail').textContent = '人类棋手模型 · 当前对局';
+    engineLoadingElement('engine-loading-stockfish-detail').textContent = requireStockfish ? '教练与复盘分析 · 当前对局' : '教练与复盘分析 · 后台准备';
+    document.querySelectorAll<HTMLElement>('.engine-loading-engine').forEach((el) => el.classList.remove('is-ready'));
+  }
+}
+
+function updateEngineLoading(state: EngineLoadState) {
+  const page = $('engine-loading');
+  if (page.classList.contains('hidden')) return;
+  const status = engineLoadingElement(`engine-loading-${state.engine}-status`);
+  const detail = engineLoadingElement(`engine-loading-${state.engine}-detail`);
+  const card = document.querySelector<HTMLElement>(`[data-engine-state="${state.engine}"]`);
+  status.textContent = state.ready ? '已就绪' : state.engine === 'stockfish' && page.dataset.requireStockfish !== 'true' ? '后台准备' : '加载中';
+  if (state.ready) {
+    card?.classList.add('is-ready');
+    detail.textContent = state.engine === 'maia' ? '人类棋手模型 · 可开始对局' : '教练与复盘分析 · 已就绪';
+  } else if (state.progress !== undefined) {
+    detail.textContent = `${Math.round(state.progress * 100)}% · ${state.text}`;
+  } else {
+    detail.textContent = state.text;
+  }
+  const maia = state.engine === 'maia' ? state.progress : undefined;
+  const sf = state.engine === 'stockfish' ? state.progress : undefined;
+  const maiaProgress = maia ?? (engines.maia?.alive ? 1 : 0);
+  const sfProgress = sf ?? (engines.sf?.alive ? 1 : 0);
+  const requireSf = page.dataset.requireStockfish === 'true';
+  const progress = requireSf ? (maiaProgress + sfProgress) / 2 : maiaProgress;
+  engineLoadingElement('engine-loading-percent').textContent = `${Math.round(progress * 100)}%`;
+  engineLoadingElement('engine-loading-track-fill').style.width = `${Math.round(progress * 100)}%`;
+  engineLoadingElement('engine-loading-detail').textContent = state.ready
+    ? state.engine === 'maia' && !requireSf
+      ? '对手已经准备好了，马上进入棋局。'
+      : `${state.text}，正在完成最后准备。`
+    : state.text;
 }
 
 /** Engine preload is intentionally invisible at startup, but starting a game waits for it. */
-function startWhenReady(button: HTMLButtonElement, start: () => void) {
+function startWhenReady(button: HTMLButtonElement, start: () => void, requireStockfish = false) {
   if (startingGame) return;
   startingGame = true;
   button.disabled = true;
   button.setAttribute('aria-busy', 'true');
-  setEngineLoading(true);
+  setEngineLoading(true, requireStockfish);
   const loadingText = '正在加载棋力引擎，请稍候…';
   setStatus(loadingText);
-  const keepVisible = window.setInterval(() => setStatus(loadingText), 1800);
-  void engines.ensureReady()
+  void engines.ensureReady(requireStockfish)
     .then(start)
     .catch(() => setStatus('引擎加载失败，请稍后重试'))
     .finally(() => {
-      window.clearInterval(keepVisible);
       setEngineLoading(false);
       startingGame = false;
       button.disabled = false;
@@ -3273,7 +3321,7 @@ function bind() {
     startWhenReady($<HTMLButtonElement>('btn-continue'), () => {
       setMode(result === '' && !imported ? 'play' : 'review');
       showScreen('game');
-    });
+    }, mode === 'review');
   };
   $('btn-home-import').onclick = () => {
     setHomeTab('data');

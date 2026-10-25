@@ -7,6 +7,8 @@ import { TIME_CONTROLS } from './game/clock';
 export type Color = 'w' | 'b';
 
 export interface Settings {
+  /** app chrome colour scheme */
+  theme: 'dark' | 'light';
   model: '5m' | '23m' | '79m';
   elo: number;
   /** adjust `elo` after each finished game according to the result */
@@ -94,6 +96,7 @@ export function defaultSettings(): Settings {
   const cores = navigator.hardwareConcurrency || 2;
   const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   return {
+    theme: 'dark',
     model: isNative ? '23m' : isIOS ? '5m' : '23m',
     elo: 1500,
     autoElo: true,
@@ -180,6 +183,7 @@ type Rule = { oneOf: readonly unknown[] } | { num: [number, number]; int?: boole
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const RULES: Record<keyof Settings, Rule> = {
+  theme: { oneOf: ['dark', 'light'] },
   model: { oneOf: ['5m', '23m', '79m'] },
   elo: { num: [ELO_MIN, ELO_MAX], int: true },
   autoElo: { bool: true },

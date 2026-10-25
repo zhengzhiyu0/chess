@@ -22,6 +22,24 @@
   color-scheme: dark;
 }
 
+/* The board keeps its own colours; this palette controls the surrounding app chrome. */
+html[data-theme='light'] {
+  --bg: #f5f6f7;
+  --bg-dark: #e8eaed;
+  --panel: #ffffff;
+  --panel2: #eef0f2;
+  --panel3: #d9dde2;
+  --line: rgba(31, 41, 55, 0.12);
+  --text: #1f2937;
+  --text2: #4b5563;
+  --muted: #6b7280;
+  --green: #5d9632;
+  --green-dark: #477b2a;
+  --green-hover: #75ad3e;
+  --yellow: #a66b12;
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -150,6 +168,11 @@ button svg {
   stroke-linecap: round;
   stroke-linejoin: round;
   flex: none;
+}
+
+.theme-toggle svg {
+  width: 21px;
+  height: 21px;
 }
 
 .row {
@@ -2531,6 +2554,40 @@ dialog input[type='color'] {
   align-items: center;
   gap: 4px;
   font-size: 13px;
+}
+
+/* A few legacy surfaces use fixed dark values for contrast in the dark palette. */
+html[data-theme='light'] .clock {
+  background: var(--panel3);
+  color: var(--text2);
+}
+html[data-theme='light'] .clock.active {
+  background: #ffffff;
+  color: var(--text);
+}
+html[data-theme='light'] .evalbar {
+  background: var(--panel3);
+}
+html[data-theme='light'] .evalbar span {
+  color: var(--panel3);
+}
+html[data-theme='light'] .lines b {
+  background: var(--panel3);
+  color: var(--text);
+}
+html[data-theme='light'] .toast {
+  background: rgba(31, 41, 55, 0.92);
+  color: #f9fafb;
+}
+html[data-theme='light'] .engine-loading-engine {
+  background: rgba(255, 255, 255, 0.84);
+}
+html[data-theme='light'] .menu-list button:hover,
+html[data-theme='light'] button.icon:hover,
+html[data-theme='light'] .home-nav button:hover,
+html[data-theme='light'] .move-bar .nav:hover,
+html[data-theme='light'] .review-ctrl .rc-btn:hover {
+  background: rgba(31, 41, 55, 0.07);
 }
 /* ---------- 训练（谜题 / 错题本） ---------- */
 #train[data-view='catalog'] .train-main,

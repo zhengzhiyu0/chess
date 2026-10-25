@@ -155,6 +155,29 @@ let rating: RatingInfo | undefined;
 let ratePending = false;
 let abandoned = false;
 
+function applyTheme(theme: Settings['theme']) {
+  const isLight = theme === 'light';
+  const root = document.documentElement;
+  root.dataset.theme = theme;
+  root.style.colorScheme = theme;
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (meta) meta.content = isLight ? '#f5f6f7' : '#262421';
+  document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach((button) => {
+    button.innerHTML = isLight
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2m0 14v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M3 12h2m14 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" /></svg>'
+      : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.7A8.5 8.5 0 0 1 9.3 3.5 8.5 8.5 0 1 0 20.5 14.7Z" /></svg>';
+    const label = isLight ? '切换深色模式' : '切换浅色模式';
+    button.title = label;
+    button.ariaLabel = label;
+  });
+}
+
+function toggleTheme() {
+  settings = { ...settings, theme: settings.theme === 'light' ? 'dark' : 'light' };
+  saveSettings(settings);
+  applyTheme(settings.theme);
+}
+
 const engines = new Engines(
   () => settings,
   // coached play alternates Maia and Stockfish every move; see Engines
@@ -2710,6 +2733,7 @@ function applyBoardSize() {
 
 function applySettings(old: Settings) {
   saveSettings(settings);
+  applyTheme(settings.theme);
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);
   applyBoardSize();
@@ -3171,6 +3195,9 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
 // ---------- init ----------
 
 function bind() {
+  document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach((button) => {
+    button.onclick = toggleTheme;
+  });
   document.querySelectorAll<HTMLButtonElement>('[data-home-tab]').forEach((button) => {
     button.onclick = () => setHomeTab(button.dataset.homeTab as HomeTab);
   });
@@ -3681,6 +3708,7 @@ function installIOSBackGesture() {
 
 function init() {
   document.documentElement.classList.add(isNative ? 'native' : 'web');
+  applyTheme(settings.theme);
   fitStandalone();
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);

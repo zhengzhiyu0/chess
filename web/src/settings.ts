@@ -83,6 +83,9 @@ export interface Settings {
   aiModel: string;
   aiShareGame: boolean;
   aiSaveKey: boolean;
+  /** instant local taunts in normal games only */
+  opponentTalk: boolean;
+  opponentPersonality: 'sharp' | 'deadpan' | 'theatrical' | 'snarky';
   /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
   engineGen?: number;
   /** sound theme default migration: 1 = Lichess sfx, 2 = wooden board set */
@@ -150,6 +153,8 @@ export function defaultSettings(): Settings {
     aiModel: 'deepseek-flash',
     aiShareGame: false,
     aiSaveKey: false,
+    opponentTalk: true,
+    opponentPersonality: 'sharp',
   };
 }
 
@@ -239,6 +244,8 @@ const RULES: Record<keyof Settings, Rule> = {
   aiModel: { str: /^[^\s<>]{1,200}$/ },
   aiShareGame: { bool: true },
   aiSaveKey: { bool: true },
+  opponentTalk: { bool: true },
+  opponentPersonality: { oneOf: ['sharp', 'deadpan', 'theatrical', 'snarky'] },
   engineGen: { optInt: true },
   soundGen: { optInt: true },
 };

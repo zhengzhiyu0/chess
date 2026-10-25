@@ -42,6 +42,7 @@ import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
 import { clearAiKey, explainWithAi, fetchAiModels, loadAiKey, saveAiKey, type AiConfig, type AiExplanation, type AiExplanationContext } from './ai/llm';
+import { opponentTalk, OPPONENT_PERSONALITIES, type OpponentPersonality } from './opponent';
 
 // ---------- state ----------
 
@@ -125,6 +126,8 @@ let aiExplanation: AiExplanation | null = null;
 let aiBusy = false;
 let aiError = '';
 let aiSessionKey = loadAiKey();
+let opponentLine = '';
+let opponentTalkSeed = 0;
 let shownResult = '';
 let coachOn = false;
 let coachState: 'idle' | 'checking' | 'paused' = 'idle';
@@ -240,6 +243,8 @@ function resetTransient() {
   retried = null;
   liveLines = [];
   hintedAt = null;
+  opponentLine = '';
+  opponentTalkSeed = 0;
   coachReset();
   $('hint-box').textContent = '';
 }
@@ -602,6 +607,41 @@ function maiaFens(n: Node): string[] {
   return settings.useHistory ? fensTo(n) : [n.fen];
 }
 
+function clearOpponentLine() {
+  opponentLine = '';
+}
+
+function opponentSpeak(n: Node) {
+  if (!settings.opponentTalk || coachOn || imported || mode !== 'play' || !n.parent) return;
+  const parent = n.parent;
+  const userMove = turnOf(parent.fen) === userColor ? parent : undefined;
+  const beforeUser = userMove?.parent;
+  const beforeMaterial = beforeUser ? material(beforeUser, userColor).diff : undefined;
+  const afterMaterial = userMove ? material(userMove, userColor).diff : undefined;
+  const c = chessOf(parent);
+  let captured: string | undefined;
+  if (n.uci) {
+    try {
+      const m = c.move(toMove(n.uci));
+      captured = m.captured ? PIECE_NAME[m.captured] : undefined;
+    } catch {
+      /* an already finished position has no legal move to inspect */
+    }
+  }
+  const personality = settings.opponentPersonality as OpponentPersonality;
+  opponentLine = opponentTalk(
+    personality,
+    {
+      userSan: userMove?.san,
+      opponentSan: n.san,
+      captured,
+      userMaterialSwing: beforeMaterial === undefined || afterMaterial === undefined ? undefined : afterMaterial - beforeMaterial,
+      opening: parent === tree.root,
+    },
+    opponentTalkSeed++,
+  );
+}
+
 async function maiaEval(n: Node): Promise<MaiaResult> {
   if (n.a.human) return n.a.human;
   const m = await getMaia();
@@ -615,6 +655,7 @@ function playMove(uci: string): boolean {
   if (result) return false;
   const parent = tip();
   const mover = turnOf(parent.fen);
+  if (mover === userColor) clearOpponentLine();
   const now = performance.now();
   if (clock && clock.time(mover, now) <= 0) {
     flag(mover);
@@ -835,7 +876,12 @@ async function maiaTurn(attempt = 0) {
       if (token !== gameToken || mode !== 'play' || screen !== 'game') return;
     }
     maiaThinking = false;
-    if (playMove(pick.uci) && settings.premove) cg.playPremove();
+    const played = playMove(pick.uci);
+    if (played) {
+      opponentSpeak(tip());
+      update();
+      if (settings.premove) cg.playPremove();
+    }
   } catch (err) {
     console.error(err);
     // a crashed / hung worker is replaced by getMaia() on the next call
@@ -2234,6 +2280,18 @@ function renderPlayInfo() {
   else box.textContent = turnOf(node.fen) === userColor ? (cg.state.premovable.current ? '轮到你走（已预走）' : '轮到你走') : '等待 Maia';
 }
 
+function renderOpponentDialogue() {
+  const box = $('opponent-dialogue');
+  const visible = Boolean(opponentLine) && settings.opponentTalk && !coachOn && !imported && mode === 'play';
+  box.classList.toggle('show', visible);
+  if (!visible) {
+    box.innerHTML = '';
+    return;
+  }
+  const personality = OPPONENT_PERSONALITIES[settings.opponentPersonality as OpponentPersonality] ?? OPPONENT_PERSONALITIES.sharp;
+  box.innerHTML = `<span class="opponent-label">${escapeHtml(personality.label)} · Maia</span>${escapeHtml(opponentLine)}`;
+}
+
 function update() {
   validateDemo();
   syncClock();
@@ -2241,6 +2299,7 @@ function update() {
   renderMoves();
   renderPlayers();
   renderPlayInfo();
+  renderOpponentDialogue();
   renderEvalBar();
   renderGraph();
   renderSummary();
@@ -2767,6 +2826,8 @@ function openSettings() {
       aiModel: aiModel.value,
       aiShareGame: el('aiShareGame').checked,
       aiSaveKey: el('aiSaveKey').checked,
+      opponentTalk: el('opponentTalk').checked,
+      opponentPersonality: el('opponentPersonality').value as Settings['opponentPersonality'],
     };
     aiSessionKey = aiKey.value.trim();
     if (settings.aiSaveKey) saveAiKey(aiSessionKey);

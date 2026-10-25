@@ -151,6 +151,7 @@
             <div class="panel">
               <div class="tab" id="tab-play">
                 <div class="info" id="play-info"></div>
+                <div class="opponent-dialogue" id="opponent-dialogue" aria-live="polite"></div>
                 <div class="coach-live" id="coach-live"></div>
                 <div class="hint" id="hint-box"></div>
               </div>
@@ -419,6 +420,19 @@
           <label class="check"><input type="checkbox" name="aiShareGame" /> 允许发送完整对局（默认只发送当前局面和相关变化）</label>
           <label class="check"><input type="checkbox" name="aiSaveKey" /> 在本机保存 API Key</label>
           <p class="muted">训练总结、错题分类与训练建议都在本机完成。AI 仅作为可选的进一步讲解，不参与棋局评判或训练推荐；关闭后所有 AI 入口都会隐藏。</p>
+        </fieldset>
+        <fieldset class="opponent-settings">
+          <legend>对手发言（仅普通对弈）</legend>
+          <label class="check"><input type="checkbox" name="opponentTalk" /> 开启对手即时发言</label>
+          <label>对手性格
+            <select name="opponentPersonality">
+              <option value="sharp">直球毒舌 · 失误就直说</option>
+              <option value="deadpan">冷面高手 · 冷静但扎心</option>
+              <option value="theatrical">戏精挑衅 · 把对局说成大戏</option>
+              <option value="snarky">阴阳怪气 · 表面客气</option>
+            </select>
+          </label>
+          <p class="muted">使用本地预置话术，立即显示，不调用 AI。教练、复盘和导入棋局不会触发。</p>
         </fieldset>
         <div class="env" id="env-info"></div>
         <div class="row">

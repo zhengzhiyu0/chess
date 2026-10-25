@@ -80,6 +80,13 @@ interface LegacyGame {
 
 const GAME_KEY = 'maia-coach.game';
 
+function resetAnalysisStatus() {
+  analysisStatus = 'idle';
+  analysisError = '';
+  analysisDone = 0;
+  analysisTotal = 0;
+}
+
 function isLegacy(v: unknown): v is LegacyGame {
   const g = v as LegacyGame;
   return Boolean(v) && typeof v === 'object' && !('tree' in g) && typeof g.startFen === 'string' && Array.isArray(g.moves) && g.moves.every((m) => typeof m === 'string') && (g.userColor === 'w' || g.userColor === 'b');
@@ -117,6 +124,12 @@ let liveLines: SfLine[] = [];
 let batchCtrl: AbortController | null = null;
 /** whole-game analysis interrupted by the app going to the background, resumed on return */
 let pausedBatch = false;
+type AnalysisStatus = 'idle' | 'running' | 'complete' | 'interrupted' | 'failed';
+/** Whole-game review status; summaries are only final once this is complete. */
+let analysisStatus: AnalysisStatus = 'idle';
+let analysisError = '';
+let analysisDone = 0;
+let analysisTotal = 0;
 let screen: 'home' | 'game' | 'train' = 'home';
 type HomeTab = 'play' | 'train' | 'data';
 let homeTab: HomeTab = 'play';
@@ -286,6 +299,7 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     tcId = g.tc ?? 'none';
     const tc = timeControlOf(tcId);
     clock = tc ? new ChessClock(tc, g.clock ?? node.clock) : null;
+    resetAnalysisStatus();
     resetTransient();
     return true;
   } catch (err) {
@@ -920,6 +934,7 @@ function newGame(fen = START_FEN, color?: Color): boolean {
   abandoned = false;
   peakUserMoves = 0;
   maiaFailed = false;
+  resetAnalysisStatus();
   tcId = settings.timeControl;
   const tc = timeControlOf(tcId);
   clock = tc ? new ChessClock(tc) : null;
@@ -1167,9 +1182,13 @@ async function analyseGame() {
   const setFill = (pct: number) => fills.forEach((f) => (f.style.width = `${pct}%`));
   bars.forEach((b) => b.classList.remove('hidden'));
   setFill(0);
-  renderReportHint();
   const nodes = gameLine();
   const n = nodes.length;
+  analysisStatus = 'running';
+  analysisError = '';
+  analysisTotal = n;
+  analysisDone = nodes.filter((x) => Boolean(x.a.eval)).length;
+  renderReportHint();
   try {
     const s = await getSf();
     for (let i = 0; i < n; i++) {
@@ -1177,18 +1196,33 @@ async function analyseGame() {
       // killed by the watchdog: its searches now return nothing at once; don't report a hollow "done"
       if (!s.alive) throw new Error('Stockfish 中途退出');
       await evalNode(s, nodes[i], ctrl.signal);
+      analysisDone = nodes.filter((x) => Boolean(x.a.eval)).length;
       setFill(((i + 1) / n) * 100);
       if (nodes[i] === node || i % 4 === 0) update();
     }
     // aborted during the last position: the game (and `result`) may already be another one
     if (ctrl.signal.aborted) return;
+    analysisDone = nodes.filter((x) => Boolean(x.a.eval)).length;
+    if (analysisDone < n) {
+      analysisStatus = 'interrupted';
+      analysisError = `还有 ${n - analysisDone} 个局面没有完成分析`;
+      setStatus(analysisError);
+      return;
+    }
+    analysisDone = n;
+    analysisStatus = 'complete';
     setStatus('分析完成');
     if (result && !imported) collectMistakes();
   } catch (err) {
     console.error(err);
-    if (!ctrl.signal.aborted) setStatus('分析中断：' + (err as Error).message);
+    if (!ctrl.signal.aborted) {
+      analysisStatus = 'failed';
+      analysisError = (err as Error).message || '引擎未能完成分析';
+      setStatus('分析中断：' + analysisError);
+    }
   } finally {
     if (batchCtrl === ctrl) {
+      if (ctrl.signal.aborted && analysisStatus === 'running') analysisStatus = 'interrupted';
       batchCtrl = null;
       bars.forEach((b) => b.classList.add('hidden'));
       void runLive();
@@ -1433,6 +1467,13 @@ function trendRecommendation(): { label: string; tag: string; theme?: string; re
 
 function renderLearningSummary() {
   const box = $('learning-report-summary');
+  if (mode === 'review' && gameLine().length && analysisStatus !== 'complete') {
+    const retry = analysisStatus === 'interrupted' || analysisStatus === 'failed';
+    const detail = analysisStatus === 'running' ? 'Stockfish 正在逐步检查整局，完成后才会生成最终的学习结论。' : analysisStatus === 'idle' ? '正在准备完整复盘，完成后才会生成最终的学习结论。' : analysisError || '分析没有覆盖整局，暂不生成最终结论。';
+    box.classList.remove('hidden');
+    box.innerHTML = `<div class="learning-kicker">本地学习总结</div><h3>等待完整复盘</h3><p>${escapeHtml(detail)}</p>${retry ? '<button type="button" class="primary" data-learning-analysis>继续分析</button>' : ''}`;
+    return;
+  }
   const issues = learningIssues().slice(0, 3);
   const serious = issues.filter((n) => SERIOUS_JUDGEMENTS.has(reviewOf(n)!.judgement));
   const focus = serious[0] ?? issues[0];
@@ -1551,7 +1592,18 @@ function closeReport() {
 function renderReportHint() {
   const analysing = Boolean(batchCtrl && !batchCtrl.signal.aborted);
   const empty = $('summary').dataset.empty === 'true';
-  $('report-hint').textContent = analysing ? '正在分析整局…' : empty ? '暂无可统计的着法' : '';
+  const hint = $('report-hint');
+  if (analysing || analysisStatus === 'running') {
+    hint.textContent = analysisTotal ? `正在分析整局… ${analysisDone}/${analysisTotal}` : '正在分析整局…';
+  } else if (analysisStatus === 'interrupted') {
+    hint.textContent = `${analysisError || '分析未完成'}，可继续分析。`;
+  } else if (analysisStatus === 'failed') {
+    hint.textContent = `分析失败：${analysisError || '引擎未能完成分析'}，可重试。`;
+  } else if (analysisStatus === 'idle') {
+    hint.textContent = '等待完整分析后生成学习总结。';
+  } else {
+    hint.textContent = empty ? '暂无可统计的着法' : '';
+  }
 }
 
 type IssueSide = 'all' | 'me' | 'opp';
@@ -2796,6 +2848,7 @@ function loadImported(p: Parsed) {
   tcId = 'none';
   clock = null;
   flipped = false;
+  resetAnalysisStatus();
   resetTransient();
 }
 
@@ -3290,6 +3343,10 @@ function bind() {
   $('btn-report-start').onclick = closeReport;
   $('learning-report-summary').onclick = (e) => {
     const t = e.target as HTMLElement;
+    if (t.closest('[data-learning-analysis]')) {
+      void analyseGame();
+      return;
+    }
     const jump = Number(t.closest<HTMLElement>('[data-learning-jump]')?.dataset.learningJump);
     if (jump) {
       closeReport();

@@ -1,6 +1,8 @@
-/** Bundled MP3 sound themes played through Web Audio, plus haptics. */
+/** Bundled MP3s: native AVAudioPlayer on iOS, Web Audio on the web, plus haptics. */
 
 import { configureHaptics, haptic } from './haptics';
+import { isNative } from '../native';
+import { SoundNative } from 'maia-native';
 
 export type SoundKind = 'move' | 'capture' | 'check' | 'castle' | 'promote' | 'illegal' | 'start' | 'end' | 'lowtime';
 
@@ -65,6 +67,7 @@ const activeSources = new Set<AudioScheduledSourceNode>();
 function discardSounds() {
   pendingSounds = [];
   stopSounds();
+  if (isNative) void SoundNative.stop().catch((err) => console.warn('停止原生音效失败', err));
 }
 
 function stopSounds() {
@@ -173,7 +176,7 @@ function flushSounds(a: AudioContext) {
 
 /** iOS only allows audio after a user gesture; call from the first tap. */
 export function unlockAudio() {
-  if (document.hidden) return;
+  if (isNative || document.hidden) return;
   const a = audio();
   if (!a) return;
   if (a.state === 'running') {
@@ -211,6 +214,14 @@ function sampleFor(kind: SoundKind, end?: EndKind): SampleFile {
   }
 }
 
+function playNative(kind: SoundKind, id: string, end?: EndKind, preview = false) {
+  const theme = soundThemeOf(id);
+  const clips = preview
+    ? [{ theme, file: 'Move', delay: 0 }, { theme, file: 'Capture', delay: 0.45 }]
+    : [{ theme, file: sampleFor(kind, end), delay: 0 }];
+  void SoundNative.play({ clips }).catch((err) => console.warn('原生音效播放失败', err));
+}
+
 async function render(a: AudioContext, kind: SoundKind, id: string, delay = 0, end?: EndKind, requestedAt = performance.now()) {
   const theme = soundThemeOf(id);
   const file = sampleFor(kind, end);
@@ -228,13 +239,18 @@ async function render(a: AudioContext, kind: SoundKind, id: string, delay = 0, e
 export function play(kind: SoundKind, end?: EndKind) {
   if (document.hidden) return;
   haptic(kind);
-  const a = audio();
-  if (!a) return;
+  if (!enabled) return;
   const now = performance.now();
   if (kind === 'move' || kind === 'capture' || kind === 'castle' || kind === 'check' || kind === 'promote') {
     if (now - lastMoveAt < 70) return;
     lastMoveAt = now;
   }
+  if (isNative) {
+    playNative(kind, themeId, end);
+    return;
+  }
+  const a = audio();
+  if (!a) return;
   if (a.state === 'running') {
     void render(a, kind, themeId, 0, end);
     return;
@@ -247,6 +263,11 @@ export function play(kind: SoundKind, end?: EndKind) {
 
 /** Plays a short sample (move, then capture) of a theme, even when sound is switched off. */
 export function previewTheme(id: string) {
+  if (document.hidden) return;
+  if (isNative) {
+    playNative('move', id, undefined, true);
+    return;
+  }
   const a = audio(true);
   if (!a || document.hidden) return;
   const epoch = soundEpoch;

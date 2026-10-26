@@ -42,3 +42,11 @@ export interface MaiaNativePlugin {
 
 export const StockfishNative = registerPlugin<StockfishNativePlugin>('StockfishNative');
 export const MaiaNative = registerPlugin<MaiaNativePlugin>('MaiaNative');
+
+export interface SoundNativePlugin {
+  /** Bundled recordings; delay is in seconds, relative to this batch. */
+  play(opts: { clips: { theme: string; file: string; delay: number }[] }): Promise<void>;
+  stop(): Promise<void>;
+}
+
+export const SoundNative = registerPlugin<SoundNativePlugin>('SoundNative');

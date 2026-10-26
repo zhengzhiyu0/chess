@@ -27,7 +27,12 @@ jobs:
           path: web/.cache/nnue
           key: nnue-${{ hashFiles('web/native-plugins/maia-native/stockfish/src/evaluate.h') }}
       - run: npm ci
+      - name: Audio regression tests
+        run: npm test -- test/sound.test.ts test/native-sound.test.ts
       - run: npm run build:native
+
+      - name: Native audio assets and plugin smoke test
+        run: swift test/sound-assets.native.swift ios/App/App/public
 
       # the native Stockfish (full + lite in one binary, NEON) must answer UCI, search and stop
       - name: Native Stockfish smoke test (arm64 macOS)

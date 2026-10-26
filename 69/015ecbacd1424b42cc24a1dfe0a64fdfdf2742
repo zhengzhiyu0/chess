@@ -1,0 +1,67 @@
+web/test/settings-migration.test.ts
+  s_e33be402c80617::t_f0785333736c3e 54-62
+web/src/coach/explain.ts
+  s_e33be402c80617::t_65ca4d793926af 535
+web/test/opponent.test.ts
+  s_e33be402c80617::t_f841a6949c6bbd 2,26-42
+web/test/sound.test.ts
+  s_e33be402c80617::t_a5644d359c339a 56-88
+  s_e33be402c80617::t_98382548c342bd 207-209,214-218
+  s_e33be402c80617::t_08dd285668f512 108,114-115,117-118,126-143,146-157,159-205
+  s_e33be402c80617::t_5bd7849844625a 206,210-213
+  s_e33be402c80617::t_e0b8997f79d5cb 144-145,158
+web/src/main.ts
+  s_e33be402c80617::t_63117c3130c5e3 1564-1565,1568,1570,1581
+  s_e33be402c80617::t_b029f0d7e625ed 706,709,1635,1642-1654,1659-1660,1665,1667-1668,2489,2568,3247-3256,3260-3262,3264,3290-3314,3508,3512,3522-3525,3814,3897-3900
+  s_e33be402c80617::t_0b30fb084339df 1260,3568
+  s_e33be402c80617::t_b7dbd73528d095 159-172,278,294,905
+  s_e33be402c80617::t_20843a9b143a8d 901,3441-3443
+  s_e33be402c80617::t_cacebae387b7fc 3315
+web/src/opponent.ts
+  s_e33be402c80617::t_03c452ae24217d 129-172,186,188-193,197,199-200
+  s_e33be402c80617::t_c22f0174145bf9 185
+web/src/settings.ts
+  s_e33be402c80617::t_af3ec393acc14f 4,254-256
+README.md
+  s_e33be402c80617::t_f2ac0e716e6adc 12
+  s_e33be402c80617::t_2bdc3ccaf22d49 91
+web/test/navigation.browser.mjs
+  s_e33be402c80617::t_91947be02c5739 52
+  s_e33be402c80617::t_f9e4f7aa19995c 62-65,86,117,147
+  s_e33be402c80617::t_593c4f177862d4 58,160
+  s_e33be402c80617::t_a9d8849a1a99f4 90-92
+  s_e33be402c80617::t_1cab89ccd42bc5 140
+  s_e33be402c80617::t_a2ec2b2a7ee611 53,60-61,159,161
+  s_e33be402c80617::t_766090cd4ad531 71-72,74,82
+  s_e33be402c80617::t_8fd333b33ff325 27
+  s_e33be402c80617::t_eb65ecf44dc8f9 69,83-84
+  s_e33be402c80617::t_b545b39f55912a 132
+  s_e33be402c80617::t_0ccf24c197e8cb 1-26,28-51,54-57,59,66-68,70,73,75-81,85,87-89,93-116,118-131,133-139,141-146,148-158,162-164
+web/public/sounds/LICENSE-Kenney.txt
+  s_e33be402c80617::t_83e752fcde64f7 1-20
+  s_e33be402c80617::t_c82cfa3d6efc2d 21
+web/src/style.css
+  s_e33be402c80617::t_f81e8a29b8a057 1258,1267-1269,1272-1280
+web/public/sounds/README.md
+  s_e33be402c80617::t_04bde6a4baf65f 15-35
+web/test/sound-assets.browser.mjs
+  s_e33be402c80617::t_b873b81993b820 1-50
+web/src/audio/sound.ts
+  s_e33be402c80617::t_acc3a819b9fa7e 1,16-18,27,29-32,40-43,45,47-48,51-56,67-70,87,90,94-95,100-102,108,111,113-114,124,132-135,137-148,164-173,176,180,183-185,193,210,214-215,218-219,221,244-245
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "69015ecbacd1424b42cc24a1dfe0a64fdfdf2742",
+  "prompts": {},
+  "sessions": {
+    "s_e33be402c80617": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a176ac-9a48-75d0-bea2-89edad600210",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

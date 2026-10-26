@@ -1,0 +1,33 @@
+README.md
+  s_c654c8d68bc267::t_520baae787f59e 91
+web/src/audio/sound.ts
+  s_c654c8d68bc267::t_8ee29724c88d68 1,4-5,70,179,217-224,242,248-253,266-270
+.github/workflows/ios.yml
+  s_c654c8d68bc267::t_520baae787f59e 34-36
+  s_c654c8d68bc267::t_db54ac21df3a64 30-31
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_c654c8d68bc267::t_8ee29724c88d68 1-89,91-110
+  s_c654c8d68bc267::t_6710f76e7cb434 90
+web/native-plugins/maia-native/src/index.ts
+  s_c654c8d68bc267::t_8ee29724c88d68 45-52
+web/test/sound-assets.native.swift
+  s_c654c8d68bc267::t_520baae787f59e 1-29
+web/test/native-sound.test.ts
+  s_c654c8d68bc267::t_520baae787f59e 1-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "050b46fad7835fd94965905998deb40fa1d08647",
+  "prompts": {},
+  "sessions": {
+    "s_c654c8d68bc267": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17704-6509-7201-938b-699b4050b4f6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

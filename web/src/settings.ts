@@ -1,7 +1,7 @@
 import { isNative } from './native';
 import { safeSet } from './storage';
 import { BOARD_THEMES, PIECE_SETS } from './app/appearance';
-import { SOUND_THEMES } from './audio/sound';
+import { SOUND_THEMES, soundThemeOf } from './audio/sound';
 import { TIME_CONTROLS } from './game/clock';
 
 export type Color = 'w' | 'b';
@@ -251,7 +251,9 @@ export function sanitizeSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== 'object') return out as unknown as Settings;
   const src = raw as Record<string, unknown>;
   for (const k of Object.keys(RULES) as (keyof Settings)[]) {
-    if (Object.hasOwn(src, k) && valid(RULES[k], src[k])) out[k] = src[k];
+    if (!Object.hasOwn(src, k)) continue;
+    const value = k === 'soundTheme' ? soundThemeOf(src[k]) : src[k];
+    if (valid(RULES[k], value)) out[k] = value;
   }
   return out as unknown as Settings;
 }

@@ -53,6 +53,39 @@ afterEach(() => {
 });
 
 describe('音效生命周期', () => {
+  for (const theme of ['board', 'wood', 'felt', 'glass', 'sfx', 'piano', 'nes', 'futuristic']) {
+    it(`${theme} 使用成品 MP3，落子与吃子各自播放`, async () => {
+      const { configureSound, play } = await import('../src/audio/sound');
+      configureSound(true, false, theme);
+      play('move');
+      vi.advanceTimersByTime(70);
+      play('capture');
+      await flush();
+      expect(fetch).toHaveBeenCalledWith(`http://localhost/sounds/${theme}/Move.mp3`);
+      expect(fetch).toHaveBeenCalledWith(`http://localhost/sounds/${theme}/Capture.mp3`);
+      expect(played()).toHaveLength(2);
+    });
+  }
+
+  it('选中录音失败时回退到 Lichess 成品音效', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => url.includes('/glass/')
+      ? new Response(null, { status: 404 }) : new Response(new Uint8Array([1]))));
+    const { configureSound, play } = await import('../src/audio/sound');
+    configureSound(true, false, 'glass');
+    play('move');
+    await flush();
+    expect(fetch).toHaveBeenCalledWith('http://localhost/sounds/sfx/Move.mp3');
+    expect(played()).toHaveLength(1);
+  });
+
+  it('无效走子使用现成警告录音', async () => {
+    const { play } = await import('../src/audio/sound');
+    play('illegal');
+    await flush();
+    expect(fetch).toHaveBeenCalledWith('http://localhost/sounds/sfx/LowTime.mp3');
+    expect(played()).toHaveLength(1);
+  });
+
   it('首次手势解锁后播放刚发生的事件', async () => {
     FakeAudioContext.initialState = 'suspended';
     const { play, unlockAudio } = await import('../src/audio/sound');
@@ -72,19 +105,115 @@ describe('音效生命周期', () => {
     expect(played()).toHaveLength(0);
   });
 
-  it('音频中断后不积压事件到恢复时播放', async () => {
+  it('音频中断后不补播过期事件', async () => {
     const { play, unlockAudio } = await import('../src/audio/sound');
     unlockAudio();
     const ctx = FakeAudioContext.latest;
     ctx.state = 'suspended';
     ctx.dispatchEvent(new Event('statechange'));
+    let resume!: () => void;
+    ctx.resume.mockImplementationOnce(() => new Promise<void>((resolve) => { resume = () => { ctx.state = 'running'; resolve(); }; }));
     play('end', 'win');
-    unlockAudio();
+    vi.advanceTimersByTime(1000);
+    resume();
     await flush();
     expect(played()).toHaveLength(0);
     play('start');
     await flush();
     expect(played()).toHaveLength(1);
+  });
+
+  it('前台音频被 iOS 中断后，下一次落子自动恢复播放', async () => {
+    const { play, unlockAudio } = await import('../src/audio/sound');
+    unlockAudio();
+    const ctx = FakeAudioContext.latest;
+    ctx.state = 'interrupted';
+    ctx.dispatchEvent(new Event('statechange'));
+    play('move');
+    await flush();
+    expect(ctx.resume).toHaveBeenCalledOnce();
+    expect(played()).toHaveLength(1);
+  });
+
+  it('恢复尚未完成时保留刚发生的落子，不被延迟的状态通知清除', async () => {
+    const { play, unlockAudio } = await import('../src/audio/sound');
+    unlockAudio();
+    const ctx = FakeAudioContext.latest;
+    ctx.state = 'suspended';
+    let resume!: () => void;
+    const pending = new Promise<void>((resolve) => { resume = () => { ctx.state = 'running'; resolve(); }; });
+    ctx.resume.mockImplementation(() => pending);
+    unlockAudio();
+    play('move');
+    ctx.dispatchEvent(new Event('statechange'));
+    resume();
+    ctx.dispatchEvent(new Event('statechange'));
+    await flush();
+    expect(played()).toHaveLength(1);
+  });
+
+  it('iOS 挂起未完成的 resume 后，下次手势仍可重试', async () => {
+    FakeAudioContext.initialState = 'suspended';
+    const { play, unlockAudio } = await import('../src/audio/sound');
+    play('start');
+    const ctx = FakeAudioContext.latest;
+    ctx.resume.mockImplementationOnce(() => new Promise<void>(() => {}));
+    unlockAudio();
+    unlockAudio();
+    await flush();
+    expect(played()).toHaveLength(1);
+  });
+
+  it('回到前台自动恢复音频，丢弃后台前的待播事件', async () => {
+    const { play, unlockAudio } = await import('../src/audio/sound');
+    unlockAudio();
+    const ctx = FakeAudioContext.latest;
+    documentMock.hidden = true;
+    ctx.state = 'suspended';
+    documentMock.dispatchEvent(new Event('visibilitychange'));
+    documentMock.hidden = false;
+    documentMock.dispatchEvent(new Event('visibilitychange'));
+    await flush();
+    expect(ctx.state).toBe('running');
+    expect(played()).toHaveLength(0);
+    play('move');
+    await flush();
+    expect(played()).toHaveLength(1);
+  });
+
+  it('已关闭的音频上下文会在下次手势重建', async () => {
+    const { play, unlockAudio } = await import('../src/audio/sound');
+    unlockAudio();
+    const old = FakeAudioContext.latest;
+    old.state = 'closed';
+    old.dispatchEvent(new Event('statechange'));
+    unlockAudio();
+    play('move');
+    await flush();
+    expect(FakeAudioContext.latest).not.toBe(old);
+    expect(played()).toHaveLength(1);
+  });
+
+  it('落子声不等待无关的结束音效加载', async () => {
+    vi.stubGlobal('fetch', vi.fn((url: string) => url.endsWith('/Victory.mp3')
+      ? new Promise<Response>(() => {}) : Promise.resolve(new Response(new Uint8Array([1])))));
+    const { play } = await import('../src/audio/sound');
+    play('move');
+    await flush();
+    expect(played()).toHaveLength(1);
+  });
+
+  it('过滤 70 毫秒内的重复落子音效，到达边界后正常播放', async () => {
+    const { play } = await import('../src/audio/sound');
+    play('move');
+    vi.advanceTimersByTime(30);
+    play('capture');
+    await flush();
+    expect(played()).toHaveLength(1);
+    vi.advanceTimersByTime(40);
+    play('capture');
+    await flush();
+    expect(played()).toHaveLength(2);
   });
 
   it('进入后台停止已排程音效，并忽略后台事件', async () => {

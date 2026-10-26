@@ -1255,7 +1255,7 @@ html:not(.native) .native-only {
   display: none;
   position: relative;
   margin: 0 0 6px;
-  padding: 9px 11px 9px 34px;
+  padding: 9px 11px;
   border: 1px solid rgba(214, 164, 73, 0.35);
   border-radius: 9px;
   background: linear-gradient(135deg, rgba(214, 164, 73, 0.12), var(--panel2));
@@ -1264,17 +1264,20 @@ html:not(.native) .native-only {
   line-height: 1.45;
 }
 .opponent-dialogue.show {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
   animation: opponent-pop 0.2s ease-out;
 }
-.opponent-dialogue::before {
-  content: '♟';
-  position: absolute;
-  left: 11px;
-  top: 8px;
-  color: #d6a449;
-  font-size: 16px;
-  font-weight: 900;
+.opponent-dialogue .avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+}
+.opponent-dialogue .opponent-line {
+  min-width: 0;
+  align-self: center;
+  overflow-wrap: anywhere;
 }
 .opponent-dialogue .opponent-label {
   display: block;

@@ -51,6 +51,15 @@ describe('settings engine migration (iOS app)', () => {
 });
 
 describe('settings whitelist', () => {
+  it('replaces removed synth themes with recordings, including imported settings', () => {
+    const themes = { wood: 'wood', felt: 'felt', plastic: 'glass', marble: 'glass', pop: 'felt', retro: 'nes' };
+    for (const [before, after] of Object.entries(themes)) {
+      expect(sanitizeSettings({ soundTheme: before }).soundTheme).toBe(after);
+      mem.set(KEY, JSON.stringify({ soundTheme: before, soundGen: 2 }));
+      expect(loadSettings().soundTheme).toBe(after);
+    }
+  });
+
   it('rejects prototype keys and unknown ids', () => {
     const d = defaultSettings();
     for (const bad of ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'nope']) {

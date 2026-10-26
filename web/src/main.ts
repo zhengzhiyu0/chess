@@ -134,7 +134,6 @@ let screen: 'home' | 'game' | 'train' = 'home';
 type HomeTab = 'play' | 'train' | 'data';
 let homeTab: HomeTab = 'play';
 let opponentLine = '';
-let lastOpponentLine = '';
 let gameOpponentPersonality: OpponentPersonality = randomOpponentPersonality();
 let gameLoading = false;
 /** Invalidates a pending entry when leaving, changing modes, or starting another game. */
@@ -157,6 +156,20 @@ let rating: RatingInfo | undefined;
 /** the current game is over but its rating waits for the analysis of the game */
 let ratePending = false;
 let abandoned = false;
+/** The live game stays in its persistent slot while a historical game is open. */
+let suspendedGame: {
+  game: StoredGame & { peak: number };
+  tree: GameTree<Ann>;
+  node: Node;
+  personality: OpponentPersonality;
+  line: string;
+  recentLines: string[];
+  flipped: boolean;
+  coachFrom: Node | null;
+  coachPaused: boolean;
+  coachReveal: boolean;
+} | null = null;
+let recentOpponentLines: string[] = [];
 
 function applyTheme(theme: Settings['theme']) {
   const isLight = theme === 'light';
@@ -262,7 +275,7 @@ function stored(): StoredGame {
 function saveGame() {
   const g = stored();
   peakUserMoves = Math.max(peakUserMoves, userMovesOf().length);
-  safeSet(GAME_KEY, JSON.stringify({ ...g, peak: peakUserMoves }));
+  if (!suspendedGame) safeSet(GAME_KEY, JSON.stringify({ ...g, peak: peakUserMoves }));
   if (result && !imported) {
     history = upsert(history, g);
     saveHistory(history);
@@ -278,7 +291,7 @@ function resetTransient() {
   liveLines = [];
   hintedAt = null;
   opponentLine = '';
-  lastOpponentLine = '';
+  recentOpponentLines = [];
   coachReset();
   $('hint-box').textContent = '';
 }
@@ -690,10 +703,10 @@ function opponentSpeak(n: Node) {
       userMaterialSwing: beforeMaterial === undefined || afterMaterial === undefined ? undefined : afterMaterial - beforeMaterial,
       opening: parent === tree.root,
     },
-    lastOpponentLine,
+    recentOpponentLines,
     Math.random(),
   );
-  lastOpponentLine = opponentLine;
+  recentOpponentLines = [...recentOpponentLines.slice(-11), opponentLine];
 }
 
 async function maiaEval(n: Node): Promise<MaiaResult> {
@@ -885,10 +898,11 @@ function flushRating() {
 }
 
 /**
- * Leaving an unfinished game (new game, another position, opening a record): after a few moves it
+ * Replacing an unfinished game (new game or another position): after a few moves it
  * counts as a resignation so a bad position can't be escaped for free. Returns false if cancelled.
  */
 function leaveGame(): boolean {
+  restoreSuspendedGame();
   flushRating();
   if (result || imported || (tip() === tree.root && !peakUserMoves)) return true;
   const moved = Math.max(peakUserMoves, userMovesOf().length);
@@ -1243,6 +1257,7 @@ async function analyseGame() {
       // killed by the watchdog: its searches now return nothing at once; don't report a hollow "done"
       if (!s.alive) throw new Error('Stockfish 中途退出');
       await evalNode(s, nodes[i], ctrl.signal);
+      if (ctrl.signal.aborted) return;
       analysisDone = nodes.filter((x) => Boolean(x.a.eval)).length;
       setFill(((i + 1) / n) * 100);
       if (nodes[i] === node || i % 4 === 0) update();
@@ -1546,12 +1561,13 @@ function renderLearningSummary() {
           const themes = themesForTag(tag.id, settings.elo).filter((t) => THEME_LABEL[t]);
           const saved = loadMistakes().find((m) => m.gameId === gameId && m.id === `${gameId}:${n.ply}`);
           const theme = themes[0];
-          const explanation = insight?.problem.length ? insight.problem.join('；') : `这步棋被归类为“${tag.label}”。${checkForTag(tag.id)}`;
+          // Locally generated insights contain HTML for highlighted SAN moves, as in the coach panel.
+          const explanation = insight?.problem.length ? insight.problem.join('；') : escapeHtml(`这步棋被归类为“${tag.label}”。${checkForTag(tag.id)}`);
           return (
             `<div class="learning-issue"><div class="learning-issue-head"><b>${i + 1}. ${escapeHtml(n.san)} · ${escapeHtml(JUDGEMENT_INFO[r.judgement].label)}</b>` +
-            `<span>${escapeHtml(tag.label)}</span></div><p>${escapeHtml(explanation)}</p>` +
+            `<span>${escapeHtml(tag.label)}</span></div><p>${explanation}</p>` +
             `<p>行棋方胜率 ${r.before.toFixed(0)}% → ${r.after.toFixed(0)}%</p>` +
-            (best && best !== n.uci ? `<p><b>更好的着法：${escapeHtml(sanOf(n.parent!.fen, best))}</b>${insight?.better.length ? ` · ${escapeHtml(insight.better.join('；'))}` : ' · Stockfish 在当前分析深度下更倾向这步棋'}</p>` : '') +
+            (best && best !== n.uci ? `<p><b>更好的着法：${escapeHtml(sanOf(n.parent!.fen, best))}</b>${insight?.better.length ? ` · ${insight.better.join('；')}` : ' · Stockfish 在当前分析深度下更倾向这步棋'}</p>` : '') +
             `<div class="learning-actions"><button type="button" data-learning-jump="${n.id}">回到这一步</button>` +
             (saved ? `<button type="button" data-learning-mistake="${escapeHtml(saved.id)}">重练错题</button>` : '') +
             (theme ? `<button type="button" data-learning-theme="${theme}">练${escapeHtml(THEME_LABEL[theme])}题</button>` : '') +
@@ -1562,7 +1578,7 @@ function renderLearningSummary() {
     : '<p class="muted">这局没有明显的错误着法，继续保持落子前的检查习惯。</p>';
   const goodPraise = good ? insightOf(good.n)?.praise : null;
   const goodHtml = good
-    ? `<p><b>${escapeHtml(good.n.san)}</b> · ${escapeHtml(goodPraise || '这步棋符合 Stockfish 当前分析的优秀选择。')}</p>`
+    ? `<p><b>${escapeHtml(good.n.san)}</b> · ${goodPraise || '这步棋符合 Stockfish 当前分析的优秀选择。'}</p>`
     : '<p class="muted">本局暂时没有足够的引擎数据标出代表性好棋。</p>';
   const next = focus ? checkForTag(learningTag(focus).id) : trend ? `重点练习${escapeHtml(trend.label)}相关的局面。` : '继续做一次 CCT 检查：将军、吃子和直接威胁。';
   const trendHtml = trend
@@ -1616,23 +1632,40 @@ function renderSummary() {
       const j = button.dataset.judgement as Judgement;
       const target = gameLine().find((n) => n.parent && turnOf(n.parent.fen) === side && showMove(n) && reviewOf(n)?.judgement === j);
       if (!target) return;
-      closeReport();
+      closeReport(true);
       goto(target);
     };
   });
 }
 
 let reportOpen = false;
+let returnToReport = false;
+
+function renderBackTarget() {
+  const label = returnToReport ? '返回复盘结果' : '返回主页';
+  $('btn-back').title = label;
+  $('btn-back').setAttribute('aria-label', label);
+}
+
+function backToReport(): boolean {
+  if (screen !== 'game' || mode !== 'review' || !returnToReport) return false;
+  openReport();
+  return true;
+}
 
 function openReport() {
   stopAutoplay();
   reportOpen = true;
+  returnToReport = false;
+  renderBackTarget();
   $('report').classList.remove('hidden');
   renderReportHint();
 }
 
-function closeReport() {
+function closeReport(returnOnBack = false) {
   reportOpen = false;
+  returnToReport = returnOnBack;
+  renderBackTarget();
   $('report').classList.add('hidden');
 }
 
@@ -2453,7 +2486,7 @@ function renderOpponentDialogue() {
     box.innerHTML = '';
     return;
   }
-  box.innerHTML = escapeHtml(opponentLine);
+  box.innerHTML = `${coachAvatarHtml(settings.coachAvatar)}<span class="opponent-line">${escapeHtml(opponentLine)}</span>`;
 }
 
 function update() {
@@ -2532,6 +2565,7 @@ function showScreen(s: 'home' | 'game' | 'train', push = true) {
     prep = null;
     if (coachState === 'checking') coachReset();
     setLive(false);
+    restoreSuspendedGame();
     syncClock();
     saveGame();
     renderHome();
@@ -3210,11 +3244,24 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
     {
       games: () => history,
       open: (g) => {
-        if (g.id !== gameId && !leaveGame()) return;
+        if (!suspendedGame && !result && !imported && g.id !== gameId) {
+          clock?.stop(performance.now());
+          saveGame();
+          suspendedGame = {
+            game: { ...stored(), peak: peakUserMoves }, tree, node,
+            personality: gameOpponentPersonality, line: opponentLine,
+            recentLines: [...recentOpponentLines], flipped, coachFrom,
+            coachPaused: coachState === 'paused', coachReveal,
+          };
+        } else flushRating();
         gameToken++;
         maiaThinking = false;
         batchCtrl?.abort();
+        prepCtrl?.abort();
+        prep = null;
+        setLive(false);
         if (!loadGame(g)) {
+          restoreSuspendedGame();
           setStatus('无法打开这局记录');
           return;
         }
@@ -3238,6 +3285,32 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
     },
     tab,
   );
+}
+
+function restoreSuspendedGame() {
+  const saved = suspendedGame;
+  if (!saved) return;
+  gameToken++;
+  gameEntry++;
+  maiaThinking = false;
+  batchCtrl?.abort();
+  pausedBatch = false;
+  setLive(false);
+  if (!loadGame(saved.game)) return;
+  tree = saved.tree;
+  node = saved.node;
+  gameOpponentPersonality = saved.personality;
+  opponentLine = saved.line;
+  recentOpponentLines = saved.recentLines;
+  flipped = saved.flipped;
+  if (saved.coachPaused) {
+    coachState = 'paused';
+    coachFrom = saved.coachFrom;
+    coachReveal = saved.coachReveal;
+  }
+  suspendedGame = null;
+  setMode('play');
+  saveGame();
 }
 
 // ---------- init ----------
@@ -3365,7 +3438,9 @@ function bind() {
     const act = (e.target as HTMLElement).closest<HTMLElement>('[data-va]')?.dataset.va;
     if (act) varAction(act);
   };
-  $('btn-back').onclick = () => showScreen('home');
+  $('btn-back').onclick = () => {
+    if (!backToReport()) showScreen('home');
+  };
   $('btn-flip').onclick = () => {
     flipped = !flipped;
     update();
@@ -3430,11 +3505,11 @@ function bind() {
   $('graph').onclick = (e) => {
     const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
     const l = currentLine();
-    closeReport();
+    closeReport(true);
     goto(l[Math.round(((e.clientX - rect.left) / rect.width) * (l.length - 1))]);
   };
   $('btn-report').onclick = openReport;
-  $('btn-report-start').onclick = closeReport;
+  $('btn-report-start').onclick = () => closeReport(true);
   $('learning-report-summary').onclick = (e) => {
     const t = e.target as HTMLElement;
     if (t.closest('[data-learning-analysis]')) {
@@ -3443,9 +3518,11 @@ function bind() {
     }
     const jump = Number(t.closest<HTMLElement>('[data-learning-jump]')?.dataset.learningJump);
     if (jump) {
-      closeReport();
       const target = findNode(tree, jump);
-      if (target) goto(target);
+      if (target) {
+        closeReport(true);
+        goto(target);
+      }
       return;
     }
     const mistake = t.closest<HTMLElement>('[data-learning-mistake]')?.dataset.learningMistake;
@@ -3488,7 +3565,7 @@ function bind() {
     // Alt+← is the browser's back; arrows in a select / input belong to that control
     if (e.altKey || e.ctrlKey || e.metaKey || (e.target as HTMLElement).closest('input, select, textarea, [contenteditable]')) return;
     if (reportOpen) {
-      if (e.key === 'Escape' || e.key === 'Enter') closeReport();
+      if (e.key === 'Escape' || e.key === 'Enter') closeReport(true);
       return;
     }
     if (mode === 'review' && e.key === ' ' && !(e.target as HTMLElement).closest('button')) {
@@ -3734,6 +3811,7 @@ function installIOSBackGesture() {
       open.close();
       return;
     }
+    if (backToReport()) return clear(true);
     const el = current;
     el.classList.remove('edge-swipe');
     el.classList.add('edge-swipe-commit');
@@ -3816,6 +3894,10 @@ function init() {
   // 系统返回键/手势回到主页
   window.addEventListener('popstate', () => {
     const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : 'home';
+    if (want !== 'game' && backToReport()) {
+      history_.pushState(null, '', '#game');
+      return;
+    }
     if (want !== screen) showScreen(want, false);
   });
   if (location.hash === '#game') showScreen('game', false);

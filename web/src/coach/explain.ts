@@ -532,6 +532,7 @@ export interface MoveInsightInput {
 }
 
 export interface MoveInsight {
+  // Locally generated HTML fragments; SAN highlights use <b> tags.
   /** 这步棋的问题（坏棋时） */
   problem: string[];
   /** 更好的着法好在哪里（坏棋时） */

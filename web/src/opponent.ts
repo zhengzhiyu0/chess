@@ -126,6 +126,50 @@ const LINES: Partial<Record<OpponentPersonality, Record<TemplateKind, string[]>>
   },
 };
 
+/** Extra everyday replies and reactions to moves with a distinct story. */
+const SITUATION_LINES: Record<OpponentPersonality, Record<'neutral' | 'castle' | 'promotion', string[]>> = {
+  sharp: {
+    neutral: ['别只盯着我要走哪儿，也看看你留下了什么。', '这一步落稳了？下一步可别只凭感觉。', '棋盘还很挤，计划最好别太拥挤。', '你有你的路线，我有我的问题。', '这回合先记着，答案要在棋盘上给。', '走得挺从容，希望计算也跟上了。'],
+    castle: ['王先住稳，其他棋子才好出去找事。', '易位完成。接下来轮到车上班了。', '王换个住处，你别以为我准备休息。'],
+    promotion: ['兵走到底也能换身份，你的防线得重新算了。', '升变了。小兵的野心可比你想得大。', '新的战力到位，旧的防守方案该更新了。'],
+  },
+  deadpan: {
+    neutral: ['先确认威胁，再决定计划。顺序很重要。', '这步落下后，双方都需要重新检查。', '我在比较几个候选着。', '局面没有强制答案，耐心也是资源。', '下一次交换之前，先把账算清。', '这一步改变了棋子的配合关系。'],
+    castle: ['易位完成，王车的位置已调整。', '王的部署告一段落，开始协调其他棋子。', '车已连接到新的线路。请继续。'],
+    promotion: ['升变完成，子力配置需要更新。', '兵已到达底线，新棋子开始参与计算。', '升变后的威胁，需要单独处理。'],
+  },
+  theatrical: {
+    neutral: ['配角也有台词，别只盯着皇后看。', '这一幕先收住，悬念要留到落子后。', '镜头拉远，每颗棋子都在等自己的戏份。', '场上的安静，是计算开始前的停顿。', '新的布景已经摆好，你准备怎么接戏？', '先别急着写结尾，中场还没散。'],
+    castle: ['王移驾，车登台！这一幕换个主角。', '易位完成，王室迁居，战车开工。', '灯光转向另一侧，王已经换好布景。'],
+    promotion: ['小兵逆袭！新角色隆重登场。', '走到最后一排，配角终于拿到主演剧本。', '升变完成！道具组，换一枚更有戏的棋子。'],
+  },
+  snarky: {
+    neutral: ['挺有想法，落子之后也记得检查一下。', '你慢慢布局，我正好看看有没有惊喜。', '这个回合很安静，难得我们都这么含蓄。', '先别忙着满意，棋盘还等着下一句呢。', '这步我看到了，至于后续，就看你的诚意了。', '计划可以慢慢来，漏看的棋子最好别太多。'],
+    castle: ['王搬家了，总得有个安稳的住处嘛。', '易位一下，免得王老是抢镜。', '我把王安顿好了，你随意。'],
+    promotion: ['小兵都升职了，你的防守方案也升级一下？', '升变啦，多走几步果然有回报。', '这枚兵一路走来不容易，值得换个身份。'],
+  },
+  arrogant: {
+    neutral: ['这一回合，我选择继续完善部署。', '值得计算的变化，我一个也不会放过。', '棋子各就各位，计划才刚开始展开。', '耐心一点，我还在筛选最合适的路线。', '这步走完，下一轮的候选着已经排好了。', '每个安静的回合，也都值得精确处理。'],
+    castle: ['易位。这种部署当然也在计划之内。', '先安顿王，再安排车的工作，我一向有条理。', '王的位置调整完毕，下一阶段开始。'],
+    promotion: ['升变完成，我说过小兵也在计划里。', '最后一排只是起点，新的棋子已经就绪。', '这枚兵完成了任务，接下来换新身份执行。'],
+  },
+  playful: {
+    neutral: ['我的棋子排好队了，你的呢？', '这个回合先埋个小彩蛋。', '棋盘这么大，总有地方可以逛逛。', '我挪好了，看看你会接出什么花样。', '先不揭晓下一步，留点好玩的。', '别催，棋子也得商量一下去哪儿玩。'],
+    castle: ['王和车换了个队形，像不像偷偷搬家？', '易位！王找好了躲猫猫的新位置。', '王收拾好行李，车终于能出来兜风了。'],
+    promotion: ['小兵通关啦，领取一个新身份！', '恭喜这枚兵，走到底线解锁换装。', '升变！小个子突然有大本事了。'],
+  },
+  poetic: {
+    neutral: ['棋子落定，下一段故事还没有名字。', '每条斜线都有远方，每个格子都有来客。', '此刻的安静，容得下一次深呼吸。', '我把计划放在棋盘上，等你的回应。', '一枚子挪开，另一枚子的视野便改变了。', '时间沿着黑白格前行，我们各写一行。'],
+    castle: ['王迁入新的城堡，车踏上另一段旅程。', '易位，像把一盏灯移到避风的窗前。', '王暂歇脚步，车开始眺望远处的道路。'],
+    promotion: ['小兵走过漫长的路，终于换上新的名字。', '底线不是终点，而是蜕变的门。', '一枚兵的远行，在此刻长出了新的翅膀。'],
+  },
+  commentator: {
+    neutral: ['选手完成调整，接下来关注棋子之间的配合。', '这一回合没有吃子，布局的选择依然值得看。', '镜头给到全盘，双方的路线正在展开。', '比赛继续，下一次接触可能改变节奏。', '落子完成，轮到另一方给出回应。', '双方都保留了选择，比赛还有很多内容。'],
+    castle: ['易位完成！王与车同时调整了位置。', '王的部署告一段落，接下来关注车的活动。', '场上出现易位，双方进入新的布局阶段。'],
+    promotion: ['升变完成！一枚兵走到了棋盘底线。', '新棋子登场，场上的子力配置发生改变。', '这是一次重要的升变，后续威胁需要重新计算。'],
+  },
+};
+
 function kindOf(e: OpponentTalkEvent): TemplateKind {
   if (e.opponentSan.includes('#')) return 'mate';
   if ((e.userCapturedValue ?? 0) >= 3) return 'userCapture';
@@ -138,14 +182,20 @@ function kindOf(e: OpponentTalkEvent): TemplateKind {
   return 'neutral';
 }
 
-/** Pick a line without waiting for a network request. The seed avoids repeats in adjacent moves. */
-export function opponentTalk(personality: OpponentPersonality, event: OpponentTalkEvent, previous = '', seed = Math.random()): string {
+/** Pick a local reply, avoiding recent lines and recycling the oldest when a pool is exhausted. */
+export function opponentTalk(personality: OpponentPersonality, event: OpponentTalkEvent, previous: string | readonly string[] = '', seed = Math.random()): string {
   const style = LINES[personality] ?? EXTRA_LINES[personality] ?? LINES.sharp!;
-  const lines = style[kindOf(event)] ?? LINES.sharp![kindOf(event)];
+  const kind = kindOf(event);
+  const extra = SITUATION_LINES[personality];
+  const situation = !event.opponentSan.includes('#') && /=[QRBN]/.test(event.opponentSan) ? 'promotion'
+    : kind === 'neutral' && event.opponentSan.startsWith('O-O') ? 'castle' : null;
+  const lines = situation ? extra[situation] : [...style[kind], ...(kind === 'neutral' ? extra.neutral : [])];
+  const recent = typeof previous === 'string' ? [previous] : previous;
   const start = Math.floor(Math.abs(seed) * 1_000_000) % lines.length;
   for (let offset = 0; offset < lines.length; offset++) {
     const line = lines[(start + offset) % lines.length];
-    if (line !== previous) return line;
+    if (!recent.includes(line)) return line;
   }
-  return lines[start];
+  // If every reply has been used, recycle the one heard longest ago.
+  return [...lines].sort((a, b) => recent.lastIndexOf(a) - recent.lastIndexOf(b))[0];
 }

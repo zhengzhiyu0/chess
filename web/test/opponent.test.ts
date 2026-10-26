@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { opponentTalk } from '../src/opponent';
+import { OPPONENT_PERSONALITIES, opponentTalk, type OpponentPersonality } from '../src/opponent';
 
 describe('local opponent talk', () => {
   it('selects an immediate check line without a network request', () => {
@@ -23,4 +23,21 @@ describe('local opponent talk', () => {
     const next = opponentTalk('sharp', { opponentSan: 'Bxc4', captured: '兵' }, first, 0);
     expect(next).not.toBe(first);
   });
+
+  for (const personality of Object.keys(OPPONENT_PERSONALITIES) as OpponentPersonality[]) {
+    it(`${personality}: varies routine replies across a whole opening`, () => {
+      const heard: string[] = [];
+      for (let i = 0; i < 10; i++) {
+        const line = opponentTalk(personality, { opponentSan: 'e6' }, heard, 0);
+        expect(heard).not.toContain(line);
+        heard.push(line);
+      }
+    });
+
+    it(`${personality}: reacts to castling and promotion while keeping mate priority`, () => {
+      expect(opponentTalk(personality, { opponentSan: 'O-O' }, '', 0)).not.toBe(opponentTalk(personality, { opponentSan: 'e6' }, '', 0));
+      expect(opponentTalk(personality, { opponentSan: 'e1=Q+' }, '', 0)).not.toBe(opponentTalk(personality, { opponentSan: 'Qh4+' }, '', 0));
+      expect(opponentTalk(personality, { opponentSan: 'e1=Q#' }, '', 0)).toBe(opponentTalk(personality, { opponentSan: 'Qh4#' }, '', 0));
+    });
+  }
 });

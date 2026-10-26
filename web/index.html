@@ -196,6 +196,35 @@
           </section>
         </div>
 
+        <div id="engine-loading" class="engine-loading hidden">
+          <div class="engine-loading-content" role="status" aria-live="polite">
+            <svg class="engine-loader" viewBox="0 0 96 96" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="loader-orbit" x1="16" y1="16" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#c4e6a1" /><stop offset="1" stop-color="#81b64c" stop-opacity=".12" />
+                </linearGradient>
+              </defs>
+              <circle cx="48" cy="48" r="39" stroke="currentColor" stroke-opacity=".08" />
+              <g class="loader-orbit">
+                <circle cx="48" cy="48" r="39" stroke="url(#loader-orbit)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="156 90" />
+                <circle cx="48" cy="9" r="3.5" fill="#c4e6a1" />
+              </g>
+              <g class="loader-tiles" fill="currentColor">
+                <rect x="31" y="31" width="15" height="15" rx="4" />
+                <rect x="50" y="31" width="15" height="15" rx="4" />
+                <rect x="50" y="50" width="15" height="15" rx="4" />
+                <rect x="31" y="50" width="15" height="15" rx="4" />
+              </g>
+            </svg>
+            <h2 id="engine-loading-title">正在准备对局</h2>
+            <p id="engine-loading-note">引擎加载完成后将自动开始</p>
+          </div>
+          <div class="engine-loading-actions">
+            <button type="button" id="btn-engine-retry" class="primary hidden">重新加载</button>
+            <button type="button" id="btn-engine-home">返回首页</button>
+          </div>
+        </div>
+
         <div class="report hidden" id="report">
           <div class="report-body">
             <div class="progress analyse-progress hidden"><div></div></div>
@@ -234,40 +263,6 @@
 
       <div id="status" class="toast" role="status" aria-live="polite"></div>
       <button id="offline-bar" class="offline-bar hidden" type="button"><span></span><div class="progress"><div></div></div></button>
-    </div>
-
-    <div id="engine-loading" class="engine-loading hidden" role="status" aria-live="polite" aria-busy="true">
-      <div class="engine-loading-shell">
-        <div class="engine-loading-hero" aria-hidden="true">
-          <div class="engine-loading-board"><span class="board-piece board-piece-a">♜</span><span class="board-piece board-piece-b">♞</span><span class="board-piece board-piece-c">♟</span></div>
-          <div class="engine-loading-ring"><div class="engine-loading-mark">♞</div><b id="engine-loading-percent">0%</b></div>
-        </div>
-        <div class="engine-loading-content">
-          <div class="engine-loading-brand"><span><b>MAIA COACH</b><small>LOCAL CHESS ENGINE</small></span><em>离线对战</em></div>
-          <div class="engine-loading-copy">
-            <p class="engine-loading-kicker">正在进入对战</p>
-            <h1>棋局马上开始</h1>
-            <p id="engine-loading-detail">正在准备你的专属对手，首次启动会稍久一些。</p>
-          </div>
-          <div class="engine-loading-progress">
-            <div><span>引擎准备进度</span></div>
-          </div>
-          <div class="engine-loading-track"><span id="engine-loading-track-fill"></span></div>
-          <div class="engine-loading-engines">
-            <div class="engine-loading-engine is-loading" data-engine-state="maia">
-              <span class="engine-engine-icon" aria-hidden="true">♟</span>
-              <span><b>Maia-3</b><small id="engine-loading-maia-detail">人类棋手模型 · 当前对局</small></span>
-              <em id="engine-loading-maia-status">等待</em>
-            </div>
-            <div class="engine-loading-engine is-background" data-engine-state="stockfish">
-              <span class="engine-engine-icon" aria-hidden="true">♜</span>
-              <span><b>Stockfish 19</b><small id="engine-loading-stockfish-detail">教练与复盘分析</small></span>
-              <em id="engine-loading-stockfish-status">后台准备</em>
-            </div>
-          </div>
-          <p class="engine-loading-footnote"><span aria-hidden="true">◉</span> 所有计算都在本机完成 · 不需要联网</p>
-        </div>
-      </div>
     </div>
 
     <dialog id="dlg-menu" class="sheet">
@@ -394,7 +389,6 @@
         </label>
         <label class="check web-only"><input type="checkbox" name="lowMemory" /> 省内存模式（切换对弈/复盘时卸载另一个引擎，iPhone 推荐）</label>
         <label class="check"><input type="checkbox" name="ecoAnalysis" /> 节能分析（达到足够深度即停止，复盘实时分析最长 15 秒；手机明显降温，评判结果基本不变）</label>
-        <label class="check"><input type="checkbox" name="warmup" checked disabled /> 启动时自动在后台预加载 Maia 与 Stockfish</label>
         <label class="check"><input type="checkbox" name="reviewOpponent" /> 复盘时也分析对手的着法（默认只看自己的）</label>
         <fieldset class="opponent-settings">
           <legend>对手发言（仅普通对弈）</legend>
@@ -418,7 +412,7 @@
         <div id="pkg-list" class="pkg-list"></div>
         <div class="env web-only" id="storage-info"></div>
         <label class="check web-only"><input type="checkbox" id="chk-auto-offline" /> 启动时自动下载离线包（应用本体 + Stockfish + 当前模型）</label>
-        <label class="check"><input type="checkbox" id="chk-warm" checked disabled /> 启动时自动在后台预加载 Maia 与 Stockfish</label>
+        <p class="muted">应用启动时会自动在后台加载当前设置的引擎。</p>
         <div class="row">
           <button type="button" id="btn-dl-rec" class="primary web-only">下载推荐组合</button>
           <button type="button" id="btn-warm">立即预加载</button>

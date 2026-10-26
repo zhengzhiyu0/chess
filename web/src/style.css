@@ -247,6 +247,80 @@ button svg {
   padding-bottom: 0;
 }
 
+.engine-loading {
+  position: absolute;
+  inset: calc(var(--safe-t) + 52px) 0 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 24px 24px calc(24px + var(--safe-b));
+  background: rgba(38, 36, 33, 0.96);
+  text-align: center;
+}
+.engine-loading-content {
+  display: grid;
+  justify-items: center;
+}
+.engine-loader {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 24px;
+  color: var(--green);
+  overflow: visible;
+}
+.loader-orbit {
+  transform-origin: 48px 48px;
+  animation: engine-orbit 2.4s linear infinite;
+}
+.loader-tiles rect {
+  animation: engine-tile 1.8s ease-in-out infinite;
+}
+.loader-tiles rect:nth-child(2) { animation-delay: 0.15s; }
+.loader-tiles rect:nth-child(3) { animation-delay: 0.3s; }
+.loader-tiles rect:nth-child(4) { animation-delay: 0.45s; }
+.engine-loading h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.engine-loading p {
+  margin: 10px 0 0;
+  color: var(--text2);
+  font-size: 13px;
+}
+.engine-loading-actions {
+  display: flex;
+  gap: 12px;
+}
+.engine-loading-actions button {
+  padding: 10px 20px;
+  font-size: 13px;
+}
+.engine-loading.failed .engine-loader {
+  opacity: 0.4;
+}
+.engine-loading.failed .loader-orbit,
+.engine-loading.failed .loader-tiles rect {
+  animation: none;
+}
+@keyframes engine-orbit {
+  to { transform: rotate(360deg); }
+}
+@keyframes engine-tile {
+  0%, 100% { opacity: 0.3; }
+  45% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loader-orbit,
+  .loader-tiles rect {
+    animation: none;
+  }
+}
+
 .appbar {
   flex: none;
   display: flex;
@@ -1387,156 +1461,6 @@ html:not(.native) .native-only {
   transform: translate(-50%, 0);
 }
 
-/* ---------- 引擎等待页 ---------- */
-.engine-loading {
-  position: fixed;
-  z-index: 100;
-  inset: 0;
-  display: grid;
-  align-items: center;
-  justify-content: center;
-  padding: calc(var(--safe-t) + 18px) 16px calc(var(--safe-b) + 18px);
-  overflow: hidden;
-  background: radial-gradient(circle at 50% 40%, rgba(129, 182, 76, 0.16), transparent 38%), #151412;
-  color: var(--text);
-  opacity: 1;
-  transition: opacity 0.22s ease, visibility 0.22s;
-}
-.engine-loading.hidden {
-  display: flex !important;
-  visibility: hidden;
-  pointer-events: none;
-  opacity: 0;
-}
-.engine-loading::before,
-.engine-loading::after {
-  content: '';
-  position: absolute;
-  pointer-events: none;
-  opacity: 0.22;
-  background-size: 72px 72px;
-  background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
-  transform: rotate(15deg) scale(1.4);
-}
-.engine-loading::before {
-  inset: -30%;
-}
-.engine-loading::after {
-  inset: 15% -30%;
-  pointer-events: none;
-  opacity: 0.12;
-  transform: rotate(-15deg) scale(1.3);
-}
-.engine-loading-shell {
-  position: relative;
-  width: min(100%, 480px);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 28px;
-  background: #211f1d;
-  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(129, 182, 76, 0.08);
-  animation: engine-card-in 0.4s cubic-bezier(.2,.75,.25,1) both;
-}
-.engine-loading-hero {
-  position: relative;
-  height: 178px;
-  overflow: visible;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  background: #303b2a;
-}
-.engine-loading-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.13) 47%, transparent 62%);
-  transform: translateX(-100%);
-  animation: engine-board-sweep 3.4s ease-in-out infinite;
-}
-.engine-loading-board {
-  position: absolute;
-  inset: -38% -10%;
-  transform: rotate(-7deg);
-  background-color: #789556;
-  background-image: conic-gradient(#e6edcf 0 25%, #789556 0 50%, #e6edcf 0 75%, #789556 0);
-  background-size: 12.5% 12.5%;
-  clip-path: inset(0 0 30% 0);
-  box-shadow: inset 0 0 80px rgba(0,0,0,0.35);
-}
-.board-piece { position: absolute; color: rgba(20, 24, 16, 0.46); font-size: clamp(54px, 15vw, 86px); line-height: 1; text-shadow: 0 8px 18px rgba(0,0,0,0.18); }
-.board-piece-a { left: 16%; top: 28%; }
-.board-piece-b { right: 19%; top: 9%; color: rgba(255,255,255,0.66); transform: rotate(8deg); }
-.board-piece-c { left: 53%; bottom: 7%; color: rgba(20, 24, 16, 0.32); font-size: clamp(40px, 12vw, 68px); }
-.engine-loading-ring {
-  position: absolute;
-  z-index: 1;
-  left: 50%;
-  bottom: -44px;
-  display: grid;
-  place-items: center;
-  width: 126px;
-  height: 126px;
-  border: 0;
-  border-radius: 50%;
-  background: conic-gradient(var(--green-hover) var(--engine-progress, 0deg), rgba(255,255,255,0.16) 0);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.36), 0 0 0 7px rgba(33,31,29,0.55);
-  transform: translateX(-50%);
-  animation: engine-ring-breathe 2.4s ease-in-out infinite;
-}
-.engine-loading-ring::before { content: ''; position: absolute; z-index: 2; inset: 8px; border: 1px dashed rgba(255,255,255,0.16); border-radius: 50%; animation: engine-ring-spin 12s linear infinite; }
-.engine-loading-ring::after { content: ''; position: absolute; z-index: 0; inset: 4px; border-radius: 50%; background: #252321; }
-.engine-loading-ring b { position: absolute; z-index: 3; bottom: 19px; color: var(--green-hover); font-size: 11px; font-variant-numeric: tabular-nums; }
-.engine-loading-mark {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  border-radius: 18px;
-  background: linear-gradient(145deg, var(--green-hover), var(--green-dark));
-  color: #fff;
-  font-size: 31px;
-  box-shadow: 0 9px 21px rgba(0, 0, 0, 0.3);
-}
-.engine-loading-content { position: relative; z-index: 0; display: grid; gap: 17px; padding: 65px 25px 22px; }
-.engine-loading-brand { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.engine-loading-brand > span { display: grid; gap: 2px; }
-.engine-loading-brand b { font-size: 12px; letter-spacing: 0.18em; }
-.engine-loading-brand small { color: var(--muted); font-size: 9px; letter-spacing: 0.18em; }
-.engine-loading-brand em { padding: 5px 8px; border: 1px solid rgba(129,182,76,0.35); border-radius: 999px; color: var(--green-hover); font-size: 10px; font-style: normal; }
-.engine-loading-copy { text-align: left; }
-.engine-loading-kicker { margin: 0 0 5px; color: var(--green-hover); font-size: 10px; font-weight: 900; letter-spacing: 0.2em; }
-.engine-loading-copy h1 { margin: 0; font-size: clamp(25px, 7vw, 34px); letter-spacing: -0.04em; }
-.engine-loading-copy p:last-child { margin: 8px 0 0; color: var(--text2); font-size: 13px; line-height: 1.55; }
-.engine-loading-progress { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
-.engine-loading-track { position: relative; height: 7px; overflow: hidden; border-radius: 8px; background: #11100f; }
-.engine-loading-track span { display: block; width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--green-hover)); box-shadow: 0 0 15px rgba(129,182,76,0.45); transition: width 0.3s ease; }
-.engine-loading-engines { display: grid; gap: 8px; }
-.engine-loading-engine { display: flex; align-items: center; gap: 10px; padding: 10px 11px; border: 1px solid rgba(255,255,255,0.11); border-radius: 13px; background: rgba(255, 255, 255, 0.045); text-align: left; transition: border-color 0.25s, background 0.25s, opacity 0.25s; }
-.engine-loading-engine > span:nth-child(2) { display: grid; flex: 1; gap: 2px; min-width: 0; }
-.engine-engine-icon { display: grid; place-items: center; width: 29px; height: 29px; flex: 0 0 29px; border-radius: 9px; background: #363330; color: var(--text2); font-size: 16px; }
-.engine-loading-engine b { font-size: 13px; }
-.engine-loading-engine small { overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.engine-loading-engine em { color: var(--green-hover); font-size: 11px; font-style: normal; white-space: nowrap; }
-.engine-loading-engine.is-ready { border-color: rgba(129, 182, 76, 0.45); background: rgba(129, 182, 76, 0.1); }
-.engine-loading-engine.is-ready .engine-engine-icon { background: var(--green); color: #fff; }
-.engine-loading-engine.is-background { opacity: 0.64; }
-.engine-loading-engine.is-background.is-required { opacity: 1; }
-.engine-loading-footnote { margin: -2px 0 0; color: var(--muted); font-size: 10px; text-align: center; }
-.engine-loading-footnote span { color: var(--green-hover); }
-@keyframes engine-card-in { from { opacity: 0; transform: translateY(10px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes engine-board-sweep { 0%, 35% { transform: translateX(-100%); } 70%, 100% { transform: translateX(100%); } }
-@keyframes engine-ring-breathe { 0%, 100% { box-shadow: 0 12px 30px rgba(0,0,0,0.36), 0 0 0 7px rgba(33,31,29,0.55); } 50% { box-shadow: 0 14px 38px rgba(0,0,0,0.42), 0 0 0 10px rgba(129,182,76,0.12); } }
-@keyframes engine-ring-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) {
-  .engine-loading-shell, .engine-loading-hero::after, .engine-loading-ring, .engine-loading-ring::before { animation: none; }
-}
-@media (max-width: 420px) {
-  .engine-loading-hero { height: 154px; }
-  .engine-loading-content { gap: 15px; padding: 60px 18px 18px; }
-  .engine-loading-shell { border-radius: 23px; }
-}
-
 /* ---------- 棋盘（绿白） ---------- */
 cg-board {
   background-color: var(--light-sq);
@@ -2659,23 +2583,8 @@ html[data-theme='light'] .toast {
   background: rgba(31, 41, 55, 0.92);
   color: #f9fafb;
 }
-html[data-theme='light'] .engine-loading-engine {
-  background: rgba(255, 255, 255, 0.84);
-}
-html[data-theme='light'] .engine-loading-shell {
-  border-color: rgba(31, 41, 55, 0.12);
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.96), rgba(245, 247, 249, 0.98));
-  box-shadow: 0 24px 70px rgba(31, 41, 55, 0.16), 0 0 0 8px rgba(129, 182, 76, 0.05);
-}
-html[data-theme='light'] .engine-loading::before,
-html[data-theme='light'] .engine-loading::after {
-  border-color: rgba(31, 41, 55, 0.08);
-}
-html[data-theme='light'] .engine-loading-engine {
-  background: rgba(31, 41, 55, 0.035);
-}
-html[data-theme='light'] .engine-loading-engine.is-ready {
-  background: rgba(129, 182, 76, 0.11);
+html[data-theme='light'] .engine-loading {
+  background: rgba(245, 246, 247, 0.96);
 }
 html[data-theme='light'] .menu-list button:hover,
 html[data-theme='light'] button.icon:hover,

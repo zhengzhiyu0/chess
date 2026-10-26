@@ -117,7 +117,7 @@ async function downloadRecommended(ctx: EnginesCtx) {
     const p = pkgs.find((x) => x.id === id);
     if (p && !isComplete(p)) await startDownload(ctx, p);
   }
-  if (ctx.settings().warmup) void ctx.warmup();
+  void ctx.warmup();
 }
 
 /**
@@ -157,9 +157,6 @@ export async function autoOffline(ctx: EnginesCtx): Promise<boolean> {
 
 export function openEngines(ctx: EnginesCtx) {
   const dlg = $<HTMLDialogElement>('dlg-engines');
-  const chk = $<HTMLInputElement>('chk-warm');
-  chk.checked = true;
-  chk.onchange = () => ctx.patchSettings({ warmup: true });
   const auto = $<HTMLInputElement>('chk-auto-offline');
   auto.checked = ctx.settings().autoOffline;
   auto.onchange = () => ctx.patchSettings({ autoOffline: auto.checked });

@@ -62,7 +62,8 @@ vi.mock('../src/engine/stockfish', () => ({
   },
 }));
 vi.mock('../src/app/dom', () => ({ setStatus: vi.fn() }));
-vi.mock('../src/native', () => ({ isNative: false }));
+const platform = vi.hoisted(() => ({ isNative: false }));
+vi.mock('../src/native', () => platform);
 
 const { Engines } = await import('../src/app/engines');
 
@@ -73,7 +74,111 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 beforeEach(() => {
   maiaCreates.length = 0;
   sfCreates.length = 0;
-  settings.backend = 'wasm';
+  Object.assign(settings, { model: '23m', backend: 'wasm', lowMemory: false, sfLite: false });
+  platform.isNative = false;
+});
+
+describe('startup and game readiness', () => {
+  it('reuses a startup load when entering a normal game before it finishes', async () => {
+    const e = make();
+    const startup = e.warmup();
+    const entry = e.prepareGame(false, false);
+    expect(e.readyForGame(false, false)).toBe(false);
+    expect(maiaCreates).toHaveLength(1);
+    maiaCreates[0].d.resolve(new FakeMaia('23m', 'wasm'));
+    await entry;
+    expect(e.readyForGame(false, false)).toBe(true);
+    // Ordinary play can begin while the optional analysis engine is still starting.
+    expect(e.readyForGame(false, true)).toBe(false);
+    sfCreates[0].resolve(new FakeSf());
+    await startup;
+    expect(maiaCreates).toHaveLength(1);
+    expect(sfCreates).toHaveLength(1);
+  });
+
+  it.each([false, true])('waits for both engines in coached play (native=%s)', async (native) => {
+    platform.isNative = native;
+    settings.lowMemory = true;
+    const e = new Engines(() => settings as never, () => true, () => undefined);
+    const startup = e.warmup();
+    const entry = e.prepareGame(false, true);
+    maiaCreates[0].d.resolve(new FakeMaia('23m', 'wasm'));
+    await flush();
+    expect(e.readyForGame(false, true)).toBe(false);
+    expect(sfCreates).toHaveLength(1);
+    const maia = e.maia;
+    sfCreates[0].resolve(new FakeSf());
+    await Promise.all([startup, entry]);
+    expect(e.readyForGame(false, true)).toBe(true);
+    expect(maia?.alive).toBe(true);
+    expect(maiaCreates).toHaveLength(1);
+  });
+
+  it('keeps Maia ready for ordinary play in exclusive low-memory PWA mode', async () => {
+    settings.lowMemory = true;
+    const e = make();
+    const startup = e.warmup();
+    maiaCreates[0].d.resolve(new FakeMaia('23m', 'wasm'));
+    await startup;
+    expect(e.readyForGame(false, false)).toBe(true);
+    expect(sfCreates).toHaveLength(0);
+  });
+
+  it('does not let a cancelled coach entry evict Maia from a newer ordinary game', async () => {
+    settings.lowMemory = true;
+    let coached = true;
+    let current = true;
+    const e = new Engines(() => settings as never, () => coached, () => undefined);
+    const oldEntry = e.prepareGame(false, true, () => current);
+    current = false;
+    coached = false;
+    const newEntry = e.prepareGame(false, false);
+    const maia = new FakeMaia('23m', 'wasm');
+    maiaCreates[0].d.resolve(maia);
+    await Promise.all([oldEntry, newEntry]);
+    expect(sfCreates).toHaveLength(0);
+    expect(e.readyForGame(false, false)).toBe(true);
+    expect(maia.alive).toBe(true);
+  });
+
+  it('loads only Stockfish when continuing a finished game in review', async () => {
+    const e = make();
+    const entry = e.prepareGame(true, false);
+    expect(e.readyForGame(true, false)).toBe(false);
+    sfCreates[0].resolve(new FakeSf());
+    await entry;
+    expect(e.readyForGame(true, false)).toBe(true);
+    expect(maiaCreates).toHaveLength(0);
+  });
+
+  it('does not consider a different selected model or Stockfish build ready', async () => {
+    const e = make();
+    const entry = e.prepareGame(false, true);
+    maiaCreates[0].d.resolve(new FakeMaia('23m', 'wasm'));
+    await flush();
+    sfCreates[0].resolve(new FakeSf());
+    await entry;
+    settings.model = '5m';
+    expect(e.readyForGame(false, false)).toBe(false);
+    settings.sfLite = true;
+    expect(e.readyForGame(true, false)).toBe(false);
+  });
+
+  it('allows retrying a failed game entry without discarding the ready Maia', async () => {
+    const e = make();
+    const entry = e.prepareGame(false, true);
+    maiaCreates[0].d.resolve(new FakeMaia('23m', 'wasm'));
+    await flush();
+    sfCreates[0].reject(new Error('boot failed'));
+    await expect(entry).rejects.toThrow('boot failed');
+    expect(e.readyForGame(false, true)).toBe(false);
+    const retry = e.prepareGame(false, true);
+    await flush();
+    sfCreates[1].resolve(new FakeSf());
+    await retry;
+    expect(e.readyForGame(false, true)).toBe(true);
+    expect(maiaCreates).toHaveLength(1);
+  });
 });
 
 describe('Engines load generations', () => {

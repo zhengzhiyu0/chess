@@ -32,7 +32,7 @@ import { dragHaptics, installTapHaptics } from './audio/haptics';
 import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio, type EndKind } from './audio/sound';
 import { $, escapeHtml, setStatus } from './app/dom';
 import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from './app/appearance';
-import { Engines, type EngineLoadState } from './app/engines';
+import { Engines } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './app/avatar';
 import { COACHES } from './app/coach-avatars';
@@ -136,6 +136,9 @@ let homeTab: HomeTab = 'play';
 let opponentLine = '';
 let lastOpponentLine = '';
 let gameOpponentPersonality: OpponentPersonality = randomOpponentPersonality();
+let gameLoading = false;
+/** Invalidates a pending entry when leaving, changing modes, or starting another game. */
+let gameEntry = 0;
 let shownResult = '';
 let coachOn = false;
 let coachState: 'idle' | 'checking' | 'paused' = 'idle';
@@ -181,9 +184,8 @@ function toggleTheme() {
 const engines = new Engines(
   () => settings,
   // coached play alternates Maia and Stockfish every move; see Engines
-  () => coachOn && mode === 'play',
+  () => screen === 'home' ? settings.gameType === 'coach' : coachOn && mode === 'play',
   () => liveCtrl?.abort(),
-  (state) => updateEngineLoading(state),
 );
 const getMaia = () => engines.getMaia();
 const getSf = () => engines.getSf();
@@ -349,12 +351,13 @@ function dests(c: Chess): Map<Key, Key[]> {
 }
 
 function canUserMove(): boolean {
+  if (gameLoading) return false;
   if (mode === 'review') return true;
   return node === tip() && result === '' && !maiaThinking && coachState === 'idle' && turnOf(node.fen) === userColor;
 }
 
 function canPremove(): boolean {
-  return mode === 'play' && settings.premove && node === tip() && result === '' && coachState === 'idle' && turnOf(node.fen) !== userColor;
+  return !gameLoading && mode === 'play' && settings.premove && node === tip() && result === '' && coachState === 'idle' && turnOf(node.fen) !== userColor;
 }
 
 /** Arrow brushes for review: green = engine best, blue = what players at your rating usually play, amber = what the previous (bad) move should have been. */
@@ -595,6 +598,7 @@ function askPromotion(color: Color): Promise<string> {
 }
 
 async function onUserMove(orig: Key, dest: Key, meta?: MoveMetadata) {
+  if (gameLoading) return;
   unlockAudio();
   const from = node;
   const c = chessOf(from);
@@ -702,7 +706,7 @@ async function maiaEval(n: Node): Promise<MaiaResult> {
 
 /** Plays `uci` at the end of the game (either side). */
 function playMove(uci: string): boolean {
-  if (result) return false;
+  if (result || gameLoading) return false;
   const parent = tip();
   const mover = turnOf(parent.fen);
   if (mover === userColor) clearOpponentLine();
@@ -904,7 +908,7 @@ function flag(color: Color) {
 
 async function maiaTurn(attempt = 0) {
   const t = tip();
-  if (screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle' || turnOf(t.fen) === userColor) return;
+  if (gameLoading || screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle' || turnOf(t.fen) === userColor) return;
   if (attempt === 0) maiaFailed = false;
   const token = ++gameToken;
   maiaThinking = true;
@@ -1112,7 +1116,7 @@ async function offerDraw() {
 // ---------- clock ----------
 
 function clockShouldRun(): Color | null {
-  if (!clock || result || maiaFailed || screen !== 'game' || mode !== 'play' || coachState !== 'idle' || document.hidden) return null;
+  if (!clock || result || gameLoading || maiaFailed || screen !== 'game' || mode !== 'play' || coachState !== 'idle' || document.hidden) return null;
   const t = tip();
   // the clock starts after White's first move
   if (t === tree.root) return null;
@@ -1999,7 +2003,7 @@ async function computeThreat(s: Stockfish, n: Node, signal: AbortSignal) {
 /** Pre-analyse the position on the user's turn (evaluation + opponent threat). */
 function coachTurn() {
   const t = tip();
-  if (!coachOn || screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle') return;
+  if (gameLoading || !coachOn || screen !== 'game' || mode !== 'play' || result !== '' || coachState !== 'idle') return;
   if (turnOf(t.fen) !== userColor || prep?.node === t) return;
   prepCtrl?.abort();
   const ctrl = new AbortController();
@@ -2068,8 +2072,46 @@ function coachRetry() {
   coachTurn();
 }
 
-/** On entering the game: review an unjudged last user move before Maia replies. */
+function setGameLoading(loading: boolean, failed = false) {
+  gameLoading = loading;
+  const overlay = $('engine-loading');
+  overlay.classList.toggle('hidden', !loading);
+  overlay.classList.toggle('failed', failed);
+  $('engine-loading-title').textContent = failed ? '引擎暂时未能就绪' : '正在准备对局';
+  $('engine-loading-note').textContent = failed ? '请重试，或返回首页稍后再来' : '引擎加载完成后将自动开始';
+  $('btn-engine-retry').classList.toggle('hidden', !failed);
+  $('game').setAttribute('aria-busy', String(loading && !failed));
+  document.querySelectorAll<HTMLElement>('#game .game-main, #game .report').forEach((el) => { el.inert = loading; });
+  syncClock();
+}
+
+/** All entry points reuse the startup load; never start a clock or a move before it finishes. */
 function resumeCoach() {
+  const entry = ++gameEntry;
+  if (screen !== 'game') return;
+  const review = mode === 'review';
+  if (!engines.readyForGame(review, coachOn)) {
+    setGameLoading(true);
+    update();
+    void engines.prepareGame(review, coachOn, () => entry === gameEntry).then(() => {
+      if (entry !== gameEntry) return;
+      setGameLoading(false);
+      update();
+      runGame();
+    }).catch((err) => {
+      if (entry !== gameEntry) return;
+      console.warn('对局引擎加载失败', err);
+      setGameLoading(true, true);
+    });
+    return;
+  }
+  setGameLoading(false);
+  runGame();
+}
+
+/** Review an unjudged last user move before Maia replies. */
+function runGame() {
+  if (mode === 'review') return startReview();
   const t = tip();
   if (coachOn && mode === 'play' && result === '' && coachState === 'idle' && t.parent && turnOf(t.fen) !== userColor && !reviewOf(t)) {
     void coachCheck(t.parent);
@@ -2481,6 +2523,8 @@ function showScreen(s: 'home' | 'game' | 'train', push = true) {
     if (prev !== 'game') return;
   }
   if (s !== 'game') {
+    gameEntry++;
+    setGameLoading(false);
     stopAutoplay();
     gameToken++;
     maiaThinking = false;
@@ -2491,12 +2535,12 @@ function showScreen(s: 'home' | 'game' | 'train', push = true) {
     syncClock();
     saveGame();
     renderHome();
-  } else if (s === 'game') {
+  } else {
+    resumeCoach();
     requestAnimationFrame(() => {
+      if (screen !== 'game') return;
       cg.redrawAll();
       update();
-      resumeCoach();
-      startReview();
     });
   }
 }
@@ -2546,9 +2590,8 @@ function setMode(m: 'play' | 'review') {
     maiaThinking = false;
     if (coachState !== 'idle') coachReset();
   }
+  resumeCoach();
   update();
-  if (m === 'play') resumeCoach();
-  else startReview();
 }
 
 // ---------- avatar ----------
@@ -2731,7 +2774,6 @@ function openSettings() {
       sfLite: el('sfLite').value === 'true',
       ecoAnalysis: el('ecoAnalysis').checked,
       lowMemory: el('lowMemory').checked,
-      warmup: true,
       sound: el('sound').checked,
       soundTheme: el('soundTheme').value,
       haptics: el('haptics').checked,
@@ -2789,6 +2831,10 @@ function applySettings(old: Settings) {
   else if (inReview && humanChanged && liveOn) void runLive();
   update();
   renderHome();
+  if (sfChanged || old.model !== settings.model || old.backend !== settings.backend || old.lowMemory !== settings.lowMemory || old.gameType !== settings.gameType) {
+    if (screen === 'game') resumeCoach();
+    else if (screen === 'home') void engines.warmup();
+  }
 }
 
 // ---------- PGN ----------
@@ -3153,91 +3199,6 @@ function renderHome() {
   setHomeTab(homeTab);
 }
 
-let startingGame = false;
-
-function engineLoadingElement(id: string): HTMLElement {
-  return $(id);
-}
-
-function setEngineLoading(show: boolean, requireStockfish = false) {
-  const page = $('engine-loading');
-  page.classList.toggle('hidden', !show);
-  page.setAttribute('aria-hidden', show ? 'false' : 'true');
-  page.dataset.requireStockfish = requireStockfish ? 'true' : 'false';
-  const sf = document.querySelector<HTMLElement>('[data-engine-state="stockfish"]');
-  sf?.classList.toggle('is-required', requireStockfish);
-  if (show) {
-    engineLoadingElement('engine-loading-detail').textContent = requireStockfish
-      ? '正在准备对局与教练分析引擎…'
-      : '正在准备你的专属对手，首次启动会稍久一些。';
-    page.style.setProperty('--engine-progress', '0deg');
-    engineLoadingElement('engine-loading-percent').textContent = '0%';
-    engineLoadingElement('engine-loading-track-fill').style.width = '0%';
-    engineLoadingElement('engine-loading-maia-status').textContent = '准备中';
-    engineLoadingElement('engine-loading-stockfish-status').textContent = requireStockfish ? '准备中' : '后台准备';
-    engineLoadingElement('engine-loading-maia-detail').textContent = '人类棋手模型 · 当前对局';
-    engineLoadingElement('engine-loading-stockfish-detail').textContent = requireStockfish ? '教练与复盘分析 · 当前对局' : '教练与复盘分析 · 后台准备';
-    document.querySelectorAll<HTMLElement>('.engine-loading-engine').forEach((el) => el.classList.remove('is-ready'));
-    if (engines.maia?.alive) {
-      updateEngineLoading({ engine: 'maia', text: 'Maia 已就绪', progress: 1, ready: true });
-    }
-    if (engines.sf?.alive) {
-      updateEngineLoading({ engine: 'stockfish', text: 'Stockfish 已就绪', progress: 1, ready: true });
-    }
-  }
-}
-
-function updateEngineLoading(state: EngineLoadState) {
-  const page = $('engine-loading');
-  if (page.classList.contains('hidden')) return;
-  const status = engineLoadingElement(`engine-loading-${state.engine}-status`);
-  const detail = engineLoadingElement(`engine-loading-${state.engine}-detail`);
-  const card = document.querySelector<HTMLElement>(`[data-engine-state="${state.engine}"]`);
-  status.textContent = state.ready ? '已就绪' : state.engine === 'stockfish' && page.dataset.requireStockfish !== 'true' ? '后台准备' : '加载中';
-  if (state.ready) {
-    card?.classList.add('is-ready');
-    detail.textContent = state.engine === 'maia' ? '人类棋手模型 · 可开始对局' : '教练与复盘分析 · 已就绪';
-  } else if (state.progress !== undefined) {
-    detail.textContent = `${Math.round(state.progress * 100)}% · ${state.text}`;
-  } else {
-    detail.textContent = state.text;
-  }
-  const maia = state.engine === 'maia' ? state.progress : undefined;
-  const sf = state.engine === 'stockfish' ? state.progress : undefined;
-  const maiaProgress = maia ?? (engines.maia?.alive ? 1 : 0);
-  const sfProgress = sf ?? (engines.sf?.alive ? 1 : 0);
-  const requireSf = page.dataset.requireStockfish === 'true';
-  const progress = requireSf ? (maiaProgress + sfProgress) / 2 : maiaProgress;
-  page.style.setProperty('--engine-progress', `${Math.round(progress * 360)}deg`);
-  engineLoadingElement('engine-loading-percent').textContent = `${Math.round(progress * 100)}%`;
-  engineLoadingElement('engine-loading-track-fill').style.width = `${Math.round(progress * 100)}%`;
-  engineLoadingElement('engine-loading-detail').textContent = state.ready
-    ? state.engine === 'maia' && !requireSf
-      ? '对手已经准备好了，马上进入棋局。'
-      : `${state.text}，正在完成最后准备。`
-    : state.text;
-}
-
-/** Engine preload is intentionally invisible at startup, but starting a game waits for it. */
-function startWhenReady(button: HTMLButtonElement, start: () => void, requireStockfish = false) {
-  if (startingGame) return;
-  startingGame = true;
-  button.disabled = true;
-  button.setAttribute('aria-busy', 'true');
-  setEngineLoading(true, requireStockfish);
-  const loadingText = '正在加载棋力引擎，请稍候…';
-  setStatus(loadingText);
-  void engines.ensureReady(requireStockfish)
-    .then(start)
-    .catch(() => setStatus('引擎加载失败，请稍后重试'))
-    .finally(() => {
-      setEngineLoading(false);
-      startingGame = false;
-      button.disabled = false;
-      button.removeAttribute('aria-busy');
-    });
-}
-
 function saveHomeSettings(patch: Partial<Settings>) {
   const old = settings;
   settings = { ...settings, ...patch };
@@ -3346,15 +3307,11 @@ function bind() {
 
   $('btn-play').onclick = () => {
     unlockAudio();
-    startWhenReady($<HTMLButtonElement>('btn-play'), () => {
-      if (newGame()) showScreen('game');
-    });
+    if (newGame()) showScreen('game');
   };
   $('btn-continue').onclick = () => {
-    startWhenReady($<HTMLButtonElement>('btn-continue'), () => {
-      setMode(result === '' && !imported ? 'play' : 'review');
-      showScreen('game');
-    }, mode === 'review');
+    setMode(result === '' && !imported ? 'play' : 'review');
+    showScreen('game');
   };
   $('btn-home-import').onclick = () => {
     setHomeTab('data');
@@ -3364,6 +3321,8 @@ function bind() {
     setHomeTab('data');
     showHistory('list');
   };
+  $('btn-engine-retry').onclick = resumeCoach;
+  $('btn-engine-home').onclick = () => showScreen('home');
   $('btn-puzzles').onclick = () => {
     setHomeTab('train');
     unlockAudio();
@@ -3420,7 +3379,7 @@ function bind() {
   };
   $('btn-new').onclick = () => {
     menu.close();
-    startWhenReady($<HTMLButtonElement>('btn-new'), () => void newGame());
+    newGame();
   };
   $('btn-resign').onclick = fromMenu(() => {
     if (result === '' && confirm('确定认输？')) resign();
@@ -3429,7 +3388,7 @@ function bind() {
   $('btn-play-here').onclick = () => {
     $<HTMLDialogElement>('dlg-menu').close();
     if (mode === 'play' && result === '' && !imported && tip() !== tree.root && userMovesOf().length < 3 && !confirm('从当前局面开始新对局？当前对局会被替换。')) return;
-    startWhenReady($<HTMLButtonElement>('btn-play-here'), () => void playFrom(fensTo(node)));
+    playFrom(fensTo(node));
   };
   $('btn-menu-history').onclick = fromMenu(() => showHistory('list'));
   $('btn-menu-settings').onclick = fromMenu(openSettings);
@@ -3452,7 +3411,7 @@ function bind() {
   };
   $('btn-result-new').onclick = () => {
     $<HTMLDialogElement>('dlg-result').close();
-    startWhenReady($<HTMLButtonElement>('btn-result-new'), () => void newGame());
+    newGame();
   };
   $('moves').onclick = (e) => {
     const t = e.target as HTMLElement;
@@ -3525,7 +3484,7 @@ function bind() {
   // iOS 上 click 偶尔不触发，用 touchend 兜底
   reloadBtn.addEventListener('touchend', reloadForUpdate);
   document.addEventListener('keydown', (e) => {
-    if (screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
+    if (gameLoading || screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
     // Alt+← is the browser's back; arrows in a select / input belong to that control
     if (e.altKey || e.ctrlKey || e.metaKey || (e.target as HTMLElement).closest('input, select, textarea, [contenteditable]')) return;
     if (reportOpen) {
@@ -3868,20 +3827,12 @@ function init() {
   if (ratePending) flushRating();
   setStatus(isNative ? '就绪（原生引擎）' : self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
 
-  // mirrors registerServiceWorker: only the first install reloads for COOP/COEP
-  const willReload =
-    import.meta.env.PROD && !isNative && 'serviceWorker' in navigator && !navigator.serviceWorker.controller && self.crossOriginIsolated === false && self.top === self && screen === 'home' && !coiReloaded();
-  const idle = (cb: () => void) => ('requestIdleCallback' in self ? requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));
-  if (!willReload) {
-    idle(async () => {
-      // download first so warmup reads from the local cache instead of fetching the same files twice
-      if (settings.autoOffline && import.meta.env.PROD) await autoOffline(enginesCtx).catch(() => false);
-       void engines.warmup(true);
-    });
-  }
-  // Start immediately when no offline package download is needed. With auto-download enabled,
-  // the idle task warms the engines after the files are cached so the model is fetched only once.
-  if (!settings.autoOffline || !import.meta.env.PROD) void engines.warmup(true).catch(() => {});
+  // Prioritise the selected engines over the much larger optional offline package.
+  // A direct #game entry has already started the engines needed by that game.
+  const ready = screen === 'home' ? engines.warmup() : Promise.resolve();
+  void ready.then(() => {
+    if (settings.autoOffline && import.meta.env.PROD) void autoOffline(enginesCtx).catch(() => false);
+  });
   registerServiceWorker();
 }
 

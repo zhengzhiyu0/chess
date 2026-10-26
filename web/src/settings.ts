@@ -29,7 +29,7 @@ export interface Settings {
   /** stop searches once a sufficient depth is reached instead of always using the full time */
   ecoAnalysis: boolean;
   lowMemory: boolean;
-  /** load the selected Maia model + Stockfish in the background on startup */
+  /** Legacy backup field; startup now always loads the selected engines. */
   warmup: boolean;
   /** on startup, download app + Stockfish + selected Maia model into the offline cache */
   autoOffline: boolean;
@@ -113,7 +113,7 @@ export function defaultSettings(): Settings {
     sfLite: isNative ? false : isIOS,
     ecoAnalysis: true,
     lowMemory: isIOS && !isNative,
-    warmup: isNative || !isIOS,
+    warmup: true,
     autoOffline: true,
     gameType: 'coach',
     coachLevel: 'mistake',

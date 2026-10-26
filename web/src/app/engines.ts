@@ -1,17 +1,10 @@
-import { Maia, MODELS } from '../maia/maia';
+import { Maia } from '../maia/maia';
 import { Stockfish } from '../engine/stockfish';
 import type { Settings } from '../settings';
 import { setStatus } from './dom';
 import { isNative } from '../native';
 
-export type EngineLoadState = {
-  engine: 'maia' | 'stockfish';
-  text: string;
-  progress?: number;
-  ready?: boolean;
-};
-
-/** Lazily loaded, cached engine instances; honours the low-memory setting. */
+/** Shared startup/game engine loads; honours the low-memory setting. */
 export class Engines {
   maia: Maia | null = null;
   sf: Stockfish | null = null;
@@ -24,17 +17,12 @@ export class Engines {
   private sfGen = 0;
   /** WebGPU failed to load or crashed mid-game this session; use WASM from now on */
   private webgpuFailed = false;
-  /** Startup preload keeps both engines resident even when low-memory mode is enabled. */
-  private preloadBoth = false;
-  private preloadPromise: Promise<void> | null = null;
-  private silentDepth = 0;
 
   constructor(
     private settings: () => Settings,
     /** coached play alternates Maia and Stockfish every move, so both must stay resident */
     private needBoth: () => boolean,
     private beforeSfUnload: () => void,
-    private onLoadState?: (state: EngineLoadState) => void,
   ) {}
 
   /**
@@ -44,16 +32,24 @@ export class Engines {
   private exclusive() {
     const st = this.settings();
     // native engines live outside the WebView's memory limit; keep both resident
-    return !this.preloadBoth && !isNative && st.lowMemory && !st.sfLite && !this.needBoth();
+    return !isNative && st.lowMemory && !st.sfLite && !this.needBoth();
   }
 
-  private status(text: string, state?: EngineLoadState) {
-    if (!this.silentDepth) setStatus(text);
-    if (state) this.onLoadState?.(state);
+  readyForGame(review: boolean, coached: boolean): boolean {
+    const st = this.settings();
+    const maiaReady = this.maia?.alive && this.maia.model === st.model && this.maiaWanted === st.backend;
+    const sfReady = this.sf?.alive && this.sf.lite === st.sfLite;
+    return Boolean(review ? sfReady : maiaReady && (!coached || sfReady));
+  }
+
+  async prepareGame(review: boolean, coached: boolean, isCurrent = () => true): Promise<void> {
+    if (!review) await this.getMaia();
+    // A user may have left or switched to ordinary low-memory play during the Maia load.
+    // Starting a stale coach load now would evict the engine their new game needs.
+    if ((review || coached) && isCurrent()) await this.getSf();
   }
 
   unloadMaia() {
-    this.preloadPromise = null;
     this.maiaGen++;
     this.maia?.dispose();
     this.maia = null;
@@ -61,7 +57,6 @@ export class Engines {
   }
 
   unloadSf() {
-    this.preloadPromise = null;
     this.beforeSfUnload();
     this.sfGen++;
     this.sf?.terminate();
@@ -85,18 +80,12 @@ export class Engines {
     const backend = st.backend === 'webgpu' && this.webgpuFailed ? 'wasm' : st.backend;
     const model = st.model;
     const lean = st.lowMemory;
-    const progress = (l: number, t: number) => {
-      const text = `加载 Maia ${((l / t) * 100).toFixed(0)}%（${(t / 1048576).toFixed(0)}MB）`;
-      this.status(text, { engine: 'maia', text, progress: t ? l / t : undefined });
-    };
-    const loadingText = `加载 ${MODELS[model].label}…`;
-    this.status(loadingText, { engine: 'maia', text: loadingText, progress: 0 });
-    this.maiaLoading = Maia.create(model, backend, progress, lean)
+    this.maiaLoading = Maia.create(model, backend, undefined, lean)
       .catch(async (err) => {
         if (isNative || backend !== 'webgpu' || gen !== this.maiaGen) throw err;
         console.warn('WebGPU 失败，回退 WASM', err);
         this.webgpuFailed = true;
-        return Maia.create(model, 'wasm', progress, lean);
+        return Maia.create(model, 'wasm', undefined, lean);
       })
       .catch(async (err) => {
         if (isNative || gen !== this.maiaGen) throw err;
@@ -104,8 +93,8 @@ export class Engines {
         // typically with multi-threaded Stockfish resident; free it and retry single-threaded
         console.warn('Maia 加载失败，释放 Stockfish 后以单线程重试', err);
         if (this.sf || this.sfLoading) this.unloadSf();
-        this.status('内存不足，正在以省内存方式重新加载 Maia…');
-        return Maia.create(model, 'wasm', progress, true, 1);
+        setStatus('内存不足，正在以省内存方式重新加载 Maia…');
+        return Maia.create(model, 'wasm', undefined, true, 1);
       })
       .then((m) => {
         if (gen !== this.maiaGen) {
@@ -115,15 +104,13 @@ export class Engines {
           throw new Error('Maia 已卸载');
         }
         this.maia = m;
-        const readyText = `${MODELS[model].label} 就绪${isNative ? `（原生 · ${m.provider === 'coreml' ? 'CoreML' : 'CPU'}）` : ''}`;
-        this.status(readyText, { engine: 'maia', text: readyText, progress: 1, ready: true });
         return m;
       })
       .catch((err) => {
         // a stale load must not clear the handle of a newer one
         if (gen === this.maiaGen) {
           this.maiaLoading = null;
-          this.status('Maia 加载失败：' + (err as Error).message);
+          setStatus('Maia 加载失败：' + (err as Error).message);
         }
         throw err;
       });
@@ -131,7 +118,8 @@ export class Engines {
   }
 
   async getSf(): Promise<Stockfish> {
-    if (this.sf?.alive) return this.sf;
+    if (this.sf?.alive && this.sf.lite === this.settings().sfLite) return this.sf;
+    if (this.sf?.alive) this.unloadSf();
     if (this.sf) {
       // crashed or killed by the watchdog: drop it and boot a fresh one
       this.sf = null;
@@ -140,8 +128,6 @@ export class Engines {
     if (this.sfLoading) return this.sfLoading;
     const st = this.settings();
     if (this.exclusive()) this.unloadMaia();
-    const loadingText = `加载 Stockfish 19${st.sfLite ? ' 轻量版' : ''}…`;
-    this.status(loadingText, { engine: 'stockfish', text: loadingText });
     const gen = this.sfGen;
     this.sfLoading = Stockfish.create(st.sfThreads, st.sfHash, st.sfLite)
       .then((s) => {
@@ -152,46 +138,25 @@ export class Engines {
           throw new Error('Stockfish 已卸载');
         }
         this.sf = s;
-        const readyText = `Stockfish 19${s.lite ? ' 轻量版' : ' 满血版'} 就绪（${s.native ? '原生 · ' : ''}${s.multiThreaded ? s.threads + ' 线程' : '单线程'}）`;
-        this.status(readyText, { engine: 'stockfish', text: readyText, progress: 1, ready: true });
         return s;
       })
       .catch((err) => {
         if (gen === this.sfGen) {
           this.sfLoading = null;
-          this.status('Stockfish 加载失败：' + (err as Error).message);
+          setStatus('Stockfish 加载失败：' + (err as Error).message);
         }
         throw err;
       });
     return this.sfLoading;
   }
 
-  async warmup(silent = false) {
-    if (this.preloadPromise) return this.preloadPromise;
-    this.preloadBoth = true;
-    if (silent) this.silentDepth++;
-    this.preloadPromise = (async () => {
-      try {
-        await this.getMaia();
-        await this.getSf();
-        this.status('Maia 与 Stockfish 已预加载');
-      } catch (err) {
-        console.warn('预加载失败', err);
-        throw err;
-      } finally {
-        if (silent) this.silentDepth--;
-      }
-    })().catch((err) => {
-      // A failed preload can be retried when the user starts a game.
-      this.preloadPromise = null;
-      throw err;
-    });
-    return this.preloadPromise;
-  }
-
-  /** Wait only for engines needed by the destination screen. */
-  async ensureReady(requireStockfish = false) {
-    if (requireStockfish) return this.warmup(true);
-    await this.getMaia();
+  async warmup() {
+    try {
+      await this.getMaia();
+      // in exclusive low-memory mode both engines can't be resident; keep the one needed to play
+      if (!this.exclusive()) await this.getSf();
+    } catch (err) {
+      console.warn('预加载失败', err);
+    }
   }
 }

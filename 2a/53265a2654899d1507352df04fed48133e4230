@@ -1,0 +1,38 @@
+web/test/engines.test.ts
+  s_48134132f4a9bb::t_4de1d89d18d48b 65-66,77-126,144-181
+  s_48134132f4a9bb::t_5eb0ec83cb5028 127-143
+web/src/settings.ts
+  s_48134132f4a9bb::t_c2ea9947b45a34 32,116
+web/src/app/engines-ui.ts
+  s_48134132f4a9bb::t_c2ea9947b45a34 120
+web/index.html
+  s_48134132f4a9bb::t_1a3bfee46657e3 346
+web/src/main.ts
+  s_48134132f4a9bb::t_c2338524db06f4 139-141,187,354,360,601,709,911,1119,2006,2075-2088,2090-2095,2097-2114,2526-2527,2539,2541,2593,2835-2837,3324-3325
+  s_48134132f4a9bb::t_5eb0ec83cb5028 2096,2834,3830-3835
+  s_48134132f4a9bb::t_369f856d639833 3487
+web/src/style.css
+  s_48134132f4a9bb::t_1a3bfee46657e3 250-252,254-323
+  s_48134132f4a9bb::t_c33316142ad707 253
+web/src/app/engines.ts
+  s_48134132f4a9bb::t_c2ea9947b45a34 1,7,38-44,46,50-51,83,88,97,121-122
+  s_48134132f4a9bb::t_5eb0ec83cb5028 45,47-49
+README.md
+  s_48134132f4a9bb::t_369f856d639833 6,65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a53265a2654899d1507352df04fed48133e4230",
+  "prompts": {},
+  "sessions": {
+    "s_48134132f4a9bb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17581-975b-7551-8992-9b30a35d7caa",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

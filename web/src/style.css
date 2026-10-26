@@ -226,15 +226,29 @@ button svg {
     opacity 0.22s,
     transform 0.22s;
 }
-.screen.edge-swipe {
+.screen.edge-swipe,
+.screen.edge-swipe-settling {
+  z-index: 2;
+  background: var(--bg);
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.16);
+  will-change: transform, opacity;
+}
+.screen.edge-swipe,
+.screen.edge-swipe-preview {
   transition: none !important;
 }
-.screen.edge-swipe-return {
-  transition: transform 0.2s ease !important;
-  transform: translateX(0) !important;
+.screen.edge-swipe-preview {
+  z-index: 1;
+  visibility: visible;
+  pointer-events: none;
+  background: var(--bg);
+  will-change: transform, opacity;
 }
-.screen.edge-swipe-commit {
-  transition: transform 0.18s ease-out !important;
+.screen.edge-swipe-settling {
+  pointer-events: none;
+  transition:
+    transform 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.26s ease !important;
 }
 .screen.edge-swipe-cleanup {
   transition: none !important;

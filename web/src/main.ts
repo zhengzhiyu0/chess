@@ -2721,8 +2721,6 @@ function openSettings() {
     if (input.type === 'checkbox') input.checked = Boolean(v);
     else input.value = String(v);
   }
-  // Engine warmup is now always enabled; keep the legacy setting checked for old backups.
-  el('warmup').checked = true;
   const outs = () => {
     const v = Number(el('elo').value);
     (f.elements.namedItem('eloOut') as HTMLOutputElement).value = v < 600 ? `${v}（低于 600 为模型外推）` : String(v);
@@ -2800,7 +2798,7 @@ function openSettings() {
       color: el('color').value as Settings['color'],
       temperature: num('temperature'),
       backend: el('backend').value as Settings['backend'],
-      useHistory: el('useHistory').checked,
+      useHistory: false,
       thinkDelay: el('thinkDelay').checked,
       sfMovetime: Math.max(100, num('sfMovetime') || 1000),
       sfThreads: Math.max(1, num('sfThreads') || 1),
@@ -3753,25 +3751,92 @@ function installIOSBackGesture() {
   let startY = 0;
   let lastX = 0;
   let current: HTMLElement | null = null;
+  let preview: HTMLElement | null = null;
+  let reportPreview = false;
+  let previewInert = false;
   let tracking = false;
   let horizontal = false;
+  let settling = false;
 
-  const clear = (animate: boolean) => {
+  const preparePreview = () => {
+    reportPreview = screen === 'game' && mode === 'review' && returnToReport;
+    if (reportPreview) {
+      // Preview the report without changing the review state until the gesture commits.
+      preview = document.createElement('div');
+      preview.className = 'screen';
+      const header = current!.querySelector('.appbar');
+      if (header) preview.append(header.cloneNode(true));
+      const report = $('report').cloneNode(true) as HTMLElement;
+      report.classList.remove('hidden');
+      preview.append(report);
+      preview.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+      preview.setAttribute('aria-hidden', 'true');
+      $('app').append(preview);
+    } else {
+      preview = $('home');
+    }
+    previewInert = preview.inert;
+    preview.inert = true;
+    preview.classList.add('edge-swipe-preview');
+    preview.style.transform = 'translateX(-12%)';
+    preview.style.opacity = '0.65';
+    current!.classList.add('edge-swipe');
+  };
+
+  const clear = (commit: boolean, animate = true) => {
     if (!current) return;
     const el = current;
-    el.classList.toggle('edge-swipe-return', animate);
-    el.classList.remove('edge-swipe');
-    el.style.removeProperty('transform');
-    if (animate) window.setTimeout(() => el.classList.remove('edge-swipe-return'), 220);
-    current = null;
+    const underlay = preview;
+    const toReport = reportPreview;
     tracking = false;
     horizontal = false;
+    settling = true;
+    el.classList.remove('edge-swipe');
+    const duration = animate && underlay && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 260 : 0;
+    if (duration) {
+      el.classList.add('edge-swipe-settling');
+      underlay!.classList.add('edge-swipe-settling');
+    }
+    el.style.transform = commit ? 'translateX(100%)' : 'translateX(0)';
+    el.style.opacity = commit ? '0' : '1';
+    if (underlay) {
+      underlay.style.transform = commit ? 'translateX(0)' : 'translateX(-12%)';
+      underlay.style.opacity = commit ? '1' : '0.65';
+    }
+    const finish = () => {
+      el.classList.add('edge-swipe-cleanup');
+      underlay?.classList.add('edge-swipe-cleanup');
+      // Keep both layers in place until the destination is active; no empty frame between pages.
+      if (commit && el.classList.contains('active')) {
+        if (toReport) backToReport();
+        else showScreen('home');
+      }
+      for (const layer of [el, underlay]) {
+        if (!layer) continue;
+        layer.classList.remove('edge-swipe', 'edge-swipe-settling', 'edge-swipe-preview');
+        layer.style.removeProperty('transform');
+        layer.style.removeProperty('opacity');
+      }
+      if (underlay) {
+        underlay.inert = previewInert;
+        if (toReport) underlay.remove();
+      }
+      current = preview = null;
+      reportPreview = false;
+      requestAnimationFrame(() => {
+        el.classList.remove('edge-swipe-cleanup');
+        underlay?.classList.remove('edge-swipe-cleanup');
+        settling = false;
+      });
+    };
+    if (duration) window.setTimeout(finish, duration);
+    else finish();
   };
 
   document.addEventListener(
     'touchstart',
     (e) => {
-      if (e.touches.length !== 1 || e.touches[0].clientX > 28) return;
+      if (settling || tracking || e.touches.length !== 1 || e.touches[0].clientX > 28) return;
       current = document.querySelector<HTMLElement>('.screen.active');
       if (!current || current.id === 'home') {
         current = null;
@@ -3787,58 +3852,39 @@ function installIOSBackGesture() {
   document.addEventListener(
     'touchmove',
     (e) => {
-      if (!tracking || !current || e.touches.length !== 1) return;
+      if (!tracking || !current) return;
+      if (e.touches.length !== 1) return clear(false);
       const p = e.touches[0];
       const dx = p.clientX - startX;
       const dy = p.clientY - startY;
-      if (!horizontal && (Math.abs(dy) > 24 || (dx < 8 && Math.abs(dy) > Math.abs(dx) * 1.2))) return clear(true);
-      if (dx < 8) return;
+      if (!horizontal && (Math.abs(dy) > 24 || (dx < 8 && Math.abs(dy) > Math.abs(dx) * 1.2))) return clear(false, false);
+      if (!horizontal && dx < 8) return;
+      if (!horizontal) preparePreview();
       horizontal = true;
       lastX = p.clientX;
       e.preventDefault();
-      current.classList.add('edge-swipe');
-      current.style.transform = `translateX(${dx}px)`;
+      const progress = Math.max(0, Math.min(1, dx / current.clientWidth));
+      current.style.transform = `translateX(${progress * 100}%)`;
+      current.style.opacity = String(1 - progress * 0.2);
+      preview!.style.transform = `translateX(${-12 * (1 - progress)}%)`;
+      preview!.style.opacity = String(0.65 + progress * 0.35);
     },
     { capture: true, passive: false },
   );
   const end = () => {
     if (!tracking || !current) return;
     const commit = horizontal && lastX - startX >= Math.max(80, innerWidth * 0.22);
-    if (!commit) return clear(true);
+    if (!commit) return clear(false);
     const open = [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].filter((d) => d.id !== 'dlg-update').pop();
     if (open) {
-      clear(false);
+      clear(false, false);
       open.close();
       return;
     }
-    if (backToReport()) return clear(true);
-    const el = current;
-    el.classList.remove('edge-swipe');
-    el.classList.add('edge-swipe-commit');
-    el.style.transform = 'translateX(100%)';
-    current = null;
-    tracking = false;
-    horizontal = false;
-
-    // Update the route while the outgoing page is still moving. Waiting until
-    // the animation ends briefly restores the active page before `popstate`
-    // can switch to the destination, which is visible as a one-frame flash.
-    if (location.hash) history_.back();
-    else showScreen('home');
-
-    window.setTimeout(() => {
-      // The page is inactive now. Move the inline transform to its normal
-      // inactive offset before removing it, so cleanup cannot animate it back
-      // across the screen or leave a stale transform when it is opened again.
-      el.classList.add('edge-swipe-cleanup');
-      el.style.transform = 'translateX(24px)';
-      el.classList.remove('edge-swipe-commit');
-      el.style.removeProperty('transform');
-      requestAnimationFrame(() => el.classList.remove('edge-swipe-cleanup'));
-    }, 180);
+    clear(true);
   };
   document.addEventListener('touchend', end, { capture: true, passive: true });
-  document.addEventListener('touchcancel', () => clear(true), { capture: true, passive: true });
+  document.addEventListener('touchcancel', () => clear(false), { capture: true, passive: true });
 }
 
 function init() {

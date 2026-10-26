@@ -17,7 +17,7 @@ export interface Settings {
   ratedGames: number;
   color: Color | 'random';
   temperature: number;
-  /** feed real game history to Maia (official UCI default is off: current position repeated) */
+  /** Legacy backup field; real game history is disabled (official UCI default). */
   useHistory: boolean;
   backend: 'wasm' | 'webgpu';
   thinkDelay: boolean;
@@ -190,7 +190,7 @@ const RULES: Record<keyof Settings, Rule> = {
   ratedGames: { num: [0, 1e9], int: true },
   color: { oneOf: ['w', 'b', 'random'] },
   temperature: { num: [0, 1.5] },
-  useHistory: { bool: true },
+  useHistory: { oneOf: [false] },
   backend: { oneOf: ['wasm', 'webgpu'] },
   thinkDelay: { bool: true },
   sfMovetime: { num: [100, 20000], int: true },

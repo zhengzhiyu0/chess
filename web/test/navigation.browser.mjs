@@ -102,13 +102,21 @@ try {
       assert.equal(await page.locator('#btn-back').getAttribute('aria-label'), '返回复盘结果');
       if (back === 'button') await page.locator('#btn-back').click();
       else if (back === 'browser') await page.goBack();
-      else await page.evaluate(() => {
-        const target = document.querySelector('#game');
-        const touch = x => new Touch({ identifier:1, target, clientX:x, clientY:200 });
-        target.dispatchEvent(new TouchEvent('touchstart', {bubbles:true,touches:[touch(5)]}));
-        target.dispatchEvent(new TouchEvent('touchmove', {bubbles:true,cancelable:true,touches:[touch(180)]}));
-        target.dispatchEvent(new TouchEvent('touchend', {bubbles:true,touches:[],changedTouches:[touch(180)]}));
-      });
+      else {
+        await page.evaluate(() => {
+          const target = document.querySelector('#game');
+          const touch = x => new Touch({ identifier:1, target, clientX:x, clientY:200 });
+          target.dispatchEvent(new TouchEvent('touchstart', {bubbles:true,touches:[touch(5)]}));
+          target.dispatchEvent(new TouchEvent('touchmove', {bubbles:true,cancelable:true,touches:[touch(180)]}));
+        });
+        const preview = page.locator('.edge-swipe-preview');
+        assert.equal(await preview.isVisible(), true, 'Dragging back must reveal the report');
+        assert.ok((await preview.textContent()).includes('本地学习总结'));
+        assert.equal(await preview.locator('[id]').count(), 0, 'Report preview must not duplicate IDs');
+        assert.equal(await page.locator('#report.hidden').count(), 1, 'Preview must not change the review state');
+        if (process.env.NAVIGATION_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.NAVIGATION_SCREENSHOT_DIR}/back-report-preview.png` });
+        await page.evaluate(() => document.querySelector('#game').dispatchEvent(new TouchEvent('touchend', {bubbles:true,touches:[]})));
+      }
       await page.locator('#report:not(.hidden)').waitFor();
       assert.equal(await page.locator('#game.active').count(), 1);
     }
@@ -130,6 +138,46 @@ try {
     assert.ok(saved.clock[0] > 190000);
     assert.equal(saved.clock[1], live.clock[1]);
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('maia-coach.history')).map(g => ({id:g.id,result:g.result,tree:g.tree}))), games.map(({id,result,tree}) => ({id,result,tree})));
+
+    if (mobile) {
+      const dragBack = async x => page.evaluate(x => {
+        const target = document.querySelector('#game');
+        const touch = value => new Touch({identifier:1,target,clientX:value,clientY:200});
+        target.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,touches:[touch(5)]}));
+        target.dispatchEvent(new TouchEvent('touchmove',{bubbles:true,cancelable:true,touches:[touch(x)]}));
+      }, x);
+      const release = async type => page.evaluate(type => document.querySelector('#game').dispatchEvent(new TouchEvent(type,{bubbles:true,touches:[]})), type);
+      await dragBack(180);
+      const previewState = await page.locator('#home').evaluate(el => ({
+        preview:el.classList.contains('edge-swipe-preview'),
+        opacity:Number(getComputedStyle(el).opacity), inert:el.inert,
+      }));
+      assert.equal(previewState.preview, true);
+      assert.ok(previewState.opacity > 0.65 && previewState.opacity < 1, 'Home fades in with drag progress');
+      assert.equal(previewState.inert, true, 'The preview must not accept input');
+      assert.equal(await page.locator('#game.active').count(), 1);
+      if (process.env.NAVIGATION_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.NAVIGATION_SCREENSHOT_DIR}/back-home-preview.png` });
+      // Reversing direction before release must cancel even after crossing the threshold.
+      await page.evaluate(() => {
+        const target=document.querySelector('#game');
+        target.dispatchEvent(new TouchEvent('touchmove',{bubbles:true,cancelable:true,touches:[new Touch({identifier:1,target,clientX:5,clientY:200})]}));
+      });
+      await release('touchend');
+      await page.locator('.edge-swipe-preview').waitFor({state:'detached'});
+      assert.equal(await page.locator('#game.active').count(), 1);
+      assert.equal(await page.locator('#home').evaluate(el=>el.inert), false);
+      await dragBack(180);
+      await release('touchcancel');
+      await page.locator('.edge-swipe-preview').waitFor({state:'detached'});
+      assert.equal(await page.locator('#game.active').count(), 1);
+      await dragBack(180);
+      await release('touchend');
+      await page.locator('#home.active').waitFor();
+      await page.locator('.edge-swipe-preview').waitFor({state:'detached'});
+      assert.equal((await activeSaved()).id, live.id);
+      await page.locator('#btn-continue').click();
+      assert.equal(await page.locator('#game').evaluate(el=>el.style.transform), '', 'Returning to the game clears gesture transforms');
+    }
 
     // Make a legal move and check that the reply uses the player's opponent portrait.
     const bounds = await page.locator('#board cg-board').boundingBox();

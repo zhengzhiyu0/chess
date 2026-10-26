@@ -1,4 +1,5 @@
 export type OpponentPersonality = 'sharp' | 'deadpan' | 'theatrical' | 'snarky' | 'arrogant' | 'playful' | 'poetic' | 'commentator';
+export type CoachVoiceStyle = 'precise' | 'warm' | 'dramatic' | 'calm' | 'bold' | 'playful' | 'scholarly' | 'witty';
 
 export interface OpponentTalkEvent {
   /** The user's move immediately before the opponent's move, if any. */
@@ -25,8 +26,51 @@ export const OPPONENT_PERSONALITIES: Record<OpponentPersonality, { label: string
   commentator: { label: '赛事解说', description: '像直播一样点评局面' },
 };
 
-export function randomOpponentPersonality(): OpponentPersonality {
-  const personalities = Object.keys(OPPONENT_PERSONALITIES) as OpponentPersonality[];
+/**
+ * Each coach has a small, related personality pool. A game picks one style from
+ * the selected coach's pool and keeps it for the whole game, so the coach stays
+ * recognizable while consecutive games still feel different.
+ *
+ * The indexes follow COACHES in app/coach-avatars.ts.
+ */
+export const COACH_PERSONALITY_POOLS: readonly (readonly OpponentPersonality[])[] = [
+  ['sharp', 'arrogant', 'commentator'],
+  ['playful', 'theatrical', 'snarky'],
+  ['deadpan', 'poetic', 'commentator'],
+  ['deadpan', 'arrogant', 'sharp'],
+  ['playful', 'snarky', 'theatrical'],
+  ['sharp', 'commentator', 'arrogant'],
+  ['poetic', 'deadpan', 'arrogant'],
+  ['poetic', 'playful', 'deadpan'],
+];
+
+const COACH_STYLES: readonly CoachVoiceStyle[] = ['precise', 'warm', 'dramatic', 'calm', 'bold', 'playful', 'scholarly', 'witty'];
+
+function coachStyleOf(index: number): CoachVoiceStyle {
+  return COACH_STYLES[index] ?? 'precise';
+}
+
+function coachFlavor(style: CoachVoiceStyle, line: string, seed: number): string {
+  const prefixes: Record<CoachVoiceStyle, readonly string[]> = {
+    precise: ['先看事实：', '精确一点：', '关键在这里：'], warm: ['别急，', '我们一起看：', '慢慢来，'], dramatic: ['听好了——', '这一幕的焦点是：', '好戏来了：'], calm: ['冷静观察：', '慢一点。', '先稳住：'],
+    bold: ['我就直说：', '大胆一点：', '别绕弯子：'], playful: ['嘿，', '棋盘开个小玩笑：', '来，看看这个：'], scholarly: ['从结构上看，', '记住这个规律：', '按棋理说，'], witty: ['我看见了哦：', '这一步挺会挑时间：', '有意思，'],
+  };
+  const options = prefixes[style];
+  return `${options[Math.floor(Math.abs(seed) * 1_000_000) % options.length] ?? ''}${line}`;
+}
+
+function englishCoachFlavor(style: CoachVoiceStyle, line: string, seed: number): string {
+  const prefixes: Record<CoachVoiceStyle, readonly string[]> = {
+    precise: ['Let us be precise: ', 'Look at the facts: ', 'The key point is this: '], warm: ['No rush. ', 'Let us look together: ', 'Take your time. '], dramatic: ['Listen closely—', 'The focus of this scene is: ', 'Now the drama begins: '], calm: ['Stay calm. ', 'Observe carefully: ', 'Steady now. '],
+    bold: ['I will be direct: ', 'Be bold: ', 'No detours: '], playful: ['Hey, ', 'A little chess joke: ', 'Come on, look at this: '], scholarly: ['From a structural view: ', 'Remember this pattern: ', 'By chess logic: '], witty: ['I saw that: ', 'That was well-timed: ', 'Interesting move: '],
+  };
+  const options = prefixes[style];
+  return `${options[Math.floor(Math.abs(seed) * 1_000_000) % options.length] ?? ''}${line}`;
+}
+
+export function randomOpponentPersonality(coachIndex?: number): OpponentPersonality {
+  const pool = coachIndex === undefined ? undefined : COACH_PERSONALITY_POOLS[Math.max(0, Math.floor(coachIndex))];
+  const personalities = pool?.length ? pool : (Object.keys(OPPONENT_PERSONALITIES) as OpponentPersonality[]);
   return personalities[Math.floor(Math.random() * personalities.length)] ?? 'sharp';
 }
 
@@ -182,20 +226,187 @@ function kindOf(e: OpponentTalkEvent): TemplateKind {
   return 'neutral';
 }
 
+/**
+ * Situation-aware additions keep the voice varied without turning every line
+ * into the same sentence with a word swapped. Piece names come from the move
+ * event, so one idea can naturally react to a bishop, rook, queen, or pawn.
+ */
+function contextualLines(personality: OpponentPersonality, event: OpponentTalkEvent, kind: TemplateKind, situation: 'promotion' | 'castle' | null): string[] {
+  const myPiece = event.userCaptured ? `我的${event.userCaptured}` : '';
+  const yourPiece = event.captured ? `你的${event.captured}` : '';
+  const ownLoss: Record<OpponentPersonality, string[]> = {
+    sharp: [
+      `啊，${myPiece}也能被你抓住？这笔账我记下了。`,
+      `你盯上的偏偏是${myPiece}，这一手有点东西。`,
+      `${myPiece}没了，别以为我会因此停手。`,
+      `漂亮的交换。${myPiece}倒下之后，轮到你承受压力了。`,
+      `我承认，${myPiece}这次走得太冒险。`,
+    ],
+    deadpan: [
+      `${myPiece}离场。局面仍然可以继续。`,
+      `记录一下：${myPiece}损失，补偿方案稍后计算。`,
+      `你拿走了${myPiece}。这不是好消息，但也不是结论。`,
+      `${myPiece}的价值已经兑现，至少从你的角度看是这样。`,
+      `确认丢失${myPiece}。接下来按新物质平衡处理。`,
+    ],
+    theatrical: [
+      `啊！我的${event.userCaptured}谢幕了，而且谢幕得很突然！`,
+      `聚光灯打在${myPiece}身上——等等，它已经退场了！`,
+      `这一幕的反转是：你带走了${myPiece}。`,
+      `${myPiece}倒在舞台中央，剧情可没有因此结束。`,
+      `好一场夺子戏！${myPiece}成了今天的主角。`,
+    ],
+    snarky: [
+      `哎呀，${myPiece}送到你手里了，满意了吗？`,
+      `你挑得真准，偏偏拿走${myPiece}。`,
+      `${myPiece}没了。恭喜，这次总算看见了。`,
+      `当然可以吃${myPiece}，我只是想看看你会不会真的动手。`,
+      `很好，${myPiece}替你完成了最简单的一步。`,
+    ],
+    arrogant: [
+      `你拿走${myPiece}，只是执行了我允许的交换。`,
+      `${myPiece}的损失已经写进我的计算里。`,
+      `不错，${myPiece}给了你一个看似舒服的选择。`,
+      `我当然看见了${myPiece}会丢，只是你还没看见下一步。`,
+      `一枚${event.userCaptured}而已，别急着把它算成胜势。`,
+    ],
+    playful: [
+      `哎呀，我的${event.userCaptured}被你拐走啦！`,
+      `${myPiece}下班了，棋盘上又空出一个座位。`,
+      `你和${myPiece}玩得挺开心？那我可要捣乱了。`,
+      `糟糕，${myPiece}没跟上队伍，先去休息了。`,
+      `这次是${myPiece}的冒险失败，下一位谁来接班？`,
+    ],
+    poetic: [
+      `一盏灯熄灭了，${myPiece}沉入棋盘的暮色。`,
+      `${myPiece}离开原位，留下一个等待回声的空格。`,
+      `你带走${myPiece}，像从棋局里剪下一行诗。`,
+      `这枚${event.userCaptured}落幕，风向却还没有决定。`,
+      `失去${myPiece}之后，棋盘的呼吸换了节拍。`,
+    ],
+    commentator: [
+      `关键事件：${myPiece}被吃，双方物质平衡发生变化。`,
+      `现场确认，${myPiece}离场，这会影响接下来的攻防路线。`,
+      `一枚${event.userCaptured}被带走，选手需要立即重估局面。`,
+      `漂亮的取子！${myPiece}的消失让这回合有了明确主题。`,
+      `注意这个细节：${myPiece}损失之后，开放线正在形成。`,
+    ],
+  };
+  const opponentCapture: Record<OpponentPersonality, string[]> = {
+    sharp: [`${yourPiece}落网，别把它当成偶然。`, `我拿走${yourPiece}，现在轮到你解释这步了。`, `${yourPiece}留下了缺口，我会继续追。`],
+    deadpan: [`${yourPiece}被吃。交换结果符合当前计算。`, `取走${yourPiece}，局面进入下一阶段。`, `${yourPiece}消失，线路变得更清楚了。`],
+    theatrical: [`${yourPiece}退场！这一幕的布景完全变了。`, `一记取子，${yourPiece}从剧情中消失。`, `谢幕吧，${yourPiece}已经没有台词了。`],
+    snarky: [`谢谢你把${yourPiece}送过来，包装还挺完整。`, `${yourPiece}就这样走了？我还以为你会保护它。`, `拿走${yourPiece}，至少这一步不用猜。`],
+    arrogant: [`${yourPiece}按计划离场，结果没有悬念。`, `取走${yourPiece}，这正是它应该出现的位置。`, `${yourPiece}的命运早已写在这条线上。`],
+    playful: [`${yourPiece}被我捉住啦！`, `来，${yourPiece}先坐我的车。`, `${yourPiece}掉队了，我就顺手带走。`],
+    poetic: [`${yourPiece}沉入黑白交界，棋路因此改写。`, `我拾起${yourPiece}，像拾起一片落叶。`, `${yourPiece}离场，空格开始说话。`],
+    commentator: [`取子完成：${yourPiece}离场，局面出现新的焦点。`, `${yourPiece}被吃，交换后的线路值得重点观察。`, `一枚${event.captured}退出战场，双方计划随之调整。`],
+  };
+  const promotion: Record<OpponentPersonality, string[]> = {
+    sharp: ['兵终于升变，别让这份威胁白白长大。', '升变完成，棋盘上多了一个必须回答的问题。'],
+    deadpan: ['升变已发生。新的子力需要重新计入。', '兵完成晋升，局面参数发生变化。'],
+    theatrical: ['小兵登台换装，下一幕直接升级！', '升变！旧角色退场，新角色抢走了聚光灯。'],
+    snarky: ['兵都升变了，你现在总该认真一点了吧？', '恭喜小兵毕业，顺便给你制造麻烦。'],
+    arrogant: ['升变只是计划的收尾，不必惊讶。', '新子力登场，正好执行下一段计算。'],
+    playful: ['小兵换上新皮肤，突然变得很能打！', '升级成功！棋盘上多了一位新朋友。'],
+    poetic: ['小兵走到尽头，化作一束新的锋芒。', '漫长的跋涉终于开花，升变改写了棋盘的光线。'],
+    commentator: ['重大节点：兵完成升变，攻防资源重新洗牌。', '升变落地，双方必须立即评估新子力的活动范围。'],
+  };
+  if (situation === 'promotion') return promotion[personality];
+  if (kind === 'userCapture' && myPiece) return ownLoss[personality];
+  if (kind === 'capture' && yourPiece) return opponentCapture[personality];
+  return [];
+}
+
+const ENGLISH_PIECES: Record<string, string> = { '兵': 'pawn', '马': 'knight', '象': 'bishop', '车': 'rook', '后': 'queen', '王': 'king' };
+
+function englishPiece(piece: string | undefined): string {
+  return ENGLISH_PIECES[piece ?? ''] ?? 'piece';
+}
+
+/** Short English equivalents for the same event, used only by system TTS. */
+export function opponentVoiceLine(personality: OpponentPersonality, event: OpponentTalkEvent, seed = Math.random(), coachIndex = 0): string {
+  const kind = kindOf(event);
+  const situation = !event.opponentSan.includes('#') && /=[QRBN]/.test(event.opponentSan) ? 'promotion'
+    : kind === 'neutral' && event.opponentSan.startsWith('O-O') ? 'castle' : null;
+  const myPiece = englishPiece(event.userCaptured);
+  const yourPiece = englishPiece(event.captured);
+  const lines: string[] = situation === 'promotion'
+    ? ({
+        sharp: ['Promotion. Now answer this threat.', 'That pawn made it through. Find a response.'],
+        deadpan: ['Promotion confirmed. Recalculate the position.', 'A new piece has entered the position.'],
+        theatrical: ['Promotion! A new star takes the stage.', 'The pawn has transformed for the final act.'],
+        snarky: ['A promotion. I hope you noticed this time.', 'The pawn got an upgrade. Good luck.'],
+        arrogant: ['Promotion, exactly as calculated.', 'The promotion completes the plan.'],
+        playful: ['Promotion! That little pawn just leveled up.', 'New piece, new trouble!'],
+        poetic: ['The pawn reaches the horizon and becomes light.', 'A long journey ends in a new form.'],
+        commentator: ['Major event: promotion changes the balance.', 'Promotion completed; both plans must be reassessed.'],
+      } as Record<OpponentPersonality, string[]>)[personality]
+    : kind === 'userCapture' && event.userCaptured
+      ? ({
+          sharp: [`Ah, my ${myPiece}. I will remember that.`, `You found my ${myPiece}; now deal with the pressure.`],
+          deadpan: [`My ${myPiece} is gone. The position continues.`, `Loss recorded: my ${myPiece}. Recalculating.`],
+          theatrical: [`My ${myPiece} leaves the stage!`, `A dramatic turn: you captured my ${myPiece}.`],
+          snarky: [`Well done, you found my ${myPiece}.`, `My ${myPiece} is gone. Happy now?`],
+          arrogant: [`You took my ${myPiece}; the exchange was allowed.`, `My ${myPiece} was already part of the calculation.`],
+          playful: [`Oops, my ${myPiece} got carried away!`, `You caught my ${myPiece}. Nice little trap.`],
+          poetic: [`My ${myPiece} fades into the quiet of the board.`, `You took my ${myPiece}; the rhythm has changed.`],
+          commentator: [`Key moment: my ${myPiece} has been captured.`, `The loss of my ${myPiece} changes the balance.`],
+        } as Record<OpponentPersonality, string[]>)[personality]
+      : kind === 'capture' && event.captured
+        ? ({
+            sharp: [`Your ${yourPiece} is gone. Keep calculating.`, `I took your ${yourPiece}; this line is mine now.`],
+            deadpan: [`Your ${yourPiece} was captured. Continue.`],
+            theatrical: [`Your ${yourPiece} exits the stage!`, `One capture, and the whole scene changes.`],
+            snarky: [`Thanks for leaving your ${yourPiece} there.`, `Your ${yourPiece} was practically asking for it.`],
+            arrogant: [`Your ${yourPiece} had no better destination.`, `I took your ${yourPiece}, as expected.`],
+            playful: [`Got your ${yourPiece}!`, `Your ${yourPiece} wandered into my net.`],
+            poetic: [`Your ${yourPiece} sinks into the silence between squares.`, `I gathered your ${yourPiece} from the path.`],
+            commentator: [`Capture complete: your ${yourPiece} leaves the board.`, `The capture of your ${yourPiece} shifts the focus.`],
+          } as Record<OpponentPersonality, string[]>)[personality]
+        : kind === 'mate'
+          ? ['Checkmate. That is the game.', 'The king has no escape.']
+          : kind === 'check'
+            ? ['Check. Find your answer.', 'Your king is under pressure.']
+            : kind === 'userCheck'
+              ? ['Check? Bold choice. I will respond.', 'You gave check. Now watch the reply.']
+              : kind === 'drop'
+                ? ['That move leaves a serious weakness.', 'You gave me a tactical opening.']
+                : kind === 'good'
+                  ? ['A strong move. The position just became sharper.', 'That was accurate. I need to adapt.']
+                  : kind === 'opening'
+                    ? ['The game begins. Show me your plan.', 'A new game, and already a decision.']
+                    : ['The position is still unfolding.', 'Let us see what this plan becomes.'];
+  return englishCoachFlavor(coachStyleOf(coachIndex), lines[Math.floor(Math.abs(seed) * 1_000_000) % lines.length] ?? lines[0] ?? '', seed + 0.17);
+}
+
 /** Pick a local reply, avoiding recent lines and recycling the oldest when a pool is exhausted. */
-export function opponentTalk(personality: OpponentPersonality, event: OpponentTalkEvent, previous: string | readonly string[] = '', seed = Math.random()): string {
+export function opponentTalk(
+  personality: OpponentPersonality,
+  event: OpponentTalkEvent,
+  previous: string | readonly string[] = '',
+  seed = Math.random(),
+  coachName = '教练',
+  coachIndex = 0,
+): string {
   const style = LINES[personality] ?? EXTRA_LINES[personality] ?? LINES.sharp!;
   const kind = kindOf(event);
   const extra = SITUATION_LINES[personality];
   const situation = !event.opponentSan.includes('#') && /=[QRBN]/.test(event.opponentSan) ? 'promotion'
     : kind === 'neutral' && event.opponentSan.startsWith('O-O') ? 'castle' : null;
-  const lines = situation ? extra[situation] : [...style[kind], ...(kind === 'neutral' ? extra.neutral : [])];
+  const lines = [
+    ...(situation ? extra[situation] : [...style[kind], ...(kind === 'neutral' ? extra.neutral : [])]),
+    ...contextualLines(personality, event, kind, situation),
+  ];
   const recent = typeof previous === 'string' ? [previous] : previous;
   const start = Math.floor(Math.abs(seed) * 1_000_000) % lines.length;
+  const render = (line: string) => coachFlavor(coachStyleOf(coachIndex), line.replaceAll('机器人', coachName), seed + 0.17);
   for (let offset = 0; offset < lines.length; offset++) {
     const line = lines[(start + offset) % lines.length];
-    if (!recent.includes(line)) return line;
+    const reply = render(line);
+    if (!recent.includes(reply)) return reply;
   }
   // If every reply has been used, recycle the one heard longest ago.
-  return [...lines].sort((a, b) => recent.lastIndexOf(a) - recent.lastIndexOf(b))[0];
+  const recycled = [...lines].sort((a, b) => recent.lastIndexOf(render(a)) - recent.lastIndexOf(render(b)))[0] ?? '';
+  return render(recycled);
 }

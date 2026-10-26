@@ -8,8 +8,18 @@
 type Hair = 'sweep' | 'buns' | 'quiff' | 'bald' | 'afro' | 'spiky' | 'beanie' | 'bun';
 type Mouth = 'open' | 'grin' | 'smirk' | 'smile';
 
-interface Coach {
+export type CoachGender = 'female' | 'male';
+export type CoachStyle = 'precise' | 'warm' | 'dramatic' | 'calm' | 'bold' | 'playful' | 'scholarly' | 'witty';
+
+export const COACH_STYLE_LABELS: Record<CoachStyle, string> = {
+  precise: '精准克制', warm: '温柔鼓励', dramatic: '戏剧张力', calm: '冷静沉着',
+  bold: '直接果断', playful: '轻松俏皮', scholarly: '学者风格', witty: '机智幽默',
+};
+
+export interface Coach {
   name: string;
+  gender: CoachGender;
+  style: CoachStyle;
   bg: string;
   skin: string;
   hair: Hair;
@@ -27,15 +37,17 @@ interface Coach {
   collar?: boolean;
 }
 
+export const RANDOM_COACH = -1;
+
 export const COACHES: Coach[] = [
-  { name: '莉亚', bg: '#8e7cf0', skin: '#f6cdb0', hair: 'sweep', hairColor: '#3a2a6b', top: '#5b45c9', mouth: 'smirk', lid: true },
-  { name: '小柚', bg: '#ffb340', skin: '#f9d4b6', hair: 'buns', hairColor: '#e2672f', top: '#ff5f7a', mouth: 'open' },
-  { name: '里奥', bg: '#48c6b8', skin: '#efbf98', hair: 'quiff', hairColor: '#7a4a26', top: '#2f8f5f', mouth: 'grin' },
-  { name: '维克多', bg: '#7fb069', skin: '#f0c4a0', hair: 'bald', hairColor: '#eeeae4', top: '#8a5a3c', mouth: 'smile', stache: true, glasses: 'round' },
-  { name: '扎拉', bg: '#ff7a59', skin: '#9a5e3a', hair: 'afro', hairColor: '#22161a', top: '#ffd23f', mouth: 'open', hoops: true },
-  { name: '阿健', bg: '#4aa3f0', skin: '#f3cba5', hair: 'spiky', hairColor: '#16161c', top: '#ffffff', mouth: 'grin', glasses: 'square', collar: true },
-  { name: '奥斯卡', bg: '#f0a33a', skin: '#b87a52', hair: 'beanie', hairColor: '#3b2416', hat: '#e2453c', top: '#3f5c8c', mouth: 'smile', beard: true },
-  { name: '梅姨', bg: '#e886b0', skin: '#f5d0b8', hair: 'bun', hairColor: '#b9b3c4', top: '#5d8f7a', mouth: 'smile', glasses: 'round', lid: true },
+  { name: '莉亚', gender: 'female', style: 'precise', bg: '#8e7cf0', skin: '#f6cdb0', hair: 'sweep', hairColor: '#3a2a6b', top: '#5b45c9', mouth: 'smirk', lid: true },
+  { name: '小柚', gender: 'female', style: 'warm', bg: '#ffb340', skin: '#f9d4b6', hair: 'buns', hairColor: '#e2672f', top: '#ff5f7a', mouth: 'open' },
+  { name: '里奥', gender: 'male', style: 'dramatic', bg: '#48c6b8', skin: '#efbf98', hair: 'quiff', hairColor: '#7a4a26', top: '#2f8f5f', mouth: 'grin' },
+  { name: '维克多', gender: 'male', style: 'calm', bg: '#7fb069', skin: '#f0c4a0', hair: 'bald', hairColor: '#eeeae4', top: '#8a5a3c', mouth: 'smile', stache: true, glasses: 'round' },
+  { name: '扎拉', gender: 'female', style: 'bold', bg: '#ff7a59', skin: '#9a5e3a', hair: 'afro', hairColor: '#22161a', top: '#ffd23f', mouth: 'open', hoops: true },
+  { name: '阿健', gender: 'male', style: 'playful', bg: '#4aa3f0', skin: '#f3cba5', hair: 'spiky', hairColor: '#16161c', top: '#ffffff', mouth: 'grin', glasses: 'square', collar: true },
+  { name: '奥斯卡', gender: 'male', style: 'scholarly', bg: '#f0a33a', skin: '#b87a52', hair: 'beanie', hairColor: '#3b2416', hat: '#e2453c', top: '#3f5c8c', mouth: 'smile', beard: true },
+  { name: '梅姨', gender: 'female', style: 'witty', bg: '#e886b0', skin: '#f5d0b8', hair: 'bun', hairColor: '#b9b3c4', top: '#5d8f7a', mouth: 'smile', glasses: 'round', lid: true },
 ];
 
 /** Multiply each RGB channel of `#rrggbb` by `f` (clamped). */

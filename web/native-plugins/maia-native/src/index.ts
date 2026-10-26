@@ -47,6 +47,8 @@ export interface SoundNativePlugin {
   /** Bundled recordings; delay is in seconds, relative to this batch. */
   play(opts: { clips: { theme: string; file: string; delay: number }[] }): Promise<void>;
   stop(): Promise<void>;
+  speak(opts: { text: string; language: string; gender?: 'female' | 'male' }): Promise<void>;
+  stopSpeech(): Promise<void>;
 }
 
 export const SoundNative = registerPlugin<SoundNativePlugin>('SoundNative');

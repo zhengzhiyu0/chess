@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OPPONENT_PERSONALITIES, opponentTalk, type OpponentPersonality } from '../src/opponent';
+import { COACH_PERSONALITY_POOLS, OPPONENT_PERSONALITIES, opponentTalk, type OpponentPersonality } from '../src/opponent';
 
 describe('local opponent talk', () => {
   it('selects an immediate check line without a network request', () => {
@@ -22,6 +22,34 @@ describe('local opponent talk', () => {
     const first = opponentTalk('sharp', { opponentSan: 'Nxf3', captured: '兵' }, '', 0);
     const next = opponentTalk('sharp', { opponentSan: 'Bxc4', captured: '兵' }, first, 0);
     expect(next).not.toBe(first);
+  });
+
+  it('addresses the selected coach instead of calling itself a robot', () => {
+    const line = opponentTalk('commentator', { opponentSan: 'Nxf3', captured: '兵' }, '', 0.000001, '星河教练');
+    expect(line).toContain('星河教练');
+    expect(line).not.toContain('机器人');
+  });
+
+  it.each(['象', '后', '车'])('can mention the exact piece lost (%s)', (piece) => {
+    const lines = Array.from({ length: 80 }, (_, i) => opponentTalk(
+      'theatrical',
+      { opponentSan: 'e6', userCaptured: piece, userCapturedValue: piece === '后' ? 9 : 3 },
+      '',
+      i / 80,
+    ));
+    expect(lines.some((line) => line.includes(`我的${piece}`))).toBe(true);
+  });
+
+  it('uses a dedicated branch for promotion instead of a generic reply', () => {
+    const lines = Array.from({ length: 80 }, (_, i) => opponentTalk('poetic', { opponentSan: 'e8=Q' }, '', i / 80));
+    expect(lines.some((line) => line.includes('升变'))).toBe(true);
+  });
+
+  it('gives every coach several compatible personalities to rotate between games', () => {
+    expect(COACH_PERSONALITY_POOLS).toHaveLength(8);
+    for (const pool of COACH_PERSONALITY_POOLS) {
+      expect(new Set(pool).size).toBeGreaterThanOrEqual(2);
+    }
   });
 
   for (const personality of Object.keys(OPPONENT_PERSONALITIES) as OpponentPersonality[]) {

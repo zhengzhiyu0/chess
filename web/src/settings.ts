@@ -76,14 +76,18 @@ export interface Settings {
   reviewOpponent: boolean;
   /** my avatar, see app/avatar.ts ('' = default) */
   avatar: string;
-  /** Maia's coach portrait, index into COACHES (app/coach-avatars.ts) */
+  /** Maia's coach portrait; -1 means choose a coach at the start of each game. */
   coachAvatar: number;
   /** instant local taunts in normal games only */
   opponentTalk: boolean;
+  /** speak the English equivalent of each opponent line with the system voice */
+  opponentVoice: boolean;
   /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
   engineGen?: number;
   /** sound theme default migration: 1 = Lichess sfx, 2 = wooden board set */
   soundGen?: number;
+  /** coach selection default migration */
+  coachGen?: number;
 }
 
 const KEY = 'maia-coach.settings';
@@ -141,8 +145,9 @@ export function defaultSettings(): Settings {
     autoplayMs: 1200,
     reviewOpponent: false,
     avatar: '',
-    coachAvatar: 0,
+    coachAvatar: -1,
     opponentTalk: true,
+    opponentVoice: true,
   };
 }
 
@@ -169,6 +174,11 @@ export function loadSettings(): Settings {
     if (isNative && saved.engineGen === 2) {
       if (typeof saved.sfThreads === 'number' && saved.sfThreads > 2) saved.sfThreads = 2;
       saved.engineGen = 3;
+    }
+    // Before coach selection existed, index 0 was silently used. Treat that legacy default as random.
+    if (saved.coachGen === undefined) {
+      if (saved.coachAvatar === undefined || saved.coachAvatar === 0) saved.coachAvatar = -1;
+      saved.coachGen = 1;
     }
     return sanitizeSettings(saved);
   } catch {
@@ -228,10 +238,12 @@ const RULES: Record<keyof Settings, Rule> = {
   reviewOpponent: { bool: true },
   // '' / '<glyph>|#rrggbb' / small JPEG data URL; rendering validates the format again
   avatar: { str: /^[^<>"]{0,200000}$/s },
-  coachAvatar: { num: [0, 999], int: true },
+  coachAvatar: { num: [-1, 999], int: true },
   opponentTalk: { bool: true },
+  opponentVoice: { bool: true },
   engineGen: { optInt: true },
   soundGen: { optInt: true },
+  coachGen: { optInt: true },
 };
 
 function valid(r: Rule, v: unknown): boolean {

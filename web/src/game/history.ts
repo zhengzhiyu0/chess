@@ -16,6 +16,8 @@ export interface StoredGame {
   result: string;
   reason?: EndReason;
   coach?: boolean;
+  /** coach portrait used for this game; -1 is only valid in settings, games store the resolved index */
+  coachAvatar?: number;
   elo?: number;
   /** player's rating after this game when automatic rating adjustment was on */
   eloAfter?: number;
@@ -160,6 +162,7 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
   };
   if (typeof r.reason === 'string' && REASONS.has(r.reason)) g.reason = r.reason as EndReason;
   if (r.coach === true) g.coach = true;
+  if (num(r.coachAvatar) && Number.isInteger(r.coachAvatar as number) && (r.coachAvatar as number) >= 0 && (r.coachAvatar as number) <= 999) g.coachAvatar = r.coachAvatar as number;
   if (num(r.elo)) g.elo = r.elo as number;
   if (num(r.eloAfter)) g.eloAfter = r.eloAfter as number;
   if (str(r.model, 16)) g.model = r.model as string;

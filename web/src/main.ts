@@ -35,13 +35,14 @@ import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from
 import { Engines } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './app/avatar';
-import { COACHES } from './app/coach-avatars';
+import { COACHES, COACH_STYLE_LABELS, RANDOM_COACH } from './app/coach-avatars';
 import { findNode, movesHtml } from './app/moves-ui';
 import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
 import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
-import { opponentTalk, randomOpponentPersonality, type OpponentPersonality } from './opponent';
+import { opponentTalk, opponentVoiceLine, randomOpponentPersonality, type OpponentPersonality } from './opponent';
+import { speakEnglish, stopEnglishVoice } from './audio/voice';
 
 // ---------- state ----------
 
@@ -133,8 +134,15 @@ let analysisTotal = 0;
 let screen: 'home' | 'game' | 'train' = 'home';
 type HomeTab = 'play' | 'train' | 'data';
 let homeTab: HomeTab = 'play';
+function pickCoachAvatar(selection: number): number {
+  if (selection >= 0 && selection < COACHES.length) return selection;
+  return Math.floor(Math.random() * COACHES.length);
+}
+
+let gameCoachAvatar = pickCoachAvatar(settings.coachAvatar);
 let opponentLine = '';
-let gameOpponentPersonality: OpponentPersonality = randomOpponentPersonality();
+let opponentEnglishLine = '';
+let gameOpponentPersonality: OpponentPersonality = randomOpponentPersonality(gameCoachAvatar);
 let gameLoading = false;
 /** Invalidates a pending entry when leaving, changing modes, or starting another game. */
 let gameEntry = 0;
@@ -164,6 +172,7 @@ let suspendedGame: {
   personality: OpponentPersonality;
   line: string;
   recentLines: string[];
+  voiceLine: string;
   flipped: boolean;
   coachFrom: Node | null;
   coachPaused: boolean;
@@ -258,6 +267,7 @@ function stored(): StoredGame {
     result,
     reason,
     coach: coachOn,
+    coachAvatar: gameCoachAvatar,
     elo: imported ? undefined : gameElo,
     eloAfter,
     model: imported ? undefined : gameModel,
@@ -291,6 +301,8 @@ function resetTransient() {
   liveLines = [];
   hintedAt = null;
   opponentLine = '';
+  opponentEnglishLine = '';
+  stopEnglishVoice();
   recentOpponentLines = [];
   coachReset();
   $('hint-box').textContent = '';
@@ -324,7 +336,8 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     imported = Boolean(g.imported);
     headers = g.headers;
     coachOn = Boolean(g.coach);
-    gameOpponentPersonality = randomOpponentPersonality();
+    gameCoachAvatar = typeof g.coachAvatar === 'number' ? pickCoachAvatar(g.coachAvatar) : pickCoachAvatar(settings.coachAvatar);
+    gameOpponentPersonality = randomOpponentPersonality(gameCoachAvatar);
     gameElo = g.elo ?? (imported ? undefined : settings.elo);
     eloAfter = g.eloAfter;
     gameModel = g.model ?? settings.model;
@@ -660,6 +673,8 @@ function maiaFens(n: Node): string[] {
 
 function clearOpponentLine() {
   opponentLine = '';
+  opponentEnglishLine = '';
+  stopEnglishVoice();
 }
 
 function opponentSpeak(n: Node) {
@@ -705,8 +720,21 @@ function opponentSpeak(n: Node) {
     },
     recentOpponentLines,
     Math.random(),
+    COACHES[gameCoachAvatar]?.name ?? '教练',
+    gameCoachAvatar,
   );
+  const voiceEvent = {
+    userSan: userMove?.san,
+    opponentSan: n.san,
+    captured,
+    userCaptured,
+    userCapturedValue,
+    userMaterialSwing: beforeMaterial === undefined || afterMaterial === undefined ? undefined : afterMaterial - beforeMaterial,
+    opening: parent === tree.root,
+  };
+  opponentEnglishLine = opponentVoiceLine(gameOpponentPersonality, voiceEvent, Math.random(), gameCoachAvatar);
   recentOpponentLines = [...recentOpponentLines.slice(-11), opponentLine];
+  speakEnglish(opponentEnglishLine, settings.opponentVoice && settings.opponentTalk, COACHES[gameCoachAvatar]?.gender ?? 'female');
 }
 
 async function maiaEval(n: Node): Promise<MaiaResult> {
@@ -1000,7 +1028,8 @@ function newGame(fen = START_FEN, color?: Color): boolean {
   clock = tc ? new ChessClock(tc) : null;
   if (clock) tree.root.clock = [...clock.remaining];
   coachOn = settings.gameType === 'coach';
-  gameOpponentPersonality = randomOpponentPersonality();
+  gameCoachAvatar = pickCoachAvatar(settings.coachAvatar);
+  gameOpponentPersonality = randomOpponentPersonality(gameCoachAvatar);
   resetTransient();
   cg.cancelPremove();
   play('start');
@@ -2416,7 +2445,7 @@ function material(n: Node, color: Color): { html: string; diff: number } {
 /** 我：设置里的头像；Maia：教练形象；导入的对局：默认剪影 */
 function sideAvatar(c: Color, cls = ''): string {
   if (imported) return avatarHtml('', cls.replace('pick', ''));
-  return c === userColor ? avatarHtml(settings.avatar, cls) : coachAvatarHtml(settings.coachAvatar, cls);
+  return c === userColor ? avatarHtml(settings.avatar, cls) : coachAvatarHtml(gameCoachAvatar, cls);
 }
 
 function renderPlayers() {
@@ -2486,7 +2515,7 @@ function renderOpponentDialogue() {
     box.innerHTML = '';
     return;
   }
-  box.innerHTML = `${coachAvatarHtml(settings.coachAvatar)}<span class="opponent-line">${escapeHtml(opponentLine)}</span>`;
+  box.innerHTML = `${coachAvatarHtml(gameCoachAvatar)}<span class="opponent-line"><span class="opponent-cn">${escapeHtml(opponentLine)}</span><span class="opponent-en">${escapeHtml(opponentEnglishLine)}</span></span>`;
 }
 
 function update() {
@@ -2674,13 +2703,18 @@ function openCoachAvatar() {
   const dlg = $<HTMLDialogElement>('dlg-coach-avatar');
   let pick = settings.coachAvatar;
   const draw = () => {
-    $('coach-current').innerHTML = coachAvatarHtml(pick, 'big');
-    $('coach-name').textContent = COACHES[pick]?.name ?? '';
-    $('coach-grid').innerHTML = COACHES.map(
+    $('coach-current').innerHTML = coachAvatarHtml(pick === RANDOM_COACH ? 0 : pick, 'big');
+    $('coach-name').textContent = pick === RANDOM_COACH ? '每局随机教练（8 位）' : `${COACHES[pick]?.name ?? ''} · ${COACH_STYLE_LABELS[COACHES[pick]?.style ?? 'precise']}`;
+    $('coach-grid').innerHTML = `<button type="button" data-random class="${pick === RANDOM_COACH ? 'on' : ''}" aria-label="每局随机教练"><span class="coach-random">🎲</span><small>随机</small></button>` + COACHES.map(
       (c, i) => `<button type="button" data-i="${i}" class="${i === pick ? 'on' : ''}" aria-label="${c.name}">${coachAvatarHtml(i)}</button>`,
     ).join('');
   };
   $('coach-grid').onclick = (e) => {
+    if ((e.target as HTMLElement).closest('[data-random]')) {
+      pick = RANDOM_COACH;
+      draw();
+      return;
+    }
     const i = (e.target as HTMLElement).closest<HTMLElement>('[data-i]')?.dataset.i;
     if (i === undefined) return;
     pick = Number(i);
@@ -2692,7 +2726,7 @@ function openCoachAvatar() {
     if (dlg.returnValue !== 'ok' || pick === settings.coachAvatar) return;
     settings = { ...settings, coachAvatar: pick };
     saveSettings(settings);
-    $('set-coach').innerHTML = coachAvatarHtml(settings.coachAvatar);
+    $('set-coach').innerHTML = coachAvatarHtml(settings.coachAvatar === RANDOM_COACH ? 0 : settings.coachAvatar);
     update();
   };
   dlg.showModal();
@@ -2766,7 +2800,7 @@ function openSettings() {
   syncFxDetailControls();
   $('set-avatar').innerHTML = avatarHtml(settings.avatar);
   $('btn-set-avatar').onclick = openAvatar;
-  $('set-coach').innerHTML = coachAvatarHtml(settings.coachAvatar);
+  $('set-coach').innerHTML = coachAvatarHtml(settings.coachAvatar === RANDOM_COACH ? 0 : settings.coachAvatar);
   $('btn-set-coach').onclick = openCoachAvatar;
   const sf = engines.sf;
   const maia = engines.maia;
@@ -2824,6 +2858,7 @@ function openSettings() {
       boardSizeReview: num('boardSizeReview'),
       reviewOpponent: el('reviewOpponent').checked,
       opponentTalk: el('opponentTalk').checked,
+      opponentVoice: el('opponentVoice').checked,
     };
     applySettings(old);
   };
@@ -2839,6 +2874,7 @@ function applyBoardSize() {
 
 function applySettings(old: Settings) {
   saveSettings(settings);
+  if (old.opponentVoice && !settings.opponentVoice) stopEnglishVoice();
   applyTheme(settings.theme);
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);
@@ -3247,7 +3283,7 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
           saveGame();
           suspendedGame = {
             game: { ...stored(), peak: peakUserMoves }, tree, node,
-            personality: gameOpponentPersonality, line: opponentLine,
+            personality: gameOpponentPersonality, line: opponentLine, voiceLine: opponentEnglishLine,
             recentLines: [...recentOpponentLines], flipped, coachFrom,
             coachPaused: coachState === 'paused', coachReveal,
           };
@@ -3299,6 +3335,7 @@ function restoreSuspendedGame() {
   node = saved.node;
   gameOpponentPersonality = saved.personality;
   opponentLine = saved.line;
+  opponentEnglishLine = saved.voiceLine ?? '';
   recentOpponentLines = saved.recentLines;
   flipped = saved.flipped;
   if (saved.coachPaused) {

@@ -4,12 +4,14 @@ import UIKit
 
 /// Play bundled MP3s outside WKWebView's gesture, decoding and AudioContext lifecycle.
 @objc(SoundNativePlugin)
-public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelegate {
+public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate {
     public let identifier = "SoundNativePlugin"
     public let jsName = "SoundNative"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "speak", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "stopSpeech", returnType: CAPPluginReturnPromise),
     ]
 
     private static let themes: Set<String> = ["board", "wood", "felt", "glass", "sfx", "piano", "nes", "futuristic"]
@@ -18,6 +20,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private var recordings: [URL: Data] = [:]
     private var observers: [NSObjectProtocol] = []
     private var sessionActive = false
+    private let speech = AVSpeechSynthesizer()
 
     /// Configure the session once when the plugin is loaded. Reapplying the
     /// category for every move can make iOS renegotiate the route while a very
@@ -25,6 +28,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private let session = AVAudioSession.sharedInstance()
 
     override public func load() {
+        speech.delegate = self
         do {
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
         } catch {
@@ -88,6 +92,30 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     @objc func stop(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [self] in
             stopPlayers()
+            call.resolve()
+        }
+    }
+
+    @objc func stopSpeech(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [self] in
+            speech.stopSpeaking(at: .immediate)
+            call.resolve()
+        }
+    }
+
+    @objc func speak(_ call: CAPPluginCall) {
+        guard let text = call.getString("text"), !text.isEmpty, text.count <= 240,
+              let language = call.getString("language"), language.lowercased().hasPrefix("en") else {
+            return call.reject("invalid speech request")
+        }
+        DispatchQueue.main.async { [self] in
+            guard UIApplication.shared.applicationState == .active else { return call.resolve() }
+            speech.stopSpeaking(at: .immediate)
+            let utterance = AVSpeechUtterance(string: text)
+            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+            utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.94
+            utterance.pitchMultiplier = call.getString("gender") == "male" ? 0.9 : 1.08
+            speech.speak(utterance)
             call.resolve()
         }
     }

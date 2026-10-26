@@ -17,18 +17,31 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private var players: [AVAudioPlayer] = []
     private var recordings: [URL: Data] = [:]
     private var observers: [NSObjectProtocol] = []
+    private var sessionActive = false
+
+    /// Configure the session once when the plugin is loaded. Reapplying the
+    /// category for every move can make iOS renegotiate the route while a very
+    /// short MP3 is starting, which is perceived as a quiet or missed move.
+    private let session = AVAudioSession.sharedInstance()
 
     override public func load() {
+        do {
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+        } catch {
+            NSLog("SoundNative: audio session setup failed: %@", error.localizedDescription)
+        }
         let center = NotificationCenter.default
         for name in [UIApplication.willResignActiveNotification, AVAudioSession.interruptionNotification] {
             observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 // Discard interrupted and scheduled sounds; never replay them on return.
                 self?.stopPlayers()
+                self?.sessionActive = false
             })
         }
         observers.append(center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: .main) { [weak self] _ in
             self?.stopPlayers()
             self?.recordings.removeAll()
+            self?.sessionActive = false
         })
     }
 
@@ -52,6 +65,24 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private func stopPlayers() {
         for player in players { player.stop() }
         players.removeAll()
+    }
+
+    private func start(_ player: AVAudioPlayer) {
+        // `play(atTime:)` is unreliable for tiny effects when the device clock
+        // has just been activated. Start zero-delay clips immediately so their
+        // attack is never clipped. Delayed preview clips are scheduled by the
+        // main queue instead of the audio device clock for the same reason.
+        guard players.contains(where: { $0 === player }) else { return }
+        guard player.prepareToPlay(), player.play() else {
+            players.removeAll { $0 === player }
+            return
+        }
+    }
+
+    private func activateSession() throws {
+        if sessionActive { return }
+        try session.setActive(true)
+        sessionActive = true
     }
 
     @objc func stop(_ call: CAPPluginCall) {
@@ -80,16 +111,19 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
                     batch.append((player, delay))
                 }
                 // The in-app sound setting controls muting. Mix short effects with other audio,
-                // and re-activate on every batch so calls / route changes cannot leave it silent.
-                let session = AVAudioSession.sharedInstance()
-                try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-                try session.setActive(true)
+                // and activate again only after an interruption or background transition.
+                try activateSession()
                 if players.count + batch.count > 8 { stopPlayers() }
                 for (player, delay) in batch {
+                    player.volume = 1
                     players.append(player)
-                    guard player.prepareToPlay(), player.play(atTime: player.deviceCurrentTime + 0.01 + delay) else {
-                        stopPlayers()
-                        throw NSError(domain: "SoundNative", code: 3, userInfo: [NSLocalizedDescriptionKey: "音效播放失败"])
+                    if delay <= 0 {
+                        start(player)
+                    } else {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self, weak player] in
+                            guard let self, let player else { return }
+                            self.start(player)
+                        }
                     }
                 }
                 call.resolve()

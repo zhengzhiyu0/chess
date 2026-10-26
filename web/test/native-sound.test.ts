@@ -43,7 +43,6 @@ describe('iOS 原生 MP3 播放', () => {
       ['move', undefined, 'Move'], ['capture', undefined, 'Capture'], ['check', undefined, 'Check'],
       ['castle', undefined, 'Move'], ['promote', undefined, 'Move'], ['illegal', undefined, 'LowTime'],
       ['start', undefined, 'GenericNotify'], ['lowtime', undefined, 'LowTime'],
-      ['end', 'win', 'Victory'], ['end', 'loss', 'Defeat'], ['end', 'draw', 'Draw'],
     ] as const;
     for (const [kind, end, file] of events) {
       play(kind, end);
@@ -51,6 +50,14 @@ describe('iOS 原生 MP3 播放', () => {
       vi.advanceTimersByTime(70);
     }
     expect(native.play).toHaveBeenCalledTimes(events.length);
+  });
+
+  it('does not play victory, defeat, or draw sounds', async () => {
+    const { play } = await import('../src/audio/sound');
+    play('end', 'win');
+    play('end', 'loss');
+    play('end', 'draw');
+    expect(native.play).not.toHaveBeenCalled();
   });
 
   it('关闭音效后仍可试听，试听使用同一原生批次排程', async () => {

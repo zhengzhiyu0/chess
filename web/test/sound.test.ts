@@ -113,7 +113,7 @@ describe('音效生命周期', () => {
     ctx.dispatchEvent(new Event('statechange'));
     let resume!: () => void;
     ctx.resume.mockImplementationOnce(() => new Promise<void>((resolve) => { resume = () => { ctx.state = 'running'; resolve(); }; }));
-    play('end', 'win');
+    play('move');
     vi.advanceTimersByTime(1000);
     resume();
     await flush();

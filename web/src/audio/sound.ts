@@ -239,6 +239,9 @@ async function render(a: AudioContext, kind: SoundKind, id: string, delay = 0, e
 export function play(kind: SoundKind, end?: EndKind) {
   if (document.hidden) return;
   haptic(kind);
+  // End-of-game banners already communicate the result; keep the audio quiet
+  // until the result sound is redesigned for iOS.
+  if (kind === 'end') return;
   if (!enabled) return;
   const now = performance.now();
   if (kind === 'move' || kind === 'capture' || kind === 'castle' || kind === 'check' || kind === 'promote') {

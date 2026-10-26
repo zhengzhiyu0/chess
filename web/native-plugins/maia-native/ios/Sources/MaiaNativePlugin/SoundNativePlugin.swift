@@ -89,6 +89,16 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         sessionActive = true
     }
 
+    private func speechVoice(language: String, gender: String) -> AVSpeechSynthesisVoice? {
+        let prefix = String(language.lowercased().prefix(2))
+        let voices = AVSpeechSynthesisVoice.speechVoices().filter { $0.language.lowercased().hasPrefix(prefix) }
+        if #available(iOS 13.0, *) {
+            let desired: AVSpeechSynthesisVoiceGender = gender == "male" ? .male : .female
+            if let voice = voices.first(where: { $0.gender == desired }) { return voice }
+        }
+        return AVSpeechSynthesisVoice(language: language) ?? voices.first
+    }
+
     @objc func stop(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [self] in
             stopPlayers()
@@ -112,7 +122,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
             guard UIApplication.shared.applicationState == .active else { return call.resolve() }
             speech.stopSpeaking(at: .immediate)
             let utterance = AVSpeechUtterance(string: text)
-            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+            utterance.voice = speechVoice(language: language, gender: call.getString("gender") ?? "female")
             utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.94
             utterance.pitchMultiplier = call.getString("gender") == "male" ? 0.9 : 1.08
             speech.speak(utterance)

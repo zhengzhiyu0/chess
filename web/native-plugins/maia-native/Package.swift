@@ -30,6 +30,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0"),
         .package(url: "https://github.com/microsoft/onnxruntime-swift-package-manager.git", exact: "1.24.2"),
+        .package(url: "https://github.com/piper-tts-apps/espeak-ng-spm.git", exact: "2026.09.11"),
     ],
     targets: [
         .target(
@@ -51,6 +52,15 @@ let package = Package(
                 .define("USE_LITE_NET"),
             ]
         ),
+        .target(
+            name: "EspeakBridge",
+            dependencies: [
+                .product(name: "libespeak-ng", package: "espeak-ng-spm"),
+                .product(name: "espeak-ng-data", package: "espeak-ng-spm"),
+            ],
+            path: "ios/Sources/EspeakBridge",
+            publicHeadersPath: "include"
+        ),
         .binaryTarget(
             name: "PiperPlusBinary",
             url: "https://github.com/ayutaz/piper-plus/releases/download/v2.0.2/libpiper_plus-ios-v2.0.2.xcframework.zip",
@@ -63,6 +73,7 @@ let package = Package(
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
                 .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
                 "PiperPlusBinary",
+                "EspeakBridge",
                 "StockfishFull",
                 "StockfishLite",
             ],

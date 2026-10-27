@@ -1,0 +1,35 @@
+web/scripts/prepare-native.mjs
+  s_f6f83aa0622ac8::t_2fb763a8254faf 132
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_f6f83aa0622ac8::t_f70aeb63a9e1aa 4-79,103,191,200,259,263,272
+web/native-plugins/maia-native/Package.swift
+  s_f6f83aa0622ac8::t_06bcbe011794b1 26
+  s_f6f83aa0622ac8::t_456b4692b19e76 54-58,65
+web/package.json
+  s_f6f83aa0622ac8::t_06bcbe011794b1 13
+web/ios/App/App.xcodeproj/project.pbxproj
+  s_f6f83aa0622ac8::t_06bcbe011794b1 237,288,305,327
+web/ios/App/CapApp-SPM/Package.swift
+  s_f6f83aa0622ac8::t_0d96720d4d8dd1 7
+web/scripts/set-ios-deployment-target.mjs
+  s_f6f83aa0622ac8::t_17b7c2f96b1f4d 1-26
+README.md
+  s_f6f83aa0622ac8::t_2fb763a8254faf 104
+  s_f6f83aa0622ac8::t_0d96720d4d8dd1 75,82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9212305dd8734cecc13ecaa4ab12152acd5f1814",
+  "prompts": {},
+  "sessions": {
+    "s_f6f83aa0622ac8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17a8e-4301-7153-9332-de892c75838c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -50,6 +50,7 @@ export interface SoundNativePlugin {
   prepareSpeech(opts: { voice: string }): Promise<void>;
   speak(opts: { text: string; voice: string }): Promise<void>;
   stopSpeech(): Promise<void>;
+  getLogs(): Promise<{ logs: string }>;
 }
 
 export const SoundNative = registerPlugin<SoundNativePlugin>('SoundNative');

@@ -43,6 +43,9 @@ import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
 import { opponentTalk, opponentVoiceLine, randomOpponentPersonality, type OpponentPersonality } from './opponent';
 import { prepareEnglishVoice, speakEnglish, stopEnglishVoice } from './audio/voice';
+import { installRuntimeLogCapture, runtimeLogText } from './runtime-logs';
+
+installRuntimeLogCapture();
 
 // ---------- state ----------
 
@@ -2809,6 +2812,21 @@ function openSettings() {
   $('btn-set-avatar').onclick = openAvatar;
   $('set-coach').innerHTML = coachAvatarHtml(settings.coachAvatar === RANDOM_COACH ? 0 : settings.coachAvatar);
   $('btn-set-coach').onclick = openCoachAvatar;
+  $('btn-export-launch-logs').onclick = async () => {
+    const button = $<HTMLButtonElement>('btn-export-launch-logs');
+    button.disabled = true;
+    try {
+      const nativeLogs = isNative ? (await (await import('maia-native')).SoundNative.getLogs()).logs : '';
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const result = await shareFile(`maia-coach-launch-logs-${stamp}.txt`, runtimeLogText(nativeLogs), 'text/plain');
+      if (result !== 'cancelled') setStatus('已准备本次启动日志');
+    } catch (err) {
+      console.error('导出启动日志失败', err);
+      setStatus('导出日志失败');
+    } finally {
+      button.disabled = false;
+    }
+  };
   const sf = engines.sf;
   const maia = engines.maia;
   $('env-info').innerHTML =

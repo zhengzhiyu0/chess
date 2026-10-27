@@ -3,10 +3,30 @@ import Capacitor
 import UIKit
 import PiperPlus
 
-private enum PiperPlusError: Error {
-    case engineCreationFailed
-    case synthesisFailed
+private enum PiperPlusError: LocalizedError {
     case invalidAudio
+
+    var errorDescription: String? { "Piper returned invalid or silent audio" }
+}
+
+private enum TTSRuntimeLog {
+    private static let lock = NSLock()
+    private static var entries: [String] = []
+
+    static func record(_ message: String) {
+        let line = "\(ISO8601DateFormatter().string(from: Date())) [iOS/TTS] \(message)"
+        lock.lock()
+        entries.append(line)
+        if entries.count > 500 { entries.removeFirst(entries.count - 500) }
+        lock.unlock()
+        NSLog("%@", line)
+    }
+
+    static func text() -> String {
+        lock.lock()
+        defer { lock.unlock() }
+        return entries.joined(separator: "\n")
+    }
 }
 
 private final class PiperPlusVoice {
@@ -26,7 +46,10 @@ private final class PiperPlusVoice {
                 }
             }
         }
-        guard status == PIPER_PLUS_OK, let created else { throw PiperPlusError.engineCreationFailed }
+        guard status == PIPER_PLUS_OK, let created else {
+            let detail = piper_plus_get_last_error().map { String(cString: $0) } ?? "no native error detail"
+            throw NSError(domain: "PiperPlus", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "engine creation failed: \(detail)"])
+        }
         engine = created
     }
 
@@ -34,7 +57,7 @@ private final class PiperPlusVoice {
         piper_plus_free(engine)
     }
 
-    func synthesize(_ text: String) throws -> Data {
+    func synthesize(_ text: String) throws -> AVAudioPCMBuffer {
         var options = piper_plus_default_options()
         var samples: UnsafeMutablePointer<Float>?
         var sampleCount: Int32 = 0
@@ -42,39 +65,30 @@ private final class PiperPlusVoice {
         let status = text.withCString { input in
             piper_plus_synthesize(engine, input, &options, &samples, &sampleCount, &sampleRate)
         }
-        guard status == PIPER_PLUS_OK, let samples else { throw PiperPlusError.synthesisFailed }
+        guard status == PIPER_PLUS_OK, let samples else {
+            let detail = piper_plus_get_last_error().map { String(cString: $0) } ?? "no native error detail"
+            throw NSError(domain: "PiperPlus", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "synthesis failed: \(detail)"])
+        }
         defer { piper_plus_free_audio(samples) }
         let count = Int(sampleCount)
-        guard count > 0, sampleRate > 0 else { throw PiperPlusError.invalidAudio }
+        guard count > 0, sampleRate > 0, count <= Int(sampleRate) * 60,
+              let format = AVAudioFormat(standardFormatWithSampleRate: Double(sampleRate), channels: 1),
+              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(count)),
+              let channel = buffer.floatChannelData?.pointee else {
+            throw PiperPlusError.invalidAudio
+        }
 
-        var pcm = Data(capacity: count * MemoryLayout<Int16>.stride)
+        var peak: Float = 0
         for index in 0..<count {
             let sample = samples[index]
             guard sample.isFinite else { throw PiperPlusError.invalidAudio }
-            var value = Int16(max(-1, min(1, sample)) * Float(Int16.max)).littleEndian
-            Swift.withUnsafeBytes(of: &value) { pcm.append(contentsOf: $0) }
+            channel[index] = sample
+            peak = max(peak, abs(sample))
         }
-
-        var wav = Data()
-        wav.append(contentsOf: "RIFF".utf8)
-        appendLittleEndian(UInt32(36 + pcm.count), to: &wav)
-        wav.append(contentsOf: "WAVEfmt ".utf8)
-        appendLittleEndian(UInt32(16), to: &wav)
-        appendLittleEndian(UInt16(1), to: &wav)
-        appendLittleEndian(UInt16(1), to: &wav)
-        appendLittleEndian(UInt32(sampleRate), to: &wav)
-        appendLittleEndian(UInt32(sampleRate) * 2, to: &wav)
-        appendLittleEndian(UInt16(2), to: &wav)
-        appendLittleEndian(UInt16(16), to: &wav)
-        wav.append(contentsOf: "data".utf8)
-        appendLittleEndian(UInt32(pcm.count), to: &wav)
-        wav.append(pcm)
-        return wav
-    }
-
-    private func appendLittleEndian<T: FixedWidthInteger>(_ value: T, to data: inout Data) {
-        var littleEndian = value.littleEndian
-        Swift.withUnsafeBytes(of: &littleEndian) { data.append(contentsOf: $0) }
+        buffer.frameLength = AVAudioFrameCount(count)
+        guard peak > 0.0001 else { throw PiperPlusError.invalidAudio }
+        TTSRuntimeLog.record(String(format: "generated %.2fs at %dHz (peak %.3f)", Double(count) / Double(sampleRate), sampleRate, peak))
+        return buffer
     }
 }
 
@@ -89,6 +103,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         CAPPluginMethod(name: "prepareSpeech", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "speak", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stopSpeech", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getLogs", returnType: CAPPluginReturnPromise),
     ]
 
     private static let themes: Set<String> = ["board", "wood", "felt", "glass", "sfx", "piano", "nes", "futuristic"]
@@ -102,8 +117,8 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private var speechRequest = 0
     private var piper: PiperPlusVoice?
     private var piperVoice: String?
-    private var speechPlayer: AVAudioPlayer?
-    private var speechFile: URL?
+    private var speechEngine: AVAudioEngine?
+    private var speechPlayerNode: AVAudioPlayerNode?
 
     private static let piperVoices: Set<String> = ["en_US-lessac-medium", "en_US-ryan-medium"]
 
@@ -116,7 +131,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         do {
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
         } catch {
-            NSLog("SoundNative: audio session setup failed: %@", error.localizedDescription)
+            TTSRuntimeLog.record("audio session setup failed: \(error.localizedDescription)")
         }
         let center = NotificationCenter.default
         for name in [UIApplication.willResignActiveNotification, AVAudioSession.interruptionNotification] {
@@ -204,10 +219,23 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     }
 
     private func stopSpeechPlayback() {
-        speechPlayer?.stop()
-        speechPlayer = nil
-        if let speechFile { try? FileManager.default.removeItem(at: speechFile) }
-        speechFile = nil
+        speechPlayerNode?.stop()
+        speechEngine?.stop()
+        speechPlayerNode = nil
+        speechEngine = nil
+    }
+
+    private func playSpeechBuffer(_ buffer: AVAudioPCMBuffer) throws {
+        stopSpeechPlayback()
+        let engine = AVAudioEngine()
+        let player = AVAudioPlayerNode()
+        engine.attach(player)
+        engine.connect(player, to: engine.mainMixerNode, format: buffer.format)
+        try engine.start()
+        player.scheduleBuffer(buffer)
+        player.play()
+        speechEngine = engine
+        speechPlayerNode = player
     }
 
     private func stopSpeechNow() {
@@ -229,16 +257,22 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         }
     }
 
+    @objc func getLogs(_ call: CAPPluginCall) {
+        call.resolve(["logs": TTSRuntimeLog.text()])
+    }
+
     @objc func prepareSpeech(_ call: CAPPluginCall) {
         guard let voice = call.getString("voice"), Self.piperVoices.contains(voice) else {
             return call.reject("invalid Piper voice")
         }
         speechQueue.async { [self] in
             do {
+                TTSRuntimeLog.record("prepare started voice=\(voice)")
                 _ = try loadPiper(voice)
+                TTSRuntimeLog.record("prepare succeeded voice=\(voice)")
                 call.resolve()
             } catch {
-                NSLog("Piper 语音初始化失败：%@", error.localizedDescription)
+                TTSRuntimeLog.record("prepare failed voice=\(voice): \(error.localizedDescription)")
                 call.reject("Piper 初始化失败：\(error.localizedDescription)", nil, error)
             }
         }
@@ -250,18 +284,15 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
             return call.reject("invalid speech request")
         }
         let request = nextSpeechRequest()
+        TTSRuntimeLog.record("speak requested voice=\(voice) chars=\(text.count)")
         DispatchQueue.main.async { [self] in stopSpeechPlayback() }
         speechQueue.async { [self] in
-            var output: URL?
             do {
                 guard isCurrentSpeechRequest(request) else { return call.resolve() }
                 let engine = try loadPiper(voice)
-                let wav = try engine.synthesize(text)
+                let buffer = try engine.synthesize(text)
                 guard isCurrentSpeechRequest(request) else {
                     return call.resolve()
-                }
-                guard wav.count > 44 else {
-                    throw NSError(domain: "SoundNative", code: 3, userInfo: [NSLocalizedDescriptionKey: "Piper 没有生成有效音频"])
                 }
                 DispatchQueue.main.async { [self] in
                     guard isCurrentSpeechRequest(request), UIApplication.shared.applicationState == .active else {
@@ -269,20 +300,16 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
                     }
                     do {
                         try activateSession()
-                        let player = try AVAudioPlayer(data: wav, fileTypeHint: AVFileType.wav.rawValue)
-                        player.delegate = self
-                        speechPlayer = player
-                        guard player.prepareToPlay(), player.play() else {
-                            stopSpeechPlayback()
-                            return call.reject("Piper 音频无法播放")
-                        }
+                        try playSpeechBuffer(buffer)
+                        TTSRuntimeLog.record("playback started voice=\(voice)")
                         call.resolve()
                     } catch {
+                        TTSRuntimeLog.record("playback failed voice=\(voice): \(error.localizedDescription)")
                         call.reject("Piper 播放失败：\(error.localizedDescription)", nil, error)
                     }
                 }
             } catch {
-                NSLog("Piper 语音合成失败：%@", error.localizedDescription)
+                TTSRuntimeLog.record("synthesis failed voice=\(voice): \(error.localizedDescription)")
                 call.reject("Piper 合成失败：\(error.localizedDescription)", nil, error)
             }
         }
@@ -331,9 +358,6 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
 
     public func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         players.removeAll { $0 === player }
-        if player === speechPlayer {
-            speechPlayer = nil
-        }
     }
 
     public func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {

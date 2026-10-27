@@ -38,7 +38,7 @@ const PIPER_VOICES = {
 
 /** Warm the selected native voice while the game is getting ready. */
 export function prepareEnglishVoice(enabled: boolean, gender: 'female' | 'male' = 'female') {
-  if (enabled && isNative) void SoundNative.prepareSpeech({ voice: PIPER_VOICES[gender] }).catch(() => {});
+  if (enabled && isNative) void SoundNative.prepareSpeech({ voice: PIPER_VOICES[gender] }).catch((err) => console.warn('Piper 预加载失败', err));
 }
 
 /** Speak one short English reply with Piper on iOS and the system voice in browsers. */
@@ -47,7 +47,7 @@ export function speakEnglish(text: string, enabled: boolean, gender: 'female' | 
   const epoch = ++speechEpoch;
   stopBrowserSpeech();
   if (isNative) {
-    void SoundNative.speak({ text, voice: PIPER_VOICES[gender] }).catch(() => {});
+    void SoundNative.speak({ text, voice: PIPER_VOICES[gender] }).catch((err) => console.warn('Piper 播放请求失败', err));
     return;
   }
   const synth = browserSpeech();

@@ -24,8 +24,10 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - uses: actions/cache@v4
         with:
-          path: web/.cache/nnue
-          key: nnue-${{ hashFiles('web/native-plugins/maia-native/stockfish/src/evaluate.h') }}
+          path: |
+            web/.cache/nnue
+            web/.cache/kittentts-mini
+          key: native-assets-${{ hashFiles('web/native-plugins/maia-native/stockfish/src/evaluate.h', 'web/scripts/prepare-native.mjs') }}
       - run: npm ci
       - name: Audio regression tests
         run: npm test -- test/sound.test.ts test/native-sound.test.ts

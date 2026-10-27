@@ -24,21 +24,19 @@ for theme in themes {
         precondition(samples.contains { abs($0) > 0.001 }, "Silent MP3: \(url.path)")
     }
 }
-let speechRoot = root.appendingPathComponent("native/speech", isDirectory: true)
-for voice in ["en_US-lessac-medium", "en_US-ryan-medium"] {
-    let model = speechRoot.appendingPathComponent("\(voice).onnx")
-    let config = speechRoot.appendingPathComponent("\(voice).onnx.json")
-    let card = speechRoot.appendingPathComponent("\(voice).MODEL_CARD")
-    guard let attributes = try? FileManager.default.attributesOfItem(atPath: model.path),
-          let size = attributes[.size] as? NSNumber, size.intValue > 60_000_000,
-          let data = try? Data(contentsOf: config),
-          let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-          (object["audio"] as? [String: Any])?["sample_rate"] as? Int == 22_050,
-          object["phoneme_id_map"] is [String: Any],
-          FileManager.default.fileExists(atPath: card.path) else {
-        fatalError("Invalid or missing Piper voice assets: \(voice)")
-    }
+let speechRoot = root.appendingPathComponent("native/speech/kitten-mini", isDirectory: true)
+let model = speechRoot.appendingPathComponent("kitten_tts_mini_v0_8.onnx")
+let voices = speechRoot.appendingPathComponent("voices.npz")
+let rules = speechRoot.appendingPathComponent("en_rules")
+let wordList = speechRoot.appendingPathComponent("en_list")
+guard let modelAttributes = try? FileManager.default.attributesOfItem(atPath: model.path),
+      let modelSize = modelAttributes[.size] as? NSNumber, modelSize.intValue > 75_000_000,
+      let voicesAttributes = try? FileManager.default.attributesOfItem(atPath: voices.path),
+      let voicesSize = voicesAttributes[.size] as? NSNumber, voicesSize.intValue > 3_000_000,
+      FileManager.default.fileExists(atPath: rules.path),
+      FileManager.default.fileExists(atPath: wordList.path) else {
+    fatalError("Invalid or missing KittenTTS Mini offline assets")
 }
 let config = try JSONSerialization.jsonObject(with: Data(contentsOf: root.deletingLastPathComponent().appendingPathComponent("capacitor.config.json"))) as! [String: Any]
 precondition((config["packageClassList"] as? [String])?.contains("SoundNativePlugin") == true, "Native sound plugin was not registered")
-print("PASS: \(decoded.count) bundled MP3s decode; both Piper voices and SoundNativePlugin are present")
+print("PASS: \(decoded.count) bundled MP3s decode; KittenTTS Mini offline assets and SoundNativePlugin are present")

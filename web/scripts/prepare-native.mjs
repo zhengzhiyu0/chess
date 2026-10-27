@@ -15,7 +15,7 @@ const src = join(root, 'dist');
 const dst = join(root, 'dist-native');
 const out = join(dst, 'native');
 const cache = join(root, '.cache', 'nnue');
-const speechCache = join(root, '.cache', 'piper');
+const kittenCache = join(root, '.cache', 'kittentts-mini');
 if (!existsSync(src)) throw new Error('dist/ missing, run npm run build first');
 
 const EXCLUDE = [
@@ -29,10 +29,11 @@ const EXCLUDE = [
 
 // must match EvalFileDefaultName / EvalFileLiteName in native-plugins/maia-native/stockfish/src/evaluate.h
 const NETS = ['nn-1a298aa575a0.nnue', 'nn-61e7af4bb97d.nnue'];
-const PIPER_REV = '5041a7a49ae5b3a0f30e6837769eb03fdbb231bd';
-const PIPER_VOICES = [
-  { name: 'lessac', model: '5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f', config: 'efe19c417bed055f2d69908248c6ba650fa135bc868b0e6abb3da181dab690a0', card: 'ce49eb457742208166d399a40cdec2c7fa9db77960930031564ab56f12882645' },
-  { name: 'ryan', model: 'abf4c274862564ed647ba0d2c47f8ee7c9b717d27bdad9219100eb310db4047a', config: '44034c056cb15681b2ad494307c7f3f2e4499d1253c700c711fa0a4607ffe78d', card: '3a24ae5f7aa856199f338ad9af784cda796734f397f7e1b4a1bd3c07d06945b1' },
+const KITTEN_ASSETS = [
+  { name: 'kitten_tts_mini_v0_8.onnx', url: 'https://huggingface.co/KittenML/kitten-tts-mini-0.8/resolve/c02725660cea441db4c383af69f1f26f5cd00947/kitten_tts_mini_v0_8.onnx', sha256: '0f5bbae4fc4800c98dbc544a87ecfa79510de2fb8222db30d12e5bfe9177df91' },
+  { name: 'voices.npz', url: 'https://huggingface.co/KittenML/kitten-tts-mini-0.8/resolve/c02725660cea441db4c383af69f1f26f5cd00947/voices.npz', sha256: '40ad2638952b77b7b2f30127e2608e169fc69dd256b53bd8aaa3409a33193c42' },
+  { name: 'en_rules', url: 'https://raw.githubusercontent.com/espeak-ng/espeak-ng/59eb19938f12e30881c81d86ce4a7de25414c9f4/dictsource/en_rules', sha256: '8e75e9341ea735cc514b29a7d3a95c6c241c1cc176ad43e5699b8f7f66ab3194' },
+  { name: 'en_list', url: 'https://raw.githubusercontent.com/espeak-ng/espeak-ng/59eb19938f12e30881c81d86ce4a7de25414c9f4/dictsource/en_list', sha256: '24eb79018ed6253c10682096de672ce9265c1fe15c3e19e7f754d57a0fcd9790' },
 ];
 const NET_URLS = (n) => [
   `https://data.stockfishchess.org/nn/${n}`,
@@ -65,12 +66,10 @@ async function fetchNet(name) {
   throw new Error(`could not download ${name}`);
 }
 
-async function fetchSpeechFile(voice, file, sourceFile, digest) {
-  const relativePath = `en/en_US/${voice.name}/medium/${sourceFile}`;
-  const cached = join(speechCache, file);
+async function fetchKittenFile(file, url, digest) {
+  const cached = join(kittenCache, file);
   if (existsSync(cached) && sha256(cached) === digest) return cached;
-  mkdirSync(speechCache, { recursive: true });
-  const url = `https://huggingface.co/rhasspy/piper-voices/resolve/${PIPER_REV}/${relativePath}`;
+  mkdirSync(kittenCache, { recursive: true });
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const res = await fetch(url, { redirect: 'follow' });
@@ -82,10 +81,10 @@ async function fetchSpeechFile(voice, file, sourceFile, digest) {
       return cached;
     } catch (err) {
       rmSync(cached + '.part', { force: true });
-      if (attempt === 2) throw new Error(`Piper voice download failed: ${file} (${err.message})`);
+      if (attempt === 2) throw new Error(`Kitten TTS asset download failed: ${file} (${err.message})`);
     }
   }
-  throw new Error(`Piper voice download failed: ${file}`);
+  throw new Error(`Kitten TTS asset download failed: ${file}`);
 }
 
 rmSync(dst, { recursive: true, force: true });
@@ -114,23 +113,17 @@ for (const m of MODELS) {
 // MaiaNativePlugin deletes compiled CoreML models whose key is not listed here (older app versions)
 writeFileSync(join(out, 'maia-models.json'), JSON.stringify({ cacheKeys }));
 
-const speechOut = join(out, 'speech');
+const speechOut = join(out, 'speech', 'kitten-mini');
 mkdirSync(speechOut, { recursive: true });
-for (const voice of PIPER_VOICES) {
-  for (const [file, sourceFile, digest] of [
-    [`en_US-${voice.name}-medium.onnx`, `en_US-${voice.name}-medium.onnx`, voice.model],
-    [`en_US-${voice.name}-medium.onnx.json`, `en_US-${voice.name}-medium.onnx.json`, voice.config],
-    [`en_US-${voice.name}-medium.MODEL_CARD`, 'MODEL_CARD', voice.card],
-  ]) {
-    cpSync(await fetchSpeechFile(voice, file, sourceFile, digest), join(speechOut, file));
-  }
+for (const asset of KITTEN_ASSETS) {
+  cpSync(await fetchKittenFile(asset.name, asset.url, asset.sha256), join(speechOut, asset.name));
 }
 writeFileSync(join(speechOut, 'NOTICE.txt'), [
-  'Piper voices are bundled for offline English speech synthesis.',
-  `Source revision: https://huggingface.co/rhasspy/piper-voices/tree/${PIPER_REV}/en/en_US`,
-  'See each *.MODEL_CARD file for the voice dataset and license information.',
-  'Runtime: PiperPlus 2.0.2 (MIT), https://github.com/ayutaz/piper-plus',
+  'KittenTTS 0.8 Mini and its bundled Bella/Jasper voice embeddings are provided for offline English speech synthesis.',
+  'Model and voices: Apache-2.0, https://huggingface.co/KittenML/kitten-tts-mini-0.8/tree/c02725660cea441db4c383af69f1f26f5cd00947',
+  'Swift runtime: KittenML/KittenTTS-swift 0.1.0, Apache-2.0.',
+  'English G2P assets en_rules/en_list: eSpeak NG, GPL-3.0.',
 ].join('\n') + '\n');
 
 const size = (d) => readdirSync(d).reduce((a, n) => a + (statSync(join(d, n)).isDirectory() ? size(join(d, n)) : statSync(join(d, n)).size), 0);
-console.log(`dist-native ready: ${(size(dst) / 1048576).toFixed(0)}MB (native engines ${(size(out) / 1048576).toFixed(0)}MB; Piper voices ${(size(speechOut) / 1048576).toFixed(1)}MB)`);
+console.log(`dist-native ready: ${(size(dst) / 1048576).toFixed(0)}MB (native engines ${(size(out) / 1048576).toFixed(0)}MB; Kitten TTS Mini assets ${(size(speechOut) / 1048576).toFixed(1)}MB)`);

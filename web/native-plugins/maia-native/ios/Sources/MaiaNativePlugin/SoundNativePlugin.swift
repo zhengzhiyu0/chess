@@ -1,17 +1,16 @@
 import AVFoundation
 import Capacitor
 import UIKit
-import EspeakBridge
-import Piper1GPLRuntime
+import KittenTTS
 
-private enum Piper1Error: LocalizedError {
+private enum KittenRuntimeError: LocalizedError {
     case invalidAudio
-    case implausiblyShortAudio
+    case missingAsset(String)
 
     var errorDescription: String? {
         switch self {
-        case .invalidAudio: "Piper1-GPL returned invalid or silent audio"
-        case .implausiblyShortAudio: "Piper1-GPL returned audio that is too short for the requested speech"
+        case .invalidAudio: "KittenTTS returned invalid or silent audio"
+        case .missingAsset(let name): "KittenTTS bundled asset is missing: \(name)"
         }
     }
 }
@@ -36,117 +35,58 @@ private enum TTSRuntimeLog {
     }
 }
 
-private enum Piper1Data {
-    private static var initialized = false
+private actor KittenRuntime {
+    private var engine: KittenTTS?
 
-    static func prepare() throws -> String {
-        let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        if !initialized {
-            let prepared = directory.path.withCString { maia_espeak_prepare($0) }
-            guard prepared != 0 else {
-                let detail = maia_espeak_last_error().map { String(cString: $0) } ?? "unknown eSpeak data error"
-                throw NSError(domain: "EspeakBridge", code: Int(prepared), userInfo: [NSLocalizedDescriptionKey: detail])
-            }
-            initialized = true
-            TTSRuntimeLog.record("eSpeak data prepared for Piper1-GPL")
-        }
-        return directory.path
-    }
-}
+    func prepare() async throws {
+        guard engine == nil else { return }
+        let applicationSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("KittenTTS", isDirectory: true)
+        let modelDirectory = applicationSupport.appendingPathComponent(KittenModel.mini.rawValue, isDirectory: true)
+        let phonemizerDirectory = modelDirectory.appendingPathComponent("EPhonemizer", isDirectory: true)
+        try FileManager.default.createDirectory(at: modelDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: phonemizerDirectory, withIntermediateDirectories: true)
 
-private final class Piper1Voice {
-    private let engine: OpaquePointer
+        try installBundledAsset("kitten_tts_mini_v0_8", extension: "onnx", to: modelDirectory)
+        try installBundledAsset("voices", extension: "npz", to: modelDirectory)
+        try installBundledAsset("en_rules", extension: nil, to: phonemizerDirectory)
+        try installBundledAsset("en_list", extension: nil, to: phonemizerDirectory)
 
-    init(modelPath: String, configPath: String, espeakDataPath: String) throws {
-        var created: OpaquePointer?
-        let status = modelPath.withCString { model in
-            configPath.withCString { configFile in
-                espeakDataPath.withCString { dataPath in
-                    created = piper_create(model, configFile, dataPath)
-                    return created == nil ? -1 : 0
-                }
-            }
-        }
-        guard status == 0, let created else { throw NSError(domain: "Piper1-GPL", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Could not load Piper1-GPL voice model or eSpeak data"] ) }
-        engine = created
-        TTSRuntimeLog.record("Piper1-GPL \(String(cString: piper_version())) loaded voice")
+        let config = KittenTTSConfig(
+            model: .mini,
+            defaultVoice: .bella,
+            speed: 1.0,
+            storageDirectory: applicationSupport,
+            ortNumThreads: 2
+        )
+        engine = try await KittenTTS(config)
+        TTSRuntimeLog.record("KittenTTS 0.8 Mini initialized (Bella/Jasper, bundled offline assets)")
     }
 
-    deinit {
-        piper_free(engine)
+    func synthesize(_ text: String, voice: KittenVoice) async throws -> Data {
+        try await prepare()
+        guard let engine else { throw KittenRuntimeError.invalidAudio }
+        let result = try await engine.generate(text, voice: voice, speed: 1.0)
+        guard result.duration > 0, !result.samples.isEmpty, result.samples.allSatisfy(\.isFinite) else {
+            throw KittenRuntimeError.invalidAudio
+        }
+        let peak = result.samples.reduce(Float.zero) { max($0, abs($1)) }
+        TTSRuntimeLog.record(String(format: "KittenTTS generated %.2fs at %dHz (peak %.3f)", result.duration, result.sampleRate, peak))
+        return result.wavData()
     }
 
-    func synthesize(_ text: String, minimumDuration: Double) throws -> Data {
-        var options = piper_default_synthesize_options(engine)
-        let startStatus = text.withCString { input in
-            piper_synthesize_start(engine, input, &options)
+    private func installBundledAsset(_ name: String, extension fileExtension: String?, to directory: URL) throws {
+        let destination = directory.appendingPathComponent(fileExtension.map { "\(name).\($0)" } ?? name)
+        guard let source = Bundle.main.url(forResource: name, withExtension: fileExtension, subdirectory: "public/native/speech/kitten-mini") else {
+            throw KittenRuntimeError.missingAsset(fileExtension.map { "\(name).\($0)" } ?? name)
         }
-        guard startStatus == 0 else {
-            throw NSError(domain: "Piper1-GPL", code: Int(startStatus), userInfo: [NSLocalizedDescriptionKey: "Piper1-GPL could not start synthesis"])
+        if let sourceSize = try? FileManager.default.attributesOfItem(atPath: source.path)[.size] as? NSNumber,
+           let destinationSize = try? FileManager.default.attributesOfItem(atPath: destination.path)[.size] as? NSNumber,
+           sourceSize == destinationSize { return }
+        if FileManager.default.fileExists(atPath: destination.path) {
+            try FileManager.default.removeItem(at: destination)
         }
-
-        var samples: [Float] = []
-        var sampleRate = 0
-        var chunk = piper_audio_chunk()
-        var status: Int32 = 0
-        repeat {
-            status = piper_synthesize_next(engine, &chunk)
-            guard status == 0 || status == 1 else {
-                throw NSError(domain: "Piper1-GPL", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Piper1-GPL synthesis failed"])
-            }
-            let count = Int(chunk.num_samples)
-            if count > 0 {
-                guard let chunkSamples = chunk.samples, chunk.sample_rate > 0 else { throw Piper1Error.invalidAudio }
-                if sampleRate == 0 { sampleRate = Int(chunk.sample_rate) }
-                guard sampleRate == Int(chunk.sample_rate), samples.count <= sampleRate * 60 - count else {
-                    throw Piper1Error.invalidAudio
-                }
-                samples.append(contentsOf: UnsafeBufferPointer(start: chunkSamples, count: count))
-            }
-            if status == 1 || chunk.is_last { break }
-        } while true
-
-        let count = samples.count
-        guard count > 0, sampleRate > 0, count <= (Int.max - 44) / MemoryLayout<Float>.stride else {
-            throw Piper1Error.invalidAudio
-        }
-
-        var peak: Float = 0
-        var energy: Double = 0
-        var pcm = Data(capacity: count * MemoryLayout<Float>.stride)
-        for sample in samples {
-            guard sample.isFinite else { throw Piper1Error.invalidAudio }
-            peak = max(peak, abs(sample))
-            energy += Double(sample) * Double(sample)
-            var littleEndianSample = sample.bitPattern.littleEndian
-            Swift.withUnsafeBytes(of: &littleEndianSample) { pcm.append(contentsOf: $0) }
-        }
-        let rms = sqrt(energy / Double(count))
-        guard rms > 0.001 else { throw Piper1Error.invalidAudio }
-        let duration = Double(count) / Double(sampleRate)
-        TTSRuntimeLog.record(String(format: "Piper1-GPL generated %.2fs at %dHz (peak %.3f rms %.3f)", duration, sampleRate, peak, rms))
-        guard duration >= minimumDuration else { throw Piper1Error.implausiblyShortAudio }
-
-        var wav = Data(capacity: 44 + pcm.count)
-        wav.append(contentsOf: "RIFF".utf8)
-        appendLE(UInt32(36 + pcm.count), to: &wav)
-        wav.append(contentsOf: "WAVEfmt ".utf8)
-        appendLE(UInt32(16), to: &wav)
-        appendLE(UInt16(3), to: &wav)
-        appendLE(UInt16(1), to: &wav)
-        appendLE(UInt32(sampleRate), to: &wav)
-        appendLE(UInt32(sampleRate) * UInt32(MemoryLayout<Float>.stride), to: &wav)
-        appendLE(UInt16(MemoryLayout<Float>.stride), to: &wav)
-        appendLE(UInt16(MemoryLayout<Float>.stride * 8), to: &wav)
-        wav.append(contentsOf: "data".utf8)
-        appendLE(UInt32(pcm.count), to: &wav)
-        wav.append(pcm)
-        return wav
-    }
-
-    private func appendLE<T: FixedWidthInteger>(_ value: T, to data: inout Data) {
-        var littleEndian = value.littleEndian
-        Swift.withUnsafeBytes(of: &littleEndian) { data.append(contentsOf: $0) }
+        try FileManager.default.copyItem(at: source, to: destination)
     }
 }
 
@@ -170,14 +110,12 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private var recordings: [URL: Data] = [:]
     private var observers: [NSObjectProtocol] = []
     private var sessionActive = false
-    private let speechQueue = DispatchQueue(label: "maia.piper", qos: .userInitiated)
     private let speechLock = NSLock()
     private var speechRequest = 0
-    private var piper: Piper1Voice?
-    private var piperVoice: String?
+    private let kitten = KittenRuntime()
     private var speechPlayer: AVAudioPlayer?
 
-    private static let piperVoices: Set<String> = ["en_US-lessac-medium", "en_US-ryan-medium"]
+    private static let kittenVoices: Set<String> = ["bella", "jasper"]
 
     /// Configure the session once when the plugin is loaded. Reapplying the
     /// category for every move can make iOS renegotiate the route while a very
@@ -260,22 +198,6 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         return speechRequest == request
     }
 
-    private func loadPiper(_ voice: String) throws -> Piper1Voice {
-        if piperVoice == voice, let piper { return piper }
-        let directory = "public/native/speech"
-        guard let model = Bundle.main.url(forResource: voice, withExtension: "onnx", subdirectory: directory),
-              let config = Bundle.main.url(forResource: "\(voice).onnx", withExtension: "json", subdirectory: directory) else {
-            throw NSError(domain: "SoundNative", code: 2, userInfo: [NSLocalizedDescriptionKey: "未打包 Piper 音色：\(voice)"])
-        }
-        piper = nil
-        piperVoice = nil
-        let dataPath = try Piper1Data.prepare()
-        let engine = try Piper1Voice(modelPath: model.path, configPath: config.path, espeakDataPath: dataPath)
-        piper = engine
-        piperVoice = voice
-        return engine
-    }
-
     private func stopSpeechPlayback() {
         speechPlayer?.stop()
         speechPlayer = nil
@@ -288,7 +210,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         speechPlayer = player
         guard player.prepareToPlay(), player.play() else {
             speechPlayer = nil
-            throw NSError(domain: "SoundNative", code: 4, userInfo: [NSLocalizedDescriptionKey: "AVAudioPlayer could not start Piper audio"])
+            throw NSError(domain: "SoundNative", code: 4, userInfo: [NSLocalizedDescriptionKey: "AVAudioPlayer could not start KittenTTS audio"])
         }
         let route = session.currentRoute.outputs.map { "\($0.portType.rawValue):\($0.portName)" }.joined(separator: ",")
         TTSRuntimeLog.record("AVAudioPlayer started route=\(route) duration=\(String(format: "%.2f", player.duration))s")
@@ -318,36 +240,35 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     }
 
     @objc func prepareSpeech(_ call: CAPPluginCall) {
-        guard let voice = call.getString("voice"), Self.piperVoices.contains(voice) else {
-            return call.reject("invalid Piper voice")
+        guard let voice = call.getString("voice"), Self.kittenVoices.contains(voice) else {
+            return call.reject("invalid KittenTTS voice")
         }
-        speechQueue.async { [self] in
+        Task { [self] in
             do {
-                TTSRuntimeLog.record("prepare started voice=\(voice)")
-                _ = try loadPiper(voice)
+                TTSRuntimeLog.record("KittenTTS prepare started voice=\(voice)")
+                try await kitten.prepare()
                 TTSRuntimeLog.record("prepare succeeded voice=\(voice)")
                 call.resolve()
             } catch {
                 TTSRuntimeLog.record("prepare failed voice=\(voice): \(error.localizedDescription)")
-                call.reject("Piper 初始化失败：\(error.localizedDescription)", nil, error)
+                call.reject("KittenTTS 初始化失败：\(error.localizedDescription)", nil, error)
             }
         }
     }
 
     @objc func speak(_ call: CAPPluginCall) {
         guard let text = call.getString("text"), !text.isEmpty, text.count <= 240,
-              let voice = call.getString("voice"), Self.piperVoices.contains(voice) else {
+              let voice = call.getString("voice"), Self.kittenVoices.contains(voice) else {
             return call.reject("invalid speech request")
         }
         let request = nextSpeechRequest()
         TTSRuntimeLog.record("speak requested voice=\(voice) chars=\(text.count)")
         DispatchQueue.main.async { [self] in stopSpeechPlayback() }
-        speechQueue.async { [self] in
+        Task { [self] in
             do {
                 guard isCurrentSpeechRequest(request) else { return call.resolve() }
-                let engine = try loadPiper(voice)
-                let minDuration = max(0.2, Double(text.count) * 0.01)
-                let buffer = try engine.synthesize(text, minimumDuration: minDuration)
+                let selectedVoice: KittenVoice = voice == "jasper" ? .jasper : .bella
+                let wav = try await kitten.synthesize(text, voice: selectedVoice)
                 guard isCurrentSpeechRequest(request) else {
                     return call.resolve()
                 }
@@ -357,16 +278,16 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
                     }
                     do {
                         try activateSession()
-                        try playSpeech(buffer)
+                        try playSpeech(wav)
                         call.resolve()
                     } catch {
                         TTSRuntimeLog.record("playback failed voice=\(voice): \(error.localizedDescription)")
-                        call.reject("Piper 播放失败：\(error.localizedDescription)", nil, error)
+                        call.reject("KittenTTS 播放失败：\(error.localizedDescription)", nil, error)
                     }
                 }
             } catch {
                 TTSRuntimeLog.record("synthesis failed voice=\(voice): \(error.localizedDescription)")
-                call.reject("Piper 合成失败：\(error.localizedDescription)", nil, error)
+                call.reject("KittenTTS 合成失败：\(error.localizedDescription)", nil, error)
             }
         }
     }

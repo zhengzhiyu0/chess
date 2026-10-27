@@ -27,16 +27,16 @@ afterEach(() => {
 });
 
 describe('iOS 原生 MP3 播放', () => {
-  it('按教练性别预热并播放对应 Piper Medium 音色', async () => {
+  it('按教练性别预热并播放对应 KittenTTS 音色', async () => {
     const { prepareEnglishVoice, speakEnglish, stopEnglishVoice } = await import('../src/audio/voice');
     prepareEnglishVoice(true, 'female');
     speakEnglish('Nice move.', true, 'female');
     prepareEnglishVoice(true, 'male');
     speakEnglish('Well played.', true, 'male');
-    expect(native.prepareSpeech).toHaveBeenNthCalledWith(1, { voice: 'en_US-lessac-medium' });
-    expect(native.prepareSpeech).toHaveBeenNthCalledWith(2, { voice: 'en_US-ryan-medium' });
-    expect(native.speak).toHaveBeenNthCalledWith(1, { text: 'Nice move.', voice: 'en_US-lessac-medium' });
-    expect(native.speak).toHaveBeenNthCalledWith(2, { text: 'Well played.', voice: 'en_US-ryan-medium' });
+    expect(native.prepareSpeech).toHaveBeenNthCalledWith(1, { voice: 'bella' });
+    expect(native.prepareSpeech).toHaveBeenNthCalledWith(2, { voice: 'jasper' });
+    expect(native.speak).toHaveBeenNthCalledWith(1, { text: 'Nice move.', voice: 'bella' });
+    expect(native.speak).toHaveBeenNthCalledWith(2, { text: 'Well played.', voice: 'jasper' });
     stopEnglishVoice();
     expect(native.stopSpeech).toHaveBeenCalledOnce();
   });

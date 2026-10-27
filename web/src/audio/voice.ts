@@ -1,4 +1,4 @@
-/** English opponent speech uses bundled Piper voices on iOS and system voices on web. */
+/** English opponent speech uses bundled KittenTTS voices on iOS and system voices on web. */
 
 import { isNative } from '../native';
 import { SoundNative } from 'maia-native';
@@ -31,23 +31,23 @@ export function stopEnglishVoice() {
   if (isNative) void SoundNative.stopSpeech().catch(() => {});
 }
 
-const PIPER_VOICES = {
-  female: 'en_US-lessac-medium',
-  male: 'en_US-ryan-medium',
+const KITTEN_VOICES = {
+  female: 'bella',
+  male: 'jasper',
 } as const;
 
 /** Warm the selected native voice while the game is getting ready. */
 export function prepareEnglishVoice(enabled: boolean, gender: 'female' | 'male' = 'female') {
-  if (enabled && isNative) void SoundNative.prepareSpeech({ voice: PIPER_VOICES[gender] }).catch((err) => console.warn('Piper 预加载失败', err));
+  if (enabled && isNative) void SoundNative.prepareSpeech({ voice: KITTEN_VOICES[gender] }).catch((err) => console.warn('KittenTTS 预加载失败', err));
 }
 
-/** Speak one short English reply with Piper on iOS and the system voice in browsers. */
+/** Speak one short English reply with KittenTTS on iOS and the system voice in browsers. */
 export function speakEnglish(text: string, enabled: boolean, gender: 'female' | 'male' = 'female') {
   if (!enabled || !text || (typeof document !== 'undefined' && document.hidden)) return;
   const epoch = ++speechEpoch;
   stopBrowserSpeech();
   if (isNative) {
-    void SoundNative.speak({ text, voice: PIPER_VOICES[gender] }).catch((err) => console.warn('Piper 播放请求失败', err));
+    void SoundNative.speak({ text, voice: KITTEN_VOICES[gender] }).catch((err) => console.warn('KittenTTS 播放请求失败', err));
     return;
   }
   const synth = browserSpeech();

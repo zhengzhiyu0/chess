@@ -94,7 +94,7 @@ private final class PiperPlusVoice {
         piper_plus_free(engine)
     }
 
-    func synthesize(_ text: String, minimumDuration: Double) throws -> AVAudioPCMBuffer {
+    func synthesize(_ text: String, minimumDuration: Double) throws -> Data {
         var options = piper_plus_default_options()
         // Match the bundled rhasspy Piper Medium voice configs.
         options.noise_scale = 0.667
@@ -113,28 +113,47 @@ private final class PiperPlusVoice {
         defer { piper_plus_free_audio(samples) }
         let count = Int(sampleCount)
         guard count > 0, sampleRate > 0, count <= Int(sampleRate) * 60,
-              let format = AVAudioFormat(standardFormatWithSampleRate: Double(sampleRate), channels: 1),
-              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(count)),
-              let channel = buffer.floatChannelData?.pointee else {
+              count <= (Int.max - 44) / MemoryLayout<Float>.stride else {
             throw PiperPlusError.invalidAudio
         }
 
         var peak: Float = 0
         var energy: Double = 0
+        var pcm = Data(capacity: count * MemoryLayout<Float>.stride)
         for index in 0..<count {
             let sample = samples[index]
             guard sample.isFinite else { throw PiperPlusError.invalidAudio }
-            channel[index] = sample
             peak = max(peak, abs(sample))
             energy += Double(sample) * Double(sample)
+            var littleEndianSample = sample.bitPattern.littleEndian
+            Swift.withUnsafeBytes(of: &littleEndianSample) { pcm.append(contentsOf: $0) }
         }
-        buffer.frameLength = AVAudioFrameCount(count)
         let rms = sqrt(energy / Double(count))
         guard rms > 0.001 else { throw PiperPlusError.invalidAudio }
         let duration = Double(count) / Double(sampleRate)
         TTSRuntimeLog.record(String(format: "generated %.2fs at %dHz (peak %.3f rms %.3f)", duration, sampleRate, peak, rms))
         guard duration >= minimumDuration else { throw PiperPlusError.implausiblyShortAudio }
-        return buffer
+
+        var wav = Data(capacity: 44 + pcm.count)
+        wav.append(contentsOf: "RIFF".utf8)
+        appendLE(UInt32(36 + pcm.count), to: &wav)
+        wav.append(contentsOf: "WAVEfmt ".utf8)
+        appendLE(UInt32(16), to: &wav)
+        appendLE(UInt16(3), to: &wav)
+        appendLE(UInt16(1), to: &wav)
+        appendLE(UInt32(sampleRate), to: &wav)
+        appendLE(UInt32(sampleRate * MemoryLayout<Float>.stride), to: &wav)
+        appendLE(UInt16(MemoryLayout<Float>.stride), to: &wav)
+        appendLE(UInt16(MemoryLayout<Float>.stride * 8), to: &wav)
+        wav.append(contentsOf: "data".utf8)
+        appendLE(UInt32(pcm.count), to: &wav)
+        wav.append(pcm)
+        return wav
+    }
+
+    private func appendLE<T: FixedWidthInteger>(_ value: T, to data: inout Data) {
+        var littleEndian = value.littleEndian
+        Swift.withUnsafeBytes(of: &littleEndian) { data.append(contentsOf: $0) }
     }
 }
 
@@ -163,8 +182,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private var speechRequest = 0
     private var piper: PiperPlusVoice?
     private var piperVoice: String?
-    private var speechEngine: AVAudioEngine?
-    private var speechPlayerNode: AVAudioPlayerNode?
+    private var speechPlayer: AVAudioPlayer?
 
     private static let piperVoices: Set<String> = ["en_US-lessac-medium", "en_US-ryan-medium"]
 
@@ -265,23 +283,21 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     }
 
     private func stopSpeechPlayback() {
-        speechPlayerNode?.stop()
-        speechEngine?.stop()
-        speechPlayerNode = nil
-        speechEngine = nil
+        speechPlayer?.stop()
+        speechPlayer = nil
     }
 
-    private func playSpeechBuffer(_ buffer: AVAudioPCMBuffer) throws {
+    private func playSpeech(_ wav: Data) throws {
         stopSpeechPlayback()
-        let engine = AVAudioEngine()
-        let player = AVAudioPlayerNode()
-        engine.attach(player)
-        engine.connect(player, to: engine.mainMixerNode, format: buffer.format)
-        try engine.start()
-        player.scheduleBuffer(buffer)
-        player.play()
-        speechEngine = engine
-        speechPlayerNode = player
+        let player = try AVAudioPlayer(data: wav, fileTypeHint: AVFileType.wav.rawValue)
+        player.delegate = self
+        speechPlayer = player
+        guard player.prepareToPlay(), player.play() else {
+            speechPlayer = nil
+            throw NSError(domain: "SoundNative", code: 4, userInfo: [NSLocalizedDescriptionKey: "AVAudioPlayer could not start Piper audio"])
+        }
+        let route = session.currentRoute.outputs.map { "\($0.portType.rawValue):\($0.portName)" }.joined(separator: ",")
+        TTSRuntimeLog.record("AVAudioPlayer started route=\(route) duration=\(String(format: "%.2f", player.duration))s")
     }
 
     private func stopSpeechNow() {
@@ -348,8 +364,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
                     }
                     do {
                         try activateSession()
-                        try playSpeechBuffer(buffer)
-                        TTSRuntimeLog.record("playback started voice=\(voice)")
+                        try playSpeech(buffer)
                         call.resolve()
                     } catch {
                         TTSRuntimeLog.record("playback failed voice=\(voice): \(error.localizedDescription)")
@@ -406,10 +421,19 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
 
     public func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         players.removeAll { $0 === player }
+        if player === speechPlayer {
+            TTSRuntimeLog.record("speech playback finished successfully=\(flag)")
+            speechPlayer = nil
+        }
     }
 
     public func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
         players.removeAll { $0 === player }
-        NSLog("原生音效解码失败：%@", error?.localizedDescription ?? "unknown error")
+        if player === speechPlayer {
+            TTSRuntimeLog.record("speech decode failed: \(error?.localizedDescription ?? "unknown error")")
+            speechPlayer = nil
+        } else {
+            NSLog("原生音效解码失败：%@", error?.localizedDescription ?? "unknown error")
+        }
     }
 }

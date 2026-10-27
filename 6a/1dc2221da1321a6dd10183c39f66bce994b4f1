@@ -1,0 +1,19 @@
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_f6f83aa0622ac8::t_70307e4b05cbc5 97,116,122,128-129,136-156,185,286-287,290,292-300,367,424-427,432-437
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6a1dc2221da1321a6dd10183c39f66bce994b4f1",
+  "prompts": {},
+  "sessions": {
+    "s_f6f83aa0622ac8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17a8e-4301-7153-9332-de892c75838c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -48,7 +48,7 @@ private final class PiperPlusVoice {
         }
         guard status == PIPER_PLUS_OK, let created else {
             let detail = piper_plus_get_last_error().map { String(cString: $0) } ?? "no native error detail"
-            throw NSError(domain: "PiperPlus", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "engine creation failed: \(detail)"])
+            throw NSError(domain: "PiperPlus", code: Int(status.rawValue), userInfo: [NSLocalizedDescriptionKey: "engine creation failed: \(detail)"])
         }
         engine = created
     }
@@ -67,7 +67,7 @@ private final class PiperPlusVoice {
         }
         guard status == PIPER_PLUS_OK, let samples else {
             let detail = piper_plus_get_last_error().map { String(cString: $0) } ?? "no native error detail"
-            throw NSError(domain: "PiperPlus", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "synthesis failed: \(detail)"])
+            throw NSError(domain: "PiperPlus", code: Int(status.rawValue), userInfo: [NSLocalizedDescriptionKey: "synthesis failed: \(detail)"])
         }
         defer { piper_plus_free_audio(samples) }
         let count = Int(sampleCount)

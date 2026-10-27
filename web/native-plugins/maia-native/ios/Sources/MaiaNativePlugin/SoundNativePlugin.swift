@@ -142,7 +142,7 @@ private final class PiperPlusVoice {
         appendLE(UInt16(3), to: &wav)
         appendLE(UInt16(1), to: &wav)
         appendLE(UInt32(sampleRate), to: &wav)
-        appendLE(UInt32(sampleRate * MemoryLayout<Float>.stride), to: &wav)
+        appendLE(UInt32(sampleRate) * UInt32(MemoryLayout<Float>.stride), to: &wav)
         appendLE(UInt16(MemoryLayout<Float>.stride), to: &wav)
         appendLE(UInt16(MemoryLayout<Float>.stride * 8), to: &wav)
         wav.append(contentsOf: "data".utf8)

@@ -42,7 +42,7 @@ import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
 import { opponentTalk, opponentVoiceLine, randomOpponentPersonality, type OpponentPersonality } from './opponent';
-import { speakEnglish, stopEnglishVoice } from './audio/voice';
+import { prepareEnglishVoice, speakEnglish, stopEnglishVoice } from './audio/voice';
 
 // ---------- state ----------
 
@@ -142,6 +142,7 @@ function pickCoachAvatar(selection: number): number {
 let gameCoachAvatar = pickCoachAvatar(settings.coachAvatar);
 let opponentLine = '';
 let opponentEnglishLine = '';
+let recentOpponentVoiceLines: string[] = [];
 let gameOpponentPersonality: OpponentPersonality = randomOpponentPersonality(gameCoachAvatar);
 let gameLoading = false;
 /** Invalidates a pending entry when leaving, changing modes, or starting another game. */
@@ -302,6 +303,7 @@ function resetTransient() {
   hintedAt = null;
   opponentLine = '';
   opponentEnglishLine = '';
+  recentOpponentVoiceLines = [];
   stopEnglishVoice();
   recentOpponentLines = [];
   coachReset();
@@ -337,6 +339,7 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     headers = g.headers;
     coachOn = Boolean(g.coach);
     gameCoachAvatar = typeof g.coachAvatar === 'number' ? pickCoachAvatar(g.coachAvatar) : pickCoachAvatar(settings.coachAvatar);
+    prepareEnglishVoice(settings.opponentVoice && settings.opponentTalk && !imported && !coachOn, COACHES[gameCoachAvatar]?.gender ?? 'female');
     gameOpponentPersonality = randomOpponentPersonality(gameCoachAvatar);
     gameElo = g.elo ?? (imported ? undefined : settings.elo);
     eloAfter = g.eloAfter;
@@ -732,7 +735,10 @@ function opponentSpeak(n: Node) {
     userMaterialSwing: beforeMaterial === undefined || afterMaterial === undefined ? undefined : afterMaterial - beforeMaterial,
     opening: parent === tree.root,
   };
-  opponentEnglishLine = opponentVoiceLine(gameOpponentPersonality, voiceEvent, Math.random(), gameCoachAvatar);
+  opponentEnglishLine = opponentVoiceLine(gameOpponentPersonality, voiceEvent, Math.random(), gameCoachAvatar, recentOpponentVoiceLines);
+  if (settings.opponentVoice && settings.opponentTalk) {
+    recentOpponentVoiceLines = [...recentOpponentVoiceLines.slice(-11), opponentEnglishLine];
+  }
   recentOpponentLines = [...recentOpponentLines.slice(-11), opponentLine];
   speakEnglish(opponentEnglishLine, settings.opponentVoice && settings.opponentTalk, COACHES[gameCoachAvatar]?.gender ?? 'female');
 }
@@ -1029,6 +1035,7 @@ function newGame(fen = START_FEN, color?: Color): boolean {
   if (clock) tree.root.clock = [...clock.remaining];
   coachOn = settings.gameType === 'coach';
   gameCoachAvatar = pickCoachAvatar(settings.coachAvatar);
+  prepareEnglishVoice(settings.opponentVoice && settings.opponentTalk && !coachOn, COACHES[gameCoachAvatar]?.gender ?? 'female');
   gameOpponentPersonality = randomOpponentPersonality(gameCoachAvatar);
   resetTransient();
   cg.cancelPremove();
@@ -2875,6 +2882,9 @@ function applyBoardSize() {
 function applySettings(old: Settings) {
   saveSettings(settings);
   if (old.opponentVoice && !settings.opponentVoice) stopEnglishVoice();
+  if ((!old.opponentVoice || !old.opponentTalk) && settings.opponentVoice && settings.opponentTalk && screen === 'game') {
+    prepareEnglishVoice(true, COACHES[gameCoachAvatar]?.gender ?? 'female');
+  }
   applyTheme(settings.theme);
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);

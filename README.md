@@ -87,8 +87,9 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 - App 内的引擎**全部原生实现，不使用 WebAssembly**（[native-plugins/maia-native](web/native-plugins/maia-native)）：
   - **Stockfish 19**：C++ 源码直接编进 App（-O3 + ThinLTO），原生多线程 + ARM NEON/dotprod。**满血版**（完整 NNUE）和**轻量版**（小网络）都已预装，在「设置 → Stockfish 版本」中切换。默认 2 线程（性能核数量），避免发热。切换版本时旧实例的 Hash 缩至 1MB，重新启用时恢复设定值；进入后台由原生通知兜底停止搜索。
   - **Maia-3 5M / 23M / 79M**：ONNX Runtime iOS 原生推理。App 使用单独导出的 fp16、固定 batch 1 模型（共约 212MB，网页版 fp32 为 424MB），让 CoreML 能把整张图放到神经网络引擎上；不支持时回退到 CPU。首次加载某个模型时 CoreML 要编译一次，编译结果按模型内容缓存，App 更新后仍可复用，旧版本的缓存会自动清理。加载前会检查可用内存，不够时直接提示，而不是被系统强杀。
+  - **Piper 英文对手语音**：教练女声使用 Lessac Medium，男声使用 Ryan Medium；模型在新对局准备期间后台预热，离线合成，切后台或开始新一句时立即停止播放。
   - 全部预装，无需下载，完全离线可用；App 内没有下载按钮和离线包管理。「设置 → 环境信息」显示当前引擎的实际运行方式。
-- App 的对弈界面与手机网页版一致：菜单在顶部，提示/悔棋/教练在“我”的信息栏里。点自己的头像（或「设置 → 我的头像」）可换成预设头像或相册照片。iOS 音效由 AVAudioPlayer 直接播放内置 MP3，通过应用内音效开关控制，使用媒体音量，允许与其他应用音频混音；每次播放重新激活音频会话，进入后台或被电话中断时停止旧声音，回来后只播放新事件。网页版继续使用 Web Audio，仅补播 500 毫秒内的新事件。70 毫秒内的重复落子音效会被过滤；原生 Maia 推理失败后下一次请求会重建会话。
+- App 的对弈界面与手机网页版一致：菜单在顶部，提示/悔棋/教练在“我”的信息栏里。点自己的头像（或「设置 → 我的头像」）可换成预设头像或相册照片。iOS 音效由 AVAudioPlayer 直接播放内置 MP3，通过应用内音效开关控制，使用媒体音量，允许与其他应用音频混音；每次播放重新激活音频会话，进入后台或被电话中断时停止旧声音，回来后只播放新事件。对手语音通过 Piper 原生合成，两个 Medium 声音模型共约 126MB；网页版继续使用系统 Web Speech API。70 毫秒内的重复落子音效会被过滤；原生 Maia 推理失败后下一次请求会重建会话。
 - 本地准备 iOS 工程：`cd web && npm run build:native`，依次执行构建、生成 `dist-native/`（[prepare-native.mjs](web/scripts/prepare-native.mjs)：去掉所有 wasm，下载并校验 NNUE 网络，拼接 `native-models/` 中的 ONNX 模型）、`cap sync ios`。Xcode 工程位于 `web/ios/`。
 - 原生 Stockfish 可以脱离 Xcode 单独测试：`sh web/native-plugins/maia-native/stockfish/test/build_smoke.sh web/.cache/nnue`（CI 也会在 arm64 macOS 上跑这一步）。
 - Stockfish 以 GPL-3.0 发布，源码见 [stockfish/](web/native-plugins/maia-native/stockfish)。
@@ -100,6 +101,7 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 
 - Maia-3（CSSLab/maia3）：AGPL-3.0
 - Stockfish 19 / stockfish.js：GPL-3.0
+- Piper 引擎：GPL-3.0；Ryan Medium 声音模型：CC BY-NC-SA 4.0（各模型说明见 iOS App 的 `public/native/speech/`）
 - chessground：GPL-3.0
 - chess.js：BSD-2-Clause
 - onnxruntime-web：MIT

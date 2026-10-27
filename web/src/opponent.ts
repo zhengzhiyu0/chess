@@ -1,5 +1,4 @@
 export type OpponentPersonality = 'sharp' | 'deadpan' | 'theatrical' | 'snarky' | 'arrogant' | 'playful' | 'poetic' | 'commentator';
-export type CoachVoiceStyle = 'precise' | 'warm' | 'dramatic' | 'calm' | 'bold' | 'playful' | 'scholarly' | 'witty';
 
 export interface OpponentTalkEvent {
   /** The user's move immediately before the opponent's move, if any. */
@@ -44,28 +43,48 @@ export const COACH_PERSONALITY_POOLS: readonly (readonly OpponentPersonality[])[
   ['poetic', 'playful', 'deadpan'],
 ];
 
-const COACH_STYLES: readonly CoachVoiceStyle[] = ['precise', 'warm', 'dramatic', 'calm', 'bold', 'playful', 'scholarly', 'witty'];
+const PERSONALITY_OPENINGS: Record<OpponentPersonality, readonly string[]> = {
+  sharp: ['看清这步：', '别急着得意：', '直说了：', '盯紧棋盘：'],
+  deadpan: ['记录一下：', '冷静判断：', '当前结论：', '客观地说：'],
+  theatrical: ['幕布拉开：', '聚光灯亮了：', '主角登场：', '全场看这里：'],
+  snarky: ['哟，', '啧，', '可真巧：', '这倒有趣：'],
+  arrogant: ['毫无意外：', '按我的计算：', '理所当然：', '早在预料中：'],
+  playful: ['嘿，', '猜猜看：', '小小提醒：', '轮到你啦：'],
+  poetic: ['听，', '此刻：', '风从这里经过：', '夜色之下：'],
+  commentator: ['现场速报：', '镜头给到：', '本局焦点：', '比赛来到这里：'],
+};
 
-function coachStyleOf(index: number): CoachVoiceStyle {
-  return COACH_STYLES[index] ?? 'precise';
+const ENGLISH_OPENINGS: Record<OpponentPersonality, readonly string[]> = {
+  sharp: ['Look sharp: ', 'Watch this: ', 'Heads up: ', "Here's the threat: "],
+  deadpan: ['Record this: ', 'Status: ', 'For now: ', 'Fact: '],
+  theatrical: ['Curtain up: ', 'Spotlight on: ', 'All eyes here: ', 'Cue the drama: '],
+  snarky: ['Oh, really: ', 'Well, well: ', 'How convenient: ', 'Lovely choice: '],
+  arrogant: ['Naturally: ', 'As expected: ', 'No surprise: ', 'Exactly as planned: '],
+  playful: ['Hey: ', 'Plot twist: ', 'Quick question: ', 'Guess what: '],
+  poetic: ['Listen: ', 'Between these squares: ', 'At dusk: ', 'A quiet thought: '],
+  commentator: ['Live update: ', 'On the board: ', 'The clock is ticking: ', 'From the booth: '],
+};
+
+function seededIndex(seed: number, length: number): number {
+  return Math.floor(Math.abs(seed) * 1_000_000) % length;
 }
 
-function coachFlavor(style: CoachVoiceStyle, line: string, seed: number): string {
-  const prefixes: Record<CoachVoiceStyle, readonly string[]> = {
-    precise: ['先看事实：', '精确一点：', '关键在这里：'], warm: ['别急，', '我们一起看：', '慢慢来，'], dramatic: ['听好了——', '这一幕的焦点是：', '好戏来了：'], calm: ['冷静观察：', '慢一点。', '先稳住：'],
-    bold: ['我就直说：', '大胆一点：', '别绕弯子：'], playful: ['嘿，', '棋盘开个小玩笑：', '来，看看这个：'], scholarly: ['从结构上看，', '记住这个规律：', '按棋理说，'], witty: ['我看见了哦：', '这一步挺会挑时间：', '有意思，'],
-  };
-  const options = prefixes[style];
-  return `${options[Math.floor(Math.abs(seed) * 1_000_000) % options.length] ?? ''}${line}`;
+function selectUnheard(lines: readonly string[], recent: readonly string[], seed: number): string {
+  const start = seededIndex(seed, lines.length);
+  for (let offset = 0; offset < lines.length; offset++) {
+    const line = lines[(start + offset) % lines.length];
+    if (line && !recent.includes(line)) return line;
+  }
+  const recycled = [...lines].sort((a, b) => recent.lastIndexOf(a) - recent.lastIndexOf(b))[0];
+  return recycled ?? '';
 }
 
-function englishCoachFlavor(style: CoachVoiceStyle, line: string, seed: number): string {
-  const prefixes: Record<CoachVoiceStyle, readonly string[]> = {
-    precise: ['Let us be precise: ', 'Look at the facts: ', 'The key point is this: '], warm: ['No rush. ', 'Let us look together: ', 'Take your time. '], dramatic: ['Listen closely—', 'The focus of this scene is: ', 'Now the drama begins: '], calm: ['Stay calm. ', 'Observe carefully: ', 'Steady now. '],
-    bold: ['I will be direct: ', 'Be bold: ', 'No detours: '], playful: ['Hey, ', 'A little chess joke: ', 'Come on, look at this: '], scholarly: ['From a structural view: ', 'Remember this pattern: ', 'By chess logic: '], witty: ['I saw that: ', 'That was well-timed: ', 'Interesting move: '],
-  };
-  const options = prefixes[style];
-  return `${options[Math.floor(Math.abs(seed) * 1_000_000) % options.length] ?? ''}${line}`;
+function coachFlavor(personality: OpponentPersonality, line: string, opening: number): string {
+  return `${PERSONALITY_OPENINGS[personality][opening] ?? ''}${line}`;
+}
+
+function englishCoachFlavor(personality: OpponentPersonality, line: string, opening: number): string {
+  return `${ENGLISH_OPENINGS[personality][opening] ?? ''}${line}`;
 }
 
 export function randomOpponentPersonality(coachIndex?: number): OpponentPersonality {
@@ -173,44 +192,44 @@ const LINES: Partial<Record<OpponentPersonality, Record<TemplateKind, string[]>>
 /** Extra everyday replies and reactions to moves with a distinct story. */
 const SITUATION_LINES: Record<OpponentPersonality, Record<'neutral' | 'castle' | 'promotion', string[]>> = {
   sharp: {
-    neutral: ['别只盯着我要走哪儿，也看看你留下了什么。', '这一步落稳了？下一步可别只凭感觉。', '棋盘还很挤，计划最好别太拥挤。', '你有你的路线，我有我的问题。', '这回合先记着，答案要在棋盘上给。', '走得挺从容，希望计算也跟上了。'],
-    castle: ['王先住稳，其他棋子才好出去找事。', '易位完成。接下来轮到车上班了。', '王换个住处，你别以为我准备休息。'],
-    promotion: ['兵走到底也能换身份，你的防线得重新算了。', '升变了。小兵的野心可比你想得大。', '新的战力到位，旧的防守方案该更新了。'],
+    neutral: ['别只盯着我要走哪儿，也看看你留下了什么。', '这一步落稳了？下一步可别只凭感觉。', '棋盘还很挤，计划最好别太拥挤。', '你有你的路线，我有我的问题。', '这回合先记着，答案要在棋盘上给。', '走得挺从容，希望计算也跟上了。', '安静归安静，防守可别跟着睡。', '这盘棋还没给你找漏洞的时间。'],
+    castle: ['王先住稳，其他棋子才好出去找事。', '易位完成。接下来轮到车上班了。', '王换个住处，你别以为我准备休息。', '王躲好了，攻势现在可以继续。'],
+    promotion: ['兵走到底也能换身份，你的防线得重新算了。', '升变了。小兵的野心可比你想得大。', '新的战力到位，旧的防守方案该更新了。', '升变之后，你的算盘也该换一套了。'],
   },
   deadpan: {
-    neutral: ['先确认威胁，再决定计划。顺序很重要。', '这步落下后，双方都需要重新检查。', '我在比较几个候选着。', '局面没有强制答案，耐心也是资源。', '下一次交换之前，先把账算清。', '这一步改变了棋子的配合关系。'],
-    castle: ['易位完成，王车的位置已调整。', '王的部署告一段落，开始协调其他棋子。', '车已连接到新的线路。请继续。'],
-    promotion: ['升变完成，子力配置需要更新。', '兵已到达底线，新棋子开始参与计算。', '升变后的威胁，需要单独处理。'],
+    neutral: ['先确认威胁，再决定计划。顺序很重要。', '这步落下后，双方都需要重新检查。', '我在比较几个候选着。', '局面没有强制答案，耐心也是资源。', '下一次交换之前，先把账算清。', '这一步改变了棋子的配合关系。', '目前没有强制着法，选择仍然开放。', '检查完战术，再谈计划。'],
+    castle: ['易位完成，王车的位置已调整。', '王的部署告一段落，开始协调其他棋子。', '车已连接到新的线路。请继续。', '王的安全改善了，接下来继续计算。'],
+    promotion: ['升变完成，子力配置需要更新。', '兵已到达底线，新棋子开始参与计算。', '升变后的威胁，需要单独处理。', '新的子力已经加入，局面需要重算。'],
   },
   theatrical: {
-    neutral: ['配角也有台词，别只盯着皇后看。', '这一幕先收住，悬念要留到落子后。', '镜头拉远，每颗棋子都在等自己的戏份。', '场上的安静，是计算开始前的停顿。', '新的布景已经摆好，你准备怎么接戏？', '先别急着写结尾，中场还没散。'],
-    castle: ['王移驾，车登台！这一幕换个主角。', '易位完成，王室迁居，战车开工。', '灯光转向另一侧，王已经换好布景。'],
-    promotion: ['小兵逆袭！新角色隆重登场。', '走到最后一排，配角终于拿到主演剧本。', '升变完成！道具组，换一枚更有戏的棋子。'],
+    neutral: ['配角也有台词，别只盯着皇后看。', '这一幕先收住，悬念要留到落子后。', '镜头拉远，每颗棋子都在等自己的戏份。', '场上的安静，是计算开始前的停顿。', '新的布景已经摆好，你准备怎么接戏？', '先别急着写结尾，中场还没散。', '灯光稍暗，台上的棋子还没说完。', '中场没有休息，下一幕已经开始。'],
+    castle: ['王移驾，车登台！这一幕换个主角。', '易位完成，王室迁居，战车开工。', '灯光转向另一侧，王已经换好布景。', '王车同时换位，舞台立刻改景。'],
+    promotion: ['小兵逆袭！新角色隆重登场。', '走到最后一排，配角终于拿到主演剧本。', '升变完成！道具组，换一枚更有戏的棋子。', '新角色登台，这一幕的难度也升级了。'],
   },
   snarky: {
-    neutral: ['挺有想法，落子之后也记得检查一下。', '你慢慢布局，我正好看看有没有惊喜。', '这个回合很安静，难得我们都这么含蓄。', '先别忙着满意，棋盘还等着下一句呢。', '这步我看到了，至于后续，就看你的诚意了。', '计划可以慢慢来，漏看的棋子最好别太多。'],
-    castle: ['王搬家了，总得有个安稳的住处嘛。', '易位一下，免得王老是抢镜。', '我把王安顿好了，你随意。'],
-    promotion: ['小兵都升职了，你的防守方案也升级一下？', '升变啦，多走几步果然有回报。', '这枚兵一路走来不容易，值得换个身份。'],
+    neutral: ['挺有想法，落子之后也记得检查一下。', '你慢慢布局，我正好看看有没有惊喜。', '这个回合很安静，难得我们都这么含蓄。', '先别忙着满意，棋盘还等着下一句呢。', '这步我看到了，至于后续，就看你的诚意了。', '计划可以慢慢来，漏看的棋子最好别太多。', '棋盘这么安静，你确定没漏看什么？', '我先不评价，等你把计划走完。'],
+    castle: ['王搬家了，总得有个安稳的住处嘛。', '易位一下，免得王老是抢镜。', '我把王安顿好了，你随意。', '王车一起挪了挪，总算安排明白了。'],
+    promotion: ['小兵都升职了，你的防守方案也升级一下？', '升变啦，多走几步果然有回报。', '这枚兵一路走来不容易，值得换个身份。', '升变完成。你的麻烦也跟着升了一级。'],
   },
   arrogant: {
-    neutral: ['这一回合，我选择继续完善部署。', '值得计算的变化，我一个也不会放过。', '棋子各就各位，计划才刚开始展开。', '耐心一点，我还在筛选最合适的路线。', '这步走完，下一轮的候选着已经排好了。', '每个安静的回合，也都值得精确处理。'],
-    castle: ['易位。这种部署当然也在计划之内。', '先安顿王，再安排车的工作，我一向有条理。', '王的位置调整完毕，下一阶段开始。'],
-    promotion: ['升变完成，我说过小兵也在计划里。', '最后一排只是起点，新的棋子已经就绪。', '这枚兵完成了任务，接下来换新身份执行。'],
+    neutral: ['这一回合，我选择继续完善部署。', '值得计算的变化，我一个也不会放过。', '棋子各就各位，计划才刚开始展开。', '耐心一点，我还在筛选最合适的路线。', '这步走完，下一轮的候选着已经排好了。', '每个安静的回合，也都值得精确处理。', '我已经看过这条线路的后续了。', '局面仍按我的预期发展。'],
+    castle: ['易位。这种部署当然也在计划之内。', '先安顿王，再安排车的工作，我一向有条理。', '王的位置调整完毕，下一阶段开始。', '安全位置已经就位，可以执行下一步。'],
+    promotion: ['升变完成，我说过小兵也在计划里。', '最后一排只是起点，新的棋子已经就绪。', '这枚兵完成了任务，接下来换新身份执行。', '这次升变，也在我计算的分支里。'],
   },
   playful: {
-    neutral: ['我的棋子排好队了，你的呢？', '这个回合先埋个小彩蛋。', '棋盘这么大，总有地方可以逛逛。', '我挪好了，看看你会接出什么花样。', '先不揭晓下一步，留点好玩的。', '别催，棋子也得商量一下去哪儿玩。'],
-    castle: ['王和车换了个队形，像不像偷偷搬家？', '易位！王找好了躲猫猫的新位置。', '王收拾好行李，车终于能出来兜风了。'],
-    promotion: ['小兵通关啦，领取一个新身份！', '恭喜这枚兵，走到底线解锁换装。', '升变！小个子突然有大本事了。'],
+    neutral: ['我的棋子排好队了，你的呢？', '这个回合先埋个小彩蛋。', '棋盘这么大，总有地方可以逛逛。', '我挪好了，看看你会接出什么花样。', '先不揭晓下一步，留点好玩的。', '别催，棋子也得商量一下去哪儿玩。', '大家都很安静，肯定有人在憋大招。', '下一步会不会有惊喜？我先保密。'],
+    castle: ['王和车换了个队形，像不像偷偷搬家？', '易位！王找好了躲猫猫的新位置。', '王收拾好行李，车终于能出来兜风了。', '王车换了座位，这下又多了新路线。'],
+    promotion: ['小兵通关啦，领取一个新身份！', '恭喜这枚兵，走到底线解锁换装。', '升变！小个子突然有大本事了。', '升级成功，新棋子马上加入游戏！'],
   },
   poetic: {
-    neutral: ['棋子落定，下一段故事还没有名字。', '每条斜线都有远方，每个格子都有来客。', '此刻的安静，容得下一次深呼吸。', '我把计划放在棋盘上，等你的回应。', '一枚子挪开，另一枚子的视野便改变了。', '时间沿着黑白格前行，我们各写一行。'],
-    castle: ['王迁入新的城堡，车踏上另一段旅程。', '易位，像把一盏灯移到避风的窗前。', '王暂歇脚步，车开始眺望远处的道路。'],
-    promotion: ['小兵走过漫长的路，终于换上新的名字。', '底线不是终点，而是蜕变的门。', '一枚兵的远行，在此刻长出了新的翅膀。'],
+    neutral: ['棋子落定，下一段故事还没有名字。', '每条斜线都有远方，每个格子都有来客。', '此刻的安静，容得下一次深呼吸。', '我把计划放在棋盘上，等你的回应。', '一枚子挪开，另一枚子的视野便改变了。', '时间沿着黑白格前行，我们各写一行。', '这一格暂时空着，故事还在等下一笔。', '风停了一瞬，棋盘仍在继续呼吸。'],
+    castle: ['王迁入新的城堡，车踏上另一段旅程。', '易位，像把一盏灯移到避风的窗前。', '王暂歇脚步，车开始眺望远处的道路。', '王在新的格子安静下来，车望向远方。'],
+    promotion: ['小兵走过漫长的路，终于换上新的名字。', '底线不是终点，而是蜕变的门。', '一枚兵的远行，在此刻长出了新的翅膀。', '行至边界，旧身影化成新的锋芒。'],
   },
   commentator: {
-    neutral: ['选手完成调整，接下来关注棋子之间的配合。', '这一回合没有吃子，布局的选择依然值得看。', '镜头给到全盘，双方的路线正在展开。', '比赛继续，下一次接触可能改变节奏。', '落子完成，轮到另一方给出回应。', '双方都保留了选择，比赛还有很多内容。'],
-    castle: ['易位完成！王与车同时调整了位置。', '王的部署告一段落，接下来关注车的活动。', '场上出现易位，双方进入新的布局阶段。'],
-    promotion: ['升变完成！一枚兵走到了棋盘底线。', '新棋子登场，场上的子力配置发生改变。', '这是一次重要的升变，后续威胁需要重新计算。'],
+    neutral: ['选手完成调整，接下来关注棋子之间的配合。', '这一回合没有吃子，布局的选择依然值得看。', '镜头给到全盘，双方的路线正在展开。', '比赛继续，下一次接触可能改变节奏。', '落子完成，轮到另一方给出回应。', '双方都保留了选择，比赛还有很多内容。', '目前没有直接交锋，双方仍在争夺位置。', '注意边线，下一次交换可能改变节奏。'],
+    castle: ['易位完成！王与车同时调整了位置。', '王的部署告一段落，接下来关注车的活动。', '场上出现易位，双方进入新的布局阶段。', '王的安全已经提升，比赛继续推进。'],
+    promotion: ['升变完成！一枚兵走到了棋盘底线。', '新棋子登场，场上的子力配置发生改变。', '这是一次重要的升变，后续威胁需要重新计算。', '升变之后，双方的战术选择都增加了。'],
   },
 };
 
@@ -293,14 +312,14 @@ function contextualLines(personality: OpponentPersonality, event: OpponentTalkEv
     ],
   };
   const opponentCapture: Record<OpponentPersonality, string[]> = {
-    sharp: [`${yourPiece}落网，别把它当成偶然。`, `我拿走${yourPiece}，现在轮到你解释这步了。`, `${yourPiece}留下了缺口，我会继续追。`],
-    deadpan: [`${yourPiece}被吃。交换结果符合当前计算。`, `取走${yourPiece}，局面进入下一阶段。`, `${yourPiece}消失，线路变得更清楚了。`],
-    theatrical: [`${yourPiece}退场！这一幕的布景完全变了。`, `一记取子，${yourPiece}从剧情中消失。`, `谢幕吧，${yourPiece}已经没有台词了。`],
-    snarky: [`谢谢你把${yourPiece}送过来，包装还挺完整。`, `${yourPiece}就这样走了？我还以为你会保护它。`, `拿走${yourPiece}，至少这一步不用猜。`],
-    arrogant: [`${yourPiece}按计划离场，结果没有悬念。`, `取走${yourPiece}，这正是它应该出现的位置。`, `${yourPiece}的命运早已写在这条线上。`],
-    playful: [`${yourPiece}被我捉住啦！`, `来，${yourPiece}先坐我的车。`, `${yourPiece}掉队了，我就顺手带走。`],
-    poetic: [`${yourPiece}沉入黑白交界，棋路因此改写。`, `我拾起${yourPiece}，像拾起一片落叶。`, `${yourPiece}离场，空格开始说话。`],
-    commentator: [`取子完成：${yourPiece}离场，局面出现新的焦点。`, `${yourPiece}被吃，交换后的线路值得重点观察。`, `一枚${event.captured}退出战场，双方计划随之调整。`],
+    sharp: [`${yourPiece}落网，别把它当成偶然。`, `我拿走${yourPiece}，现在轮到你解释这步了。`, `${yourPiece}留下了缺口，我会继续追。`, `线路打开了，${yourPiece}暂时回不来。`, `这枚${yourPiece}放得太松，我顺手收下。`],
+    deadpan: [`${yourPiece}被吃。交换结果符合当前计算。`, `取走${yourPiece}，局面进入下一阶段。`, `${yourPiece}消失，线路变得更清楚了。`, `已移除${yourPiece}，其防守责任需要重新分配。`, `这一交换完成，物质平衡随之更新。`],
+    theatrical: [`${yourPiece}退场！这一幕的布景完全变了。`, `一记取子，${yourPiece}从剧情中消失。`, `谢幕吧，${yourPiece}已经没有台词了。`, `主角一换，棋盘立刻进入下一幕。`, `这一手收走${yourPiece}，剧情突然加速。`],
+    snarky: [`谢谢你把${yourPiece}送过来，包装还挺完整。`, `${yourPiece}就这样走了？我还以为你会保护它。`, `拿走${yourPiece}，至少这一步不用猜。`, `这枚${yourPiece}看起来确实不太想留下。`, `你放它在那儿很久了，我只好替你处理。`],
+    arrogant: [`${yourPiece}按计划离场，结果没有悬念。`, `取走${yourPiece}，这正是它应该出现的位置。`, `${yourPiece}的命运早已写在这条线上。`, `这次取子只是在兑现已经算过的变化。`, `我选这步之前，${yourPiece}已经在账本上了。`],
+    playful: [`${yourPiece}被我捉住啦！`, `来，${yourPiece}先坐我的车。`, `${yourPiece}掉队了，我就顺手带走。`, `抓到了，${yourPiece}先来我这边玩。`, `棋盘少了个小伙伴，我来帮它换队伍。`],
+    poetic: [`${yourPiece}沉入黑白交界，棋路因此改写。`, `我拾起${yourPiece}，像拾起一片落叶。`, `${yourPiece}离场，空格开始说话。`, `${yourPiece}落下，棋盘的风向轻轻转了。`, `我收起${yourPiece}，留下的空格还在回响。`],
+    commentator: [`取子完成：${yourPiece}离场，局面出现新的焦点。`, `${yourPiece}被吃，交换后的线路值得重点观察。`, `一枚${event.captured}退出战场，双方计划随之调整。`, `这次吃子打开了线路，攻防重点随即变化。`, `请留意${yourPiece}离场后的新空格。`],
   };
   const promotion: Record<OpponentPersonality, string[]> = {
     sharp: ['兵终于升变，别让这份威胁白白长大。', '升变完成，棋盘上多了一个必须回答的问题。'],
@@ -324,8 +343,126 @@ function englishPiece(piece: string | undefined): string {
   return ENGLISH_PIECES[piece ?? ''] ?? 'piece';
 }
 
+type VoiceTemplateKind = TemplateKind | 'promotion' | 'castle';
+
+const ENGLISH_EXTRA_LINES: Record<OpponentPersonality, Record<VoiceTemplateKind, string>> = {
+  sharp: {
+    opening: 'First move is mine. Give me something to answer.', capture: "Fine, take it. Just keep count.",
+    check: 'Check. Your next move is forced.', mate: 'Mate. The board made the point for me.',
+    userCheck: 'I saw the check. I also saw the escape.', userCapture: 'That was my piece. I will find the compensation.',
+    drop: 'That square is undefended. I noticed.', good: 'Good move. I will need a better answer.',
+    neutral: 'I am watching the squares you stopped watching.', promotion: 'Promotion changes the problem.',
+    castle: 'Your king found shelter. I will look for another way in.',
+  },
+  deadpan: {
+    opening: 'Opening move complete. No conclusion yet.', capture: 'Capture confirmed. Material changes by one piece.',
+    check: 'Check. A legal reply is required.', mate: 'Checkmate. The game is over.',
+    userCheck: 'Check received. The king has a legal square.', userCapture: 'My piece is gone. Updating the count.',
+    drop: 'That square is undefended.', good: 'Accurate. The position remains playable.',
+    neutral: 'No forcing move is available.', promotion: 'Promotion recorded. Recalculate.',
+    castle: 'Castling completed. King safety improved.',
+  },
+  theatrical: {
+    opening: 'The first move sets the scene.', capture: 'A piece leaves the stage.',
+    check: 'The king is called to center stage.', mate: 'And now, the final scene: checkmate.',
+    userCheck: 'A bold entrance. Let us see what follows.', userCapture: 'The plot turns against my piece.',
+    drop: 'A glaring weakness takes the spotlight.', good: 'What a move! The story changes.',
+    neutral: 'The tension lingers; neither side must rush.', promotion: 'A pawn transforms for its final act.',
+    castle: 'The king takes a new stage.',
+  },
+  snarky: {
+    opening: 'Well, the game has started. Try to keep up.', capture: "Free material? I won't pretend to refuse.",
+    check: 'Check. This is the part where you respond.', mate: 'Checkmate. That went about as expected.',
+    userCheck: 'Check? You do have my attention now.', userCapture: 'You took my piece. Feeling proud?',
+    drop: 'That square is just sitting there.', good: 'Well, that was annoyingly good.',
+    neutral: 'A quiet position. How suspicious.', promotion: 'Promotion. Hope you have a plan for that.',
+    castle: 'Your king moved house. Cute.',
+  },
+  arrogant: {
+    opening: 'The opening is going exactly to plan.', capture: 'I will accept this donation.',
+    check: 'Check. The answer is already calculated.', mate: 'Checkmate. As expected.',
+    userCheck: 'An interesting check. It changes nothing.', userCapture: 'You took a piece; I foresaw the exchange.',
+    drop: 'You missed a weakness. Predictable.', good: 'Good move. At last, a worthy reply.',
+    neutral: 'The position remains under control.', promotion: 'Promotion. That changes none of the plan.',
+    castle: 'Castling. My king is where I intended.',
+  },
+  playful: {
+    opening: 'Game on. Your turn to make this interesting.', capture: 'Yoink. That piece is mine now.',
+    check: 'Check! The king has a tiny emergency.', mate: 'Checkmate! Time for the victory dance.',
+    userCheck: 'Check! Nicely played. My turn.', userCapture: 'You got my piece. Nice little surprise.',
+    drop: 'That square is waving at me.', good: 'Okay, I did not see that one coming.',
+    neutral: 'A calm board. Surely not for long.', promotion: 'New piece unlocked.',
+    castle: 'Castling: the king goes on a road trip.',
+  },
+  poetic: {
+    opening: 'A quiet opening. The board is listening.', capture: 'One piece leaves; the balance shifts.',
+    check: 'Check. The king must answer the wind.', mate: 'Checkmate. The final light fades.',
+    userCheck: 'Your check changes the rhythm for a moment.', userCapture: 'My piece is gone; the rhythm changes.',
+    drop: 'An undefended square opens like a door.', good: 'A lovely move. The board feels different.',
+    neutral: 'Silence settles over the position.', promotion: 'The pawn reaches the edge and changes form.',
+    castle: 'The king moves to quieter shelter.',
+  },
+  commentator: {
+    opening: 'And we are underway. The first move is on the board.', capture: 'A clean capture. Material balance shifts.',
+    check: 'Check! The defending side must respond.', mate: 'Checkmate! That is the decisive moment.',
+    userCheck: 'The player gives check. The reply is ready.', userCapture: 'A key piece is lost. Plans must change.',
+    drop: 'An undefended square gives the opponent a chance.', good: 'Excellent move. The position gets sharper.',
+    neutral: 'Both players are still probing.', promotion: 'Promotion adds a new threat.',
+    castle: 'Castling secures the king.',
+  },
+};
+
+const ENGLISH_EXTRA_VARIANTS: Record<OpponentPersonality, Record<'capture' | 'userCapture' | 'neutral', readonly string[]>> = {
+  sharp: {
+    capture: ['That piece wandered too far.', 'A clean pickup. Protect the rest.'],
+    userCapture: ['The exchange hurts. I need counterplay.', 'You won the piece; now keep the advantage.'],
+    neutral: ['I am checking the forcing moves first.', 'There is still time to prove that plan.'],
+  },
+  deadpan: {
+    capture: ['The piece was not adequately defended.', 'One unit has been removed from the board.'],
+    userCapture: ['My material is reduced. Reassessment follows.', 'A loss, not yet a conclusion.'],
+    neutral: ['No immediate threat is visible.', 'I am checking the available continuations.'],
+  },
+  theatrical: {
+    capture: ['An unexpected exit from the cast.', 'The board has lost one of its leading characters.'],
+    userCapture: ['My piece falls, but the scene continues.', 'A sudden turn! The balance shifts.'],
+    neutral: ['The audience waits for the next turn.', 'The quiet before the next dramatic move.'],
+  },
+  snarky: {
+    capture: ['It was sitting there. I helped it leave.', 'Your piece made that very easy for me.'],
+    userCapture: ['You actually found that one. Nicely done.', 'I lose a piece and you gain confidence. Fair trade?'],
+    neutral: ['Nothing happening? That is what you think.', 'This plan has a lot of confidence behind it.'],
+  },
+  arrogant: {
+    capture: ['The exchange was available, so I took it.', 'That piece was already included in my calculation.'],
+    userCapture: ['I allowed that exchange for a reason.', 'The loss is already accounted for.'],
+    neutral: ['The position still favors my plan.', 'I am narrowing the choices.'],
+  },
+  playful: {
+    capture: ['One little piece, coming right up.', 'I will keep this one, thanks!'],
+    userCapture: ['Hey, that one was mine!', 'You got me. I will try a new trick.'],
+    neutral: ['Everyone is waiting for someone to blink.', 'I have a tiny idea brewing.'],
+  },
+  poetic: {
+    capture: ['The piece drifts away from the board.', 'A square empties; another path appears.'],
+    userCapture: ['A piece is gone, and the rhythm changes.', 'The board feels lighter on my side now.'],
+    neutral: ['The position waits between two breaths.', 'A quiet move can still change the current.'],
+  },
+  commentator: {
+    capture: ['The capture is confirmed; the file is opening.', 'Material comes off, and the plans adjust.'],
+    userCapture: ['A key piece has fallen. The game remains open.', 'The player wins material and changes the balance.'],
+    neutral: ['The players continue maneuvering for space.', 'No contact yet; both sides are still setting up.'],
+  },
+};
+
 /** Short English equivalents for the same event, used only by system TTS. */
-export function opponentVoiceLine(personality: OpponentPersonality, event: OpponentTalkEvent, seed = Math.random(), coachIndex = 0): string {
+export function opponentVoiceLine(
+  personality: OpponentPersonality,
+  event: OpponentTalkEvent,
+  seed = Math.random(),
+  coachIndex = 0,
+  previous: readonly string[] = [],
+): string {
   const kind = kindOf(event);
   const situation = !event.opponentSan.includes('#') && /=[QRBN]/.test(event.opponentSan) ? 'promotion'
     : kind === 'neutral' && event.opponentSan.startsWith('O-O') ? 'castle' : null;
@@ -377,7 +514,17 @@ export function opponentVoiceLine(personality: OpponentPersonality, event: Oppon
                   : kind === 'opening'
                     ? ['The game begins. Show me your plan.', 'A new game, and already a decision.']
                     : ['The position is still unfolding.', 'Let us see what this plan becomes.'];
-  return englishCoachFlavor(coachStyleOf(coachIndex), lines[Math.floor(Math.abs(seed) * 1_000_000) % lines.length] ?? lines[0] ?? '', seed + 0.17);
+  const voiceKind: VoiceTemplateKind = situation ?? kind;
+  const choices = [
+    ...lines,
+    ENGLISH_EXTRA_LINES[personality][voiceKind],
+    ...(voiceKind === 'neutral' || voiceKind === 'capture' || voiceKind === 'userCapture'
+      ? ENGLISH_EXTRA_VARIANTS[personality][voiceKind]
+      : []),
+  ];
+  const replies = choices.flatMap((line) => ENGLISH_OPENINGS[personality].map((_, opening) =>
+    englishCoachFlavor(personality, line, opening)));
+  return selectUnheard(replies, previous, seed + (coachIndex + 1) * 0.137);
 }
 
 /** Pick a local reply, avoiding recent lines and recycling the oldest when a pool is exhausted. */
@@ -399,14 +546,7 @@ export function opponentTalk(
     ...contextualLines(personality, event, kind, situation),
   ];
   const recent = typeof previous === 'string' ? [previous] : previous;
-  const start = Math.floor(Math.abs(seed) * 1_000_000) % lines.length;
-  const render = (line: string) => coachFlavor(coachStyleOf(coachIndex), line.replaceAll('机器人', coachName), seed + 0.17);
-  for (let offset = 0; offset < lines.length; offset++) {
-    const line = lines[(start + offset) % lines.length];
-    const reply = render(line);
-    if (!recent.includes(reply)) return reply;
-  }
-  // If every reply has been used, recycle the one heard longest ago.
-  const recycled = [...lines].sort((a, b) => recent.lastIndexOf(render(a)) - recent.lastIndexOf(render(b)))[0] ?? '';
-  return render(recycled);
+  const replies = lines.flatMap((line) => PERSONALITY_OPENINGS[personality].map((_, opening) =>
+    coachFlavor(personality, line.replaceAll('机器人', coachName), opening)));
+  return selectUnheard(replies, recent, seed + (coachIndex + 1) * 0.137);
 }

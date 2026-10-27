@@ -1,4 +1,4 @@
-/** English opponent speech using the operating system/browser voice, never bundled audio data. */
+/** English opponent speech uses bundled Piper voices on iOS and system voices on web. */
 
 import { isNative } from '../native';
 import { SoundNative } from 'maia-native';
@@ -31,13 +31,23 @@ export function stopEnglishVoice() {
   if (isNative) void SoundNative.stopSpeech().catch(() => {});
 }
 
-/** Speak one short English reply with the system voice. */
+const PIPER_VOICES = {
+  female: 'en_US-lessac-medium',
+  male: 'en_US-ryan-medium',
+} as const;
+
+/** Warm the selected native voice while the game is getting ready. */
+export function prepareEnglishVoice(enabled: boolean, gender: 'female' | 'male' = 'female') {
+  if (enabled && isNative) void SoundNative.prepareSpeech({ voice: PIPER_VOICES[gender] }).catch(() => {});
+}
+
+/** Speak one short English reply with Piper on iOS and the system voice in browsers. */
 export function speakEnglish(text: string, enabled: boolean, gender: 'female' | 'male' = 'female') {
   if (!enabled || !text || (typeof document !== 'undefined' && document.hidden)) return;
   const epoch = ++speechEpoch;
   stopBrowserSpeech();
   if (isNative) {
-    void SoundNative.speak({ text, language: 'en-US', gender }).catch(() => {});
+    void SoundNative.speak({ text, voice: PIPER_VOICES[gender] }).catch(() => {});
     return;
   }
   const synth = browserSpeech();

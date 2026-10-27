@@ -1,15 +1,17 @@
 import AVFoundation
 import Capacitor
 import UIKit
+import piper_objc
 
 /// Play bundled MP3s outside WKWebView's gesture, decoding and AudioContext lifecycle.
 @objc(SoundNativePlugin)
-public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate {
+public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelegate {
     public let identifier = "SoundNativePlugin"
     public let jsName = "SoundNative"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "prepareSpeech", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "speak", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stopSpeech", returnType: CAPPluginReturnPromise),
     ]
@@ -20,7 +22,15 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private var recordings: [URL: Data] = [:]
     private var observers: [NSObjectProtocol] = []
     private var sessionActive = false
-    private let speech = AVSpeechSynthesizer()
+    private let speechQueue = DispatchQueue(label: "maia.piper", qos: .userInitiated)
+    private let speechLock = NSLock()
+    private var speechRequest = 0
+    private var piper: Piper?
+    private var piperVoice: String?
+    private var speechPlayer: AVAudioPlayer?
+    private var speechFile: URL?
+
+    private static let piperVoices: Set<String> = ["en_US-lessac-medium", "en_US-ryan-medium"]
 
     /// Configure the session once when the plugin is loaded. Reapplying the
     /// category for every move can make iOS renegotiate the route while a very
@@ -28,7 +38,6 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private let session = AVAudioSession.sharedInstance()
 
     override public func load() {
-        speech.delegate = self
         do {
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
         } catch {
@@ -39,12 +48,14 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
             observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 // Discard interrupted and scheduled sounds; never replay them on return.
                 self?.stopPlayers()
+                self?.stopSpeechNow()
                 self?.sessionActive = false
             })
         }
         observers.append(center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: .main) { [weak self] _ in
             self?.stopPlayers()
             self?.recordings.removeAll()
+            self?.stopSpeechNow()
             self?.sessionActive = false
         })
     }
@@ -89,14 +100,44 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         sessionActive = true
     }
 
-    private func speechVoice(language: String, gender: String) -> AVSpeechSynthesisVoice? {
-        let prefix = String(language.lowercased().prefix(2))
-        let voices = AVSpeechSynthesisVoice.speechVoices().filter { $0.language.lowercased().hasPrefix(prefix) }
-        if #available(iOS 13.0, *) {
-            let desired: AVSpeechSynthesisVoiceGender = gender == "male" ? .male : .female
-            if let voice = voices.first(where: { $0.gender == desired }) { return voice }
+    private func nextSpeechRequest() -> Int {
+        speechLock.lock()
+        defer { speechLock.unlock() }
+        speechRequest += 1
+        return speechRequest
+    }
+
+    private func isCurrentSpeechRequest(_ request: Int) -> Bool {
+        speechLock.lock()
+        defer { speechLock.unlock() }
+        return speechRequest == request
+    }
+
+    private func loadPiper(_ voice: String) throws -> Piper {
+        if piperVoice == voice, let piper { return piper }
+        let directory = "public/native/speech"
+        guard let model = Bundle.main.url(forResource: voice, withExtension: "onnx", subdirectory: directory),
+              let config = Bundle.main.url(forResource: "\(voice).onnx", withExtension: "json", subdirectory: directory) else {
+            throw NSError(domain: "SoundNative", code: 2, userInfo: [NSLocalizedDescriptionKey: "未打包 Piper 音色：\(voice)"])
         }
-        return AVSpeechSynthesisVoice(language: language) ?? voices.first
+        piper = nil
+        piperVoice = nil
+        let engine = try Piper(modelPath: model.path, configPath: config.path, espeakNGData: "")
+        piper = engine
+        piperVoice = voice
+        return engine
+    }
+
+    private func stopSpeechPlayback() {
+        speechPlayer?.stop()
+        speechPlayer = nil
+        if let speechFile { try? FileManager.default.removeItem(at: speechFile) }
+        speechFile = nil
+    }
+
+    private func stopSpeechNow() {
+        _ = nextSpeechRequest()
+        stopSpeechPlayback()
     }
 
     @objc func stop(_ call: CAPPluginCall) {
@@ -108,25 +149,78 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
 
     @objc func stopSpeech(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [self] in
-            speech.stopSpeaking(at: .immediate)
+            stopSpeechNow()
             call.resolve()
+        }
+    }
+
+    @objc func prepareSpeech(_ call: CAPPluginCall) {
+        guard let voice = call.getString("voice"), Self.piperVoices.contains(voice) else {
+            return call.reject("invalid Piper voice")
+        }
+        speechQueue.async { [self] in
+            do {
+                _ = try loadPiper(voice)
+                call.resolve()
+            } catch {
+                NSLog("Piper 语音初始化失败：%@", error.localizedDescription)
+                call.reject("Piper 初始化失败：\(error.localizedDescription)", nil, error)
+            }
         }
     }
 
     @objc func speak(_ call: CAPPluginCall) {
         guard let text = call.getString("text"), !text.isEmpty, text.count <= 240,
-              let language = call.getString("language"), language.lowercased().hasPrefix("en") else {
+              let voice = call.getString("voice"), Self.piperVoices.contains(voice) else {
             return call.reject("invalid speech request")
         }
-        DispatchQueue.main.async { [self] in
-            guard UIApplication.shared.applicationState == .active else { return call.resolve() }
-            speech.stopSpeaking(at: .immediate)
-            let utterance = AVSpeechUtterance(string: text)
-            utterance.voice = speechVoice(language: language, gender: call.getString("gender") ?? "female")
-            utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.94
-            utterance.pitchMultiplier = call.getString("gender") == "male" ? 0.9 : 1.08
-            speech.speak(utterance)
-            call.resolve()
+        let request = nextSpeechRequest()
+        DispatchQueue.main.async { [self] in stopSpeechPlayback() }
+        speechQueue.async { [self] in
+            var output: URL?
+            do {
+                guard isCurrentSpeechRequest(request) else { return call.resolve() }
+                let engine = try loadPiper(voice)
+                let file = FileManager.default.temporaryDirectory.appendingPathComponent("piper-\(UUID().uuidString).wav")
+                output = file
+                let completed = DispatchSemaphore(value: 0)
+                engine.synthesize(text, toFileAtPath: file.path) { completed.signal() }
+                completed.wait()
+                guard isCurrentSpeechRequest(request) else {
+                    try? FileManager.default.removeItem(at: file)
+                    return call.resolve()
+                }
+                let attributes = try? FileManager.default.attributesOfItem(atPath: file.path)
+                let fileSize = attributes?[.size] as? Int
+                guard engine.status == .completed, let fileSize, fileSize > 44 else {
+                    throw NSError(domain: "SoundNative", code: 3, userInfo: [NSLocalizedDescriptionKey: "Piper 没有生成有效音频"])
+                }
+                DispatchQueue.main.async { [self] in
+                    guard isCurrentSpeechRequest(request), UIApplication.shared.applicationState == .active else {
+                        try? FileManager.default.removeItem(at: file)
+                        return call.resolve()
+                    }
+                    do {
+                        try activateSession()
+                        let player = try AVAudioPlayer(contentsOf: file)
+                        player.delegate = self
+                        speechFile = file
+                        speechPlayer = player
+                        guard player.prepareToPlay(), player.play() else {
+                            stopSpeechPlayback()
+                            return call.reject("Piper 音频无法播放")
+                        }
+                        call.resolve()
+                    } catch {
+                        try? FileManager.default.removeItem(at: file)
+                        call.reject("Piper 播放失败：\(error.localizedDescription)", nil, error)
+                    }
+                }
+            } catch {
+                if let output { try? FileManager.default.removeItem(at: output) }
+                NSLog("Piper 语音合成失败：%@", error.localizedDescription)
+                call.reject("Piper 合成失败：\(error.localizedDescription)", nil, error)
+            }
         }
     }
 
@@ -173,6 +267,11 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
 
     public func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         players.removeAll { $0 === player }
+        if player === speechPlayer {
+            speechPlayer = nil
+            if let speechFile { try? FileManager.default.removeItem(at: speechFile) }
+            speechFile = nil
+        }
     }
 
     public func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {

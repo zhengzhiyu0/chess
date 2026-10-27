@@ -1,0 +1,30 @@
+web/native-plugins/maia-native/Package.swift
+  s_f6f83aa0622ac8::t_8cfc5285fdd598 33,55-63,76
+web/native-plugins/maia-native/ios/Sources/EspeakBridge/EspeakBridge.mm
+  s_f6f83aa0622ac8::t_273ef5da0fe7e5 14,16-22,60,66-74,76
+  s_f6f83aa0622ac8::t_8cfc5285fdd598 1-13,15,23-59,61-65,75,77-84
+README.md
+  s_f6f83aa0622ac8::t_d8ad187545a774 90,104
+web/native-plugins/maia-native/ios/Sources/EspeakBridge/include/EspeakBridge.h
+  s_f6f83aa0622ac8::t_8cfc5285fdd598 1-18
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_f6f83aa0622ac8::t_73b3888ac8980b 5,39-64,66-68,99-102,123,129,132-133,339
+  s_f6f83aa0622ac8::t_17bc193e8089a3 9,11-16,97,134-136,340-341
+  s_f6f83aa0622ac8::t_1d31f3cd40fdf3 65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "81ac5d9c5dde882b1c3ad935403cb7a5f0d29346",
+  "prompts": {},
+  "sessions": {
+    "s_f6f83aa0622ac8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17a8e-4301-7153-9332-de892c75838c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

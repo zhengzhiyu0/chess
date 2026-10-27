@@ -1,0 +1,96 @@
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Internal/ModelDownloader.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-154
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Phonemizer/EPhonemizer.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-213
+web/native-plugins/maia-native/Package.swift
+  s_f6f83aa0622ac8::t_65757fe5cfc7d0 54,56-60,63,65-66,69,77
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_f6f83aa0622ac8::t_24fb4a79590de9 83-87
+  s_f6f83aa0622ac8::t_92b83b91bee582 4,6,8,12-13,38-63,66-71,73-75,78-81,89,115,118
+  s_f6f83aa0622ac8::t_70e9df77d6c35c 213,243-244,246,248-249,254,261,267,270-271,281,285,290
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Public/KittenTTS.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-197
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Public/KittenVoice.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-54
+web/test/sound-assets.native.swift
+  s_f6f83aa0622ac8::t_8945e9f538daa5 27-38,42
+web/test/native-sound.test.ts
+  s_f6f83aa0622ac8::t_8945e9f538daa5 30,36-39
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Engine/TextPreprocessor.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-254
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Public/KittenTTSConfig.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-110
+web/native-plugins/maia-native/kitten-runtime/Sources/CEPhonemizer/rule_parser.h
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-195
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Public/KittenTTSError.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-90
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Public/KittenTTSResult.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-59
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Phonemizer/ESpeakBinaryPhonemizer.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-172
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Engine/TextCleaner.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-55
+web/native-plugins/maia-native/kitten-runtime/UPSTREAM-README.md
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-280
+  s_f6f83aa0622ac8::t_ae0ce56980b0bd 281
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Loader/NPZLoader.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-263
+web/native-plugins/maia-native/kitten-runtime/LICENSE-APACHE-2.0
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-202
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Internal/Extensions.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-43
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Public/KittenPhonemizerProtocol.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-117
+web/native-plugins/maia-native/kitten-runtime/Sources/CEPhonemizer/swift_bridge.cpp
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-67
+web/native-plugins/maia-native/kitten-runtime/Sources/CEPhonemizer/include/CEPhonemizer.h
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-41
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Phonemizer/RuleBasedG2P.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-621
+web/native-plugins/maia-native/kitten-runtime/Sources/Czlib/module.modulemap
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-4
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Audio/WAVEncoder.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-41
+web/native-plugins/maia-native/kitten-runtime/Sources/CEPhonemizer/ipa_table.h
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-236
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Engine/TTSEngine.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-154
+web/native-plugins/maia-native/kitten-runtime/Sources/CEPhonemizer/phonemizer.h
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-262
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Public/KittenModel.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-95
+.github/workflows/ios.yml
+  s_f6f83aa0622ac8::t_8a2e7e37ac7022 27-30
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Phonemizer/BuiltinPhonemizer.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-22
+README.md
+  s_f6f83aa0622ac8::t_8945e9f538daa5 90,104
+  s_f6f83aa0622ac8::t_d61531692fad11 92
+web/native-plugins/maia-native/kitten-runtime/Sources/CEPhonemizer/phonemizer.cpp
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-7241
+web/scripts/prepare-native.mjs
+  s_f6f83aa0622ac8::t_d61531692fad11 87
+  s_f6f83aa0622ac8::t_0af8f678ca3b12 18,32-36,69-70,72,84,116,118-119,122-125,129
+web/native-plugins/maia-native/kitten-runtime/Sources/Czlib/shim.h
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1
+web/native-plugins/maia-native/kitten-runtime/Sources/KittenTTS/Audio/AudioOutput.swift
+  s_f6f83aa0622ac8::t_3a7102f8c46ed3 1-103
+web/src/audio/voice.ts
+  s_f6f83aa0622ac8::t_8945e9f538daa5 1,34-36,41,44,50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4b9d46dc9b3291ba9512f6b6d07963e44237ac57",
+  "prompts": {},
+  "sessions": {
+    "s_f6f83aa0622ac8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17a8e-4301-7153-9332-de892c75838c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

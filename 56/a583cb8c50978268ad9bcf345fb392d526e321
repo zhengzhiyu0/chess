@@ -1,0 +1,387 @@
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/njd_set_pronunciation.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-58
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/njd_set_unvoiced_vowel_rule_ascii_for_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-372
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-6
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/char_property.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-92
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab2njd/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/dictionary_compiler.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-213
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/iconv_utils.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-87
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/viterbi.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-508
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/njd_set_accent_phrase_rule_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-108
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/stream_wrapper.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-55
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/njd_set_long_vowel.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-58
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/config.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-157
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab2njd/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-13
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/text2mecab.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-156
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/text2mecab_rule_ascii_for_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-264
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/text2mecab_rule_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-264
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/connector.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-67
+web/native-plugins/maia-native/piper1-gpl-runtime/piper-spm/headers/onnxruntime_cxx_api.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-8
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/dictionary_generator.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-297
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd/njd_node.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-771
+web/native-plugins/maia-native/piper1-gpl-runtime/piper1-gpl/libpiper/include/piper_impl.hpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-157
+web/native-plugins/maia-native/piper1-gpl-runtime/piper1-gpl/libpiper/include/uni_algo.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-72018
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/context_id.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-50
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/eval.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-317
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/utils.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-615
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/writer.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-412
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/njd2jpcommon.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-58
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/njd_set_accent_type.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-312
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/dictionary_rewriter.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-274
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/ucs.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-148
+web/native-plugins/maia-native/piper1-gpl-runtime/piper1-gpl/libpiper/include/piper.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-355
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd/njd.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-381
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/jpcommon_label.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-1328
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/writer.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-57
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/njd_set_digit_rule_ascii_for_shift_jis.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-634
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/freelist.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-85
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/jpcommon.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-190
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab2njd/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/njd_set_accent_type_rule_ascii_for_euc_jp.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-76
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/string_buffer.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-65
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/dictionary.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-99
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/piper1-gpl/libpiper/include/chinese_phonemizer.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-68
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/tokenizer.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-400
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/tokenizer.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-136
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/njd2jpcommon_rule_ascii_for_euc_jp.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-227
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/nbest_generator.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-52
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/njd_set_unvoiced_vowel_rule_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-372
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/feature_index.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-747
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/iconv_utils.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-258
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/njd_set_long_vowel_rule_ascii_for_euc_jp.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-90
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/dictionary_rewriter.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-75
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/common.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-199
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/njd2jpcommon_rule_ascii_for_shift_jis.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-227
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/winmain.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-113
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/text2mecab.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-64
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/text2mecab_rule_ascii_for_euc_jp.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-264
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/jpcommon_rule_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-323
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/njd_set_accent_phrase_rule_ascii_for_euc_jp.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-99
+web/native-plugins/maia-native/piper1-gpl-runtime/piper1-gpl/COPYING
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-675
+web/native-plugins/maia-native/piper1-gpl-runtime/piper1-gpl/libpiper/src/japanese_phonemizer.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-907
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/mecab.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-1622
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/thread.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-242
+web/native-plugins/maia-native/Package.swift
+  s_f6f83aa0622ac8::t_358d981770f8dd 64-183,191
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/njd_set_accent_phrase_rule_ascii_for_shift_jis.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-99
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/mecab-dict-index.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-11
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/learner_node.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-135
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/viterbi.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-55
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/njd_set_accent_phrase.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-58
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/njd_set_digit_rule_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-634
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/njd_set_long_vowel_rule_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-90
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/njd_set_digit.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-794
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_f6f83aa0622ac8::t_0b762d6079c31b 5,7,13-14,39,42,45-48,51,53,57,60,64-66,70,72,76,80-82,84-85,87-111,117-118,125,127-128,176,263,272-273,350
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/njd_set_pronunciation_rule_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-488
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/feature_index.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-115
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/nbest_generator.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-43
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/context_id.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-123
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/lbfgs.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-71
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/njd_set_accent_phrase_rule_ascii_for_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-99
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/njd_set_unvoiced_vowel.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-366
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/dictionary.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-718
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/njd_set_accent_type_rule_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-76
+web/native-plugins/maia-native/piper1-gpl-runtime/piper-spm/public/piper.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-355
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/learner.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-320
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/libmecab.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-541
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/jpcommon.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-202
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab2njd/mecab2njd.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-84
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/learner_tagger.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-418
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/njd_set_long_vowel_rule_ascii_for_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-90
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/piper1-gpl/libpiper/src/chinese_phonemizer.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-463
+web/native-plugins/maia-native/piper1-gpl-runtime/piper1-gpl/libpiper/src/japanese_phonemizer.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-95
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/jpcommon_node.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-212
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/darts.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-518
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/string_buffer.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-118
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/njd_set_long_vowel.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-181
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/njd_set_unvoiced_vowel.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-58
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/char_property.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-279
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/njd_set_accent_type.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-58
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/jpcommon_rule_ascii_for_euc_jp.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-324
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/njd2jpcommon.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-177
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/njd_set_digit_rule_ascii_for_euc_jp.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-634
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/mecab.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-309
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/mmap.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-216
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-21
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/njd_set_pronunciation.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-232
+web/native-plugins/maia-native/piper1-gpl-runtime/piper1-gpl/libpiper/src/piper.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-1143
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/njd_set_digit.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-58
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/njd_set_pronunciation_rule_ascii_for_euc_jp.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-486
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/include/openjtalk.h
+  s_f6f83aa0622ac8::t_dc947fd9907855 1-18
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-14
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/njd_set_pronunciation_rule_ascii_for_shift_jis.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-486
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/.cvsignore
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-4
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/param.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-284
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/njd_set_unvoiced_vowel_rule_ascii_for_euc_jp.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-372
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/njd_set_digit_rule_ascii_for_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-634
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/connector.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-113
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/njd_set_unvoiced_vowel_rule_ascii_for_shift_jis.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-372
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/scoped_ptr.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-95
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/jpcommon_rule_ascii_for_shift_jis.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-324
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/lbfgs.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-572
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/tagger.cpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-1300
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab2njd/mecab2njd.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-58
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/param.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-92
+README.md
+  s_f6f83aa0622ac8::t_76e8ea6f17f5a0 90,104
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd/njd.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-140
+web/native-plugins/maia-native/ios/Sources/EspeakBridge/include/EspeakBridge.h
+  s_f6f83aa0622ac8::t_6c83875873ec5f 10
+web/native-plugins/maia-native/piper1-gpl-runtime/piper1-gpl/libpiper/include/json.hpp
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-24596
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/njd_set_accent_type_rule_ascii_for_shift_jis.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-76
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/learner_tagger.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-80
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/Makefile.am
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/njd_set_accent_type_rule_ascii_for_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-76
+web/native-plugins/maia-native/ios/Sources/EspeakBridge/EspeakBridge.mm
+  s_f6f83aa0622ac8::t_6c83875873ec5f 7,10,12,21,26,30
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/text2mecab_rule_ascii_for_shift_jis.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-264
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/utils.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-260
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/njd_set_pronunciation_rule_ascii_for_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-486
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/jpcommon_rule_ascii_for_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-324
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/njd2jpcommon_rule_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-234
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/njd_set_long_vowel_rule_ascii_for_shift_jis.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-90
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/njd2jpcommon_rule_ascii_for_utf_8.h
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-227
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/njd_set_accent_phrase.c
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-285
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd/Makefile.mak
+  s_f6f83aa0622ac8::t_a954d4d9b5527b 1-19
+web/native-plugins/maia-native/piper1-gpl-runtime/Piper1-GPL-COPYING
+  s_f6f83aa0622ac8::t_639d31563260fe 1-675
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/jpcommon_rule_euc_jp.h
+  s_f6f83aa0622ac8::t_fcacb08a76d161 1-323
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/jpcommon/jpcommon_rule_shift_jis.h
+  s_f6f83aa0622ac8::t_a57ada1fc03c0f 1-323
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/mecab/src/ucstable.h
+  s_f6f83aa0622ac8::t_9adba73ac5b287 1-155511
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/njd2jpcommon_rule_euc_jp.h
+  s_f6f83aa0622ac8::t_f9a83b23feaea3 1-227
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd2jpcommon/njd2jpcommon_rule_shift_jis.h
+  s_f6f83aa0622ac8::t_fc1f230ee601b8 1-227
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/njd_set_accent_phrase_rule_euc_jp.h
+  s_f6f83aa0622ac8::t_4af2a7344798f8 1-99
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_phrase/njd_set_accent_phrase_rule_shift_jis.h
+  s_f6f83aa0622ac8::t_b1010690b4e702 1-99
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/njd_set_accent_type_rule_euc_jp.h
+  s_f6f83aa0622ac8::t_34ccb354a5093d 1-76
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_accent_type/njd_set_accent_type_rule_shift_jis.h
+  s_f6f83aa0622ac8::t_40475a9e947457 1-76
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/njd_set_digit_rule_euc_jp.h
+  s_f6f83aa0622ac8::t_2b1defa9f89a44 1-634
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_digit/njd_set_digit_rule_shift_jis.h
+  s_f6f83aa0622ac8::t_97803792cda378 1-634
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/njd_set_long_vowel_rule_euc_jp.h
+  s_f6f83aa0622ac8::t_0e304aebb81556 1-90
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_long_vowel/njd_set_long_vowel_rule_shift_jis.h
+  s_f6f83aa0622ac8::t_755ed1ee9147b7 1-90
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/njd_set_pronunciation_rule_euc_jp.h
+  s_f6f83aa0622ac8::t_193bc9702c6daf 1-488
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_pronunciation/njd_set_pronunciation_rule_shift_jis.h
+  s_f6f83aa0622ac8::t_2578ad922195ec 1-488
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/njd_set_unvoiced_vowel_rule_euc_jp.h
+  s_f6f83aa0622ac8::t_6d118b213bd295 1-372
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/njd_set_unvoiced_vowel/njd_set_unvoiced_vowel_rule_shift_jis.h
+  s_f6f83aa0622ac8::t_35e4c7213974ae 1-372
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/text2mecab_rule_euc_jp.h
+  s_f6f83aa0622ac8::t_3aae05c306e8c8 1-264
+web/native-plugins/maia-native/piper1-gpl-runtime/openjtalk/text2mecab/text2mecab_rule_shift_jis.h
+  s_f6f83aa0622ac8::t_761d59a603c78b 1-264
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "56a583cb8c50978268ad9bcf345fb392d526e321",
+  "prompts": {},
+  "sessions": {
+    "s_f6f83aa0622ac8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17a8e-4301-7153-9332-de892c75838c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -1,17 +1,17 @@
 import AVFoundation
 import Capacitor
 import UIKit
-import PiperPlus
 import EspeakBridge
+import Piper1GPLRuntime
 
-private enum PiperPlusError: LocalizedError {
+private enum Piper1Error: LocalizedError {
     case invalidAudio
     case implausiblyShortAudio
 
     var errorDescription: String? {
         switch self {
-        case .invalidAudio: "Piper returned invalid or silent audio"
-        case .implausiblyShortAudio: "Piper returned audio that is too short for the requested speech"
+        case .invalidAudio: "Piper1-GPL returned invalid or silent audio"
+        case .implausiblyShortAudio: "Piper1-GPL returned audio that is too short for the requested speech"
         }
     }
 }
@@ -36,103 +36,96 @@ private enum TTSRuntimeLog {
     }
 }
 
-private enum LegacyPiperPhonemizer {
+private enum Piper1Data {
     private static var initialized = false
 
-    static func wrap(_ text: String) throws -> String {
+    static func prepare() throws -> String {
         let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         if !initialized {
-            let sampleRate = directory.path.withCString { maia_espeak_initialize($0) }
-            guard sampleRate > 0 else {
-                let detail = maia_espeak_last_error().map { String(cString: $0) } ?? "unknown eSpeak error"
-                throw NSError(domain: "EspeakBridge", code: Int(sampleRate), userInfo: [NSLocalizedDescriptionKey: detail])
+            let prepared = directory.path.withCString { maia_espeak_prepare($0) }
+            guard prepared != 0 else {
+                let detail = maia_espeak_last_error().map { String(cString: $0) } ?? "unknown eSpeak data error"
+                throw NSError(domain: "EspeakBridge", code: Int(prepared), userInfo: [NSLocalizedDescriptionKey: detail])
             }
             initialized = true
-            TTSRuntimeLog.record("eSpeak initialized at \(sampleRate)Hz")
+            TTSRuntimeLog.record("eSpeak data prepared for Piper1-GPL")
         }
-
-        var byteCount = 0
-        let result = text.withCString { maia_espeak_phonemize($0, &byteCount) }
-        guard let result, byteCount > 0 else {
-            let detail = maia_espeak_last_error().map { String(cString: $0) } ?? "empty eSpeak phonemes"
-            throw NSError(domain: "EspeakBridge", code: 1, userInfo: [NSLocalizedDescriptionKey: detail])
-        }
-        let phonemes = String(cString: result)
-        guard !phonemes.isEmpty else {
-            throw NSError(domain: "EspeakBridge", code: 2, userInfo: [NSLocalizedDescriptionKey: "empty eSpeak phonemes"])
-        }
-        TTSRuntimeLog.record("eSpeak produced \(phonemes.unicodeScalars.count) IPA codepoints")
-        return phonemes
+        return directory.path
     }
 }
 
-private final class PiperPlusVoice {
+private final class Piper1Voice {
     private let engine: OpaquePointer
 
-    init(modelPath: String, configPath: String) throws {
+    init(modelPath: String, configPath: String, espeakDataPath: String) throws {
         var created: OpaquePointer?
         let status = modelPath.withCString { model in
             configPath.withCString { configFile in
-                "cpu".withCString { provider in
-                    var config = PiperPlusConfig()
-                    config.model_path = model
-                    config.config_path = configFile
-                    config.provider = provider
-                    config.num_threads = 2
-                    return piper_plus_create(&config, &created)
+                espeakDataPath.withCString { dataPath in
+                    created = piper_create(model, configFile, dataPath)
+                    return created == nil ? -1 : 0
                 }
             }
         }
-        guard status == PIPER_PLUS_OK, let created else {
-            let detail = piper_plus_get_last_error().map { String(cString: $0) } ?? "no native error detail"
-            throw NSError(domain: "PiperPlus", code: Int(status.rawValue), userInfo: [NSLocalizedDescriptionKey: "engine creation failed: \(detail)"])
-        }
+        guard status == 0, let created else { throw NSError(domain: "Piper1-GPL", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Could not load Piper1-GPL voice model or eSpeak data"] ) }
         engine = created
+        TTSRuntimeLog.record("Piper1-GPL \(String(cString: piper_version())) loaded voice")
     }
 
     deinit {
-        piper_plus_free(engine)
+        piper_free(engine)
     }
 
     func synthesize(_ text: String, minimumDuration: Double) throws -> Data {
-        var options = piper_plus_default_options()
-        // Match the bundled rhasspy Piper Medium voice configs.
-        options.noise_scale = 0.667
-        options.length_scale = 1.0
-        options.noise_w = 0.8
-        var samples: UnsafeMutablePointer<Float>?
-        var sampleCount: Int32 = 0
-        var sampleRate: Int32 = 0
-        let status = text.withCString { input in
-            piper_plus_synthesize(engine, input, &options, &samples, &sampleCount, &sampleRate)
+        var options = piper_default_synthesize_options(engine)
+        let startStatus = text.withCString { input in
+            piper_synthesize_start(engine, input, &options)
         }
-        guard status == PIPER_PLUS_OK, let samples else {
-            let detail = piper_plus_get_last_error().map { String(cString: $0) } ?? "no native error detail"
-            throw NSError(domain: "PiperPlus", code: Int(status.rawValue), userInfo: [NSLocalizedDescriptionKey: "synthesis failed: \(detail)"])
+        guard startStatus == 0 else {
+            throw NSError(domain: "Piper1-GPL", code: Int(startStatus), userInfo: [NSLocalizedDescriptionKey: "Piper1-GPL could not start synthesis"])
         }
-        defer { piper_plus_free_audio(samples) }
-        let count = Int(sampleCount)
-        guard count > 0, sampleRate > 0, count <= Int(sampleRate) * 60,
-              count <= (Int.max - 44) / MemoryLayout<Float>.stride else {
-            throw PiperPlusError.invalidAudio
+
+        var samples: [Float] = []
+        var sampleRate = 0
+        var chunk = piper_audio_chunk()
+        var status: Int32 = 0
+        repeat {
+            status = piper_synthesize_next(engine, &chunk)
+            guard status == 0 || status == 1 else {
+                throw NSError(domain: "Piper1-GPL", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Piper1-GPL synthesis failed"])
+            }
+            let count = Int(chunk.num_samples)
+            if count > 0 {
+                guard let chunkSamples = chunk.samples, chunk.sample_rate > 0 else { throw Piper1Error.invalidAudio }
+                if sampleRate == 0 { sampleRate = Int(chunk.sample_rate) }
+                guard sampleRate == Int(chunk.sample_rate), samples.count <= sampleRate * 60 - count else {
+                    throw Piper1Error.invalidAudio
+                }
+                samples.append(contentsOf: UnsafeBufferPointer(start: chunkSamples, count: count))
+            }
+            if status == 1 || chunk.is_last { break }
+        } while true
+
+        let count = samples.count
+        guard count > 0, sampleRate > 0, count <= (Int.max - 44) / MemoryLayout<Float>.stride else {
+            throw Piper1Error.invalidAudio
         }
 
         var peak: Float = 0
         var energy: Double = 0
         var pcm = Data(capacity: count * MemoryLayout<Float>.stride)
-        for index in 0..<count {
-            let sample = samples[index]
-            guard sample.isFinite else { throw PiperPlusError.invalidAudio }
+        for sample in samples {
+            guard sample.isFinite else { throw Piper1Error.invalidAudio }
             peak = max(peak, abs(sample))
             energy += Double(sample) * Double(sample)
             var littleEndianSample = sample.bitPattern.littleEndian
             Swift.withUnsafeBytes(of: &littleEndianSample) { pcm.append(contentsOf: $0) }
         }
         let rms = sqrt(energy / Double(count))
-        guard rms > 0.001 else { throw PiperPlusError.invalidAudio }
+        guard rms > 0.001 else { throw Piper1Error.invalidAudio }
         let duration = Double(count) / Double(sampleRate)
-        TTSRuntimeLog.record(String(format: "generated %.2fs at %dHz (peak %.3f rms %.3f)", duration, sampleRate, peak, rms))
-        guard duration >= minimumDuration else { throw PiperPlusError.implausiblyShortAudio }
+        TTSRuntimeLog.record(String(format: "Piper1-GPL generated %.2fs at %dHz (peak %.3f rms %.3f)", duration, sampleRate, peak, rms))
+        guard duration >= minimumDuration else { throw Piper1Error.implausiblyShortAudio }
 
         var wav = Data(capacity: 44 + pcm.count)
         wav.append(contentsOf: "RIFF".utf8)
@@ -180,7 +173,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private let speechQueue = DispatchQueue(label: "maia.piper", qos: .userInitiated)
     private let speechLock = NSLock()
     private var speechRequest = 0
-    private var piper: PiperPlusVoice?
+    private var piper: Piper1Voice?
     private var piperVoice: String?
     private var speechPlayer: AVAudioPlayer?
 
@@ -267,7 +260,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         return speechRequest == request
     }
 
-    private func loadPiper(_ voice: String) throws -> PiperPlusVoice {
+    private func loadPiper(_ voice: String) throws -> Piper1Voice {
         if piperVoice == voice, let piper { return piper }
         let directory = "public/native/speech"
         guard let model = Bundle.main.url(forResource: voice, withExtension: "onnx", subdirectory: directory),
@@ -276,7 +269,8 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         }
         piper = nil
         piperVoice = nil
-        let engine = try PiperPlusVoice(modelPath: model.path, configPath: config.path)
+        let dataPath = try Piper1Data.prepare()
+        let engine = try Piper1Voice(modelPath: model.path, configPath: config.path, espeakDataPath: dataPath)
         piper = engine
         piperVoice = voice
         return engine
@@ -352,9 +346,8 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
             do {
                 guard isCurrentSpeechRequest(request) else { return call.resolve() }
                 let engine = try loadPiper(voice)
-                let phoneticInput = try LegacyPiperPhonemizer.wrap(text)
                 let minDuration = max(0.2, Double(text.count) * 0.01)
-                let buffer = try engine.synthesize(phoneticInput, minimumDuration: minDuration)
+                let buffer = try engine.synthesize(text, minimumDuration: minDuration)
                 guard isCurrentSpeechRequest(request) else {
                     return call.resolve()
                 }

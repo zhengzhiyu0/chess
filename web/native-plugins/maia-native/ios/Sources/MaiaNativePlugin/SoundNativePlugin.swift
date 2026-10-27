@@ -1,7 +1,82 @@
 import AVFoundation
 import Capacitor
 import UIKit
-import piper_objc
+import PiperPlus
+
+private enum PiperPlusError: Error {
+    case engineCreationFailed
+    case synthesisFailed
+    case invalidAudio
+}
+
+private final class PiperPlusVoice {
+    private let engine: OpaquePointer
+
+    init(modelPath: String, configPath: String) throws {
+        var created: OpaquePointer?
+        let status = modelPath.withCString { model in
+            configPath.withCString { configFile in
+                "cpu".withCString { provider in
+                    var config = PiperPlusConfig()
+                    config.model_path = model
+                    config.config_path = configFile
+                    config.provider = provider
+                    config.num_threads = 2
+                    return piper_plus_create(&config, &created)
+                }
+            }
+        }
+        guard status == PIPER_PLUS_OK, let created else { throw PiperPlusError.engineCreationFailed }
+        engine = created
+    }
+
+    deinit {
+        piper_plus_free(engine)
+    }
+
+    func synthesize(_ text: String) throws -> Data {
+        var options = piper_plus_default_options()
+        var samples: UnsafeMutablePointer<Float>?
+        var sampleCount: Int32 = 0
+        var sampleRate: Int32 = 0
+        let status = text.withCString { input in
+            piper_plus_synthesize(engine, input, &options, &samples, &sampleCount, &sampleRate)
+        }
+        guard status == PIPER_PLUS_OK, let samples else { throw PiperPlusError.synthesisFailed }
+        defer { piper_plus_free_audio(samples) }
+        let count = Int(sampleCount)
+        guard count > 0, sampleRate > 0 else { throw PiperPlusError.invalidAudio }
+
+        var pcm = Data(capacity: count * MemoryLayout<Int16>.stride)
+        for index in 0..<count {
+            let sample = samples[index]
+            guard sample.isFinite else { throw PiperPlusError.invalidAudio }
+            var value = Int16(max(-1, min(1, sample)) * Float(Int16.max)).littleEndian
+            Swift.withUnsafeBytes(of: &value) { pcm.append(contentsOf: $0) }
+        }
+
+        var wav = Data()
+        wav.append(contentsOf: "RIFF".utf8)
+        appendLittleEndian(UInt32(36 + pcm.count), to: &wav)
+        wav.append(contentsOf: "WAVEfmt ".utf8)
+        appendLittleEndian(UInt32(16), to: &wav)
+        appendLittleEndian(UInt16(1), to: &wav)
+        appendLittleEndian(UInt16(1), to: &wav)
+        appendLittleEndian(UInt32(sampleRate), to: &wav)
+        appendLittleEndian(UInt32(sampleRate) * 2, to: &wav)
+        appendLittleEndian(UInt16(2), to: &wav)
+        appendLittleEndian(UInt16(16), to: &wav)
+        wav.append(contentsOf: "data".utf8)
+        appendLittleEndian(UInt32(pcm.count), to: &wav)
+        wav.append(pcm)
+        return wav
+    }
+
+    private func appendLittleEndian<T: FixedWidthInteger>(_ value: T, to data: inout Data) {
+        var littleEndian = value.littleEndian
+        Swift.withUnsafeBytes(of: &littleEndian) { data.append(contentsOf: $0) }
+    }
+}
 
 /// Play bundled MP3s outside WKWebView's gesture, decoding and AudioContext lifecycle.
 @objc(SoundNativePlugin)
@@ -25,7 +100,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private let speechQueue = DispatchQueue(label: "maia.piper", qos: .userInitiated)
     private let speechLock = NSLock()
     private var speechRequest = 0
-    private var piper: Piper?
+    private var piper: PiperPlusVoice?
     private var piperVoice: String?
     private var speechPlayer: AVAudioPlayer?
     private var speechFile: URL?
@@ -113,7 +188,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         return speechRequest == request
     }
 
-    private func loadPiper(_ voice: String) throws -> Piper {
+    private func loadPiper(_ voice: String) throws -> PiperPlusVoice {
         if piperVoice == voice, let piper { return piper }
         let directory = "public/native/speech"
         guard let model = Bundle.main.url(forResource: voice, withExtension: "onnx", subdirectory: directory),
@@ -122,7 +197,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         }
         piper = nil
         piperVoice = nil
-        let engine = try Piper(modelPath: model.path, configPath: config.path, espeakNGData: "")
+        let engine = try PiperPlusVoice(modelPath: model.path, configPath: config.path)
         piper = engine
         piperVoice = voice
         return engine
@@ -181,30 +256,21 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
             do {
                 guard isCurrentSpeechRequest(request) else { return call.resolve() }
                 let engine = try loadPiper(voice)
-                let file = FileManager.default.temporaryDirectory.appendingPathComponent("piper-\(UUID().uuidString).wav")
-                output = file
-                let completed = DispatchSemaphore(value: 0)
-                engine.synthesize(text, toFileAtPath: file.path) { completed.signal() }
-                completed.wait()
+                let wav = try engine.synthesize(text)
                 guard isCurrentSpeechRequest(request) else {
-                    try? FileManager.default.removeItem(at: file)
                     return call.resolve()
                 }
-                let attributes = try? FileManager.default.attributesOfItem(atPath: file.path)
-                let fileSize = attributes?[.size] as? Int
-                guard engine.status == .completed, let fileSize, fileSize > 44 else {
+                guard wav.count > 44 else {
                     throw NSError(domain: "SoundNative", code: 3, userInfo: [NSLocalizedDescriptionKey: "Piper 没有生成有效音频"])
                 }
                 DispatchQueue.main.async { [self] in
                     guard isCurrentSpeechRequest(request), UIApplication.shared.applicationState == .active else {
-                        try? FileManager.default.removeItem(at: file)
                         return call.resolve()
                     }
                     do {
                         try activateSession()
-                        let player = try AVAudioPlayer(contentsOf: file)
+                        let player = try AVAudioPlayer(data: wav, fileTypeHint: AVFileType.wav.rawValue)
                         player.delegate = self
-                        speechFile = file
                         speechPlayer = player
                         guard player.prepareToPlay(), player.play() else {
                             stopSpeechPlayback()
@@ -212,12 +278,10 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
                         }
                         call.resolve()
                     } catch {
-                        try? FileManager.default.removeItem(at: file)
                         call.reject("Piper 播放失败：\(error.localizedDescription)", nil, error)
                     }
                 }
             } catch {
-                if let output { try? FileManager.default.removeItem(at: output) }
                 NSLog("Piper 语音合成失败：%@", error.localizedDescription)
                 call.reject("Piper 合成失败：\(error.localizedDescription)", nil, error)
             }
@@ -269,8 +333,6 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         players.removeAll { $0 === player }
         if player === speechPlayer {
             speechPlayer = nil
-            if let speechFile { try? FileManager.default.removeItem(at: speechFile) }
-            speechFile = nil
         }
     }
 

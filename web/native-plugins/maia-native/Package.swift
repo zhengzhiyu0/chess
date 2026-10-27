@@ -23,14 +23,13 @@ let sfCommon: [CXXSetting] = [
 
 let package = Package(
     name: "MaiaNative",
-    platforms: [.iOS(.v15)],
+    platforms: [.iOS(.v17)],
     products: [
         .library(name: "MaiaNative", targets: ["MaiaNativePlugin"])
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0"),
         .package(url: "https://github.com/microsoft/onnxruntime-swift-package-manager.git", exact: "1.24.2"),
-        .package(url: "https://github.com/IhorShevchuk/piper-objc.git", exact: "0.2.49"),
     ],
     targets: [
         .target(
@@ -52,13 +51,18 @@ let package = Package(
                 .define("USE_LITE_NET"),
             ]
         ),
+        .binaryTarget(
+            name: "PiperPlusBinary",
+            url: "https://github.com/ayutaz/piper-plus/releases/download/v2.0.2/libpiper_plus-ios-v2.0.2.xcframework.zip",
+            checksum: "7b026f9f0af5b6b6ca56cddf56f75f398a0f3e0c9fc45c3848b8aa470dd30dff"
+        ),
         .target(
             name: "MaiaNativePlugin",
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
                 .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
-                .product(name: "piper-objc", package: "piper-objc"),
+                "PiperPlusBinary",
                 "StockfishFull",
                 "StockfishLite",
             ],

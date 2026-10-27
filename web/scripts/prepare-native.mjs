@@ -129,7 +129,7 @@ writeFileSync(join(speechOut, 'NOTICE.txt'), [
   'Piper voices are bundled for offline English speech synthesis.',
   `Source revision: https://huggingface.co/rhasspy/piper-voices/tree/${PIPER_REV}/en/en_US`,
   'See each *.MODEL_CARD file for the voice dataset and license information.',
-  'Piper engine: GPL-3.0-or-later, https://github.com/OHF-Voice/piper1-gpl',
+  'Runtime: PiperPlus 2.0.2 (MIT), https://github.com/ayutaz/piper-plus',
 ].join('\n') + '\n');
 
 const size = (d) => readdirSync(d).reduce((a, n) => a + (statSync(join(d, n)).isDirectory() ? size(join(d, n)) : statSync(join(d, n)).size), 0);

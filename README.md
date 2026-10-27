@@ -72,14 +72,14 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 - 79M 模型（312MB）在 iPhone 上可能因内存不足被系统终止，请谨慎使用。
 - iOS 可能清理长期未使用的 PWA 缓存，清理后联网打开一次即可恢复。
 
-## 打包为 iOS App（免费 Apple ID 自签）
+## 打包为 iOS App（iOS 17+，免费 Apple ID 自签）
 
 不需要 Mac 和付费开发者账号：由 GitHub Actions 的 macOS runner 编译未签名 IPA，再在 Windows 上签名安装。
 
 1. 在 GitHub 仓库的 Actions 页面运行 **Build iOS (unsigned IPA)**（[ios.yml](.github/workflows/ios.yml)），也可以推送 `ios-v*` 标签触发。
 2. 运行完成后下载 artifact `MaiaCoach-ipa`，解压得到 `MaiaCoach.ipa`。
 3. 用 [Sideloadly](https://sideloadly.io/)（或 AltStore）连接 iPhone，使用自己的 Apple ID 签名并安装。
-4. iPhone 上打开「设置 → 通用 → VPN 与设备管理」，信任该开发者；iOS 16 及以上还需开启「设置 → 隐私与安全性 → 开发者模式」。
+4. iPhone 上打开「设置 → 通用 → VPN 与设备管理」，信任该开发者；iOS 17 及以上还需开启「设置 → 隐私与安全性 → 开发者模式」。
 
 说明：
 
@@ -101,7 +101,7 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 
 - Maia-3（CSSLab/maia3）：AGPL-3.0
 - Stockfish 19 / stockfish.js：GPL-3.0
-- Piper 引擎：GPL-3.0；Ryan Medium 声音模型：CC BY-NC-SA 4.0（各模型说明见 iOS App 的 `public/native/speech/`）
+- PiperPlus 2.0.2 runtime（ayutaz/piper-plus）：MIT；Ryan Medium 声音模型：CC BY-NC-SA 4.0（各模型说明见 iOS App 的 `public/native/speech/`）
 - chessground：GPL-3.0
 - chess.js：BSD-2-Clause
 - onnxruntime-web：MIT

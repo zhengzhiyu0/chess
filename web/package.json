@@ -10,7 +10,7 @@
     "build": "npm run prepare-assets && tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "build:native": "npm run build && node scripts/prepare-native.mjs && cap sync ios"
+    "build:native": "npm run build && node scripts/prepare-native.mjs && cap sync ios && node scripts/set-ios-deployment-target.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",

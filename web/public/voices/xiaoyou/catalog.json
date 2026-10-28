@@ -1,0 +1,1356 @@
+[
+  {
+    "id": "xiaoyou_opening_book_entry_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "opening_book_entry",
+    "text": "这段开局我也很喜欢，走得稳稳的。",
+    "file": "xiaoyou_opening_book_entry_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_opening_book_entry_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "opening_book_entry",
+    "text": "熟悉的路呀，你准备得不错。",
+    "file": "xiaoyou_opening_book_entry_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_opening_book_entry_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "opening_book_entry",
+    "text": "棋子都到舒服的位置了，真好。",
+    "file": "xiaoyou_opening_book_entry_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_opening_book_entry_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "opening_book_entry",
+    "text": "开局功课做得很认真嘛。",
+    "file": "xiaoyou_opening_book_entry_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_opening_book_exit_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "opening_book_exit",
+    "text": "走出棋谱啦，慢慢想就好。",
+    "file": "xiaoyou_opening_book_exit_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_opening_book_exit_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "opening_book_exit",
+    "text": "接下来没有现成答案，我们一起算。",
+    "file": "xiaoyou_opening_book_exit_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_opening_book_exit_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "opening_book_exit",
+    "text": "熟悉的路到这里，后面靠你的判断。",
+    "file": "xiaoyou_opening_book_exit_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_opening_book_exit_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "opening_book_exit",
+    "text": "新局面也别紧张，先看看双方威胁。",
+    "file": "xiaoyou_opening_book_exit_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_accurate_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_accurate",
+    "text": "这一手很细心，我看到了。",
+    "file": "xiaoyou_player_accurate_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_accurate_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_accurate",
+    "text": "你把那个小问题照顾好了。",
+    "file": "xiaoyou_player_accurate_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_accurate_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_accurate",
+    "text": "走得踏实，心里是不是也有底了？",
+    "file": "xiaoyou_player_accurate_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_accurate_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_accurate",
+    "text": "没漏掉细节，真不错。",
+    "file": "xiaoyou_player_accurate_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_best_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_best",
+    "text": "就是这一步，你找到了！",
+    "file": "xiaoyou_player_best_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_best_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_best",
+    "text": "这题被你解开啦。",
+    "file": "xiaoyou_player_best_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_best_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_best",
+    "text": "好棋，重要的地方一点都没放松。",
+    "file": "xiaoyou_player_best_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_best_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_best",
+    "text": "你选对了，我得好好想想。",
+    "file": "xiaoyou_player_best_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_brilliant_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_brilliant",
+    "text": "哇，这个想法真漂亮！",
+    "file": "xiaoyou_player_brilliant_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_brilliant_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_brilliant",
+    "text": "我刚明白过来，你已经算到这里啦。",
+    "file": "xiaoyou_player_brilliant_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_brilliant_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_brilliant",
+    "text": "舍得付出，又算得清楚，真棒。",
+    "file": "xiaoyou_player_brilliant_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_brilliant_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_brilliant",
+    "text": "这一步值得你为自己开心一下。",
+    "file": "xiaoyou_player_brilliant_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_brilliant_05",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_brilliant",
+    "text": "这么难的想法也被你找到了呀。",
+    "file": "xiaoyou_player_brilliant_05.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_lia_best_move_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "lia_best_move",
+    "text": "这回我找到一个好办法啦。",
+    "file": "xiaoyou_lia_best_move_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_lia_best_move_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "lia_best_move",
+    "text": "我先把这个问题留给你。",
+    "file": "xiaoyou_lia_best_move_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_lia_best_move_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "lia_best_move",
+    "text": "我的棋子也配合起来了，小心接招。",
+    "file": "xiaoyou_lia_best_move_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_lia_best_move_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "lia_best_move",
+    "text": "这一手我想得挺认真哦。",
+    "file": "xiaoyou_lia_best_move_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_pawn_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_pawn",
+    "text": "你的小兵，我先收下啦。",
+    "file": "xiaoyou_capture_pawn_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_pawn_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_pawn",
+    "text": "这一兵很小，也要记在账上。",
+    "file": "xiaoyou_capture_pawn_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_pawn_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_pawn",
+    "text": "我拿到一枚兵，咱们继续。",
+    "file": "xiaoyou_capture_pawn_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_pawn_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_pawn",
+    "text": "小兵掉队了，下次记得照顾它。",
+    "file": "xiaoyou_capture_pawn_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_minor_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_minor",
+    "text": "这枚轻子暂时交给我吧。",
+    "file": "xiaoyou_capture_minor_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_minor_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_minor",
+    "text": "我吃到一个轻子，下一步更要细心。",
+    "file": "xiaoyou_capture_minor_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_minor_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_minor",
+    "text": "你少了一员帮手，别再漏看保护啦。",
+    "file": "xiaoyou_capture_minor_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_minor_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_minor",
+    "text": "这次我拿到了马或象，慢慢稳住。",
+    "file": "xiaoyou_capture_minor_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_rook_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_rook",
+    "text": "你的车被我拿到了，要小心啦。",
+    "file": "xiaoyou_capture_rook_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_rook_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_rook",
+    "text": "这一车分量不轻呢。",
+    "file": "xiaoyou_capture_rook_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_rook_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_rook",
+    "text": "我先收下这辆车，别急着乱了节奏。",
+    "file": "xiaoyou_capture_rook_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_rook_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_rook",
+    "text": "重子少了一枚，咱们重新看局面。",
+    "file": "xiaoyou_capture_rook_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_queen_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_queen",
+    "text": "你的后被吃啦，先别慌。",
+    "file": "xiaoyou_capture_queen_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_queen_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_queen",
+    "text": "后交给我了，剩下的棋也认真下。",
+    "file": "xiaoyou_capture_queen_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_queen_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_queen",
+    "text": "这一口有点重，深呼吸再继续。",
+    "file": "xiaoyou_capture_queen_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_capture_queen_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "capture_queen",
+    "text": "我拿到后了，这个教训记住就好。",
+    "file": "xiaoyou_capture_queen_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_minor_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_minor",
+    "text": "我的轻子被你抓到了呀。",
+    "file": "xiaoyou_player_loses_minor_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_minor_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_minor",
+    "text": "这一枚你拿得很仔细。",
+    "file": "xiaoyou_player_loses_minor_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_minor_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_minor",
+    "text": "哎，我少了一个帮手，你抓得准。",
+    "file": "xiaoyou_player_loses_minor_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_minor_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_minor",
+    "text": "这回轮到我重新想办法啦。",
+    "file": "xiaoyou_player_loses_minor_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_rook_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_rook",
+    "text": "我的车让你拿走了，真有一套。",
+    "file": "xiaoyou_player_loses_rook_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_rook_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_rook",
+    "text": "你抓到了重子，做得好。",
+    "file": "xiaoyou_player_loses_rook_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_rook_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_rook",
+    "text": "这辆车没守住，我得补补防线。",
+    "file": "xiaoyou_player_loses_rook_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_rook_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_rook",
+    "text": "这一口吃得实在，我记住啦。",
+    "file": "xiaoyou_player_loses_rook_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_queen_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_queen",
+    "text": "我的后呀，你真的抓到了！",
+    "file": "xiaoyou_player_loses_queen_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_queen_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_queen",
+    "text": "这次是我漏看了，你抓得很准。",
+    "file": "xiaoyou_player_loses_queen_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_queen_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_queen",
+    "text": "少了后，我得认真想想怎么下。",
+    "file": "xiaoyou_player_loses_queen_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_loses_queen_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_loses_queen",
+    "text": "这么大的机会你没放过，真好。",
+    "file": "xiaoyou_player_loses_queen_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_fork_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_fork",
+    "text": "两个目标一起被盯上了呢。",
+    "file": "xiaoyou_tactic_fork_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_fork_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_fork",
+    "text": "双捉出现啦，不能只看一边。",
+    "file": "xiaoyou_tactic_fork_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_fork_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_fork",
+    "text": "这一手同时问了两个问题。",
+    "file": "xiaoyou_tactic_fork_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_fork_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_fork",
+    "text": "两枚棋子都要照顾，有点难办啦。",
+    "file": "xiaoyou_tactic_fork_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_pin_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_pin",
+    "text": "这枚子被牵住了，动之前想一想。",
+    "file": "xiaoyou_tactic_pin_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_pin_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_pin",
+    "text": "前后连在一起，这里不能随便挪。",
+    "file": "xiaoyou_tactic_pin_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_pin_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_pin",
+    "text": "牵制的线拉紧啦。",
+    "file": "xiaoyou_tactic_pin_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_pin_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_pin",
+    "text": "身后还有重要棋子，它得留下来保护。",
+    "file": "xiaoyou_tactic_pin_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_discovered_attack_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_discovered_attack",
+    "text": "前面的子一走，后面的力量就出来啦。",
+    "file": "xiaoyou_tactic_discovered_attack_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_discovered_attack_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_discovered_attack",
+    "text": "藏着的那条线被打开了。",
+    "file": "xiaoyou_tactic_discovered_attack_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_discovered_attack_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_discovered_attack",
+    "text": "原来真正的帮手一直站在后面呀。",
+    "file": "xiaoyou_tactic_discovered_attack_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_discovered_attack_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_discovered_attack",
+    "text": "两枚棋子配合得更好了。",
+    "file": "xiaoyou_tactic_discovered_attack_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_zwischenzug_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_zwischenzug",
+    "text": "你先插了这一手，真细心。",
+    "file": "xiaoyou_tactic_zwischenzug_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_zwischenzug_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_zwischenzug",
+    "text": "先处理更重要的事，顺序找对啦。",
+    "file": "xiaoyou_tactic_zwischenzug_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_zwischenzug_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_zwischenzug",
+    "text": "交换不急，你还看到了别的机会。",
+    "file": "xiaoyou_tactic_zwischenzug_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_zwischenzug_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_zwischenzug",
+    "text": "中间多想一步，收获就不同了。",
+    "file": "xiaoyou_tactic_zwischenzug_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_sacrifice_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_sacrifice",
+    "text": "这枚子付出去，是有打算的呀。",
+    "file": "xiaoyou_tactic_sacrifice_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_sacrifice_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_sacrifice",
+    "text": "你用一点子力换来了机会。",
+    "file": "xiaoyou_tactic_sacrifice_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_sacrifice_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_sacrifice",
+    "text": "敢舍也算得清，这就漂亮啦。",
+    "file": "xiaoyou_tactic_sacrifice_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_tactic_sacrifice_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "tactic_sacrifice",
+    "text": "这次付出有回报，你看得很远。",
+    "file": "xiaoyou_tactic_sacrifice_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_key_threat_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "key_threat",
+    "text": "我这边有个威胁，你要认真看看。",
+    "file": "xiaoyou_key_threat_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_key_threat_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "key_threat",
+    "text": "这一处不能再拖啦。",
+    "file": "xiaoyou_key_threat_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_key_threat_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "key_threat",
+    "text": "先处理这个问题，再想自己的计划。",
+    "file": "xiaoyou_key_threat_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_key_threat_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "key_threat",
+    "text": "我的下一步有点凶，留心哦。",
+    "file": "xiaoyou_key_threat_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_check_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "check",
+    "text": "将军啦，先照顾你的王。",
+    "file": "xiaoyou_check_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_check_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "check",
+    "text": "你的王被点到了，找个好回答。",
+    "file": "xiaoyou_check_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_check_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "check",
+    "text": "这一手要先应将哦。",
+    "file": "xiaoyou_check_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_check_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "check",
+    "text": "我将军了，别急，看看能怎么挡。",
+    "file": "xiaoyou_check_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_check_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_check",
+    "text": "你将军了，我来想办法。",
+    "file": "xiaoyou_player_check_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_check_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_check",
+    "text": "这一下把我的王叫醒啦。",
+    "file": "xiaoyou_player_check_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_check_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_check",
+    "text": "王要先躲一躲，后面再说。",
+    "file": "xiaoyou_player_check_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_check_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_check",
+    "text": "收到这个将军，我认真接着。",
+    "file": "xiaoyou_player_check_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_missed_mate_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "missed_mate",
+    "text": "刚才其实有将杀，可惜错过啦。",
+    "file": "xiaoyou_missed_mate_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_missed_mate_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "missed_mate",
+    "text": "胜利就差一点点，先别懊恼。",
+    "file": "xiaoyou_missed_mate_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_missed_mate_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "missed_mate",
+    "text": "那条杀棋走掉了，下次多看一眼。",
+    "file": "xiaoyou_missed_mate_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_missed_mate_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "missed_mate",
+    "text": "本来能结束的，咱们记住这个机会。",
+    "file": "xiaoyou_missed_mate_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_blunder_into_mate_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "blunder_into_mate",
+    "text": "这一步让王陷进必杀了。",
+    "file": "xiaoyou_blunder_into_mate_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_blunder_into_mate_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "blunder_into_mate",
+    "text": "哎，退路被关上了。",
+    "file": "xiaoyou_blunder_into_mate_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_blunder_into_mate_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "blunder_into_mate",
+    "text": "这个漏洞会通向将杀，记住它吧。",
+    "file": "xiaoyou_blunder_into_mate_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_blunder_into_mate_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "blunder_into_mate",
+    "text": "王走进了危险的结尾，可惜啦。",
+    "file": "xiaoyou_blunder_into_mate_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_mate_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "mate",
+    "text": "将杀啦，我们复盘看看吧。",
+    "file": "xiaoyou_mate_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_mate_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "mate",
+    "text": "这盘结束了，谢谢你认真下完。",
+    "file": "xiaoyou_mate_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_mate_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "mate",
+    "text": "你的王没有路了，下局再试。",
+    "file": "xiaoyou_mate_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_mate_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "mate",
+    "text": "最后这步完成了将杀。",
+    "file": "xiaoyou_mate_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_castling_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "castling",
+    "text": "易位完成，王先住稳啦。",
+    "file": "xiaoyou_castling_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_castling_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "castling",
+    "text": "王安顿好，车也能帮忙了。",
+    "file": "xiaoyou_castling_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_castling_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "castling",
+    "text": "这次搬家很及时呢。",
+    "file": "xiaoyou_castling_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_castling_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "castling",
+    "text": "王和车一起就位，继续加油。",
+    "file": "xiaoyou_castling_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_promotion_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "promotion",
+    "text": "升变啦，小兵终于长大了。",
+    "file": "xiaoyou_promotion_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_promotion_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "promotion",
+    "text": "一路走到底，换来新的力量。",
+    "file": "xiaoyou_promotion_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_promotion_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "promotion",
+    "text": "这枚兵没白努力呀。",
+    "file": "xiaoyou_promotion_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_promotion_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "promotion",
+    "text": "新的棋子来了，要重新算一算。",
+    "file": "xiaoyou_promotion_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "xiaoyou_queen_early_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "queen_early",
+    "text": "后跑得有点早，其他棋子还没跟上。",
+    "file": "xiaoyou_queen_early_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_queen_early_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "queen_early",
+    "text": "别让后一个人忙呀。",
+    "file": "xiaoyou_queen_early_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_queen_early_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "queen_early",
+    "text": "先出后丢了节奏，可惜啦。",
+    "file": "xiaoyou_queen_early_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_queen_early_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "queen_early",
+    "text": "这位大帮手出来太早，容易被追呢。",
+    "file": "xiaoyou_queen_early_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_defense_found_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "defense_found",
+    "text": "守住啦，这一手很重要。",
+    "file": "xiaoyou_defense_found_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_defense_found_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "defense_found",
+    "text": "你没有慌，把最危险的地方挡住了。",
+    "file": "xiaoyou_defense_found_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_defense_found_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "defense_found",
+    "text": "这样的防守，也值得好好表扬。",
+    "file": "xiaoyou_defense_found_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_defense_found_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "defense_found",
+    "text": "能在压力下找到出路，真不容易。",
+    "file": "xiaoyou_defense_found_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_missed_tactic_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_missed_tactic",
+    "text": "这里有个战术机会，被你漏过啦。",
+    "file": "xiaoyou_player_missed_tactic_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_missed_tactic_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_missed_tactic",
+    "text": "别只看一枚子，想想它们的配合。",
+    "file": "xiaoyou_player_missed_tactic_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_missed_tactic_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_missed_tactic",
+    "text": "机会没等住，下次咱们看仔细些。",
+    "file": "xiaoyou_player_missed_tactic_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_player_missed_tactic_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "player_missed_tactic",
+    "text": "这一手本来还能多收获一点呢。",
+    "file": "xiaoyou_player_missed_tactic_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_comeback_01",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "comeback",
+    "text": "你一点点把局面追回来啦。",
+    "file": "xiaoyou_comeback_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_comeback_02",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "comeback",
+    "text": "还好没放弃，机会真的回来了。",
+    "file": "xiaoyou_comeback_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_comeback_03",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "comeback",
+    "text": "这段走得很有韧劲。",
+    "file": "xiaoyou_comeback_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "xiaoyou_comeback_04",
+    "role": "xiaoyou",
+    "coachIndex": 1,
+    "category": "comeback",
+    "text": "从难处撑回来，真值得开心。",
+    "file": "xiaoyou_comeback_04.m4a",
+    "actors": [
+      "player"
+    ]
+  }
+]

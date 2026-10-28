@@ -47,7 +47,7 @@ export interface SoundNativePlugin {
   /** Bundled recordings; delay is in seconds, relative to this batch. */
   play(opts: { clips: { theme: string; file: string; delay: number }[] }): Promise<void>;
   stop(): Promise<void>;
-  /** Only filenames listed in the bundled Lia catalog are accepted. */
+  /** Only filenames listed in the bundled coach catalog are accepted. */
   playVoice(opts: { file: string }): Promise<void>;
   stopVoice(): Promise<void>;
   getLogs(): Promise<{ logs: string }>;

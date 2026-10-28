@@ -78,9 +78,9 @@ export interface Settings {
   avatar: string;
   /** Maia's coach portrait; -1 means choose a coach at the start of each game. */
   coachAvatar: number;
-  /** Lia key-event bubbles; other characters are awaiting new scripts. */
+  /** Key-event bubbles for the selected coach. */
   opponentTalk: boolean;
-  /** Play the offline Chinese recording matching Lia's bubble. */
+  /** Play the selected coach's offline Chinese recording matching the bubble. */
   opponentVoice: boolean;
   /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
   engineGen?: number;

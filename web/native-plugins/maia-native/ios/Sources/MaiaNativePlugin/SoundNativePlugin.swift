@@ -22,7 +22,7 @@ private enum AudioRuntimeLog {
     }
 }
 
-/// Play bundled effects and Lia recordings outside WKWebView's audio lifecycle.
+/// Play bundled effects and character recordings outside WKWebView's audio lifecycle.
 @objc(SoundNativePlugin)
 public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelegate {
     public let identifier = "SoundNativePlugin"
@@ -42,12 +42,17 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private var observers: [NSObjectProtocol] = []
     private var sessionActive = false
     private var voicePlayer: AVAudioPlayer?
-    private struct VoiceClip: Decodable { let file: String }
-    private lazy var voiceFiles: Set<String> = {
-        guard let url = Bundle.main.url(forResource: "catalog", withExtension: "json", subdirectory: "public/voices/lia"),
+    private struct VoiceClip: Decodable { let file: String; let role: String }
+    private lazy var voiceFiles: [String: VoiceClip] = {
+        guard let url = Bundle.main.url(forResource: "catalog", withExtension: "json", subdirectory: "public/voices"),
               let data = try? Data(contentsOf: url),
-              let clips = try? JSONDecoder().decode([VoiceClip].self, from: data) else { return [] }
-        return Set(clips.map(\.file))
+              let clips = try? JSONDecoder().decode([VoiceClip].self, from: data) else { return [:] }
+        let roles: Set<String> = ["lia", "xiaoyou", "leo", "victor", "zara", "ajian", "oscar", "meiyi"]
+        var result: [String: VoiceClip] = [:]
+        for clip in clips where roles.contains(clip.role) && clip.file.hasPrefix("\(clip.role)_") && !clip.file.contains("/") && !clip.file.contains("\\") && clip.file.hasSuffix(".m4a") {
+            result[clip.file] = clip
+        }
+        return result
     }()
 
     /// Configure the session once when the plugin is loaded. Reapplying the
@@ -144,9 +149,9 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     @objc func playVoice(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [self] in
             guard UIApplication.shared.applicationState == .active else { return call.resolve() }
-            guard let file = call.getString("file"), voiceFiles.contains(file),
-                  let url = Bundle.main.url(forResource: String(file.dropLast(4)), withExtension: "m4a", subdirectory: "public/voices/lia") else {
-                return call.reject("Unknown Lia recording")
+            guard let file = call.getString("file"), let clip = voiceFiles[file],
+                  let url = Bundle.main.url(forResource: String(file.dropLast(4)), withExtension: "m4a", subdirectory: "public/voices/\(clip.role)") else {
+                return call.reject("Unknown coach recording")
             }
             do {
                 stopVoiceNow()
@@ -156,14 +161,14 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
                 voicePlayer = player
                 guard player.prepareToPlay(), player.play() else {
                     stopVoiceNow()
-                    return call.reject("Could not start Lia recording")
+                    return call.reject("Could not start coach recording")
                 }
-                AudioRuntimeLog.record("Lia recording started file=\(file)")
+                AudioRuntimeLog.record("Coach recording started file=\(file)")
                 call.resolve()
             } catch {
                 stopVoiceNow()
-                AudioRuntimeLog.record("Lia playback failed: \(error.localizedDescription)")
-                call.reject("莉亚录音播放失败：\(error.localizedDescription)", nil, error)
+                AudioRuntimeLog.record("Coach playback failed: \(error.localizedDescription)")
+                call.reject("角色录音播放失败：\(error.localizedDescription)", nil, error)
             }
         }
     }

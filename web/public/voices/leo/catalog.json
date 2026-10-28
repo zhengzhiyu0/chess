@@ -1,0 +1,1357 @@
+[
+  {
+    "id": "leo_opening_book_entry_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "opening_book_entry",
+    "text": "开场的脚步很漂亮！",
+    "file": "leo_opening_book_entry_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_opening_book_entry_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "opening_book_entry",
+    "text": "熟悉的序曲，你踩准节奏了。",
+    "file": "leo_opening_book_entry_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_opening_book_entry_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "opening_book_entry",
+    "text": "这一段理论，演得很稳。",
+    "file": "leo_opening_book_entry_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_opening_book_entry_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "opening_book_entry",
+    "text": "好开局，舞台已经准备好了。",
+    "file": "leo_opening_book_entry_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_opening_book_exit_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "opening_book_exit",
+    "text": "剧本到此，接下来即兴！",
+    "file": "leo_opening_book_exit_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_opening_book_exit_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "opening_book_exit",
+    "text": "理论谢幕，真正的较量登场。",
+    "file": "leo_opening_book_exit_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_opening_book_exit_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "opening_book_exit",
+    "text": "没有提示词了，亮出你的主意吧。",
+    "file": "leo_opening_book_exit_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_opening_book_exit_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "opening_book_exit",
+    "text": "熟路走完，精彩现在开始。",
+    "file": "leo_opening_book_exit_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_accurate_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_accurate",
+    "text": "这一拍，准得漂亮。",
+    "file": "leo_player_accurate_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_accurate_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_accurate",
+    "text": "你把节奏拿捏住了。",
+    "file": "leo_player_accurate_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_accurate_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_accurate",
+    "text": "看似平静，细节全在。",
+    "file": "leo_player_accurate_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_accurate_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_accurate",
+    "text": "干净！没给我留多余的戏。",
+    "file": "leo_player_accurate_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_best_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_best",
+    "text": "正解登场！",
+    "file": "leo_player_best_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_best_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_best",
+    "text": "这一步，值得单独打一束光。",
+    "file": "leo_player_best_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_best_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_best",
+    "text": "漂亮，你找到了关键的落点。",
+    "file": "leo_player_best_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_best_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_best",
+    "text": "好棋！该轮到我接戏了。",
+    "file": "leo_player_best_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_brilliant_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_brilliant",
+    "text": "精彩！这一幕我愿意再看一遍。",
+    "file": "leo_player_brilliant_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_brilliant_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_brilliant",
+    "text": "等等，你竟然算到了这一层！",
+    "file": "leo_player_brilliant_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_brilliant_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_brilliant",
+    "text": "这一手，配得上一声喝彩。",
+    "file": "leo_player_brilliant_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_brilliant_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_brilliant",
+    "text": "大胆又准确，难得的好戏！",
+    "file": "leo_player_brilliant_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_brilliant_05",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_brilliant",
+    "text": "我得收起笑容，认真欣赏了。",
+    "file": "leo_player_brilliant_05.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_lia_best_move_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "lia_best_move",
+    "text": "我的答案，现在揭晓。",
+    "file": "leo_lia_best_move_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_lia_best_move_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "lia_best_move",
+    "text": "这一手，请看完整。",
+    "file": "leo_lia_best_move_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_lia_best_move_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "lia_best_move",
+    "text": "安静的落子，也能压住全场。",
+    "file": "leo_lia_best_move_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_lia_best_move_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "lia_best_move",
+    "text": "好，轮到我把节奏带起来。",
+    "file": "leo_lia_best_move_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_pawn_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_pawn",
+    "text": "一枚兵退场！",
+    "file": "leo_capture_pawn_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_pawn_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_pawn",
+    "text": "先拿一兵，为后面铺路。",
+    "file": "leo_capture_pawn_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_pawn_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_pawn",
+    "text": "小角色的离场，也算一笔账。",
+    "file": "leo_capture_pawn_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_pawn_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_pawn",
+    "text": "这枚兵，我先收入后台。",
+    "file": "leo_capture_pawn_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_minor_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_minor",
+    "text": "轻子落幕，戏份归我了。",
+    "file": "leo_capture_minor_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_minor_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_minor",
+    "text": "一员主力被我请下了台。",
+    "file": "leo_capture_minor_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_minor_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_minor",
+    "text": "这次取子，干净利落！",
+    "file": "leo_capture_minor_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_minor_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_minor",
+    "text": "你的阵容少了一位演员。",
+    "file": "leo_capture_minor_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_rook_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_rook",
+    "text": "车退场了，这一幕够重。",
+    "file": "leo_capture_rook_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_rook_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_rook",
+    "text": "重子被我拿下！",
+    "file": "leo_capture_rook_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_rook_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_rook",
+    "text": "这一车，足够让你重排阵容。",
+    "file": "leo_capture_rook_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_rook_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_rook",
+    "text": "你的车离场，接下来怎么接？",
+    "file": "leo_capture_rook_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_queen_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_queen",
+    "text": "后退场！全场的目光都变了。",
+    "file": "leo_capture_queen_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_queen_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_queen",
+    "text": "这一口，收走了你的主角。",
+    "file": "leo_capture_queen_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_queen_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_queen",
+    "text": "后被我拿到了，结局得重写。",
+    "file": "leo_capture_queen_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_capture_queen_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "capture_queen",
+    "text": "这么贵的戏票，我就收下了。",
+    "file": "leo_capture_queen_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_player_loses_minor_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_minor",
+    "text": "我的轻子退场，反转来了。",
+    "file": "leo_player_loses_minor_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_minor_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_minor",
+    "text": "你吃得漂亮，这幕我认。",
+    "file": "leo_player_loses_minor_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_minor_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_minor",
+    "text": "好家伙，我的配角被你截走了。",
+    "file": "leo_player_loses_minor_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_minor_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_minor",
+    "text": "阵容受损，我得换个演法。",
+    "file": "leo_player_loses_minor_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_rook_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_rook",
+    "text": "我的车倒了，这下有分量！",
+    "file": "leo_player_loses_rook_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_rook_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_rook",
+    "text": "你拿下重子，我可不能再轻松了。",
+    "file": "leo_player_loses_rook_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_rook_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_rook",
+    "text": "这一车，让剧情急转直下。",
+    "file": "leo_player_loses_rook_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_rook_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_rook",
+    "text": "吃得好，我的防线该重新排了。",
+    "file": "leo_player_loses_rook_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_queen_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_queen",
+    "text": "我的后！这可真是大反转。",
+    "file": "leo_player_loses_queen_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_queen_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_queen",
+    "text": "你把我的主角请下去了。",
+    "file": "leo_player_loses_queen_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_queen_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_queen",
+    "text": "后被拿走，我承认这幕够狠。",
+    "file": "leo_player_loses_queen_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_loses_queen_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_loses_queen",
+    "text": "这一口，你吃出了压轴的气势。",
+    "file": "leo_player_loses_queen_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_tactic_fork_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_fork",
+    "text": "双捉！两个目标同时亮灯。",
+    "file": "leo_tactic_fork_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_fork_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_fork",
+    "text": "一手，两道难题！",
+    "file": "leo_tactic_fork_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_fork_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_fork",
+    "text": "两个角色抢同一条退路。",
+    "file": "leo_tactic_fork_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_fork_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_fork",
+    "text": "左右都要保，偏偏顾不过来。",
+    "file": "leo_tactic_fork_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_pin_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_pin",
+    "text": "牵制！这枚子有了不能离场的理由。",
+    "file": "leo_tactic_pin_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_pin_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_pin",
+    "text": "前面的不能走，后面的可很重要。",
+    "file": "leo_tactic_pin_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_pin_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_pin",
+    "text": "一条线，把两个角色绑住了。",
+    "file": "leo_tactic_pin_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_pin_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_pin",
+    "text": "它被钉在了自己的戏份里。",
+    "file": "leo_tactic_pin_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_discovered_attack_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_discovered_attack",
+    "text": "让开一枚，亮出整条线！",
+    "file": "leo_tactic_discovered_attack_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_discovered_attack_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_discovered_attack",
+    "text": "真正的威胁，现在登场。",
+    "file": "leo_tactic_discovered_attack_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_discovered_attack_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_discovered_attack",
+    "text": "前景撤开，伏笔露出来了。",
+    "file": "leo_tactic_discovered_attack_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_discovered_attack_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_discovered_attack",
+    "text": "这一挪，揭开了后面的锋芒。",
+    "file": "leo_tactic_discovered_attack_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_tactic_zwischenzug_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_zwischenzug",
+    "text": "先等等！你还有一手插进来。",
+    "file": "leo_tactic_zwischenzug_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_tactic_zwischenzug_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_zwischenzug",
+    "text": "中间这一拍，抢得妙。",
+    "file": "leo_tactic_zwischenzug_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_tactic_zwischenzug_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_zwischenzug",
+    "text": "你打乱了交换的出场顺序。",
+    "file": "leo_tactic_zwischenzug_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_tactic_zwischenzug_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_zwischenzug",
+    "text": "该回吃时先出招，漂亮的转折。",
+    "file": "leo_tactic_zwischenzug_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_tactic_sacrifice_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_sacrifice",
+    "text": "弃子开场，主动权压轴！",
+    "file": "leo_tactic_sacrifice_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_tactic_sacrifice_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_sacrifice",
+    "text": "你舍掉一枚，却赢来整段节奏。",
+    "file": "leo_tactic_sacrifice_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_tactic_sacrifice_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_sacrifice",
+    "text": "这枚子，是为后面的好戏铺路。",
+    "file": "leo_tactic_sacrifice_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_tactic_sacrifice_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "tactic_sacrifice",
+    "text": "代价付得大胆，补偿拿得漂亮。",
+    "file": "leo_tactic_sacrifice_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_key_threat_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "key_threat",
+    "text": "下一幕会很危险，准备好了？",
+    "file": "leo_key_threat_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_key_threat_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "key_threat",
+    "text": "我把威胁推到台前了。",
+    "file": "leo_key_threat_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_key_threat_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "key_threat",
+    "text": "现在得回答，不能等散场。",
+    "file": "leo_key_threat_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_key_threat_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "key_threat",
+    "text": "这个问题，你躲不开的。",
+    "file": "leo_key_threat_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_check_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "check",
+    "text": "将军！镜头转向你的王。",
+    "file": "leo_check_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_check_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "check",
+    "text": "王被点名，先别忙别的。",
+    "file": "leo_check_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_check_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "check",
+    "text": "你的王，该接这一句了！",
+    "file": "leo_check_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_check_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "check",
+    "text": "将军落下，节奏归我。",
+    "file": "leo_check_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_player_check_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_check",
+    "text": "你将军？好，紧张起来了。",
+    "file": "leo_player_check_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_check_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_check",
+    "text": "我的王也有被抢镜的时候。",
+    "file": "leo_player_check_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_check_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_check",
+    "text": "这一声将军，我接下了。",
+    "file": "leo_player_check_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_check_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_check",
+    "text": "压力到我这边，看看怎么化解。",
+    "file": "leo_player_check_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_missed_mate_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "missed_mate",
+    "text": "刚才可以将杀！你放走了高潮。",
+    "file": "leo_missed_mate_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_missed_mate_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "missed_mate",
+    "text": "终幕近在眼前，可惜没落下。",
+    "file": "leo_missed_mate_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_missed_mate_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "missed_mate",
+    "text": "杀棋擦过，这幕得记下来。",
+    "file": "leo_missed_mate_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_missed_mate_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "missed_mate",
+    "text": "你把本该结束的故事续上了。",
+    "file": "leo_missed_mate_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_blunder_into_mate_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "blunder_into_mate",
+    "text": "这一步，把结局提前了。",
+    "file": "leo_blunder_into_mate_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_blunder_into_mate_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "blunder_into_mate",
+    "text": "你的王走进了必杀的终幕。",
+    "file": "leo_blunder_into_mate_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_blunder_into_mate_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "blunder_into_mate",
+    "text": "出口已闭，剧情收束。",
+    "file": "leo_blunder_into_mate_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_blunder_into_mate_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "blunder_into_mate",
+    "text": "将杀的路线，被你亲手接通了。",
+    "file": "leo_blunder_into_mate_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_mate_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "mate",
+    "text": "将杀！幕布落下。",
+    "file": "leo_mate_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_mate_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "mate",
+    "text": "终场，所有出口都关了。",
+    "file": "leo_mate_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_mate_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "mate",
+    "text": "王已经没有下一场戏。",
+    "file": "leo_mate_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_mate_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "mate",
+    "text": "这一盘，以将杀收尾。",
+    "file": "leo_mate_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_castling_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "castling",
+    "text": "易位换景，王车就位！",
+    "file": "leo_castling_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_castling_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "castling",
+    "text": "王退到安全处，车准备接班。",
+    "file": "leo_castling_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_castling_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "castling",
+    "text": "两枚棋子，一起换了部署。",
+    "file": "leo_castling_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_castling_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "castling",
+    "text": "这次易位，像一次利落的转场。",
+    "file": "leo_castling_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_promotion_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "promotion",
+    "text": "升变！小兵拿到主演的位置。",
+    "file": "leo_promotion_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_promotion_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "promotion",
+    "text": "一路到底，新角色登场！",
+    "file": "leo_promotion_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_promotion_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "promotion",
+    "text": "兵走完远路，换来了全新戏份。",
+    "file": "leo_promotion_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_promotion_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "promotion",
+    "text": "升变落定，舞台的重量变了。",
+    "file": "leo_promotion_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "leo_queen_early_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "queen_early",
+    "text": "后登场太早，节奏可要付钱。",
+    "file": "leo_queen_early_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_queen_early_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "queen_early",
+    "text": "主角跑得快，配角还没出门。",
+    "file": "leo_queen_early_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_queen_early_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "queen_early",
+    "text": "你急着出后，反倒被追着跑。",
+    "file": "leo_queen_early_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_queen_early_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "queen_early",
+    "text": "这么早亮主角，容易被抢戏啊。",
+    "file": "leo_queen_early_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_defense_found_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "defense_found",
+    "text": "守得漂亮！这一幕没有垮。",
+    "file": "leo_defense_found_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_defense_found_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "defense_found",
+    "text": "最窄的退路，你还是找到了。",
+    "file": "leo_defense_found_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_defense_found_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "defense_found",
+    "text": "这次防守，足够换来掌声。",
+    "file": "leo_defense_found_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_defense_found_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "defense_found",
+    "text": "压力越大，这一手越有价值。",
+    "file": "leo_defense_found_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_missed_tactic_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_missed_tactic",
+    "text": "战术伏笔在那儿，你没接住。",
+    "file": "leo_player_missed_tactic_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_missed_tactic_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_missed_tactic",
+    "text": "机会登场，又悄悄退场了。",
+    "file": "leo_player_missed_tactic_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_missed_tactic_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_missed_tactic",
+    "text": "别只看眼前，后面还有连招。",
+    "file": "leo_player_missed_tactic_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_player_missed_tactic_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "player_missed_tactic",
+    "text": "可惜，这里本来能演得更精彩。",
+    "file": "leo_player_missed_tactic_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_comeback_01",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "comeback",
+    "text": "反转！你把局面救回来了。",
+    "file": "leo_comeback_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_comeback_02",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "comeback",
+    "text": "还没散场，你又抢回了节奏。",
+    "file": "leo_comeback_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_comeback_03",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "comeback",
+    "text": "这段逆风戏，演得有韧劲。",
+    "file": "leo_comeback_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "leo_comeback_04",
+    "role": "leo",
+    "coachIndex": 2,
+    "category": "comeback",
+    "text": "劣势追回，好戏重新开场！",
+    "file": "leo_comeback_04.m4a",
+    "actors": [
+      "player"
+    ]
+  }
+]

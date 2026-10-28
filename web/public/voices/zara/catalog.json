@@ -1,0 +1,1357 @@
+[
+  {
+    "id": "zara_opening_book_entry_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "opening_book_entry",
+    "text": "开局走对了，接着来。",
+    "file": "zara_opening_book_entry_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_opening_book_entry_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "opening_book_entry",
+    "text": "这段你准备过，有底子。",
+    "file": "zara_opening_book_entry_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_opening_book_entry_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "opening_book_entry",
+    "text": "发展很利索。",
+    "file": "zara_opening_book_entry_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_opening_book_entry_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "opening_book_entry",
+    "text": "理论走得熟，实战见真章。",
+    "file": "zara_opening_book_entry_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_opening_book_exit_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "opening_book_exit",
+    "text": "出书了，现在自己算。",
+    "file": "zara_opening_book_exit_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_opening_book_exit_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "opening_book_exit",
+    "text": "记忆用完，判断上场。",
+    "file": "zara_opening_book_exit_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_opening_book_exit_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "opening_book_exit",
+    "text": "接下来靠本事，走吧。",
+    "file": "zara_opening_book_exit_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_opening_book_exit_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "opening_book_exit",
+    "text": "新局面到了，别靠惯性下。",
+    "file": "zara_opening_book_exit_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_accurate_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_accurate",
+    "text": "准，没留软肋。",
+    "file": "zara_player_accurate_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_accurate_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_accurate",
+    "text": "这一手干脆。",
+    "file": "zara_player_accurate_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_accurate_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_accurate",
+    "text": "细节抓得牢。",
+    "file": "zara_player_accurate_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_accurate_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_accurate",
+    "text": "走得稳，也够硬。",
+    "file": "zara_player_accurate_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_best_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_best",
+    "text": "就这手，找得准。",
+    "file": "zara_player_best_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_best_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_best",
+    "text": "答案拿到了，漂亮。",
+    "file": "zara_player_best_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_best_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_best",
+    "text": "好棋，我得换招。",
+    "file": "zara_player_best_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_best_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_best",
+    "text": "这一步有力，我认。",
+    "file": "zara_player_best_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_brilliant_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_brilliant",
+    "text": "这手够狠，而且算对了。",
+    "file": "zara_player_brilliant_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_brilliant_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_brilliant",
+    "text": "漂亮！不是莽，是看得深。",
+    "file": "zara_player_brilliant_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_brilliant_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_brilliant",
+    "text": "你敢这样下，确实有东西。",
+    "file": "zara_player_brilliant_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_brilliant_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_brilliant",
+    "text": "好家伙，这个想法够锋利。",
+    "file": "zara_player_brilliant_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_brilliant_05",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_brilliant",
+    "text": "这一手让我重新看你了。",
+    "file": "zara_player_brilliant_05.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_lia_best_move_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "lia_best_move",
+    "text": "我找到突破口了。",
+    "file": "zara_lia_best_move_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_lia_best_move_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "lia_best_move",
+    "text": "这手接好，别松。",
+    "file": "zara_lia_best_move_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_lia_best_move_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "lia_best_move",
+    "text": "现在换我出题。",
+    "file": "zara_lia_best_move_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_lia_best_move_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "lia_best_move",
+    "text": "我这一步，奔着要害去。",
+    "file": "zara_lia_best_move_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_pawn_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_pawn",
+    "text": "这一兵归我。",
+    "file": "zara_capture_pawn_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_pawn_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_pawn",
+    "text": "小利先拿，没必要客气。",
+    "file": "zara_capture_pawn_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_pawn_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_pawn",
+    "text": "兵掉了，记住保护。",
+    "file": "zara_capture_pawn_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_pawn_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_pawn",
+    "text": "这份小账，我收了。",
+    "file": "zara_capture_pawn_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_minor_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_minor",
+    "text": "轻子拿下。",
+    "file": "zara_capture_minor_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_minor_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_minor",
+    "text": "这枚子守得太松。",
+    "file": "zara_capture_minor_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_minor_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_minor",
+    "text": "我吃到了，防线该补了。",
+    "file": "zara_capture_minor_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_minor_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_minor",
+    "text": "少了个轻子，接下来更难受。",
+    "file": "zara_capture_minor_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_rook_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_rook",
+    "text": "车拿下了。",
+    "file": "zara_capture_rook_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_rook_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_rook",
+    "text": "重子丢了，得付代价。",
+    "file": "zara_capture_rook_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_rook_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_rook",
+    "text": "这一车，我不客气。",
+    "file": "zara_capture_rook_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_rook_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_rook",
+    "text": "你的车到手，压力加码。",
+    "file": "zara_capture_rook_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_queen_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_queen",
+    "text": "后没了，代价够大。",
+    "file": "zara_capture_queen_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_queen_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_queen",
+    "text": "这枚后，我收下。",
+    "file": "zara_capture_queen_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_queen_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_queen",
+    "text": "你给了大机会，我当然要抓。",
+    "file": "zara_capture_queen_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_capture_queen_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "capture_queen",
+    "text": "后被我拿下，局面得重算。",
+    "file": "zara_capture_queen_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_player_loses_minor_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_minor",
+    "text": "我的轻子丢了，你抓得准。",
+    "file": "zara_player_loses_minor_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_minor_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_minor",
+    "text": "这下吃得硬，我服。",
+    "file": "zara_player_loses_minor_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_minor_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_minor",
+    "text": "你拿到了，别把优势送回来。",
+    "file": "zara_player_loses_minor_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_minor_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_minor",
+    "text": "轻子没守住，这笔我认。",
+    "file": "zara_player_loses_minor_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_rook_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_rook",
+    "text": "我的车被你拿走了。",
+    "file": "zara_player_loses_rook_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_rook_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_rook",
+    "text": "这一口够重。",
+    "file": "zara_player_loses_rook_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_rook_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_rook",
+    "text": "重子亏了，我得追回来。",
+    "file": "zara_player_loses_rook_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_rook_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_rook",
+    "text": "你抓到车，算你这手狠。",
+    "file": "zara_player_loses_rook_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_queen_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_queen",
+    "text": "我的后？这一下真重。",
+    "file": "zara_player_loses_queen_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_queen_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_queen",
+    "text": "后没守住，是我漏算。",
+    "file": "zara_player_loses_queen_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_queen_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_queen",
+    "text": "你拿到了大头，够准。",
+    "file": "zara_player_loses_queen_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_loses_queen_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_loses_queen",
+    "text": "这次优势到你那边了。",
+    "file": "zara_player_loses_queen_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_tactic_fork_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_fork",
+    "text": "双捉到了，两边顾不过来。",
+    "file": "zara_tactic_fork_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_fork_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_fork",
+    "text": "一手打两处，够直接。",
+    "file": "zara_tactic_fork_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_fork_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_fork",
+    "text": "两个目标，都在攻击里。",
+    "file": "zara_tactic_fork_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_fork_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_fork",
+    "text": "这一叉，必须割舍一个。",
+    "file": "zara_tactic_fork_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_pin_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_pin",
+    "text": "牵住了，它动不了那么轻松。",
+    "file": "zara_tactic_pin_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_pin_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_pin",
+    "text": "身后有要害，先别乱挪。",
+    "file": "zara_tactic_pin_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_pin_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_pin",
+    "text": "一条线压住两个目标。",
+    "file": "zara_tactic_pin_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_pin_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_pin",
+    "text": "这枚子被钉上了。",
+    "file": "zara_tactic_pin_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_discovered_attack_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_discovered_attack",
+    "text": "让开！后面的攻击到了。",
+    "file": "zara_tactic_discovered_attack_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_discovered_attack_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_discovered_attack",
+    "text": "暗线打开，真招在后面。",
+    "file": "zara_tactic_discovered_attack_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_discovered_attack_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_discovered_attack",
+    "text": "前面的走，后面的发力。",
+    "file": "zara_tactic_discovered_attack_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_discovered_attack_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_discovered_attack",
+    "text": "这一下把埋着的威胁放出来了。",
+    "file": "zara_tactic_discovered_attack_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_tactic_zwischenzug_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_zwischenzug",
+    "text": "你先插这一手，够机灵。",
+    "file": "zara_tactic_zwischenzug_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_tactic_zwischenzug_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_zwischenzug",
+    "text": "回吃先等等，强招在前。",
+    "file": "zara_tactic_zwischenzug_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_tactic_zwischenzug_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_zwischenzug",
+    "text": "顺序打乱，收益就变了。",
+    "file": "zara_tactic_zwischenzug_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_tactic_zwischenzug_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_zwischenzug",
+    "text": "这记中间手，抓得狠。",
+    "file": "zara_tactic_zwischenzug_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_tactic_sacrifice_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_sacrifice",
+    "text": "舍得这枚子，就为抢主动。",
+    "file": "zara_tactic_sacrifice_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_tactic_sacrifice_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_sacrifice",
+    "text": "你不是送，是有补偿。",
+    "file": "zara_tactic_sacrifice_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_tactic_sacrifice_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_sacrifice",
+    "text": "弃得够果断，后面也算清了。",
+    "file": "zara_tactic_sacrifice_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_tactic_sacrifice_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "tactic_sacrifice",
+    "text": "子力让出去，攻势拿回来。",
+    "file": "zara_tactic_sacrifice_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_key_threat_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "key_threat",
+    "text": "别看别处，威胁在这。",
+    "file": "zara_key_threat_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_key_threat_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "key_threat",
+    "text": "这个问题，马上处理。",
+    "file": "zara_key_threat_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_key_threat_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "key_threat",
+    "text": "我下一手会更狠。",
+    "file": "zara_key_threat_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_key_threat_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "key_threat",
+    "text": "现在必须接招。",
+    "file": "zara_key_threat_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_check_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "check",
+    "text": "将军，先管你的王。",
+    "file": "zara_check_01.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_check_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "check",
+    "text": "王被盯上了，回话。",
+    "file": "zara_check_02.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_check_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "check",
+    "text": "这一将，逼你改计划。",
+    "file": "zara_check_03.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_check_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "check",
+    "text": "将军到了，别分神。",
+    "file": "zara_check_04.m4a",
+    "actors": [
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_player_check_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_check",
+    "text": "你将军了？来，我接。",
+    "file": "zara_player_check_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_check_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_check",
+    "text": "压力给到我了。",
+    "file": "zara_player_check_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_check_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_check",
+    "text": "我的王得动一动。",
+    "file": "zara_player_check_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_check_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_check",
+    "text": "这一将有劲，继续算。",
+    "file": "zara_player_check_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_missed_mate_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "missed_mate",
+    "text": "有杀棋没下，亏了。",
+    "file": "zara_missed_mate_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_missed_mate_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "missed_mate",
+    "text": "刚才本来能结束。",
+    "file": "zara_missed_mate_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_missed_mate_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "missed_mate",
+    "text": "杀棋机会错过了，记住这一下。",
+    "file": "zara_missed_mate_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_missed_mate_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "missed_mate",
+    "text": "你把最狠的招漏掉了。",
+    "file": "zara_missed_mate_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_blunder_into_mate_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "blunder_into_mate",
+    "text": "这步走进必杀了。",
+    "file": "zara_blunder_into_mate_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_blunder_into_mate_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "blunder_into_mate",
+    "text": "王的出口全封了。",
+    "file": "zara_blunder_into_mate_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_blunder_into_mate_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "blunder_into_mate",
+    "text": "这个漏洞，直接到终点。",
+    "file": "zara_blunder_into_mate_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_blunder_into_mate_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "blunder_into_mate",
+    "text": "你把将杀的路让出来了。",
+    "file": "zara_blunder_into_mate_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_mate_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "mate",
+    "text": "将杀，结束。",
+    "file": "zara_mate_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_mate_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "mate",
+    "text": "王没地方走了。",
+    "file": "zara_mate_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_mate_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "mate",
+    "text": "这盘到此，复盘再战。",
+    "file": "zara_mate_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_mate_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "mate",
+    "text": "将杀落地，胜负已定。",
+    "file": "zara_mate_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_castling_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "castling",
+    "text": "易位，王先站稳。",
+    "file": "zara_castling_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_castling_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "castling",
+    "text": "王安全了，车能干活。",
+    "file": "zara_castling_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_castling_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "castling",
+    "text": "这次调整够及时。",
+    "file": "zara_castling_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_castling_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "castling",
+    "text": "王车就位，下一步来硬的。",
+    "file": "zara_castling_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_promotion_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "promotion",
+    "text": "升变，兵冲到底了。",
+    "file": "zara_promotion_01.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_promotion_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "promotion",
+    "text": "新战力到位。",
+    "file": "zara_promotion_02.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_promotion_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "promotion",
+    "text": "这枚兵没白拼。",
+    "file": "zara_promotion_03.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_promotion_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "promotion",
+    "text": "底线到了，换个更狠的身份。",
+    "file": "zara_promotion_04.m4a",
+    "actors": [
+      "player",
+      "opponent"
+    ]
+  },
+  {
+    "id": "zara_queen_early_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "queen_early",
+    "text": "后出早了，被人追着走。",
+    "file": "zara_queen_early_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_queen_early_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "queen_early",
+    "text": "队友没出门，后先冲了。",
+    "file": "zara_queen_early_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_queen_early_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "queen_early",
+    "text": "这步出后丢节奏。",
+    "file": "zara_queen_early_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_queen_early_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "queen_early",
+    "text": "别拿后当开局的独行侠。",
+    "file": "zara_queen_early_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_defense_found_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "defense_found",
+    "text": "扛住了，这手够硬。",
+    "file": "zara_defense_found_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_defense_found_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "defense_found",
+    "text": "最难的防守你找到了。",
+    "file": "zara_defense_found_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_defense_found_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "defense_found",
+    "text": "这一下，把漏口堵死了。",
+    "file": "zara_defense_found_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_defense_found_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "defense_found",
+    "text": "压力这么大，你没乱。",
+    "file": "zara_defense_found_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_missed_tactic_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_missed_tactic",
+    "text": "战术就在这，你漏了。",
+    "file": "zara_player_missed_tactic_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_missed_tactic_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_missed_tactic",
+    "text": "棋子之间的关系，再看一眼。",
+    "file": "zara_player_missed_tactic_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_missed_tactic_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_missed_tactic",
+    "text": "这个机会没抓住，可惜。",
+    "file": "zara_player_missed_tactic_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_player_missed_tactic_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "player_missed_tactic",
+    "text": "本来能赢得更多。",
+    "file": "zara_player_missed_tactic_04.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_comeback_01",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "comeback",
+    "text": "追回来了，别松劲。",
+    "file": "zara_comeback_01.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_comeback_02",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "comeback",
+    "text": "劣势也能打回来，就是这样。",
+    "file": "zara_comeback_02.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_comeback_03",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "comeback",
+    "text": "你这一段挺得够硬。",
+    "file": "zara_comeback_03.m4a",
+    "actors": [
+      "player"
+    ]
+  },
+  {
+    "id": "zara_comeback_04",
+    "role": "zara",
+    "coachIndex": 4,
+    "category": "comeback",
+    "text": "重新有得打了，继续！",
+    "file": "zara_comeback_04.m4a",
+    "actors": [
+      "player"
+    ]
+  }
+]

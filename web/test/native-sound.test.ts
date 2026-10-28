@@ -26,20 +26,25 @@ afterEach(() => {
 });
 
 describe('iOS 原生 MP3 播放', () => {
-  it('只为莉亚播放对应录音，其他角色、禁用和后台均不播放', async () => {
-    const { playLiaVoice, stopLiaVoice } = await import('../src/audio/voice');
-    const { LIA_CLIPS } = await import('../src/lia/dialogue');
-    const clip = LIA_CLIPS[0];
-    playLiaVoice(clip, true, 0);
-    expect(native.playVoice).toHaveBeenCalledExactlyOnceWith({ file: clip.file });
-    playLiaVoice(clip, true, 1);
-    playLiaVoice(clip, false, 0);
+  it('each character plays its own recording; mismatched portraits, disabled and background requests stay silent', async () => {
+    const { playCoachVoice, stopCoachVoice } = await import('../src/audio/voice');
+    const { COACH_CLIPS, COACH_VOICES } = await import('../src/coach-voice/dialogue');
+    for (const role of COACH_VOICES) {
+      const clip = COACH_CLIPS.find(clip => clip.coachIndex === role.coachIndex)!;
+      playCoachVoice(clip, true, role.coachIndex);
+      expect(native.playVoice).toHaveBeenLastCalledWith({ file: clip.file });
+      const count = native.playVoice.mock.calls.length;
+      playCoachVoice(clip, true, (role.coachIndex + 1) % 8);
+      playCoachVoice(clip, false, role.coachIndex);
+      doc.hidden = true;
+      playCoachVoice(clip, true, role.coachIndex);
+      doc.hidden = false;
+      expect(native.playVoice).toHaveBeenCalledTimes(count);
+    }
     doc.hidden = true;
-    playLiaVoice(clip, true, 0);
-    expect(native.playVoice).toHaveBeenCalledTimes(1);
     doc.dispatchEvent(new Event('visibilitychange'));
     expect(native.stopVoice).toHaveBeenCalledTimes(1);
-    stopLiaVoice();
+    stopCoachVoice();
     expect(native.stopVoice).toHaveBeenCalledTimes(2);
   });
 

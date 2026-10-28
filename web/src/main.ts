@@ -41,10 +41,10 @@ import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } fro
 import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
-import { LiaDialogue, LIA_COACH_INDEX, type LiaEvent } from './lia/dialogue';
-import { liaEvents } from './lia/events';
+import { CoachDialogue, hasCoachVoice, type CoachEvent } from './coach-voice/dialogue';
+import { coachEvents } from './coach-voice/events';
 import type { SfResult } from './engine/stockfish';
-import { playLiaVoice, stopLiaVoice, unlockLiaVoice } from './audio/voice';
+import { playCoachVoice, stopCoachVoice, unlockCoachVoice } from './audio/voice';
 import { installRuntimeLogCapture, runtimeLogText } from './runtime-logs';
 
 installRuntimeLogCapture();
@@ -146,9 +146,9 @@ function pickCoachAvatar(selection: number): number {
 
 let gameCoachAvatar = pickCoachAvatar(settings.coachAvatar);
 let opponentLine = '';
-let liaDialogue = new LiaDialogue();
-let liaCtrl: AbortController | null = null;
-let liaAnalysis = new WeakMap<Node, SfResult>();
+let coachDialogue = new CoachDialogue();
+let dialogueCtrl: AbortController | null = null;
+let dialogueAnalysis = new WeakMap<Node, SfResult>();
 let gameLoading = false;
 /** Invalidates a pending entry when leaving, changing modes, or starting another game. */
 let gameEntry = 0;
@@ -175,7 +175,7 @@ let suspendedGame: {
   game: StoredGame & { peak: number };
   tree: GameTree<Ann>;
   node: Node;
-  dialogue: LiaDialogue;
+  dialogue: CoachDialogue;
   line: string;
   flipped: boolean;
   coachFrom: Node | null;
@@ -304,9 +304,9 @@ function resetTransient() {
   liveLines = [];
   hintedAt = null;
   opponentLine = '';
-  stopLiaVoice();
-  liaDialogue = new LiaDialogue();
-  liaCtrl?.abort();
+  stopCoachVoice();
+  coachDialogue = new CoachDialogue();
+  dialogueCtrl?.abort();
   coachReset();
   $('hint-box').textContent = '';
 }
@@ -674,28 +674,28 @@ function maiaFens(n: Node): string[] {
 }
 
 function clearOpponentLine() {
-  liaCtrl?.abort();
+  dialogueCtrl?.abort();
   opponentLine = '';
-  stopLiaVoice();
+  stopCoachVoice();
 }
 
-/** Analyze only when a Lia reaction could be played; never block the player's move. */
-async function liaSpeak(n: Node) {
-  liaCtrl?.abort();
-  if (!settings.opponentTalk || gameCoachAvatar !== LIA_COACH_INDEX || coachOn || imported || mode !== 'play' || screen !== 'game' || !n.parent || !n.uci) return;
+/** Analyze only when a coach reaction could be played; never block the player's move. */
+async function opponentSpeak(n: Node) {
+  dialogueCtrl?.abort();
+  if (!settings.opponentTalk || !hasCoachVoice(gameCoachAvatar) || coachOn || imported || mode !== 'play' || screen !== 'game' || !n.parent || !n.uci) return;
   const ctrl = new AbortController();
-  liaCtrl = ctrl;
+  dialogueCtrl = ctrl;
   const id = gameId;
-  const stale = () => ctrl.signal.aborted || gameId !== id || tip() !== n || node !== n || screen !== 'game' || mode !== 'play' || document.hidden || !settings.opponentTalk || coachOn || gameCoachAvatar !== LIA_COACH_INDEX;
-  const emit = (events: LiaEvent[]) => {
+  const stale = () => ctrl.signal.aborted || gameId !== id || tip() !== n || node !== n || screen !== 'game' || mode !== 'play' || document.hidden || !settings.opponentTalk || coachOn || !hasCoachVoice(gameCoachAvatar);
+  const emit = (events: CoachEvent[]) => {
     if (stale()) return;
-    const clip = liaDialogue.pick(events, n.ply, performance.now(), gameCoachAvatar);
+    const clip = coachDialogue.pick(events, n.ply, performance.now(), gameCoachAvatar);
     if (!clip) return;
     opponentLine = clip.text;
-    playLiaVoice(clip, settings.opponentVoice, gameCoachAvatar);
+    playCoachVoice(clip, settings.opponentVoice, gameCoachAvatar);
     renderOpponentDialogue();
   };
-  let fallback: LiaEvent[] = [];
+  let fallback: CoachEvent[] = [];
   try {
     await loadBook();
     if (stale()) return;
@@ -703,9 +703,9 @@ async function liaSpeak(n: Node) {
     let previousMove;
     if (parent.parent && parent.uci) previousMove = new Chess(parent.parent.fen).move(toMove(parent.uci));
     const input = { fen: parent.fen, uci: n.uci, player: userColor, ply: n.ply, inBook: inBook(n.fen), wasInBook: inBook(parent.fen), previousMove };
-    const immediate = liaEvents(input);
+    const immediate = coachEvents(input);
     fallback = immediate.events;
-    if (immediate.events.some(event => event.priority >= 100) || !liaDialogue.ready(n.ply, performance.now())) {
+    if (immediate.events.some(event => event.priority >= 100) || !coachDialogue.ready(n.ply, performance.now(), gameCoachAvatar)) {
       emit(immediate.events);
       return;
     }
@@ -718,10 +718,10 @@ async function liaSpeak(n: Node) {
       const analyse = async (position: Node, multipv: number): Promise<SfResult> => {
         const official = position.a.eval;
         if (official?.lines.length && (multipv === 1 || official.lines.length >= multipv)) return { bestmove: official.best, lines: official.lines };
-        const cached = liaAnalysis.get(position);
+        const cached = dialogueAnalysis.get(position);
         if (cached && (multipv === 1 || cached.lines.length >= multipv)) return cached;
         const value = await sf.analyse(tree.root.fen, { moves: movesTo(position), movetime: 180, depth: 12, multipv, signal: ctrl.signal });
-        if (!stale()) liaAnalysis.set(position, value);
+        if (!stale()) dialogueAnalysis.set(position, value);
         return value;
       };
       before = await analyse(parent, 2);
@@ -729,14 +729,14 @@ async function liaSpeak(n: Node) {
       after = await analyse(n, 1);
       if (stale()) return;
     }
-    const reaction = liaEvents({ ...input, before, after });
-    if (reaction.playerWin !== undefined && liaDialogue.observe(reaction.playerWin, reaction.accuratePlayerMove)) {
+    const reaction = coachEvents({ ...input, before, after });
+    if (reaction.playerWin !== undefined && coachDialogue.observe(reaction.playerWin, reaction.accuratePlayerMove, gameCoachAvatar)) {
       reaction.events.push({ category: 'comeback', actor: 'player', priority: 87 });
     }
     emit(reaction.events);
   } catch (err) {
     if (!stale()) {
-      console.warn('莉亚事件分析未完成', err);
+      console.warn('角色事件分析未完成', err);
       emit(fallback);
     }
   }
@@ -755,7 +755,7 @@ function playMove(uci: string): boolean {
   if (result || gameLoading) return false;
   const parent = tip();
   const mover = turnOf(parent.fen);
-  liaCtrl?.abort();
+  dialogueCtrl?.abort();
   const now = performance.now();
   if (clock && clock.time(mover, now) <= 0) {
     flag(mover);
@@ -783,7 +783,7 @@ function playMove(uci: string): boolean {
   const end = terminalOf(fensTo(next));
   if (end) endGame(end.result, end.reason);
   else saveGame();
-  void liaSpeak(next);
+  void opponentSpeak(next);
   update();
   return true;
 }
@@ -2515,7 +2515,7 @@ function renderPlayInfo() {
 
 function renderOpponentDialogue() {
   const box = $('opponent-dialogue');
-  const visible = Boolean(opponentLine) && settings.opponentTalk && gameCoachAvatar === LIA_COACH_INDEX && !coachOn && !imported && mode === 'play' && node === tip();
+  const visible = Boolean(opponentLine) && settings.opponentTalk && hasCoachVoice(gameCoachAvatar) && !coachOn && !imported && mode === 'play' && node === tip();
   box.classList.toggle('show', visible);
   if (!visible) {
     box.innerHTML = '';
@@ -2899,7 +2899,7 @@ function applyBoardSize() {
 function applySettings(old: Settings) {
   saveSettings(settings);
   if (!settings.opponentTalk) clearOpponentLine();
-  else if (old.opponentVoice && !settings.opponentVoice) stopLiaVoice();
+  else if (old.opponentVoice && !settings.opponentVoice) stopCoachVoice();
   applyTheme(settings.theme);
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);
@@ -2911,8 +2911,8 @@ function applySettings(old: Settings) {
   if (sfChanged || evalChanged) {
     batchCtrl?.abort();
     liveCtrl?.abort();
-    liaCtrl?.abort();
-    liaAnalysis = new WeakMap();
+    dialogueCtrl?.abort();
+    dialogueAnalysis = new WeakMap();
   }
   if (sfChanged) engines.unloadSf();
   if (old.model !== settings.model || old.backend !== settings.backend) engines.unloadMaia();
@@ -3310,7 +3310,7 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
           saveGame();
           suspendedGame = {
             game: { ...stored(), peak: peakUserMoves }, tree, node,
-            dialogue: liaDialogue, line: opponentLine, flipped, coachFrom,
+            dialogue: coachDialogue, line: opponentLine, flipped, coachFrom,
             coachPaused: coachState === 'paused', coachReveal,
           };
         } else flushRating();
@@ -3359,7 +3359,7 @@ function restoreSuspendedGame() {
   if (!loadGame(saved.game)) return;
   tree = saved.tree;
   node = saved.node;
-  liaDialogue = saved.dialogue;
+  coachDialogue = saved.dialogue;
   opponentLine = saved.line;
   flipped = saved.flipped;
   if (saved.coachPaused) {
@@ -3666,7 +3666,7 @@ function bind() {
   document.addEventListener('visibilitychange', () => {
     syncClock();
     renderClocks();
-    if (document.hidden) { liaCtrl?.abort(); saveGame(); }
+    if (document.hidden) { dialogueCtrl?.abort(); saveGame(); }
     if (document.hidden) flushEvals();
     // native engine threads keep running while the app is in the background; don't let the
     // open-ended live search or the whole-game analysis burn battery there (aborted searches
@@ -4029,5 +4029,5 @@ init();
 
 // Unlock only the selected recording player, directly within a user gesture.
 for (const name of ['pointerdown', 'keydown']) document.addEventListener(name, () => {
-  if (settings.opponentVoice && settings.opponentTalk && gameCoachAvatar === LIA_COACH_INDEX) unlockLiaVoice();
+  if (settings.opponentVoice && settings.opponentTalk && hasCoachVoice(gameCoachAvatar)) unlockCoachVoice(gameCoachAvatar);
 }, { passive: true });

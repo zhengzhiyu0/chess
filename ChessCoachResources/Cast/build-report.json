@@ -1,0 +1,16 @@
+{
+  "count": 847,
+  "roles": 7,
+  "categories": 30,
+  "totalBytes": 12034613,
+  "totalDurationSeconds": 2125.174,
+  "estimatedCredits": 601,
+  "checks": [
+    "all requested text matches subtitle words",
+    "independent AAC mono 24000Hz",
+    "all recordings decode",
+    "non-silent audio",
+    "word boundaries preserved"
+  ],
+  "listeningReview": "pending"
+}

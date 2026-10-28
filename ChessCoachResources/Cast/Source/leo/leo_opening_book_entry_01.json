@@ -1,0 +1,105 @@
+[
+   {
+      "text": "开场的脚步很漂亮！",
+      "pronounce_text": "开场的脚步很漂亮！",
+      "time_begin": 0.0,
+      "time_end": 1513.7868480725624,
+      "text_begin": 0,
+      "text_end": 9,
+      "pronounce_text_begin": 0,
+      "pronounce_text_end": 9,
+      "is_final_segment": true,
+      "timestamped_words": [
+         {
+            "word": "开",
+            "word_begin": 0,
+            "word_end": 1,
+            "pronounce_word": "开",
+            "pronounce_word_begin": 0,
+            "pronounce_word_end": 1,
+            "time_begin": 42.666666666666664,
+            "time_end": 170.66666666666666
+         },
+         {
+            "word": "场",
+            "word_begin": 1,
+            "word_end": 2,
+            "pronounce_word": "场",
+            "pronounce_word_begin": 1,
+            "pronounce_word_end": 2,
+            "time_begin": 170.66666666666666,
+            "time_end": 341.3333333333333
+         },
+         {
+            "word": "的",
+            "word_begin": 2,
+            "word_end": 3,
+            "pronounce_word": "的",
+            "pronounce_word_begin": 2,
+            "pronounce_word_end": 3,
+            "time_begin": 341.3333333333333,
+            "time_end": 384.0
+         },
+         {
+            "word": "脚",
+            "word_begin": 3,
+            "word_end": 4,
+            "pronounce_word": "脚",
+            "pronounce_word_begin": 3,
+            "pronounce_word_end": 4,
+            "time_begin": 384.0,
+            "time_end": 554.6666666666666
+         },
+         {
+            "word": "步",
+            "word_begin": 4,
+            "word_end": 5,
+            "pronounce_word": "步",
+            "pronounce_word_begin": 4,
+            "pronounce_word_end": 5,
+            "time_begin": 554.6666666666666,
+            "time_end": 725.3333333333333
+         },
+         {
+            "word": "很",
+            "word_begin": 5,
+            "word_end": 6,
+            "pronounce_word": "很",
+            "pronounce_word_begin": 5,
+            "pronounce_word_end": 6,
+            "time_begin": 725.3333333333333,
+            "time_end": 896.0
+         },
+         {
+            "word": "漂",
+            "word_begin": 6,
+            "word_end": 7,
+            "pronounce_word": "漂",
+            "pronounce_word_begin": 6,
+            "pronounce_word_end": 7,
+            "time_begin": 896.0,
+            "time_end": 1024.0
+         },
+         {
+            "word": "亮",
+            "word_begin": 7,
+            "word_end": 8,
+            "pronounce_word": "亮",
+            "pronounce_word_begin": 7,
+            "pronounce_word_end": 8,
+            "time_begin": 1024.0,
+            "time_end": 1237.3333333333335
+         },
+         {
+            "word": "！",
+            "word_begin": 8,
+            "word_end": 9,
+            "pronounce_word": "！",
+            "pronounce_word_begin": 8,
+            "pronounce_word_end": 9,
+            "time_begin": 1237.3333333333335,
+            "time_end": 1408.0
+         }
+      ]
+   }
+]

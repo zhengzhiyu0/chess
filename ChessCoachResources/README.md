@@ -1,5 +1,7 @@
 # 莉亚语音包 · 完整版
 
+另外七位角色的完整试听包见 `Cast/preview.html`：每人 121 条、30 类，共 847 条。该页面包含莉亚基准，可按同一事件比较八人。8 位角色录音现已全部接入游戏。
+
 已生成 121 条，覆盖 30 类事件。使用 MiniMax `speech-2.8-hd`，音色为 `Chinese (Mandarin)_Laid_BackGirl`。原有 60 条直接复用，本次补齐 61 条。
 
 实际只传入 `voice_id`、`voice_id_source: catalog` 和 `language_boost: Chinese`；未设置情绪、语速、音高、音量或 voice_modify。正文、标点均取自已确认制作单的“朗读文本”。
@@ -25,4 +27,4 @@ MiniMax Design 项目：`chess-voice/voice`，集合：`莉亚语音包`。本�
 
 需要重新应用裁尾设置时加 `--rebuild`。完整生成与原始版本映射记录位于 `scripts/lia_voice_build.json`。
 
-这份资源包已接入游戏：构建时由 `web/scripts/copy-voices.mjs` 同步到 `web/public/voices/lia/`；只有莉亚在关键事件触发时显示同文气泡和播放录音。其他角色暂不发言。
+这份资源包已接入游戏：构建时由 `web/scripts/copy-voices.mjs` 同步到 `web/public/voices/<角色>/`。普通对弈按本局角色在关键事件触发时显示同文气泡和播放录音，8 位角色共 968 条。莉亚原始录音保持不变。

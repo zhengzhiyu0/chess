@@ -1,0 +1,14 @@
+{
+  "count": 121,
+  "categories": 30,
+  "totalBytes": 2090316,
+  "totalDurationSeconds": 414.537,
+  "checks": [
+    "requested text matches timestamps",
+    "AAC mono 24000Hz",
+    "all files decode",
+    "non-silent audio",
+    "end time preserves final word"
+  ],
+  "listeningReview": "pending"
+}

@@ -179,16 +179,15 @@ try {
       assert.equal(await page.locator('#game').evaluate(el=>el.style.transform), '', 'Returning to the game clears gesture transforms');
     }
 
-    // Make a legal move and check that the reply uses the player's opponent portrait.
+    // Make a legal move: this non-Lia portrait must no longer use the retired dialogue library.
     const bounds = await page.locator('#board cg-board').boundingBox();
     const square = (file, rank) => ({ x:bounds.x+(file+.5)*bounds.width/8, y:bounds.y+(8-rank+.5)*bounds.height/8 });
     await page.mouse.click(square(3, 2).x, square(3, 2).y);
     await page.mouse.click(square(3, 3).x, square(3, 3).y);
-    await page.locator('#opponent-dialogue.show .avatar.coach').waitFor();
+    await page.waitForFunction(() => document.querySelectorAll('#moves .mv').length >= 8);
     if (process.env.NAVIGATION_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.NAVIGATION_SCREENSHOT_DIR}/opponent-${mobile ? 'iphone' : 'desktop'}.png`, animations: 'disabled' });
-    const portrait = await page.locator('#opponent-dialogue .avatar').innerHTML();
-    assert.equal(portrait, await page.locator('#player-top .avatar').innerHTML());
-    assert.ok((await page.locator('.opponent-line').textContent()).length > 0);
+    assert.equal(await page.locator('#opponent-dialogue.show').count(), 0);
+    assert.equal(await page.locator('.opponent-line').count(), 0);
     assert.equal(await page.locator('#opponent-dialogue').evaluate(el => getComputedStyle(el, '::before').content), 'none');
 
     // Refreshing during history review resumes the original live game.

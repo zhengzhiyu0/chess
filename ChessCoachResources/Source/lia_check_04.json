@@ -1,0 +1,185 @@
+[
+   {
+      "text": "将军落下，棋盘只给你几秒钟的选择。",
+      "pronounce_text": "将军落下，棋盘只给你几秒钟的选择。",
+      "time_begin": 0.0,
+      "time_end": 3696.4625850340135,
+      "text_begin": 0,
+      "text_end": 17,
+      "pronounce_text_begin": 0,
+      "pronounce_text_end": 17,
+      "is_final_segment": true,
+      "timestamped_words": [
+         {
+            "word": "将",
+            "word_begin": 0,
+            "word_end": 1,
+            "pronounce_word": "将",
+            "pronounce_word_begin": 0,
+            "pronounce_word_end": 1,
+            "time_begin": 42.666666666666664,
+            "time_end": 256.0
+         },
+         {
+            "word": "军",
+            "word_begin": 1,
+            "word_end": 2,
+            "pronounce_word": "军",
+            "pronounce_word_begin": 1,
+            "pronounce_word_end": 2,
+            "time_begin": 256.0,
+            "time_end": 469.3333333333333
+         },
+         {
+            "word": "落",
+            "word_begin": 2,
+            "word_end": 3,
+            "pronounce_word": "落",
+            "pronounce_word_begin": 2,
+            "pronounce_word_end": 3,
+            "time_begin": 469.3333333333333,
+            "time_end": 640.0
+         },
+         {
+            "word": "下",
+            "word_begin": 3,
+            "word_end": 4,
+            "pronounce_word": "下",
+            "pronounce_word_begin": 3,
+            "pronounce_word_end": 4,
+            "time_begin": 640.0,
+            "time_end": 810.6666666666666
+         },
+         {
+            "word": "，",
+            "word_begin": 4,
+            "word_end": 5,
+            "pronounce_word": "，",
+            "pronounce_word_begin": 4,
+            "pronounce_word_end": 5,
+            "time_begin": 810.6666666666666,
+            "time_end": 853.3333333333333
+         },
+         {
+            "word": "棋",
+            "word_begin": 5,
+            "word_end": 6,
+            "pronounce_word": "棋",
+            "pronounce_word_begin": 5,
+            "pronounce_word_end": 6,
+            "time_begin": 853.3333333333333,
+            "time_end": 1365.3333333333333
+         },
+         {
+            "word": "盘",
+            "word_begin": 6,
+            "word_end": 7,
+            "pronounce_word": "盘",
+            "pronounce_word_begin": 6,
+            "pronounce_word_end": 7,
+            "time_begin": 1365.3333333333333,
+            "time_end": 1877.3333333333333
+         },
+         {
+            "word": "只",
+            "word_begin": 7,
+            "word_end": 8,
+            "pronounce_word": "只",
+            "pronounce_word_begin": 7,
+            "pronounce_word_end": 8,
+            "time_begin": 1877.3333333333333,
+            "time_end": 2090.6666666666665
+         },
+         {
+            "word": "给",
+            "word_begin": 8,
+            "word_end": 9,
+            "pronounce_word": "给",
+            "pronounce_word_begin": 8,
+            "pronounce_word_end": 9,
+            "time_begin": 2090.6666666666665,
+            "time_end": 2218.6666666666665
+         },
+         {
+            "word": "你",
+            "word_begin": 9,
+            "word_end": 10,
+            "pronounce_word": "你",
+            "pronounce_word_begin": 9,
+            "pronounce_word_end": 10,
+            "time_begin": 2218.6666666666665,
+            "time_end": 2304.0
+         },
+         {
+            "word": "几",
+            "word_begin": 10,
+            "word_end": 11,
+            "pronounce_word": "几",
+            "pronounce_word_begin": 10,
+            "pronounce_word_end": 11,
+            "time_begin": 2304.0,
+            "time_end": 2432.0
+         },
+         {
+            "word": "秒",
+            "word_begin": 11,
+            "word_end": 12,
+            "pronounce_word": "秒",
+            "pronounce_word_begin": 11,
+            "pronounce_word_end": 12,
+            "time_begin": 2432.0,
+            "time_end": 2602.6666666666665
+         },
+         {
+            "word": "钟",
+            "word_begin": 12,
+            "word_end": 13,
+            "pronounce_word": "钟",
+            "pronounce_word_begin": 12,
+            "pronounce_word_end": 13,
+            "time_begin": 2602.6666666666665,
+            "time_end": 2730.6666666666665
+         },
+         {
+            "word": "的",
+            "word_begin": 13,
+            "word_end": 14,
+            "pronounce_word": "的",
+            "pronounce_word_begin": 13,
+            "pronounce_word_end": 14,
+            "time_begin": 2730.6666666666665,
+            "time_end": 2773.3333333333335
+         },
+         {
+            "word": "选",
+            "word_begin": 14,
+            "word_end": 15,
+            "pronounce_word": "选",
+            "pronounce_word_begin": 14,
+            "pronounce_word_end": 15,
+            "time_begin": 2773.3333333333335,
+            "time_end": 2986.6666666666665
+         },
+         {
+            "word": "择",
+            "word_begin": 15,
+            "word_end": 16,
+            "pronounce_word": "择",
+            "pronounce_word_begin": 15,
+            "pronounce_word_end": 16,
+            "time_begin": 2986.6666666666665,
+            "time_end": 3157.3333333333335
+         },
+         {
+            "word": "。",
+            "word_begin": 16,
+            "word_end": 17,
+            "pronounce_word": "。",
+            "pronounce_word_begin": 16,
+            "pronounce_word_end": 17,
+            "time_begin": 3157.3333333333335,
+            "time_end": 3456.0
+         }
+      ]
+   }
+]

@@ -1,69 +1,52 @@
-/** English opponent speech uses bundled KittenTTS voices on iOS and system voices on web. */
-
-import { isNative } from '../native';
+/** Offline Lia recordings, shared by the web app and the iOS native player. */
 import { SoundNative } from 'maia-native';
+import { isNative } from '../native';
+import { LIA_CLIPS, LIA_COACH_INDEX, LIA_FILES, type VoiceClip } from '../lia/dialogue';
 
-let speechEpoch = 0;
+let player: HTMLAudioElement | null = null;
+let epoch = 0;
+let unlocked = false;
+const url = (file: string) => `${import.meta.env.BASE_URL}voices/lia/${file}`;
 
-function browserSpeech(): SpeechSynthesis | null {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
-  return window.speechSynthesis;
+/** Called directly by a tap/key gesture to authorize the shared browser player. */
+export function unlockLiaVoice() {
+  if (isNative || unlocked || typeof Audio === 'undefined') return;
+  player ??= new Audio();
+  const audio = player;
+  const request = ++epoch;
+  audio.src = url(LIA_CLIPS[0].file);
+  audio.muted = true;
+  void audio.play().then(() => {
+    unlocked = true;
+    if (request !== epoch) return;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.muted = false;
+  }).catch(() => { if (request === epoch) audio.muted = false; });
 }
 
-function stopBrowserSpeech() {
-  try { browserSpeech()?.cancel(); } catch { /* speech may be unavailable in an embedded browser */ }
+export function stopLiaVoice() {
+  epoch++;
+  unlocked = false;
+  player?.pause();
+  if (isNative) void SoundNative.stopVoice().catch(() => {});
 }
 
-/** Browser voices do not expose a standard gender field, so prefer the common
- * system voice names and only use pitch as a last-resort fallback. */
-function browserVoiceOf(voices: SpeechSynthesisVoice[], gender: 'female' | 'male'): SpeechSynthesisVoice | null {
-  const english = voices.filter((voice) => /^en(?:-|$)/i.test(voice.lang));
-  const names = gender === 'male'
-    ? /\b(male|man|alex|daniel|david|fred|george|james|mark|michael|richard|tom)\b/i
-    : /\b(female|woman|ava|karen|kate|samantha|victoria|zira|susan|allison|moira)\b/i;
-  return english.find((voice) => names.test(`${voice.name} ${voice.voiceURI}`)) ?? english[0] ?? null;
-}
-
-/** Stop the current sentence before changing games, hiding the page, or disabling the option. */
-export function stopEnglishVoice() {
-  speechEpoch++;
-  stopBrowserSpeech();
-  if (isNative) void SoundNative.stopSpeech().catch(() => {});
-}
-
-const KITTEN_VOICES = {
-  female: 'bella',
-  male: 'jasper',
-} as const;
-
-/** Warm the selected native voice while the game is getting ready. */
-export function prepareEnglishVoice(enabled: boolean, gender: 'female' | 'male' = 'female') {
-  if (enabled && isNative) void SoundNative.prepareSpeech({ voice: KITTEN_VOICES[gender] }).catch((err) => console.warn('KittenTTS 预加载失败', err));
-}
-
-/** Speak one short English reply with KittenTTS on iOS and the system voice in browsers. */
-export function speakEnglish(text: string, enabled: boolean, gender: 'female' | 'male' = 'female') {
-  if (!enabled || !text || (typeof document !== 'undefined' && document.hidden)) return;
-  const epoch = ++speechEpoch;
-  stopBrowserSpeech();
+export function playLiaVoice(clip: VoiceClip, enabled: boolean, coachIndex: number) {
+  if (!enabled || coachIndex !== LIA_COACH_INDEX || !LIA_FILES.has(clip.file) || (typeof document !== 'undefined' && document.hidden)) return;
+  epoch++;
   if (isNative) {
-    void SoundNative.speak({ text, voice: KITTEN_VOICES[gender] }).catch((err) => console.warn('KittenTTS 播放请求失败', err));
+    void SoundNative.playVoice({ file: clip.file }).catch(err => console.warn('莉亚录音播放失败', err));
     return;
   }
-  const synth = browserSpeech();
-  if (!synth || typeof SpeechSynthesisUtterance === 'undefined') return;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'en-US';
-  utterance.rate = 0.94;
-  utterance.pitch = gender === 'female' ? 1.08 : 0.9;
-  const voices = synth.getVoices();
-  utterance.voice = browserVoiceOf(voices, gender);
-  utterance.onstart = () => { if (epoch !== speechEpoch) synth.cancel(); };
-  synth.speak(utterance);
+  if (typeof Audio === 'undefined') return;
+  player ??= new Audio();
+  player.pause();
+  player.muted = false;
+  player.src = url(clip.file);
+  void player.play().catch(err => console.warn('莉亚录音播放失败', err));
 }
 
-if (typeof document !== 'undefined') {
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stopEnglishVoice();
-  });
-}
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopLiaVoice();
+});

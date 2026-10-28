@@ -78,9 +78,9 @@ export interface Settings {
   avatar: string;
   /** Maia's coach portrait; -1 means choose a coach at the start of each game. */
   coachAvatar: number;
-  /** instant local taunts in normal games only */
+  /** Lia key-event bubbles; other characters are awaiting new scripts. */
   opponentTalk: boolean;
-  /** speak the English equivalent of each opponent line with the system voice */
+  /** Play the offline Chinese recording matching Lia's bubble. */
   opponentVoice: boolean;
   /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
   engineGen?: number;
@@ -145,7 +145,7 @@ export function defaultSettings(): Settings {
     autoplayMs: 1200,
     reviewOpponent: false,
     avatar: '',
-    coachAvatar: -1,
+    coachAvatar: 0,
     opponentTalk: true,
     opponentVoice: true,
   };
@@ -179,6 +179,11 @@ export function loadSettings(): Settings {
     if (saved.coachGen === undefined) {
       if (saved.coachAvatar === undefined || saved.coachAvatar === 0) saved.coachAvatar = -1;
       saved.coachGen = 1;
+    }
+    // Lia is the first character with the new recording pack. Keep explicit other portraits.
+    if ((saved.coachGen ?? 0) < 2) {
+      if (saved.coachAvatar === -1 || saved.coachAvatar === undefined) saved.coachAvatar = 0;
+      saved.coachGen = 2;
     }
     return sanitizeSettings(saved);
   } catch {

@@ -1,0 +1,195 @@
+[
+   {
+      "text": "别急着让后单独工作，它会被棋盘追问。",
+      "pronounce_text": "别急着让后单独工作，它会被棋盘追问。",
+      "time_begin": 0.0,
+      "time_end": 3394.603174603175,
+      "text_begin": 0,
+      "text_end": 18,
+      "pronounce_text_begin": 0,
+      "pronounce_text_end": 18,
+      "is_final_segment": true,
+      "timestamped_words": [
+         {
+            "word": "别",
+            "word_begin": 0,
+            "word_end": 1,
+            "pronounce_word": "别",
+            "pronounce_word_begin": 0,
+            "pronounce_word_end": 1,
+            "time_begin": 42.666666666666664,
+            "time_end": 170.66666666666666
+         },
+         {
+            "word": "急",
+            "word_begin": 1,
+            "word_end": 2,
+            "pronounce_word": "急",
+            "pronounce_word_begin": 1,
+            "pronounce_word_end": 2,
+            "time_begin": 170.66666666666666,
+            "time_end": 341.3333333333333
+         },
+         {
+            "word": "着",
+            "word_begin": 2,
+            "word_end": 3,
+            "pronounce_word": "着",
+            "pronounce_word_begin": 2,
+            "pronounce_word_end": 3,
+            "time_begin": 341.3333333333333,
+            "time_end": 512.0
+         },
+         {
+            "word": "让",
+            "word_begin": 3,
+            "word_end": 4,
+            "pronounce_word": "让",
+            "pronounce_word_begin": 3,
+            "pronounce_word_end": 4,
+            "time_begin": 512.0,
+            "time_end": 640.0
+         },
+         {
+            "word": "后",
+            "word_begin": 4,
+            "word_end": 5,
+            "pronounce_word": "后",
+            "pronounce_word_begin": 4,
+            "pronounce_word_end": 5,
+            "time_begin": 640.0,
+            "time_end": 768.0
+         },
+         {
+            "word": "单",
+            "word_begin": 5,
+            "word_end": 6,
+            "pronounce_word": "单",
+            "pronounce_word_begin": 5,
+            "pronounce_word_end": 6,
+            "time_begin": 768.0,
+            "time_end": 938.6666666666666
+         },
+         {
+            "word": "独",
+            "word_begin": 6,
+            "word_end": 7,
+            "pronounce_word": "独",
+            "pronounce_word_begin": 6,
+            "pronounce_word_end": 7,
+            "time_begin": 938.6666666666666,
+            "time_end": 1109.3333333333333
+         },
+         {
+            "word": "工",
+            "word_begin": 7,
+            "word_end": 8,
+            "pronounce_word": "工",
+            "pronounce_word_begin": 7,
+            "pronounce_word_end": 8,
+            "time_begin": 1109.3333333333333,
+            "time_end": 1237.3333333333335
+         },
+         {
+            "word": "作",
+            "word_begin": 8,
+            "word_end": 9,
+            "pronounce_word": "作",
+            "pronounce_word_begin": 8,
+            "pronounce_word_end": 9,
+            "time_begin": 1237.3333333333335,
+            "time_end": 1408.0
+         },
+         {
+            "word": "，",
+            "word_begin": 9,
+            "word_end": 10,
+            "pronounce_word": "，",
+            "pronounce_word_begin": 9,
+            "pronounce_word_end": 10,
+            "time_begin": 1408.0,
+            "time_end": 1450.6666666666665
+         },
+         {
+            "word": "它",
+            "word_begin": 10,
+            "word_end": 11,
+            "pronounce_word": "它",
+            "pronounce_word_begin": 10,
+            "pronounce_word_end": 11,
+            "time_begin": 1450.6666666666665,
+            "time_end": 2133.3333333333335
+         },
+         {
+            "word": "会",
+            "word_begin": 11,
+            "word_end": 12,
+            "pronounce_word": "会",
+            "pronounce_word_begin": 11,
+            "pronounce_word_end": 12,
+            "time_begin": 2133.3333333333335,
+            "time_end": 2346.6666666666665
+         },
+         {
+            "word": "被",
+            "word_begin": 12,
+            "word_end": 13,
+            "pronounce_word": "被",
+            "pronounce_word_begin": 12,
+            "pronounce_word_end": 13,
+            "time_begin": 2346.6666666666665,
+            "time_end": 2474.666666666667
+         },
+         {
+            "word": "棋",
+            "word_begin": 13,
+            "word_end": 14,
+            "pronounce_word": "棋",
+            "pronounce_word_begin": 13,
+            "pronounce_word_end": 14,
+            "time_begin": 2474.666666666667,
+            "time_end": 2602.6666666666665
+         },
+         {
+            "word": "盘",
+            "word_begin": 14,
+            "word_end": 15,
+            "pronounce_word": "盘",
+            "pronounce_word_begin": 14,
+            "pronounce_word_end": 15,
+            "time_begin": 2602.6666666666665,
+            "time_end": 2730.6666666666665
+         },
+         {
+            "word": "追",
+            "word_begin": 15,
+            "word_end": 16,
+            "pronounce_word": "追",
+            "pronounce_word_begin": 15,
+            "pronounce_word_end": 16,
+            "time_begin": 2730.6666666666665,
+            "time_end": 2901.333333333333
+         },
+         {
+            "word": "问",
+            "word_begin": 16,
+            "word_end": 17,
+            "pronounce_word": "问",
+            "pronounce_word_begin": 16,
+            "pronounce_word_end": 17,
+            "time_begin": 2901.333333333333,
+            "time_end": 3072.0
+         },
+         {
+            "word": "。",
+            "word_begin": 17,
+            "word_end": 18,
+            "pronounce_word": "。",
+            "pronounce_word_begin": 17,
+            "pronounce_word_end": 18,
+            "time_begin": 3072.0,
+            "time_end": 3285.3333333333335
+         }
+      ]
+   }
+]

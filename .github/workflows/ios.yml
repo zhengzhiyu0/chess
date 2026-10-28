@@ -26,7 +26,6 @@ jobs:
         with:
           path: |
             web/.cache/nnue
-            web/.cache/kittentts-mini
           key: native-assets-${{ hashFiles('web/native-plugins/maia-native/stockfish/src/evaluate.h', 'web/scripts/prepare-native.mjs') }}
       - run: npm ci
       - name: Audio regression tests

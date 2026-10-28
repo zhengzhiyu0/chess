@@ -1,0 +1,185 @@
+[
+   {
+      "text": "易位完成。安全感和进攻线一起到位。",
+      "pronounce_text": "易位完成。安全感和进攻线一起到位。",
+      "time_begin": 0.0,
+      "time_end": 3220.453514739229,
+      "text_begin": 0,
+      "text_end": 17,
+      "pronounce_text_begin": 0,
+      "pronounce_text_end": 17,
+      "is_final_segment": true,
+      "timestamped_words": [
+         {
+            "word": "易",
+            "word_begin": 0,
+            "word_end": 1,
+            "pronounce_word": "易",
+            "pronounce_word_begin": 0,
+            "pronounce_word_end": 1,
+            "time_begin": 42.666666666666664,
+            "time_end": 213.33333333333331
+         },
+         {
+            "word": "位",
+            "word_begin": 1,
+            "word_end": 2,
+            "pronounce_word": "位",
+            "pronounce_word_begin": 1,
+            "pronounce_word_end": 2,
+            "time_begin": 213.33333333333331,
+            "time_end": 341.3333333333333
+         },
+         {
+            "word": "完",
+            "word_begin": 2,
+            "word_end": 3,
+            "pronounce_word": "完",
+            "pronounce_word_begin": 2,
+            "pronounce_word_end": 3,
+            "time_begin": 341.3333333333333,
+            "time_end": 469.3333333333333
+         },
+         {
+            "word": "成",
+            "word_begin": 3,
+            "word_end": 4,
+            "pronounce_word": "成",
+            "pronounce_word_begin": 3,
+            "pronounce_word_end": 4,
+            "time_begin": 469.3333333333333,
+            "time_end": 640.0
+         },
+         {
+            "word": "。",
+            "word_begin": 4,
+            "word_end": 5,
+            "pronounce_word": "。",
+            "pronounce_word_begin": 4,
+            "pronounce_word_end": 5,
+            "time_begin": 640.0,
+            "time_end": 725.3333333333333
+         },
+         {
+            "word": "安",
+            "word_begin": 5,
+            "word_end": 6,
+            "pronounce_word": "安",
+            "pronounce_word_begin": 5,
+            "pronounce_word_end": 6,
+            "time_begin": 725.3333333333333,
+            "time_end": 1408.0
+         },
+         {
+            "word": "全",
+            "word_begin": 6,
+            "word_end": 7,
+            "pronounce_word": "全",
+            "pronounce_word_begin": 6,
+            "pronounce_word_end": 7,
+            "time_begin": 1408.0,
+            "time_end": 1578.6666666666667
+         },
+         {
+            "word": "感",
+            "word_begin": 7,
+            "word_end": 8,
+            "pronounce_word": "感",
+            "pronounce_word_begin": 7,
+            "pronounce_word_end": 8,
+            "time_begin": 1578.6666666666667,
+            "time_end": 1792.0
+         },
+         {
+            "word": "和",
+            "word_begin": 8,
+            "word_end": 9,
+            "pronounce_word": "和",
+            "pronounce_word_begin": 8,
+            "pronounce_word_end": 9,
+            "time_begin": 1792.0,
+            "time_end": 1962.6666666666665
+         },
+         {
+            "word": "进",
+            "word_begin": 9,
+            "word_end": 10,
+            "pronounce_word": "进",
+            "pronounce_word_begin": 9,
+            "pronounce_word_end": 10,
+            "time_begin": 1962.6666666666665,
+            "time_end": 2090.6666666666665
+         },
+         {
+            "word": "攻",
+            "word_begin": 10,
+            "word_end": 11,
+            "pronounce_word": "攻",
+            "pronounce_word_begin": 10,
+            "pronounce_word_end": 11,
+            "time_begin": 2090.6666666666665,
+            "time_end": 2218.6666666666665
+         },
+         {
+            "word": "线",
+            "word_begin": 11,
+            "word_end": 12,
+            "pronounce_word": "线",
+            "pronounce_word_begin": 11,
+            "pronounce_word_end": 12,
+            "time_begin": 2218.6666666666665,
+            "time_end": 2389.333333333333
+         },
+         {
+            "word": "一",
+            "word_begin": 12,
+            "word_end": 13,
+            "pronounce_word": "一",
+            "pronounce_word_begin": 12,
+            "pronounce_word_end": 13,
+            "time_begin": 2389.333333333333,
+            "time_end": 2560.0
+         },
+         {
+            "word": "起",
+            "word_begin": 13,
+            "word_end": 14,
+            "pronounce_word": "起",
+            "pronounce_word_begin": 13,
+            "pronounce_word_end": 14,
+            "time_begin": 2560.0,
+            "time_end": 2645.3333333333335
+         },
+         {
+            "word": "到",
+            "word_begin": 14,
+            "word_end": 15,
+            "pronounce_word": "到",
+            "pronounce_word_begin": 14,
+            "pronounce_word_end": 15,
+            "time_begin": 2645.3333333333335,
+            "time_end": 2773.3333333333335
+         },
+         {
+            "word": "位",
+            "word_begin": 15,
+            "word_end": 16,
+            "pronounce_word": "位",
+            "pronounce_word_begin": 15,
+            "pronounce_word_end": 16,
+            "time_begin": 2773.3333333333335,
+            "time_end": 2944.0
+         },
+         {
+            "word": "。",
+            "word_begin": 16,
+            "word_end": 17,
+            "pronounce_word": "。",
+            "pronounce_word_begin": 16,
+            "pronounce_word_end": 17,
+            "time_begin": 2944.0,
+            "time_end": 3072.0
+         }
+      ]
+   }
+]

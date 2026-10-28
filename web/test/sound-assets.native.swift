@@ -24,19 +24,19 @@ for theme in themes {
         precondition(samples.contains { abs($0) > 0.001 }, "Silent MP3: \(url.path)")
     }
 }
-let speechRoot = root.appendingPathComponent("native/speech/kitten-mini", isDirectory: true)
-let model = speechRoot.appendingPathComponent("kitten_tts_mini_v0_8.onnx")
-let voices = speechRoot.appendingPathComponent("voices.npz")
-let rules = speechRoot.appendingPathComponent("en_rules")
-let wordList = speechRoot.appendingPathComponent("en_list")
-guard let modelAttributes = try? FileManager.default.attributesOfItem(atPath: model.path),
-      let modelSize = modelAttributes[.size] as? NSNumber, modelSize.intValue > 75_000_000,
-      let voicesAttributes = try? FileManager.default.attributesOfItem(atPath: voices.path),
-      let voicesSize = voicesAttributes[.size] as? NSNumber, voicesSize.intValue > 3_000_000,
-      FileManager.default.fileExists(atPath: rules.path),
-      FileManager.default.fileExists(atPath: wordList.path) else {
-    fatalError("Invalid or missing KittenTTS Mini offline assets")
+let voiceRoot = root.appendingPathComponent("voices/lia", isDirectory: true)
+struct VoiceClip: Decodable { let file: String }
+let clips = try JSONDecoder().decode([VoiceClip].self, from: Data(contentsOf: voiceRoot.appendingPathComponent("catalog.json")))
+precondition(clips.count == 121 && Set(clips.map(\.file)).count == 121, "Incomplete Lia recording catalog")
+for clip in clips {
+    let url = voiceRoot.appendingPathComponent(clip.file)
+    let file = try AVAudioFile(forReading: url)
+    precondition(file.length > 0 && file.processingFormat.sampleRate == 24000 && file.processingFormat.channelCount == 1, "Invalid Lia recording: \(clip.file)")
+    let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length))!
+    try file.read(into: buffer)
+    let samples = UnsafeBufferPointer(start: buffer.floatChannelData![0], count: Int(buffer.frameLength))
+    precondition(samples.allSatisfy { $0.isFinite } && samples.contains { abs($0) > 0.001 }, "Silent Lia recording: \(clip.file)")
 }
 let config = try JSONSerialization.jsonObject(with: Data(contentsOf: root.deletingLastPathComponent().appendingPathComponent("capacitor.config.json"))) as! [String: Any]
 precondition((config["packageClassList"] as? [String])?.contains("SoundNativePlugin") == true, "Native sound plugin was not registered")
-print("PASS: \(decoded.count) bundled MP3s decode; KittenTTS Mini offline assets and SoundNativePlugin are present")
+print("PASS: \(decoded.count) bundled MP3s decode; 121 Lia M4As decode and SoundNativePlugin is present")

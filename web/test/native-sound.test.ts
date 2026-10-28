@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const native = vi.hoisted(() => ({ play: vi.fn(), stop: vi.fn(), prepareSpeech: vi.fn(), speak: vi.fn(), stopSpeech: vi.fn() }));
+const native = vi.hoisted(() => ({ play: vi.fn(), stop: vi.fn(), playVoice: vi.fn(), stopVoice: vi.fn() }));
 vi.mock('../src/native', () => ({ isNative: true }));
 vi.mock('../src/audio/haptics', () => ({ configureHaptics: vi.fn(), haptic: vi.fn() }));
 vi.mock('maia-native', () => ({ SoundNative: native }));
@@ -12,9 +12,8 @@ beforeEach(() => {
   vi.useFakeTimers();
   native.play.mockResolvedValue(undefined);
   native.stop.mockResolvedValue(undefined);
-  native.prepareSpeech.mockResolvedValue(undefined);
-  native.speak.mockResolvedValue(undefined);
-  native.stopSpeech.mockResolvedValue(undefined);
+  native.playVoice.mockResolvedValue(undefined);
+  native.stopVoice.mockResolvedValue(undefined);
   doc = Object.assign(new EventTarget(), { hidden: false });
   vi.stubGlobal('document', doc);
   vi.stubGlobal('fetch', vi.fn(() => { throw new Error('Native sound must not fetch through WKWebView'); }));
@@ -27,18 +26,21 @@ afterEach(() => {
 });
 
 describe('iOS 原生 MP3 播放', () => {
-  it('按教练性别预热并播放对应 KittenTTS 音色', async () => {
-    const { prepareEnglishVoice, speakEnglish, stopEnglishVoice } = await import('../src/audio/voice');
-    prepareEnglishVoice(true, 'female');
-    speakEnglish('Nice move.', true, 'female');
-    prepareEnglishVoice(true, 'male');
-    speakEnglish('Well played.', true, 'male');
-    expect(native.prepareSpeech).toHaveBeenNthCalledWith(1, { voice: 'bella' });
-    expect(native.prepareSpeech).toHaveBeenNthCalledWith(2, { voice: 'jasper' });
-    expect(native.speak).toHaveBeenNthCalledWith(1, { text: 'Nice move.', voice: 'bella' });
-    expect(native.speak).toHaveBeenNthCalledWith(2, { text: 'Well played.', voice: 'jasper' });
-    stopEnglishVoice();
-    expect(native.stopSpeech).toHaveBeenCalledOnce();
+  it('只为莉亚播放对应录音，其他角色、禁用和后台均不播放', async () => {
+    const { playLiaVoice, stopLiaVoice } = await import('../src/audio/voice');
+    const { LIA_CLIPS } = await import('../src/lia/dialogue');
+    const clip = LIA_CLIPS[0];
+    playLiaVoice(clip, true, 0);
+    expect(native.playVoice).toHaveBeenCalledExactlyOnceWith({ file: clip.file });
+    playLiaVoice(clip, true, 1);
+    playLiaVoice(clip, false, 0);
+    doc.hidden = true;
+    playLiaVoice(clip, true, 0);
+    expect(native.playVoice).toHaveBeenCalledTimes(1);
+    doc.dispatchEvent(new Event('visibilitychange'));
+    expect(native.stopVoice).toHaveBeenCalledTimes(1);
+    stopLiaVoice();
+    expect(native.stopVoice).toHaveBeenCalledTimes(2);
   });
 
   it('首次落子无需 WebView 音频解锁，所有音效主题都走原生播放器', async () => {

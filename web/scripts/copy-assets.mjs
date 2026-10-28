@@ -2,6 +2,7 @@
 import { copyFileSync, mkdirSync, existsSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import './copy-voices.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const nm = join(root, 'node_modules');

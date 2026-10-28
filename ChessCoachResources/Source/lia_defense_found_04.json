@@ -1,0 +1,135 @@
+[
+   {
+      "text": "你找到了唯一不崩的办法。",
+      "pronounce_text": "你找到了唯一不崩的办法。",
+      "time_begin": 0.0,
+      "time_end": 1896.9160997732426,
+      "text_begin": 0,
+      "text_end": 12,
+      "pronounce_text_begin": 0,
+      "pronounce_text_end": 12,
+      "is_final_segment": true,
+      "timestamped_words": [
+         {
+            "word": "你",
+            "word_begin": 0,
+            "word_end": 1,
+            "pronounce_word": "你",
+            "pronounce_word_begin": 0,
+            "pronounce_word_end": 1,
+            "time_begin": 42.666666666666664,
+            "time_end": 170.66666666666666
+         },
+         {
+            "word": "找",
+            "word_begin": 1,
+            "word_end": 2,
+            "pronounce_word": "找",
+            "pronounce_word_begin": 1,
+            "pronounce_word_end": 2,
+            "time_begin": 170.66666666666666,
+            "time_end": 298.66666666666663
+         },
+         {
+            "word": "到",
+            "word_begin": 2,
+            "word_end": 3,
+            "pronounce_word": "到",
+            "pronounce_word_begin": 2,
+            "pronounce_word_end": 3,
+            "time_begin": 298.66666666666663,
+            "time_end": 469.3333333333333
+         },
+         {
+            "word": "了",
+            "word_begin": 3,
+            "word_end": 4,
+            "pronounce_word": "了",
+            "pronounce_word_begin": 3,
+            "pronounce_word_end": 4,
+            "time_begin": 469.3333333333333,
+            "time_end": 597.3333333333333
+         },
+         {
+            "word": "唯",
+            "word_begin": 4,
+            "word_end": 5,
+            "pronounce_word": "唯",
+            "pronounce_word_begin": 4,
+            "pronounce_word_end": 5,
+            "time_begin": 597.3333333333333,
+            "time_end": 682.6666666666666
+         },
+         {
+            "word": "一",
+            "word_begin": 5,
+            "word_end": 6,
+            "pronounce_word": "一",
+            "pronounce_word_begin": 5,
+            "pronounce_word_end": 6,
+            "time_begin": 682.6666666666666,
+            "time_end": 853.3333333333333
+         },
+         {
+            "word": "不",
+            "word_begin": 6,
+            "word_end": 7,
+            "pronounce_word": "不",
+            "pronounce_word_begin": 6,
+            "pronounce_word_end": 7,
+            "time_begin": 853.3333333333333,
+            "time_end": 1024.0
+         },
+         {
+            "word": "崩",
+            "word_begin": 7,
+            "word_end": 8,
+            "pronounce_word": "崩",
+            "pronounce_word_begin": 7,
+            "pronounce_word_end": 8,
+            "time_begin": 1024.0,
+            "time_end": 1109.3333333333333
+         },
+         {
+            "word": "的",
+            "word_begin": 8,
+            "word_end": 9,
+            "pronounce_word": "的",
+            "pronounce_word_begin": 8,
+            "pronounce_word_end": 9,
+            "time_begin": 1109.3333333333333,
+            "time_end": 1152.0
+         },
+         {
+            "word": "办",
+            "word_begin": 9,
+            "word_end": 10,
+            "pronounce_word": "办",
+            "pronounce_word_begin": 9,
+            "pronounce_word_end": 10,
+            "time_begin": 1152.0,
+            "time_end": 1365.3333333333333
+         },
+         {
+            "word": "法",
+            "word_begin": 10,
+            "word_end": 11,
+            "pronounce_word": "法",
+            "pronounce_word_begin": 10,
+            "pronounce_word_end": 11,
+            "time_begin": 1365.3333333333333,
+            "time_end": 1578.6666666666667
+         },
+         {
+            "word": "。",
+            "word_begin": 11,
+            "word_end": 12,
+            "pronounce_word": "。",
+            "pronounce_word_begin": 11,
+            "pronounce_word_end": 12,
+            "time_begin": 1578.6666666666667,
+            "time_end": 1749.3333333333333
+         }
+      ]
+   }
+]

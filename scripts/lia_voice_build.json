@@ -1,0 +1,4554 @@
+{
+  "model": "speech-2.8-hd",
+  "params": {
+    "voice_id": "Chinese (Mandarin)_Laid_BackGirl",
+    "voice_id_source": "catalog",
+    "language_boost": "Chinese"
+  },
+  "compositionId": "cmp_4ad0dbeeb17e",
+  "lines": [
+    {
+      "name": "lia_opening_book_entry_01",
+      "file": "lia_opening_book_entry_01.m4a",
+      "direction": "从容、微笑，像认出熟悉的开局变化，句尾留一点余韵。",
+      "text": "这一步很熟。你走进了准备好的路。"
+    },
+    {
+      "name": "lia_opening_book_entry_02",
+      "file": "lia_opening_book_entry_02.m4a",
+      "direction": "轻快赞许，不要兴奋过度，前半句短，后半句自然落下。",
+      "text": "开局走得漂亮，至少前几页没有乱。"
+    },
+    {
+      "name": "lia_opening_book_entry_03",
+      "file": "lia_opening_book_entry_03.m4a",
+      "direction": "低声、优雅，像在棋谱上确认一个熟悉结构。",
+      "text": "熟悉的结构。真正的较量还在后面。"
+    },
+    {
+      "name": "lia_opening_book_entry_04",
+      "file": "lia_opening_book_entry_04.m4a",
+      "direction": "温和赞许，最后半句带一点提醒意味。",
+      "text": "第一段走得干净，别急着以为整盘都懂了。"
+    },
+    {
+      "name": "lia_opening_book_exit_01",
+      "file": "lia_opening_book_exit_01.m4a",
+      "direction": "先停顿半拍，再认真起来；像从背诵进入实战。",
+      "text": "库里的答案到这里，接下来才轮到你思考。"
+    },
+    {
+      "name": "lia_opening_book_exit_02",
+      "file": "lia_opening_book_exit_02.m4a",
+      "direction": "带一点轻笑，前半句熟悉，后半句把责任交回玩家。",
+      "text": "熟悉的路走完了。现在，每一步都算你的。"
+    },
+    {
+      "name": "lia_opening_book_exit_03",
+      "file": "lia_opening_book_exit_03.m4a",
+      "direction": "戏剧性停顿，语气清醒，不要像喊口号。",
+      "text": "理论结束。欢迎来到没有标答的地方。"
+    },
+    {
+      "name": "lia_opening_book_exit_04",
+      "file": "lia_opening_book_exit_04.m4a",
+      "direction": "平静、短促，最后四字稍微加重。",
+      "text": "前面是准备，后面是棋力。"
+    },
+    {
+      "name": "lia_player_accurate_01",
+      "file": "lia_player_accurate_01.m4a",
+      "direction": "短促赞许，像确认一个没有瑕疵的决定。",
+      "text": "很准。你没有给局面留下多余的噪音。"
+    },
+    {
+      "name": "lia_player_accurate_02",
+      "file": "lia_player_accurate_02.m4a",
+      "direction": "柔和、慢一点，句中有自然的小停顿。",
+      "text": "这一步干净，像把门轻轻关上。"
+    },
+    {
+      "name": "lia_player_accurate_03",
+      "file": "lia_player_accurate_03.m4a",
+      "direction": "认真、克制，重音放在“最稳”上。",
+      "text": "几个候选里，你拿到了最稳的那个。"
+    },
+    {
+      "name": "lia_player_accurate_04",
+      "file": "lia_player_accurate_04.m4a",
+      "direction": "先轻笑，再真诚承认，不要阴阳怪气。",
+      "text": "没有炫技，只有准确。这样的棋最难对付。"
+    },
+    {
+      "name": "lia_player_best_01",
+      "file": "lia_player_best_01.m4a",
+      "direction": "明显赞许，第一句果断，第二句稍微放松。",
+      "text": "这就是答案。你找得比我想象中快。"
+    },
+    {
+      "name": "lia_player_best_02",
+      "file": "lia_player_best_02.m4a",
+      "direction": "有重量的赞许，重音放在“最窄的门”。",
+      "text": "漂亮，局面最窄的门，被你正好推开。"
+    },
+    {
+      "name": "lia_player_best_03",
+      "file": "lia_player_best_03.m4a",
+      "direction": "语气从平静转认真，像重新坐直。",
+      "text": "这一手有分量。我得认真回应了。"
+    },
+    {
+      "name": "lia_player_best_04",
+      "file": "lia_player_best_04.m4a",
+      "direction": "克制赞赏，避免播音腔，结尾坚定。",
+      "text": "好棋。不是因为好看，是因为它真的解决了问题。"
+    },
+    {
+      "name": "lia_player_brilliant_01",
+      "file": "lia_player_brilliant_01.m4a",
+      "direction": "先有极短吸气和停顿，随后惊讶，最后带认可；不要真的读出省略号。",
+      "text": "这一下，漂亮得有点过分。"
+    },
+    {
+      "name": "lia_player_brilliant_02",
+      "file": "lia_player_brilliant_02.m4a",
+      "direction": "兴奋但克制，像看见一个勇敢而正确的弃子。",
+      "text": "你把一枚子放上祭坛，换来了整盘的主动。"
+    },
+    {
+      "name": "lia_player_brilliant_03",
+      "file": "lia_player_brilliant_03.m4a",
+      "direction": "先惊讶，随后轻笑着承认判断正确。",
+      "text": "好大胆。更难得的是，它是对的。"
+    },
+    {
+      "name": "lia_player_brilliant_04",
+      "file": "lia_player_brilliant_04.m4a",
+      "direction": "认真赞叹，语速略慢，重音放在“重新洗牌”。",
+      "text": "这不是送子，是把棋盘的秩序重新洗牌。"
+    },
+    {
+      "name": "lia_capture_minor_01",
+      "file": "lia_capture_minor_01.m4a",
+      "direction": "沉稳、略带满足，像完成一笔有价值的交换。",
+      "text": "轻子落下。这个交换可不轻。"
+    },
+    {
+      "name": "lia_capture_minor_02",
+      "file": "lia_capture_minor_02.m4a",
+      "direction": "压低声音，句尾收紧，表现防线被削弱。",
+      "text": "防线少了一根骨头。"
+    },
+    {
+      "name": "lia_capture_minor_03",
+      "file": "lia_capture_minor_03.m4a",
+      "direction": "满意但不炫耀，重音放在“准确拿走”。",
+      "text": "这一枚不是路过，是被我准确拿走。"
+    },
+    {
+      "name": "lia_capture_minor_04",
+      "file": "lia_capture_minor_04.m4a",
+      "direction": "严肃、稍慢，像提醒后果正在扩大。",
+      "text": "少了一个轻子，接下来的每条线都会更窄。"
+    },
+    {
+      "name": "lia_capture_rook_01",
+      "file": "lia_capture_rook_01.m4a",
+      "direction": "先有一丝惊喜，马上收住，表现车被吃后的空间收益。",
+      "text": "车倒下，开放线归我了。"
+    },
+    {
+      "name": "lia_capture_rook_02",
+      "file": "lia_capture_rook_02.m4a",
+      "direction": "低沉、带压迫感，重音放在“声音突然变大”。",
+      "text": "重子离场，局面的声音突然变大。"
+    },
+    {
+      "name": "lia_capture_rook_03",
+      "file": "lia_capture_rook_03.m4a",
+      "direction": "明显满足，带一点优雅的得意。",
+      "text": "这一车很值钱，我收得相当满意。"
+    },
+    {
+      "name": "lia_capture_rook_04",
+      "file": "lia_capture_rook_04.m4a",
+      "direction": "压迫、慢半拍，最后一句像把问题推回去。",
+      "text": "车没了。现在，谁来守住那条线？"
+    },
+    {
+      "name": "lia_capture_queen_01",
+      "file": "lia_capture_queen_01.m4a",
+      "direction": "明显停顿和惊叹，随后压低声音；不要喜剧化。",
+      "text": "后没了，这下可不是小问题。"
+    },
+    {
+      "name": "lia_capture_queen_02",
+      "file": "lia_capture_queen_02.m4a",
+      "direction": "压低声音，从容、带一点胜势确认。",
+      "text": "我拿走你的后，棋盘突然安静了。"
+    },
+    {
+      "name": "lia_capture_queen_03",
+      "file": "lia_capture_queen_03.m4a",
+      "direction": "轻笑、优雅，像收到一份无法拒绝的礼物。",
+      "text": "这么贵重的礼物，叫我怎么拒绝？"
+    },
+    {
+      "name": "lia_capture_queen_04",
+      "file": "lia_capture_queen_04.m4a",
+      "direction": "从容收尾，像准备进入残局教学。",
+      "text": "后落袋。接下来请把残局下得体面些。"
+    },
+    {
+      "name": "lia_player_loses_minor_01",
+      "file": "lia_player_loses_minor_01.m4a",
+      "direction": "先吸气，再克制赞许；不生气。",
+      "text": "我的轻子没了。很好，你终于盯到了它。"
+    },
+    {
+      "name": "lia_player_loses_minor_02",
+      "file": "lia_player_loses_minor_02.m4a",
+      "direction": "认真承认，语气中有一点意外。",
+      "text": "这一口吃得漂亮，我需要换一套计划。"
+    },
+    {
+      "name": "lia_player_loses_minor_03",
+      "file": "lia_player_loses_minor_03.m4a",
+      "direction": "短暂失落，随后恢复冷静。",
+      "text": "一枚轻子而已？不，这里会留下回声。"
+    },
+    {
+      "name": "lia_player_loses_minor_04",
+      "file": "lia_player_loses_minor_04.m4a",
+      "direction": "克制赞许，重音放在“拿得很准”。",
+      "text": "你拿得很准，局面换了重量。"
+    },
+    {
+      "name": "lia_player_loses_rook_01",
+      "file": "lia_player_loses_rook_01.m4a",
+      "direction": "先吸气，再承认损失；语气认真，不要发怒。",
+      "text": "车被你收走了。这个代价，我记住了。"
+    },
+    {
+      "name": "lia_player_loses_rook_02",
+      "file": "lia_player_loses_rook_02.m4a",
+      "direction": "低声、略带压力，像重新评估整条线路。",
+      "text": "重子离场，看来我得重新谈条件。"
+    },
+    {
+      "name": "lia_player_loses_queen_01",
+      "file": "lia_player_loses_queen_01.m4a",
+      "direction": "明显停顿，惊讶后恢复克制；不要喜剧化。",
+      "text": "我的后……好吧，这确实值得庆祝。"
+    },
+    {
+      "name": "lia_player_loses_queen_02",
+      "file": "lia_player_loses_queen_02.m4a",
+      "direction": "低沉、认真，像接受局面已经改变。",
+      "text": "后被你拿走。终于轮到我承认局面变了。"
+    },
+    {
+      "name": "lia_tactic_fork_01",
+      "file": "lia_tactic_fork_01.m4a",
+      "direction": "兴奋、清楚，重音放在“只能保一件”。",
+      "text": "一叉两吃。两件东西，只能保一件。"
+    },
+    {
+      "name": "lia_tactic_fork_02",
+      "file": "lia_tactic_fork_02.m4a",
+      "direction": "压低声音，像宣布一个已经成立的战术。",
+      "text": "这一跳很坏，两个目标同时收到通知。"
+    },
+    {
+      "name": "lia_tactic_fork_03",
+      "file": "lia_tactic_fork_03.m4a",
+      "direction": "带一点轻笑，欣赏这步棋的准确性。",
+      "text": "马把局面分成了两半，你算得很清楚。"
+    },
+    {
+      "name": "lia_tactic_fork_04",
+      "file": "lia_tactic_fork_04.m4a",
+      "direction": "明确赞许，最后一句给玩家压力。",
+      "text": "漂亮的双捉。现在轮到你挑一件留下。"
+    },
+    {
+      "name": "lia_tactic_pin_01",
+      "file": "lia_tactic_pin_01.m4a",
+      "direction": "低声、压迫，第一句像把棋子钉住。",
+      "text": "牵住了。前面的子一动，后面的麻烦就会露出来。"
+    },
+    {
+      "name": "lia_tactic_pin_02",
+      "file": "lia_tactic_pin_02.m4a",
+      "direction": "语速放慢，强调“钉住”和“呼吸”。",
+      "text": "这条线把它钉住了，呼吸都得小心。"
+    },
+    {
+      "name": "lia_tactic_pin_03",
+      "file": "lia_tactic_pin_03.m4a",
+      "direction": "像温柔提醒，但语气里有明确危险。",
+      "text": "别急着动那枚子，它身后站着更贵的东西。"
+    },
+    {
+      "name": "lia_tactic_pin_04",
+      "file": "lia_tactic_pin_04.m4a",
+      "direction": "满意、从容，像看到局面开始自动施压。",
+      "text": "牵制成立。局面开始替你施压。"
+    },
+    {
+      "name": "lia_tactic_sacrifice_01",
+      "file": "lia_tactic_sacrifice_01.m4a",
+      "direction": "先疑问，再迅速理解；吸气要非常短。",
+      "text": "弃子？不，你是在买时间。"
+    },
+    {
+      "name": "lia_tactic_sacrifice_02",
+      "file": "lia_tactic_sacrifice_02.m4a",
+      "direction": "兴奋但克制，像欣赏一次正确的冒险。",
+      "text": "你交出物质，换回了主动权。很有胆量。"
+    },
+    {
+      "name": "lia_tactic_sacrifice_03",
+      "file": "lia_tactic_sacrifice_03.m4a",
+      "direction": "低声赞许，重音落在“用来开门”。",
+      "text": "这枚子不是丢的，是被你用来开门的。"
+    },
+    {
+      "name": "lia_tactic_sacrifice_04",
+      "file": "lia_tactic_sacrifice_04.m4a",
+      "direction": "满足、略带笑意，结尾干净。",
+      "text": "我喜欢这个代价。它换来的东西更值钱。"
+    },
+    {
+      "name": "lia_missed_mate_01",
+      "file": "lia_missed_mate_01.m4a",
+      "direction": "惋惜，先停顿，再像指出一个已经消失的机会。",
+      "text": "等等，这里本来有将杀。你把结尾放走了。"
+    },
+    {
+      "name": "lia_missed_mate_02",
+      "file": "lia_missed_mate_02.m4a",
+      "direction": "低声遗憾，不要责备，句尾自然下沉。",
+      "text": "胜负的门开过一次，可惜你没有进去。"
+    },
+    {
+      "name": "lia_blunder_into_mate_01",
+      "file": "lia_blunder_into_mate_01.m4a",
+      "direction": "先吸气，低沉、确定，像看见结局已经无法避免。",
+      "text": "这一步，直接走进了结局。"
+    },
+    {
+      "name": "lia_blunder_into_mate_02",
+      "file": "lia_blunder_into_mate_02.m4a",
+      "direction": "压低声音，带戏剧停顿，不要夸张。",
+      "text": "王自己走进了最后一扇门。"
+    },
+    {
+      "name": "lia_mate_01",
+      "file": "lia_mate_01.m4a",
+      "direction": "低沉、确定、短促，像落下最后一枚棋子。",
+      "text": "将杀。王没有下一句了。"
+    },
+    {
+      "name": "lia_mate_02",
+      "file": "lia_mate_02.m4a",
+      "direction": "从容收尾，情绪已经结束，不要欢呼。",
+      "text": "结束。所有出口都已经关上。"
+    },
+    {
+      "name": "lia_comeback_01",
+      "file": "lia_comeback_01.m4a",
+      "direction": "明显赞许，带一点松气，像确认玩家重新回到棋局。",
+      "text": "还没结束。你刚刚把棋盘拉回来了。"
+    },
+    {
+      "name": "lia_comeback_02",
+      "file": "lia_comeback_02.m4a",
+      "direction": "温和、认真，句尾鼓励但不要鸡汤。",
+      "text": "这口气接得漂亮，劣势没有继续扩大。"
+    },
+    {
+      "name": "lia_player_brilliant_05",
+      "file": "lia_player_brilliant_05.m4a",
+      "direction": "压低声音",
+      "text": "我得承认，这一手让我笑不出来了。"
+    },
+    {
+      "name": "lia_lia_best_move_01",
+      "file": "lia_lia_best_move_01.m4a",
+      "direction": "从容",
+      "text": "轮到我了。这个答案，我不会放过。"
+    },
+    {
+      "name": "lia_lia_best_move_02",
+      "file": "lia_lia_best_move_02.m4a",
+      "direction": "低声",
+      "text": "看见了吗？最有力的那条路，通常不吵。"
+    },
+    {
+      "name": "lia_lia_best_move_03",
+      "file": "lia_lia_best_move_03.m4a",
+      "direction": "冷静",
+      "text": "这一手不华丽，但它把几扇门都锁上了。"
+    },
+    {
+      "name": "lia_lia_best_move_04",
+      "file": "lia_lia_best_move_04.m4a",
+      "direction": "压力上升",
+      "text": "压力回来了。现在请你找出同样准确的回应。"
+    },
+    {
+      "name": "lia_capture_pawn_01",
+      "file": "lia_capture_pawn_01.m4a",
+      "direction": "轻快",
+      "text": "一兵落袋，别小看这种小账。"
+    },
+    {
+      "name": "lia_capture_pawn_02",
+      "file": "lia_capture_pawn_02.m4a",
+      "direction": "轻笑",
+      "text": "小小一口，先把节奏咬住。"
+    },
+    {
+      "name": "lia_capture_pawn_03",
+      "file": "lia_capture_pawn_03.m4a",
+      "direction": "从容",
+      "text": "这枚兵的位置太松了，我替你收拾。"
+    },
+    {
+      "name": "lia_capture_pawn_04",
+      "file": "lia_capture_pawn_04.m4a",
+      "direction": "平静",
+      "text": "少一兵，故事还长；但账已经记下。"
+    },
+    {
+      "name": "lia_player_loses_rook_03",
+      "file": "lia_player_loses_rook_03.m4a",
+      "direction": "低声",
+      "text": "你拿得很准，偏偏是最不该丢的那枚。"
+    },
+    {
+      "name": "lia_player_loses_rook_04",
+      "file": "lia_player_loses_rook_04.m4a",
+      "direction": "克制赞许",
+      "text": "这笔交换不便宜。你赢得很实在。"
+    },
+    {
+      "name": "lia_player_loses_queen_03",
+      "file": "lia_player_loses_queen_03.m4a",
+      "direction": "低沉",
+      "text": "这一口太重，我要把棋盘重新拼起来。"
+    },
+    {
+      "name": "lia_player_loses_queen_04",
+      "file": "lia_player_loses_queen_04.m4a",
+      "direction": "苦笑",
+      "text": "你抓住了后。漂亮，别让这份礼物白拿。"
+    },
+    {
+      "name": "lia_tactic_discovered_attack_01",
+      "file": "lia_tactic_discovered_attack_01.m4a",
+      "direction": "揭幕感",
+      "text": "你把前面的子移开，后面的线终于开口了。"
+    },
+    {
+      "name": "lia_tactic_discovered_attack_02",
+      "file": "lia_tactic_discovered_attack_02.m4a",
+      "direction": "低声兴奋",
+      "text": "一道暗线醒了。棋盘比刚才锋利。"
+    },
+    {
+      "name": "lia_tactic_discovered_attack_03",
+      "file": "lia_tactic_discovered_attack_03.m4a",
+      "direction": "戏剧停顿",
+      "text": "这不是移动，是揭幕。"
+    },
+    {
+      "name": "lia_tactic_discovered_attack_04",
+      "file": "lia_tactic_discovered_attack_04.m4a",
+      "direction": "迅速",
+      "text": "后手的威胁，现在露面了。"
+    },
+    {
+      "name": "lia_tactic_zwischenzug_01",
+      "file": "lia_tactic_zwischenzug_01.m4a",
+      "direction": "惊讶",
+      "text": "先别急着换。你在中间塞进了一句更重要的话。"
+    },
+    {
+      "name": "lia_tactic_zwischenzug_02",
+      "file": "lia_tactic_zwischenzug_02.m4a",
+      "direction": "赞许",
+      "text": "这一下很细。真正的顺序，被你看见了。"
+    },
+    {
+      "name": "lia_tactic_zwischenzug_03",
+      "file": "lia_tactic_zwischenzug_03.m4a",
+      "direction": "轻笑",
+      "text": "交换可以等，威胁不能。"
+    },
+    {
+      "name": "lia_tactic_zwischenzug_04",
+      "file": "lia_tactic_zwischenzug_04.m4a",
+      "direction": "认真",
+      "text": "好的中间手，常常只差这一拍。"
+    },
+    {
+      "name": "lia_key_threat_01",
+      "file": "lia_key_threat_01.m4a",
+      "direction": "压低声音",
+      "text": "我已经把问题摆到你面前了。"
+    },
+    {
+      "name": "lia_key_threat_02",
+      "file": "lia_key_threat_02.m4a",
+      "direction": "紧迫",
+      "text": "这不是普通的威胁，下一拍会更难看。"
+    },
+    {
+      "name": "lia_key_threat_03",
+      "file": "lia_key_threat_03.m4a",
+      "direction": "倒计时感",
+      "text": "看清楚，棋盘上有一处正在倒计时。"
+    },
+    {
+      "name": "lia_key_threat_04",
+      "file": "lia_key_threat_04.m4a",
+      "direction": "短促",
+      "text": "现在轮到你决定，守哪一边。"
+    },
+    {
+      "name": "lia_check_01",
+      "file": "lia_check_01.m4a",
+      "direction": "短促有力",
+      "text": "将军。请把注意力收回来。"
+    },
+    {
+      "name": "lia_check_02",
+      "file": "lia_check_02.m4a",
+      "direction": "压迫",
+      "text": "王被叫住了，计划先暂停。"
+    },
+    {
+      "name": "lia_check_03",
+      "file": "lia_check_03.m4a",
+      "direction": "低声",
+      "text": "这不是提醒，是必须回答的问题。"
+    },
+    {
+      "name": "lia_check_04",
+      "file": "lia_check_04.m4a",
+      "direction": "紧迫",
+      "text": "将军落下，棋盘只给你几秒钟的选择。"
+    },
+    {
+      "name": "lia_player_check_01",
+      "file": "lia_player_check_01.m4a",
+      "direction": "意外后镇定",
+      "text": "将军收到。很好，现在看你的后续。"
+    },
+    {
+      "name": "lia_player_check_02",
+      "file": "lia_player_check_02.m4a",
+      "direction": "认真",
+      "text": "这一声有分量，我先处理王的安全。"
+    },
+    {
+      "name": "lia_player_check_03",
+      "file": "lia_player_check_03.m4a",
+      "direction": "轻笑",
+      "text": "你把问题递过来了，我会原样还回去。"
+    },
+    {
+      "name": "lia_player_check_04",
+      "file": "lia_player_check_04.m4a",
+      "direction": "从容",
+      "text": "王被你叫住一会儿，棋局还没有改判。"
+    },
+    {
+      "name": "lia_missed_mate_03",
+      "file": "lia_missed_mate_03.m4a",
+      "direction": "停顿",
+      "text": "这一刻少了一拍，最锋利的刀就钝了。"
+    },
+    {
+      "name": "lia_missed_mate_04",
+      "file": "lia_missed_mate_04.m4a",
+      "direction": "克制提醒",
+      "text": "杀棋擦肩而过。别让它影响你的下一步。"
+    },
+    {
+      "name": "lia_blunder_into_mate_03",
+      "file": "lia_blunder_into_mate_03.m4a",
+      "direction": "冷静但锋利",
+      "text": "没有回头路了。这个漏洞太深。"
+    },
+    {
+      "name": "lia_blunder_into_mate_04",
+      "file": "lia_blunder_into_mate_04.m4a",
+      "direction": "戏剧收束",
+      "text": "将杀已经写在这里，你只是替它落了笔。"
+    },
+    {
+      "name": "lia_mate_03",
+      "file": "lia_mate_03.m4a",
+      "direction": "戏剧停顿",
+      "text": "这一幕到这里，确实没有续集。"
+    },
+    {
+      "name": "lia_mate_04",
+      "file": "lia_mate_04.m4a",
+      "direction": "轻声",
+      "text": "将杀。你把最后一道门也关上了。"
+    },
+    {
+      "name": "lia_castling_01",
+      "file": "lia_castling_01.m4a",
+      "direction": "舒展",
+      "text": "王先安顿，车再说话。"
+    },
+    {
+      "name": "lia_castling_02",
+      "file": "lia_castling_02.m4a",
+      "direction": "从容",
+      "text": "易位完成。安全感和进攻线一起到位。"
+    },
+    {
+      "name": "lia_castling_03",
+      "file": "lia_castling_03.m4a",
+      "direction": "满意",
+      "text": "这次搬家很及时，王终于有了位置。"
+    },
+    {
+      "name": "lia_castling_04",
+      "file": "lia_castling_04.m4a",
+      "direction": "轻快",
+      "text": "王车换位，下一幕可以开始了。"
+    },
+    {
+      "name": "lia_promotion_01",
+      "file": "lia_promotion_01.m4a",
+      "direction": "兴奋",
+      "text": "升变。小兵终于拿到它应得的名字。"
+    },
+    {
+      "name": "lia_promotion_02",
+      "file": "lia_promotion_02.m4a",
+      "direction": "惊叹",
+      "text": "走到尽头，棋子换了身份，威胁也换了形状。"
+    },
+    {
+      "name": "lia_promotion_03",
+      "file": "lia_promotion_03.m4a",
+      "direction": "抬高音调",
+      "text": "新子登场。残局突然不再谦虚。"
+    },
+    {
+      "name": "lia_promotion_04",
+      "file": "lia_promotion_04.m4a",
+      "direction": "戏剧收束",
+      "text": "升变完成。别眨眼，局面已经换频道。"
+    },
+    {
+      "name": "lia_queen_early_01",
+      "file": "lia_queen_early_01.m4a",
+      "direction": "提醒，带一点笑",
+      "text": "后出得很早。希望你已经替它安排好回程。"
+    },
+    {
+      "name": "lia_queen_early_02",
+      "file": "lia_queen_early_02.m4a",
+      "direction": "轻声",
+      "text": "别急着让后单独工作，它会被棋盘追问。"
+    },
+    {
+      "name": "lia_queen_early_03",
+      "file": "lia_queen_early_03.m4a",
+      "direction": "观察",
+      "text": "贵客提前登场，可惜全场都在盯着它。"
+    },
+    {
+      "name": "lia_queen_early_04",
+      "file": "lia_queen_early_04.m4a",
+      "direction": "锋利",
+      "text": "出后太早，节奏先交了一半。"
+    },
+    {
+      "name": "lia_defense_found_01",
+      "file": "lia_defense_found_01.m4a",
+      "direction": "松一口气",
+      "text": "守住了。你没有被第一眼的威胁骗走。"
+    },
+    {
+      "name": "lia_defense_found_02",
+      "file": "lia_defense_found_02.m4a",
+      "direction": "赞许",
+      "text": "好防守，最危险的地方被你封住了。"
+    },
+    {
+      "name": "lia_defense_found_03",
+      "file": "lia_defense_found_03.m4a",
+      "direction": "克制",
+      "text": "这一手不抢戏，却救了整盘棋。"
+    },
+    {
+      "name": "lia_defense_found_04",
+      "file": "lia_defense_found_04.m4a",
+      "direction": "认真",
+      "text": "你找到了唯一不崩的办法。"
+    },
+    {
+      "name": "lia_player_missed_tactic_01",
+      "file": "lia_player_missed_tactic_01.m4a",
+      "direction": "遗憾",
+      "text": "机会来过，只是停得太短。"
+    },
+    {
+      "name": "lia_player_missed_tactic_02",
+      "file": "lia_player_missed_tactic_02.m4a",
+      "direction": "轻叹",
+      "text": "这条线本来可以更锋利。"
+    },
+    {
+      "name": "lia_player_missed_tactic_03",
+      "file": "lia_player_missed_tactic_03.m4a",
+      "direction": "提醒",
+      "text": "你看见了棋子，没看见它们之间的关系。"
+    },
+    {
+      "name": "lia_player_missed_tactic_04",
+      "file": "lia_player_missed_tactic_04.m4a",
+      "direction": "从容",
+      "text": "好的战术不会一直等人，下一次要快半拍。"
+    },
+    {
+      "name": "lia_comeback_03",
+      "file": "lia_comeback_03.m4a",
+      "direction": "认真",
+      "text": "绝境里找到这一步，难得。现在重新开始。"
+    },
+    {
+      "name": "lia_comeback_04",
+      "file": "lia_comeback_04.m4a",
+      "direction": "轻笑",
+      "text": "局面翻回来了。别浪费第二次机会。"
+    }
+  ],
+  "generated": [
+    {
+      "index": 5,
+      "name": "lia_opening_book_exit_02",
+      "file": "lia_opening_book_exit_02.m4a",
+      "versionId": "ver_855c498b9bf9",
+      "resourceId": "res_57c3476c98f6",
+      "taskId": "tsk_66c82f0f843c",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_opening_book_exit_02",
+          "kind": "audio",
+          "resourceId": "res_57c3476c98f6",
+          "versionId": "ver_855c498b9bf9",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.652
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_opening_book_exit_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_a96886f650791d565341f680d8df57bc",
+          "versionId": "ver_997e3b5abbed7abe2554d26888d5d296",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 0,
+      "name": "lia_opening_book_entry_01",
+      "file": "lia_opening_book_entry_01.m4a",
+      "versionId": "ver_275755cc8347",
+      "resourceId": "res_4013da3e69ab",
+      "taskId": "tsk_69ec7daf3df3",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_opening_book_entry_01",
+          "kind": "audio",
+          "resourceId": "res_4013da3e69ab",
+          "versionId": "ver_275755cc8347",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.284
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_opening_book_entry_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_232cb96c3251b92fd36bf323d8424b71",
+          "versionId": "ver_19bf77252579b34ee96fbb7191e35961",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "name": "lia_opening_book_entry_02",
+      "file": "lia_opening_book_entry_02.m4a",
+      "versionId": "ver_fe6b7557c207",
+      "resourceId": "res_0e30d39acf89",
+      "taskId": "tsk_1267fb00ec6d",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_opening_book_entry_02",
+          "kind": "audio",
+          "resourceId": "res_0e30d39acf89",
+          "versionId": "ver_fe6b7557c207",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.456
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_opening_book_entry_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_30a2f9da6c42800094db80ff6bcc9d10",
+          "versionId": "ver_81153eebe7290d78aa2c02984fc1e837",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "name": "lia_opening_book_entry_03",
+      "file": "lia_opening_book_entry_03.m4a",
+      "versionId": "ver_f12d6620c104",
+      "resourceId": "res_a5b841a90332",
+      "taskId": "tsk_303622c9f0f8",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_opening_book_entry_03",
+          "kind": "audio",
+          "resourceId": "res_a5b841a90332",
+          "versionId": "ver_f12d6620c104",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.816
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_opening_book_entry_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_ead7da881dbec5becb46b8c4b40ae07e",
+          "versionId": "ver_fe02c2ee57cae94edfcb0a45a62a0aee",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "name": "lia_opening_book_entry_04",
+      "file": "lia_opening_book_entry_04.m4a",
+      "versionId": "ver_35ceef02532e",
+      "resourceId": "res_65275249a827",
+      "taskId": "tsk_7e8d40e97176",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_opening_book_entry_04",
+          "kind": "audio",
+          "resourceId": "res_65275249a827",
+          "versionId": "ver_35ceef02532e",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.284
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_opening_book_entry_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_1c1bfb196d59823d6608713786f5083e",
+          "versionId": "ver_b6778c5fc607e7bd2ccf177f58d12fb3",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "name": "lia_opening_book_exit_01",
+      "file": "lia_opening_book_exit_01.m4a",
+      "versionId": "ver_4f1213077739",
+      "resourceId": "res_8288e2bb4af3",
+      "taskId": "tsk_99d4a74be8f7",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_opening_book_exit_01",
+          "kind": "audio",
+          "resourceId": "res_8288e2bb4af3",
+          "versionId": "ver_4f1213077739",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 6.048
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_opening_book_exit_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_c56906dcbc2507e44ab82fcd07086e11",
+          "versionId": "ver_7a2cef1d3f88dd9e60b81f9b3c961088",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "name": "lia_opening_book_exit_03",
+      "file": "lia_opening_book_exit_03.m4a",
+      "versionId": "ver_5982968704a9",
+      "resourceId": "res_a28f71c9fde8",
+      "taskId": "tsk_35d7d9138a1c",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_opening_book_exit_03",
+          "kind": "audio",
+          "resourceId": "res_a28f71c9fde8",
+          "versionId": "ver_5982968704a9",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.104
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_opening_book_exit_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_4048926f27754bb546b9e538010198dc",
+          "versionId": "ver_8da30b841b8756f47d5afea4135fcee6",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "name": "lia_opening_book_exit_04",
+      "file": "lia_opening_book_exit_04.m4a",
+      "versionId": "ver_f4b474d8c33f",
+      "resourceId": "res_cc7d3a718090",
+      "taskId": "tsk_aaf58d32b844",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_opening_book_exit_04",
+          "kind": "audio",
+          "resourceId": "res_cc7d3a718090",
+          "versionId": "ver_f4b474d8c33f",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.168
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_opening_book_exit_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_9031ac6c4eacfcff30917294a576c2b2",
+          "versionId": "ver_234c6bc92fdb35ec6bf6adaafec85316",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "name": "lia_player_accurate_01",
+      "file": "lia_player_accurate_01.m4a",
+      "versionId": "ver_8626edf3b660",
+      "resourceId": "res_72059f36c3fc",
+      "taskId": "tsk_9b082b46d9c6",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_player_accurate_01",
+          "kind": "audio",
+          "resourceId": "res_72059f36c3fc",
+          "versionId": "ver_8626edf3b660",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.068
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_player_accurate_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_ea610f9bf002612efcd2f824093bb6ab",
+          "versionId": "ver_0ea9e5c89fd39d1c25a9332600a4d3dd",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "name": "lia_player_accurate_02",
+      "file": "lia_player_accurate_02.m4a",
+      "versionId": "ver_bf9d5a1a8569",
+      "resourceId": "res_cacdc246ae65",
+      "taskId": "tsk_b4f711c2d6db",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_player_accurate_02",
+          "kind": "audio",
+          "resourceId": "res_cacdc246ae65",
+          "versionId": "ver_bf9d5a1a8569",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.032
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_player_accurate_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_3a50b0086cc787776bffd467259eb1cc",
+          "versionId": "ver_c5782b3755b142baae8469e090dd98ad",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "name": "lia_player_accurate_03",
+      "file": "lia_player_accurate_03.m4a",
+      "versionId": "ver_5ca822de8045",
+      "resourceId": "res_5f2e9c214cdc",
+      "taskId": "tsk_e8341cc47971",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "莉亚_lia_player_accurate_03",
+          "kind": "audio",
+          "resourceId": "res_5f2e9c214cdc",
+          "versionId": "ver_5ca822de8045",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.636
+        },
+        {
+          "key": "subtitle",
+          "name": "莉亚_lia_player_accurate_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_55581623a2f6a3ba3fbfd069eca77687",
+          "versionId": "ver_425b113534f7df3e6309baaacaf13345",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "name": "lia_player_accurate_04",
+      "file": "lia_player_accurate_04.m4a",
+      "taskId": "tsk_26af612b4589",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_accurate_04",
+          "kind": "audio",
+          "resourceId": "res_d5b3eaf52d3b",
+          "versionId": "ver_49e619f05fe7",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.112
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_accurate_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_9595254635ccea0ccbdd71db148e0c4e",
+          "versionId": "ver_a6d4ea28303b42ac30258ed5e9b1f2ad",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_49e619f05fe7",
+      "resourceId": "res_d5b3eaf52d3b"
+    },
+    {
+      "index": 12,
+      "name": "lia_player_best_01",
+      "file": "lia_player_best_01.m4a",
+      "taskId": "tsk_66df8d480b86",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_best_01",
+          "kind": "audio",
+          "resourceId": "res_39d6b4ddc5ef",
+          "versionId": "ver_57630db8b112",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.636
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_best_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_1e1a6bf3d46fa3d947cb8de91b9a6d30",
+          "versionId": "ver_e950d0b19a277452726431bb70e155d8",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_57630db8b112",
+      "resourceId": "res_39d6b4ddc5ef"
+    },
+    {
+      "index": 13,
+      "name": "lia_player_best_02",
+      "file": "lia_player_best_02.m4a",
+      "taskId": "tsk_cefd41192332",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_best_02",
+          "kind": "audio",
+          "resourceId": "res_efc5b79c4d64",
+          "versionId": "ver_cbb3b9bc7dca",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.688
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_best_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_1f24e0cff18b3a668acea7217fec9cb4",
+          "versionId": "ver_5add8f0feaa58f9749a0e26b301b6edd",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_cbb3b9bc7dca",
+      "resourceId": "res_efc5b79c4d64"
+    },
+    {
+      "index": 14,
+      "name": "lia_player_best_03",
+      "file": "lia_player_best_03.m4a",
+      "taskId": "tsk_82a23837d610",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_best_03",
+          "kind": "audio",
+          "resourceId": "res_c70b8b8ee601",
+          "versionId": "ver_b87ce066d210",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.888
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_best_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_eb0bf314a00929a64cf83eaea26714d0",
+          "versionId": "ver_e9dafcdcdca859c309fadcb4d711f191",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_b87ce066d210",
+      "resourceId": "res_c70b8b8ee601"
+    },
+    {
+      "index": 15,
+      "name": "lia_player_best_04",
+      "file": "lia_player_best_04.m4a",
+      "taskId": "tsk_b358dd675f30",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_best_04",
+          "kind": "audio",
+          "resourceId": "res_a5e38ca97715",
+          "versionId": "ver_99379d317f53",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 6.228
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_best_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_069f1f6b766a0d9220962737aee47b36",
+          "versionId": "ver_33eafb341923af27d842042913bd31fb",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_99379d317f53",
+      "resourceId": "res_a5e38ca97715"
+    },
+    {
+      "index": 16,
+      "name": "lia_player_brilliant_01",
+      "file": "lia_player_brilliant_01.m4a",
+      "taskId": "tsk_2a9a4a70c4c4",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_brilliant_01",
+          "kind": "audio",
+          "resourceId": "res_46bdb98eaea0",
+          "versionId": "ver_dcc41e6cc5ff",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.78
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_brilliant_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_4d2f415646b32623ec624d14e9810c38",
+          "versionId": "ver_f6168f914931d97e844e1f62eb899f72",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_dcc41e6cc5ff",
+      "resourceId": "res_46bdb98eaea0"
+    },
+    {
+      "index": 17,
+      "name": "lia_player_brilliant_02",
+      "file": "lia_player_brilliant_02.m4a",
+      "taskId": "tsk_5ce765276749",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_brilliant_02",
+          "kind": "audio",
+          "resourceId": "res_f2848a03175d",
+          "versionId": "ver_90b5e280794e",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.284
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_brilliant_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_d01e086f7b4c319a98d9180662a76e6f",
+          "versionId": "ver_3a889a81d72d31afb87296b4bbb6b840",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_90b5e280794e",
+      "resourceId": "res_f2848a03175d"
+    },
+    {
+      "index": 18,
+      "name": "lia_player_brilliant_03",
+      "file": "lia_player_brilliant_03.m4a",
+      "taskId": "tsk_7917b899d4f8",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_brilliant_03",
+          "kind": "audio",
+          "resourceId": "res_fcdb5873fa67",
+          "versionId": "ver_6eafef7ff19c",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.364
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_brilliant_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_48fea79d5dabc7d46636e18adf91cb87",
+          "versionId": "ver_74af0dfe06abdd52a0f9af01845eda70",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_6eafef7ff19c",
+      "resourceId": "res_fcdb5873fa67"
+    },
+    {
+      "index": 19,
+      "name": "lia_player_brilliant_04",
+      "file": "lia_player_brilliant_04.m4a",
+      "taskId": "tsk_eb123fd2d7a6",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_brilliant_04",
+          "kind": "audio",
+          "resourceId": "res_b2b9b1cceff7",
+          "versionId": "ver_794e504a4dd1",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.22
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_brilliant_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_d356dfe9c47fdb806174c84be455443e",
+          "versionId": "ver_c9adba749559dae14afd910c6dfc3ca7",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_794e504a4dd1",
+      "resourceId": "res_b2b9b1cceff7"
+    },
+    {
+      "index": 20,
+      "name": "lia_capture_minor_01",
+      "file": "lia_capture_minor_01.m4a",
+      "taskId": "tsk_973fdc637db6",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_minor_01",
+          "kind": "audio",
+          "resourceId": "res_757798550cef",
+          "versionId": "ver_e9b02865812e",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.168
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_minor_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_9232e1f27b7dbd1864bebec64d4298f8",
+          "versionId": "ver_1933149057f1998da4b3b8a6d9b0f0d7",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_e9b02865812e",
+      "resourceId": "res_757798550cef"
+    },
+    {
+      "index": 21,
+      "name": "lia_capture_minor_02",
+      "file": "lia_capture_minor_02.m4a",
+      "taskId": "tsk_b5fd02119fb8",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_minor_02",
+          "kind": "audio",
+          "resourceId": "res_1dd7179ef9b4",
+          "versionId": "ver_8a52f2ba5adc",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.168
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_minor_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_6e78790a86cfe4b63c681b9121639ef2",
+          "versionId": "ver_dbd59b9c7faa127010c949d818e7e11b",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_8a52f2ba5adc",
+      "resourceId": "res_1dd7179ef9b4"
+    },
+    {
+      "index": 22,
+      "name": "lia_capture_minor_03",
+      "file": "lia_capture_minor_03.m4a",
+      "taskId": "tsk_47220d9a1624",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_minor_03",
+          "kind": "audio",
+          "resourceId": "res_3c530738c0fe",
+          "versionId": "ver_ec6dce585a73",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.212
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_minor_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_23db91691beb8cbf250ca4e021ed8ea2",
+          "versionId": "ver_64cebd3a3067877a89123320e8ff16fd",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_ec6dce585a73",
+      "resourceId": "res_3c530738c0fe"
+    },
+    {
+      "index": 23,
+      "name": "lia_capture_minor_04",
+      "file": "lia_capture_minor_04.m4a",
+      "taskId": "tsk_023df43cb136",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_minor_04",
+          "kind": "audio",
+          "resourceId": "res_939bb173086a",
+          "versionId": "ver_f25fbe625c28",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.392
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_minor_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_d0d7754a72e70f72c012c9b3aa4ae4eb",
+          "versionId": "ver_f01e73045067275420eec9773aa6d00d",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_f25fbe625c28",
+      "resourceId": "res_939bb173086a"
+    },
+    {
+      "index": 24,
+      "name": "lia_capture_rook_01",
+      "file": "lia_capture_rook_01.m4a",
+      "taskId": "tsk_0dbc011aaa26",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_rook_01",
+          "kind": "audio",
+          "resourceId": "res_16727d0e22cc",
+          "versionId": "ver_d76d1c7ba605",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.384
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_rook_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_4358f479846e3100ed956ff60393c381",
+          "versionId": "ver_a85d914383018e9bacf22bd9bf29682b",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_d76d1c7ba605",
+      "resourceId": "res_16727d0e22cc"
+    },
+    {
+      "index": 25,
+      "name": "lia_capture_rook_02",
+      "file": "lia_capture_rook_02.m4a",
+      "taskId": "tsk_8bb187c8db86",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_rook_02",
+          "kind": "audio",
+          "resourceId": "res_7324d743ae23",
+          "versionId": "ver_3f9c5c5c2d19",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.104
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_rook_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_5d2bcbda44b1657d3e9ad8a77a18a588",
+          "versionId": "ver_53ef2057c51c6e9779d67a28b8dd1e10",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_3f9c5c5c2d19",
+      "resourceId": "res_7324d743ae23"
+    },
+    {
+      "index": 26,
+      "name": "lia_capture_rook_03",
+      "file": "lia_capture_rook_03.m4a",
+      "taskId": "tsk_48581a547500",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_rook_03",
+          "kind": "audio",
+          "resourceId": "res_4fb760ba6cb3",
+          "versionId": "ver_344840fd257f",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.78
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_rook_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_b2d0e4ab475d197356067b60dec4086e",
+          "versionId": "ver_f9e2fb3fed053f4c9bf65f530e30dd28",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_344840fd257f",
+      "resourceId": "res_4fb760ba6cb3"
+    },
+    {
+      "index": 27,
+      "name": "lia_capture_rook_04",
+      "file": "lia_capture_rook_04.m4a",
+      "taskId": "tsk_017037d0540e",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_rook_04",
+          "kind": "audio",
+          "resourceId": "res_ad0ec74629b2",
+          "versionId": "ver_ed0af10f5826",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.86
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_rook_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_5409e9c4fed074af1a874023122de700",
+          "versionId": "ver_99ef796686f0f7fe6d7dbab917f70e2c",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_ed0af10f5826",
+      "resourceId": "res_ad0ec74629b2"
+    },
+    {
+      "index": 28,
+      "name": "lia_capture_queen_01",
+      "file": "lia_capture_queen_01.m4a",
+      "taskId": "tsk_fcaf7ecf6e9a",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_queen_01",
+          "kind": "audio",
+          "resourceId": "res_a56826a3cf2f",
+          "versionId": "ver_713850151266",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.14
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_queen_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_809409eb8c36e3375679e5827b3668bb",
+          "versionId": "ver_58e6ab67ff7a60f055b0e08fbeeb6372",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_713850151266",
+      "resourceId": "res_a56826a3cf2f"
+    },
+    {
+      "index": 29,
+      "name": "lia_capture_queen_02",
+      "file": "lia_capture_queen_02.m4a",
+      "taskId": "tsk_105b65dad53f",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_queen_02",
+          "kind": "audio",
+          "resourceId": "res_78513fe99e03",
+          "versionId": "ver_cab0bd804335",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.852
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_queen_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_bb51078646725facafc6b8f579c8440c",
+          "versionId": "ver_8ae2a03f10df4d2a5561bc15dd4503b8",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_cab0bd804335",
+      "resourceId": "res_78513fe99e03"
+    },
+    {
+      "index": 30,
+      "name": "lia_capture_queen_03",
+      "file": "lia_capture_queen_03.m4a",
+      "taskId": "tsk_9c2756469356",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_queen_03",
+          "kind": "audio",
+          "resourceId": "res_24d632ad5251",
+          "versionId": "ver_d48138fff272",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.888
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_queen_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_ff90fb8eff82a983f5d93609f64b2369",
+          "versionId": "ver_64d969289e436afa2a33dce95266ba2e",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_d48138fff272",
+      "resourceId": "res_24d632ad5251"
+    },
+    {
+      "index": 31,
+      "name": "lia_capture_queen_04",
+      "file": "lia_capture_queen_04.m4a",
+      "taskId": "tsk_ca15477db16f",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_queen_04",
+          "kind": "audio",
+          "resourceId": "res_5a1bdd6e421e",
+          "versionId": "ver_307bf8915bde",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.292
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_queen_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_6df14fc70b8a9e1a07400e1f3b494cbe",
+          "versionId": "ver_43d962c7d9543dacc0e29e2d4aa4ca11",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_307bf8915bde",
+      "resourceId": "res_5a1bdd6e421e"
+    },
+    {
+      "index": 32,
+      "name": "lia_player_loses_minor_01",
+      "file": "lia_player_loses_minor_01.m4a",
+      "taskId": "tsk_f7e6b2919e60",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_minor_01",
+          "kind": "audio",
+          "resourceId": "res_5b6cde55b6ab",
+          "versionId": "ver_5ac38c69f210",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.688
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_minor_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_b8131aac4c0ad2ee489e1f6b0b80b709",
+          "versionId": "ver_b97983f575ce95eee60682d3cc617b5e",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_5ac38c69f210",
+      "resourceId": "res_5b6cde55b6ab"
+    },
+    {
+      "index": 33,
+      "name": "lia_player_loses_minor_02",
+      "file": "lia_player_loses_minor_02.m4a",
+      "taskId": "tsk_d5148f02f62e",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_minor_02",
+          "kind": "audio",
+          "resourceId": "res_3ea392b09b8f",
+          "versionId": "ver_1df808b8d0ab",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.672
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_minor_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_c24aa3323603f4c146148eda933d32a9",
+          "versionId": "ver_137bb088377b088df15e43e13022fd78",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_1df808b8d0ab",
+      "resourceId": "res_3ea392b09b8f"
+    },
+    {
+      "index": 34,
+      "name": "lia_player_loses_minor_03",
+      "file": "lia_player_loses_minor_03.m4a",
+      "taskId": "tsk_b8527680448a",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_minor_03",
+          "kind": "audio",
+          "resourceId": "res_2ed41fcdc066",
+          "versionId": "ver_3c519a427b6e",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.14
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_minor_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_e3c725d010c7c92872f7c6df57d824a9",
+          "versionId": "ver_7260e1bf36cd91dc6cde885518f1968d",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_3c519a427b6e",
+      "resourceId": "res_2ed41fcdc066"
+    },
+    {
+      "index": 35,
+      "name": "lia_player_loses_minor_04",
+      "file": "lia_player_loses_minor_04.m4a",
+      "taskId": "tsk_9f2b08e9bdc8",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_minor_04",
+          "kind": "audio",
+          "resourceId": "res_b0dce117d850",
+          "versionId": "ver_62ee09883b45",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.708
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_minor_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_eeba512d533d869d1bf3d80467929e84",
+          "versionId": "ver_3687db16945ae32835cbfbd51dc07df9",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_62ee09883b45",
+      "resourceId": "res_b0dce117d850"
+    },
+    {
+      "index": 36,
+      "name": "lia_player_loses_rook_01",
+      "file": "lia_player_loses_rook_01.m4a",
+      "taskId": "tsk_38ef260233bb",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_rook_01",
+          "kind": "audio",
+          "resourceId": "res_bd0103bff6da",
+          "versionId": "ver_50466cafd9a1",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.788
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_rook_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_0fed3951c4f1759e9059a79a1365f3f6",
+          "versionId": "ver_40ee2a59ad4abb6e94cd9dd5ef40e7e0",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_50466cafd9a1",
+      "resourceId": "res_bd0103bff6da"
+    },
+    {
+      "index": 37,
+      "name": "lia_player_loses_rook_02",
+      "file": "lia_player_loses_rook_02.m4a",
+      "taskId": "tsk_d8b126aed3fa",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_rook_02",
+          "kind": "audio",
+          "resourceId": "res_6424f7e14d44",
+          "versionId": "ver_7ab6b218a120",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.356
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_rook_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_58da4a2bab7474450d8bf69a4b22e52b",
+          "versionId": "ver_b720eda2b6f757c3209a7e77afc3296a",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_7ab6b218a120",
+      "resourceId": "res_6424f7e14d44"
+    },
+    {
+      "index": 38,
+      "name": "lia_player_loses_queen_01",
+      "file": "lia_player_loses_queen_01.m4a",
+      "taskId": "tsk_5f737dd1e6fa",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_queen_01",
+          "kind": "audio",
+          "resourceId": "res_25bd6f85b780",
+          "versionId": "ver_4eab51281c68",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.472
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_queen_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_d0518b0a7b9d64e09f6e31555e8933d4",
+          "versionId": "ver_442af82d494fd68adee008e880c4293b",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_4eab51281c68",
+      "resourceId": "res_25bd6f85b780"
+    },
+    {
+      "index": 39,
+      "name": "lia_player_loses_queen_02",
+      "file": "lia_player_loses_queen_02.m4a",
+      "taskId": "tsk_c0ade24d9a29",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_queen_02",
+          "kind": "audio",
+          "resourceId": "res_59535184380f",
+          "versionId": "ver_75bad6f7ccb5",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.5
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_queen_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_63ac04a96982e7c3ca737a7af8652d31",
+          "versionId": "ver_a1f91a9c58fc1fc5a9ade413e09e0542",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_75bad6f7ccb5",
+      "resourceId": "res_59535184380f"
+    },
+    {
+      "index": 40,
+      "name": "lia_tactic_fork_01",
+      "file": "lia_tactic_fork_01.m4a",
+      "taskId": "tsk_2df987dce48e",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_fork_01",
+          "kind": "audio",
+          "resourceId": "res_7f1bde6fe837",
+          "versionId": "ver_f5cb35db07a9",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.796
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_fork_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_24787aba34c8f88dc7d86b2e9af2e1a4",
+          "versionId": "ver_2643d3b73deddec985e13270e4fe573f",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_f5cb35db07a9",
+      "resourceId": "res_7f1bde6fe837"
+    },
+    {
+      "index": 41,
+      "name": "lia_tactic_fork_02",
+      "file": "lia_tactic_fork_02.m4a",
+      "taskId": "tsk_5680d55711d5",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_fork_02",
+          "kind": "audio",
+          "resourceId": "res_2f46e2074944",
+          "versionId": "ver_e12ab3f1477f",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.572
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_fork_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_370f7e4d3c9ffc31efc5526e1cac6a1c",
+          "versionId": "ver_6b3bab0f0647aaaa0cbb68f56a2b97da",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_e12ab3f1477f",
+      "resourceId": "res_2f46e2074944"
+    },
+    {
+      "index": 42,
+      "name": "lia_tactic_fork_03",
+      "file": "lia_tactic_fork_03.m4a",
+      "taskId": "tsk_c5e694e34ccb",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_fork_03",
+          "kind": "audio",
+          "resourceId": "res_753ff865700c",
+          "versionId": "ver_f28438c3e86c",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.212
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_fork_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_5d61dd21d620f30911fa866510279577",
+          "versionId": "ver_37acde4ec0acbf566d07e03332736523",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_f28438c3e86c",
+      "resourceId": "res_753ff865700c"
+    },
+    {
+      "index": 43,
+      "name": "lia_tactic_fork_04",
+      "file": "lia_tactic_fork_04.m4a",
+      "taskId": "tsk_b49a03364677",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_fork_04",
+          "kind": "audio",
+          "resourceId": "res_3760e564b0f0",
+          "versionId": "ver_fa903e50a8ec",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.536
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_fork_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_02fa3df06f9dbf02eb1df317ced30254",
+          "versionId": "ver_d6b38d9242fc806a835c95ffd0348daf",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_fa903e50a8ec",
+      "resourceId": "res_3760e564b0f0"
+    },
+    {
+      "index": 44,
+      "name": "lia_tactic_pin_01",
+      "file": "lia_tactic_pin_01.m4a",
+      "taskId": "tsk_0795367fef42",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_pin_01",
+          "kind": "audio",
+          "resourceId": "res_f23326689ea2",
+          "versionId": "ver_ec672149e1cf",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.464
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_pin_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_9fc8f97fbb1d059555c8d2940ad632ee",
+          "versionId": "ver_dd121ac740bf187e8970d329275b33ac",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_ec672149e1cf",
+      "resourceId": "res_f23326689ea2"
+    },
+    {
+      "index": 45,
+      "name": "lia_tactic_pin_02",
+      "file": "lia_tactic_pin_02.m4a",
+      "taskId": "tsk_9612ba1af322",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_pin_02",
+          "kind": "audio",
+          "resourceId": "res_f74bf8cfac2b",
+          "versionId": "ver_eb362e3afbdc",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.708
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_pin_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_31583622213e9cc0c8b22454ad264c1d",
+          "versionId": "ver_25cbc831eae644400ff77c4705086671",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_eb362e3afbdc",
+      "resourceId": "res_f74bf8cfac2b"
+    },
+    {
+      "index": 46,
+      "name": "lia_tactic_pin_03",
+      "file": "lia_tactic_pin_03.m4a",
+      "taskId": "tsk_d4f45d5bc136",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_pin_03",
+          "kind": "audio",
+          "resourceId": "res_75f66e8dab08",
+          "versionId": "ver_42cb269d7cc1",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.572
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_pin_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_7d443d2549b7d2b5a925e59732e6345b",
+          "versionId": "ver_1a0b77653d974739b5ef2415a6c54316",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_42cb269d7cc1",
+      "resourceId": "res_75f66e8dab08"
+    },
+    {
+      "index": 47,
+      "name": "lia_tactic_pin_04",
+      "file": "lia_tactic_pin_04.m4a",
+      "taskId": "tsk_dc74e78dd815",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_pin_04",
+          "kind": "audio",
+          "resourceId": "res_f8f7dcf74d06",
+          "versionId": "ver_b64a4ba937ee",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.96
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_pin_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_889aa3c064b6d7409172305493b8bc73",
+          "versionId": "ver_d7b2b060aaf1a8c4ac8d18ccd5f31821",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_b64a4ba937ee",
+      "resourceId": "res_f8f7dcf74d06"
+    },
+    {
+      "index": 48,
+      "name": "lia_tactic_sacrifice_01",
+      "file": "lia_tactic_sacrifice_01.m4a",
+      "taskId": "tsk_a4b7ccf40569",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_sacrifice_01",
+          "kind": "audio",
+          "resourceId": "res_f81ec5b8bd30",
+          "versionId": "ver_563af70e0c99",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.608
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_sacrifice_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_86f54b963a3b7c3ede67bee36151ddf8",
+          "versionId": "ver_eedc58e77030b2710eead847fa34798d",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_563af70e0c99",
+      "resourceId": "res_f81ec5b8bd30"
+    },
+    {
+      "index": 49,
+      "name": "lia_tactic_sacrifice_02",
+      "file": "lia_tactic_sacrifice_02.m4a",
+      "taskId": "tsk_90147e884a3d",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_sacrifice_02",
+          "kind": "audio",
+          "resourceId": "res_966e1e43a3da",
+          "versionId": "ver_65f5b66ae17d",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.472
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_sacrifice_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_cd13f39cd84c339b3bbe6908a8fcfdf1",
+          "versionId": "ver_5f9a1e784eaf4789bf03439cb81b322b",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_65f5b66ae17d",
+      "resourceId": "res_966e1e43a3da"
+    },
+    {
+      "index": 50,
+      "name": "lia_tactic_sacrifice_03",
+      "file": "lia_tactic_sacrifice_03.m4a",
+      "taskId": "tsk_237735f1cd03",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_sacrifice_03",
+          "kind": "audio",
+          "resourceId": "res_082a2aa2b6aa",
+          "versionId": "ver_05dd5e072fcb",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.284
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_sacrifice_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_2d4bdb15b5a0403774e35b5d8d8cdeaf",
+          "versionId": "ver_9dfc2dfe26b1b23ba0e39b6267071662",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_05dd5e072fcb",
+      "resourceId": "res_082a2aa2b6aa"
+    },
+    {
+      "index": 51,
+      "name": "lia_tactic_sacrifice_04",
+      "file": "lia_tactic_sacrifice_04.m4a",
+      "taskId": "tsk_7566674e8de9",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_sacrifice_04",
+          "kind": "audio",
+          "resourceId": "res_7f3b8e053b4f",
+          "versionId": "ver_6221cfaaf55f",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.96
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_sacrifice_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_c0300e4e93e6bfd426f5a074cb4f1ab0",
+          "versionId": "ver_8fc891c65f1533620e449ae4a50cd430",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_6221cfaaf55f",
+      "resourceId": "res_7f3b8e053b4f"
+    },
+    {
+      "index": 52,
+      "name": "lia_missed_mate_01",
+      "file": "lia_missed_mate_01.m4a",
+      "taskId": "tsk_bd1307407f6c",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_missed_mate_01",
+          "kind": "audio",
+          "resourceId": "res_5ec875453de8",
+          "versionId": "ver_296288b43257",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.752
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_missed_mate_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_17d0747dbbc6df57d1008c37ebea143c",
+          "versionId": "ver_8c40b763e5bed860aa7d502aaa9436a3",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_296288b43257",
+      "resourceId": "res_5ec875453de8"
+    },
+    {
+      "index": 53,
+      "name": "lia_missed_mate_02",
+      "file": "lia_missed_mate_02.m4a",
+      "taskId": "tsk_bb1890dac7d9",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_missed_mate_02",
+          "kind": "audio",
+          "resourceId": "res_08d67b460c93",
+          "versionId": "ver_d6702e0388c4",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.248
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_missed_mate_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_bde301f6a6f7e80598a25524911aab7e",
+          "versionId": "ver_a977a4f5b9b44e72b46c4260a3a48fba",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_d6702e0388c4",
+      "resourceId": "res_08d67b460c93"
+    },
+    {
+      "index": 54,
+      "name": "lia_blunder_into_mate_01",
+      "file": "lia_blunder_into_mate_01.m4a",
+      "taskId": "tsk_7897f2611c04",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_blunder_into_mate_01",
+          "kind": "audio",
+          "resourceId": "res_dd2eb63f8c9f",
+          "versionId": "ver_d16f5c60950b",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.24
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_blunder_into_mate_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_3eff868cdbc03bb71f31d9e2d728eb2f",
+          "versionId": "ver_f6055d804ccdb73c16e44280de8e843f",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_d16f5c60950b",
+      "resourceId": "res_dd2eb63f8c9f"
+    },
+    {
+      "index": 55,
+      "name": "lia_blunder_into_mate_02",
+      "file": "lia_blunder_into_mate_02.m4a",
+      "taskId": "tsk_52e4b147dd41",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_blunder_into_mate_02",
+          "kind": "audio",
+          "resourceId": "res_6641c395c490",
+          "versionId": "ver_c3ef602560d8",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 2.952
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_blunder_into_mate_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_6ea8a61b2d8732690f5acf2cbcdad289",
+          "versionId": "ver_f4b7f4fceda174cf93a9f453b570067c",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_c3ef602560d8",
+      "resourceId": "res_6641c395c490"
+    },
+    {
+      "index": 56,
+      "name": "lia_mate_01",
+      "file": "lia_mate_01.m4a",
+      "taskId": "tsk_6540b996cccf",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_mate_01",
+          "kind": "audio",
+          "resourceId": "res_894f36123af7",
+          "versionId": "ver_6e9240a18862",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.204
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_mate_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_a36191b982f0ef73cc991775b18c7465",
+          "versionId": "ver_814a64efe77051bf126ee322680936e2",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_6e9240a18862",
+      "resourceId": "res_894f36123af7"
+    },
+    {
+      "index": 57,
+      "name": "lia_mate_02",
+      "file": "lia_mate_02.m4a",
+      "taskId": "tsk_424854199ea7",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_mate_02",
+          "kind": "audio",
+          "resourceId": "res_47c58c19d68a",
+          "versionId": "ver_ded435f8a793",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.24
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_mate_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_48b779e4c2cdde86f792de02c5943f2f",
+          "versionId": "ver_81a2439957e6ef18898a0b4d4fb30992",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_ded435f8a793",
+      "resourceId": "res_47c58c19d68a"
+    },
+    {
+      "index": 58,
+      "name": "lia_comeback_01",
+      "file": "lia_comeback_01.m4a",
+      "taskId": "tsk_8ffa95b91aeb",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_comeback_01",
+          "kind": "audio",
+          "resourceId": "res_6281c9a34897",
+          "versionId": "ver_35399fc63341",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.348
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_comeback_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_25215049248fb49e7638adff1e560d4b",
+          "versionId": "ver_63b58a8cfb8fc6af36f8229e617ef2e4",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_35399fc63341",
+      "resourceId": "res_6281c9a34897"
+    },
+    {
+      "index": 59,
+      "name": "lia_comeback_02",
+      "file": "lia_comeback_02.m4a",
+      "taskId": "tsk_80adef78a1d2",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_comeback_02",
+          "kind": "audio",
+          "resourceId": "res_ae6253b0c0a3",
+          "versionId": "ver_de12f3cacf18",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.5
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_comeback_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_c6a9b9b718fe815d6868e7a858abcd36",
+          "versionId": "ver_adb5bf15cfbbf1b2241d82619818a49b",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_de12f3cacf18",
+      "resourceId": "res_ae6253b0c0a3"
+    },
+    {
+      "index": 60,
+      "name": "lia_player_brilliant_05",
+      "file": "lia_player_brilliant_05.m4a",
+      "taskId": "tsk_d06745299880",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_brilliant_05",
+          "kind": "audio",
+          "resourceId": "res_fbb602b0b3f9",
+          "versionId": "ver_642106e4b78e",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.284
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_brilliant_05 · subtitle",
+          "kind": "text",
+          "resourceId": "res_ae6b3be82e4471ef253313b29a889502",
+          "versionId": "ver_be1bb5ef8e4d6ea4e798fdcbf9c95fac",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_642106e4b78e",
+      "resourceId": "res_fbb602b0b3f9",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 61,
+      "name": "lia_lia_best_move_01",
+      "file": "lia_lia_best_move_01.m4a",
+      "taskId": "tsk_bc48756f5a0c",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_lia_best_move_01",
+          "kind": "audio",
+          "resourceId": "res_a235eabab1dc",
+          "versionId": "ver_e6f1d0f7341c",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.788
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_lia_best_move_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_bb17129b32edfc1908197588e379dca6",
+          "versionId": "ver_1bbe64a89e75beba8e36696c101496af",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_e6f1d0f7341c",
+      "resourceId": "res_a235eabab1dc",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 62,
+      "name": "lia_lia_best_move_02",
+      "file": "lia_lia_best_move_02.m4a",
+      "taskId": "tsk_041f64040d05",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_lia_best_move_02",
+          "kind": "audio",
+          "resourceId": "res_ac32d6c6568b",
+          "versionId": "ver_6f27956a78b0",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.32
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_lia_best_move_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_837ae740a18b8705689002c995adaf2a",
+          "versionId": "ver_fcd86e22bd148cef74b824e11ddc41f2",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_6f27956a78b0",
+      "resourceId": "res_ac32d6c6568b",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 63,
+      "name": "lia_lia_best_move_03",
+      "file": "lia_lia_best_move_03.m4a",
+      "taskId": "tsk_42eec0af2ad0",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_lia_best_move_03",
+          "kind": "audio",
+          "resourceId": "res_6d70418c8d06",
+          "versionId": "ver_60f889d99fdf",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.068
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_lia_best_move_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_a0db5c441be2290462dec83d23150924",
+          "versionId": "ver_b5aeab704a9f0df60c0b1919e1daac12",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_60f889d99fdf",
+      "resourceId": "res_6d70418c8d06",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 64,
+      "name": "lia_lia_best_move_04",
+      "file": "lia_lia_best_move_04.m4a",
+      "taskId": "tsk_385eb8d3a357",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_lia_best_move_04",
+          "kind": "audio",
+          "resourceId": "res_e1c1f01e8eca",
+          "versionId": "ver_3e007501ce6b",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.824
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_lia_best_move_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_d21eb03ddb40c252b8a6b445000b06a5",
+          "versionId": "ver_334b2d65dc35d0518efbbc5cd369413d",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_3e007501ce6b",
+      "resourceId": "res_e1c1f01e8eca",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 65,
+      "name": "lia_capture_pawn_01",
+      "file": "lia_capture_pawn_01.m4a",
+      "taskId": "tsk_b53b81161d96",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_pawn_01",
+          "kind": "audio",
+          "resourceId": "res_04a85fa0fae4",
+          "versionId": "ver_6c302f8a8b53",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.528
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_pawn_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_bff4d524c24f5fb2dd34499dc1de0f7b",
+          "versionId": "ver_7e7b3aec3af11b6b82d4d1835493f78a",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_6c302f8a8b53",
+      "resourceId": "res_04a85fa0fae4",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 66,
+      "name": "lia_capture_pawn_02",
+      "file": "lia_capture_pawn_02.m4a",
+      "taskId": "tsk_3457df9756a4",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_pawn_02",
+          "kind": "audio",
+          "resourceId": "res_6e7e4c2416da",
+          "versionId": "ver_6461ae240a76",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.14
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_pawn_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_f76df6ad219cd4ea88c2188e908e053f",
+          "versionId": "ver_1a8806e4d9da349e0d3059eb945622ba",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_6461ae240a76",
+      "resourceId": "res_6e7e4c2416da",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 67,
+      "name": "lia_capture_pawn_03",
+      "file": "lia_capture_pawn_03.m4a",
+      "taskId": "tsk_9168884bcd8e",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_pawn_03",
+          "kind": "audio",
+          "resourceId": "res_7e32a9afc891",
+          "versionId": "ver_6394a8e8394a",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.636
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_pawn_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_6a3ba9405b76cdccfc5895e7f1ebe030",
+          "versionId": "ver_72922afb88de22dada6440bb86966798",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_6394a8e8394a",
+      "resourceId": "res_7e32a9afc891",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 68,
+      "name": "lia_capture_pawn_04",
+      "file": "lia_capture_pawn_04.m4a",
+      "taskId": "tsk_b83e4b7c4b48",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_capture_pawn_04",
+          "kind": "audio",
+          "resourceId": "res_6286181517a7",
+          "versionId": "ver_7d86bb222c32",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.284
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_capture_pawn_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_16571d0c2bdbeadd9092a1fa1a9d60a9",
+          "versionId": "ver_d1ffb5e9ec816617236a279a600ace11",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_7d86bb222c32",
+      "resourceId": "res_6286181517a7",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 69,
+      "name": "lia_player_loses_rook_03",
+      "file": "lia_player_loses_rook_03.m4a",
+      "taskId": "tsk_88fd66770a55",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_rook_03",
+          "kind": "audio",
+          "resourceId": "res_063050820023",
+          "versionId": "ver_d6c5980ade17",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.572
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_rook_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_f65811b1e8fec4407d2b62e222c0f98f",
+          "versionId": "ver_a5741ee7b458a4dce58f2d4eb016621d",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_d6c5980ade17",
+      "resourceId": "res_063050820023",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 70,
+      "name": "lia_player_loses_rook_04",
+      "file": "lia_player_loses_rook_04.m4a",
+      "taskId": "tsk_28c6d720c0d2",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_rook_04",
+          "kind": "audio",
+          "resourceId": "res_6d30c4c5c775",
+          "versionId": "ver_3a7996dc0a28",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.752
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_rook_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_f4bcc735c9b87e4d3e80abf6a3768bfc",
+          "versionId": "ver_7c0789ea9fb2cd60974b0caf575bc615",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_3a7996dc0a28",
+      "resourceId": "res_6d30c4c5c775",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 71,
+      "name": "lia_player_loses_queen_03",
+      "file": "lia_player_loses_queen_03.m4a",
+      "taskId": "tsk_71976dc2a9dd",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_queen_03",
+          "kind": "audio",
+          "resourceId": "res_d92b8e2375ca",
+          "versionId": "ver_56d41a528096",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.032
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_queen_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_2eb50ad1cbb959b9a056b45a44136c00",
+          "versionId": "ver_f17f631dddcc8981890af5b2e97ffad1",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_56d41a528096",
+      "resourceId": "res_d92b8e2375ca",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 72,
+      "name": "lia_player_loses_queen_04",
+      "file": "lia_player_loses_queen_04.m4a",
+      "taskId": "tsk_2f0ac213064c",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_loses_queen_04",
+          "kind": "audio",
+          "resourceId": "res_84c4196f5053",
+          "versionId": "ver_bca4001f78a2",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.22
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_loses_queen_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_b6b0cf9562485fed31b2ae144ae7f456",
+          "versionId": "ver_1e115bf600176ba4411948065d694f40",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_bca4001f78a2",
+      "resourceId": "res_84c4196f5053",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 73,
+      "name": "lia_tactic_discovered_attack_01",
+      "file": "lia_tactic_discovered_attack_01.m4a",
+      "taskId": "tsk_02974dcf42cc",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_discovered_attack_01",
+          "kind": "audio",
+          "resourceId": "res_501625fbc5b6",
+          "versionId": "ver_4c97235b5a28",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.824
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_discovered_attack_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_8bec66152a919d44d038888877b4e746",
+          "versionId": "ver_d432519acecf807289075a405b0c53ca",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_4c97235b5a28",
+      "resourceId": "res_501625fbc5b6",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 74,
+      "name": "lia_tactic_discovered_attack_02",
+      "file": "lia_tactic_discovered_attack_02.m4a",
+      "taskId": "tsk_620aa056fff4",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_discovered_attack_02",
+          "kind": "audio",
+          "resourceId": "res_63465d728867",
+          "versionId": "ver_f839b192e31c",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.068
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_discovered_attack_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_f1a9a965df7dd595ad50e765b9d74ce1",
+          "versionId": "ver_17c04bd4218fef010ddd25b713ff46b8",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_f839b192e31c",
+      "resourceId": "res_63465d728867",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 75,
+      "name": "lia_tactic_discovered_attack_03",
+      "file": "lia_tactic_discovered_attack_03.m4a",
+      "taskId": "tsk_df189bc0195e",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_discovered_attack_03",
+          "kind": "audio",
+          "resourceId": "res_76bb89f23dd2",
+          "versionId": "ver_537eabc7bec7",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 2.808
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_discovered_attack_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_40a70e3198cc30575a01a507aa1c22fd",
+          "versionId": "ver_40917a9bd058b2078c029ecae5e0d814",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_537eabc7bec7",
+      "resourceId": "res_76bb89f23dd2",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 76,
+      "name": "lia_tactic_discovered_attack_04",
+      "file": "lia_tactic_discovered_attack_04.m4a",
+      "taskId": "tsk_764bced6839e",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_discovered_attack_04",
+          "kind": "audio",
+          "resourceId": "res_1527b77c8822",
+          "versionId": "ver_34483ad5d767",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.348
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_discovered_attack_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_d6f62d2f19ce4d89d69e11def821c988",
+          "versionId": "ver_4345ba32286549c4d10d6691f6bf3742",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_34483ad5d767",
+      "resourceId": "res_1527b77c8822",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 77,
+      "name": "lia_tactic_zwischenzug_01",
+      "file": "lia_tactic_zwischenzug_01.m4a",
+      "taskId": "tsk_15cdaba39361",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_zwischenzug_01",
+          "kind": "audio",
+          "resourceId": "res_c2487dc1c472",
+          "versionId": "ver_8ae150537ab9",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.284
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_zwischenzug_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_f80bd048054e8d66d763a01dabbda9f2",
+          "versionId": "ver_96eba60b856e22a680afa2346a026949",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_8ae150537ab9",
+      "resourceId": "res_c2487dc1c472",
+      "billing": {
+        "estimatedCredits": 2
+      }
+    },
+    {
+      "index": 78,
+      "name": "lia_tactic_zwischenzug_02",
+      "file": "lia_tactic_zwischenzug_02.m4a",
+      "taskId": "tsk_1389084a072c",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_zwischenzug_02",
+          "kind": "audio",
+          "resourceId": "res_d65df1db0baa",
+          "versionId": "ver_991445c9be0f",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.788
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_zwischenzug_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_e0b35ce367c0ed5600032eae1c294882",
+          "versionId": "ver_d667815ec8be1affee8385888f140529",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_991445c9be0f",
+      "resourceId": "res_d65df1db0baa",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 79,
+      "name": "lia_tactic_zwischenzug_03",
+      "file": "lia_tactic_zwischenzug_03.m4a",
+      "taskId": "tsk_ebe988fcccfc",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_zwischenzug_03",
+          "kind": "audio",
+          "resourceId": "res_2838f9ca8b48",
+          "versionId": "ver_c6165e2d147e",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.204
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_zwischenzug_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_411e7681fef5e2a457a6692ff5672e66",
+          "versionId": "ver_63b423cd65f54754f52c8880c38c18d5",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_c6165e2d147e",
+      "resourceId": "res_2838f9ca8b48",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 80,
+      "name": "lia_tactic_zwischenzug_04",
+      "file": "lia_tactic_zwischenzug_04.m4a",
+      "taskId": "tsk_14a039f5521b",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_tactic_zwischenzug_04",
+          "kind": "audio",
+          "resourceId": "res_4fe5df5d4313",
+          "versionId": "ver_ed7d99b4c24d",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.96
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_tactic_zwischenzug_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_c78380e75fd1b5f9a26c5b29bf438526",
+          "versionId": "ver_e6819487b430265039e6f5d8ee1221bb",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_ed7d99b4c24d",
+      "resourceId": "res_4fe5df5d4313",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 81,
+      "name": "lia_key_threat_01",
+      "file": "lia_key_threat_01.m4a",
+      "taskId": "tsk_b53e32f22f78",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_key_threat_01",
+          "kind": "audio",
+          "resourceId": "res_f57699e2ebdd",
+          "versionId": "ver_b2c7e0b377e9",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.096
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_key_threat_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_39a4172f8cb4c8dd4a68abfd810bc68a",
+          "versionId": "ver_8270ef647d4413c84c9d54e3aca2d307",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_b2c7e0b377e9",
+      "resourceId": "res_f57699e2ebdd",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 82,
+      "name": "lia_key_threat_02",
+      "file": "lia_key_threat_02.m4a",
+      "taskId": "tsk_d399237318ab",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_key_threat_02",
+          "kind": "audio",
+          "resourceId": "res_f6d4d0da2b4c",
+          "versionId": "ver_9e21098ac04e",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.356
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_key_threat_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_23fc4d5878566cb7378565fe9e88a668",
+          "versionId": "ver_c3e1ceaefb6ad5fa18f49a6f74936e61",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_9e21098ac04e",
+      "resourceId": "res_f6d4d0da2b4c",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 83,
+      "name": "lia_key_threat_03",
+      "file": "lia_key_threat_03.m4a",
+      "taskId": "tsk_dbd96cfb5613",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_key_threat_03",
+          "kind": "audio",
+          "resourceId": "res_eca9f645f820",
+          "versionId": "ver_f222aa0faf01",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.14
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_key_threat_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_f966604e2d13f12e8759a9aeff6d41af",
+          "versionId": "ver_71ebca33cdd776be99ac5fad2ea1883d",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_f222aa0faf01",
+      "resourceId": "res_eca9f645f820",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 84,
+      "name": "lia_key_threat_04",
+      "file": "lia_key_threat_04.m4a",
+      "taskId": "tsk_009c1f39bb9a",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_key_threat_04",
+          "kind": "audio",
+          "resourceId": "res_6aaec68f43c1",
+          "versionId": "ver_7471326e082b",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.6
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_key_threat_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_8df29b7b364965591806ffa5fe2993c0",
+          "versionId": "ver_338207b0b9ea9fe65e3648d025715a39",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_7471326e082b",
+      "resourceId": "res_6aaec68f43c1",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 85,
+      "name": "lia_check_01",
+      "file": "lia_check_01.m4a",
+      "taskId": "tsk_771ed5fb56db",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_check_01",
+          "kind": "audio",
+          "resourceId": "res_adbc2c5c26b3",
+          "versionId": "ver_6b3ef1ca7b00",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.276
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_check_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_7d4584929a1d3a751197d01d5b7fa720",
+          "versionId": "ver_50b1911b6ff536cd8a91316e6057ff32",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_6b3ef1ca7b00",
+      "resourceId": "res_adbc2c5c26b3",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 86,
+      "name": "lia_check_02",
+      "file": "lia_check_02.m4a",
+      "taskId": "tsk_f28cd1e007a9",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_check_02",
+          "kind": "audio",
+          "resourceId": "res_4fc6d3286aee",
+          "versionId": "ver_4ae61ed53d76",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.24
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_check_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_c7d618775783b9eb0063bc3d25535ac0",
+          "versionId": "ver_34ed4c04ca03f232b2dc7113863f66e2",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_4ae61ed53d76",
+      "resourceId": "res_4fc6d3286aee",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 87,
+      "name": "lia_check_03",
+      "file": "lia_check_03.m4a",
+      "taskId": "tsk_24c8b123dafb",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_check_03",
+          "kind": "audio",
+          "resourceId": "res_ad3cdc2889f9",
+          "versionId": "ver_0d8e8658f730",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.032
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_check_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_8fd13d107b06cad864c5e157ff299fe9",
+          "versionId": "ver_e9db2d67741a9928d2ad2a1e3f12b5f8",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_0d8e8658f730",
+      "resourceId": "res_ad3cdc2889f9",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 88,
+      "name": "lia_check_04",
+      "file": "lia_check_04.m4a",
+      "taskId": "tsk_729e39dcfaca",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_check_04",
+          "kind": "audio",
+          "resourceId": "res_3a0f9056ccaf",
+          "versionId": "ver_150d83bba5c5",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.464
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_check_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_c11318332abad3bd1e2c2c202e45a94d",
+          "versionId": "ver_e220db41ca1e1f138239507ac4d6534e",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_150d83bba5c5",
+      "resourceId": "res_3a0f9056ccaf",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 89,
+      "name": "lia_player_check_01",
+      "file": "lia_player_check_01.m4a",
+      "taskId": "tsk_f4273430c1e5",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_check_01",
+          "kind": "audio",
+          "resourceId": "res_81c91ab36423",
+          "versionId": "ver_30ba59b23d89",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.868
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_check_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_97068fced644d0ad55e8a39110103113",
+          "versionId": "ver_54ca29e3e457e6bb99ed5515a57343d3",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_30ba59b23d89",
+      "resourceId": "res_81c91ab36423",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 90,
+      "name": "lia_player_check_02",
+      "file": "lia_player_check_02.m4a",
+      "taskId": "tsk_d614a2c8f99e",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_check_02",
+          "kind": "audio",
+          "resourceId": "res_a737fd0ab5d2",
+          "versionId": "ver_34addb76d205",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.032
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_check_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_3dab391b19a1e5ad8df650703373532c",
+          "versionId": "ver_597b2f9d7a949c86bef56bb8f4e35024",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_34addb76d205",
+      "resourceId": "res_a737fd0ab5d2",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 91,
+      "name": "lia_player_check_03",
+      "file": "lia_player_check_03.m4a",
+      "taskId": "tsk_64f9ee1e69bf",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_check_03",
+          "kind": "audio",
+          "resourceId": "res_79197e7fba30",
+          "versionId": "ver_07a5d1369c03",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.528
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_check_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_d1198704a162a8a8afce01cfc2925aa7",
+          "versionId": "ver_630efcc058b6c7edf412d61431aa10f0",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_07a5d1369c03",
+      "resourceId": "res_79197e7fba30",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 92,
+      "name": "lia_player_check_04",
+      "file": "lia_player_check_04.m4a",
+      "taskId": "tsk_b5e10534746b",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_check_04",
+          "kind": "audio",
+          "resourceId": "res_11bbff0024ad",
+          "versionId": "ver_082e1278663e",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.96
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_check_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_8c079d711f8bd28cf6fd4f83d08e12be",
+          "versionId": "ver_27750a9d6c91c716409f7796553fe58d",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_082e1278663e",
+      "resourceId": "res_11bbff0024ad",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 93,
+      "name": "lia_missed_mate_03",
+      "file": "lia_missed_mate_03.m4a",
+      "taskId": "tsk_7921ae37972f",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_missed_mate_03",
+          "kind": "audio",
+          "resourceId": "res_1cb47c4e2d25",
+          "versionId": "ver_02449b2fe8aa",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.392
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_missed_mate_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_1ccd954e4aaee0aa92e166453eedb7ec",
+          "versionId": "ver_db657998522b67cbc188322aba9f5df8",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_02449b2fe8aa",
+      "resourceId": "res_1cb47c4e2d25",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 94,
+      "name": "lia_missed_mate_04",
+      "file": "lia_missed_mate_04.m4a",
+      "taskId": "tsk_dadc64366038",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_missed_mate_04",
+          "kind": "audio",
+          "resourceId": "res_3ff15f670332",
+          "versionId": "ver_b8555475cdd3",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.5
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_missed_mate_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_a278cef7e69bf3edb069cd90a14dd881",
+          "versionId": "ver_09c52891b0dcfe78e21ee3ce8163063c",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_b8555475cdd3",
+      "resourceId": "res_3ff15f670332",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 95,
+      "name": "lia_blunder_into_mate_03",
+      "file": "lia_blunder_into_mate_03.m4a",
+      "taskId": "tsk_882034726229",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_blunder_into_mate_03",
+          "kind": "audio",
+          "resourceId": "res_815e00085f26",
+          "versionId": "ver_1eff3bb3f280",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.636
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_blunder_into_mate_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_95685374594fe9f4e129eb4629cb0fac",
+          "versionId": "ver_49cfc836cad744753af47c5e99384153",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_1eff3bb3f280",
+      "resourceId": "res_815e00085f26",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 96,
+      "name": "lia_blunder_into_mate_04",
+      "file": "lia_blunder_into_mate_04.m4a",
+      "taskId": "tsk_28fd85e482fc",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_blunder_into_mate_04",
+          "kind": "audio",
+          "resourceId": "res_6474a39b3993",
+          "versionId": "ver_d2c71062df71",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.572
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_blunder_into_mate_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_f16891dc05956dd33e35ff8e60c9cb39",
+          "versionId": "ver_737e534c2a808f6a5bedcc1aed8d4c77",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_d2c71062df71",
+      "resourceId": "res_6474a39b3993",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 97,
+      "name": "lia_mate_03",
+      "file": "lia_mate_03.m4a",
+      "taskId": "tsk_fa0f01a1d544",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_mate_03",
+          "kind": "audio",
+          "resourceId": "res_dc12cdcdd202",
+          "versionId": "ver_8834d5afa88b",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.384
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_mate_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_ae3868e3e70531ee7348de17dea60856",
+          "versionId": "ver_7fe6d093897195a9dd8471b7838d9724",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_8834d5afa88b",
+      "resourceId": "res_dc12cdcdd202",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 98,
+      "name": "lia_mate_04",
+      "file": "lia_mate_04.m4a",
+      "taskId": "tsk_911324020a74",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_mate_04",
+          "kind": "audio",
+          "resourceId": "res_7df6fbcc0aa3",
+          "versionId": "ver_eb7b70c8443d",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.032
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_mate_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_f1d54c9606e0c5fb5edd95384d272d4d",
+          "versionId": "ver_ed594b83f225c75434352e14a5af0ac0",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_eb7b70c8443d",
+      "resourceId": "res_7df6fbcc0aa3",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 99,
+      "name": "lia_castling_01",
+      "file": "lia_castling_01.m4a",
+      "taskId": "tsk_4706804709ae",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_castling_01",
+          "kind": "audio",
+          "resourceId": "res_7270d0077f81",
+          "versionId": "ver_6ce5fbb4314e",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.024
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_castling_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_6630621f9b08aece66cdeeaab922f304",
+          "versionId": "ver_bdf5f00805bd732d988bb97f25837f71",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_6ce5fbb4314e",
+      "resourceId": "res_7270d0077f81",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 100,
+      "name": "lia_castling_02",
+      "file": "lia_castling_02.m4a",
+      "taskId": "tsk_b82d03d66e2b",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_castling_02",
+          "kind": "audio",
+          "resourceId": "res_f3c984a0bf16",
+          "versionId": "ver_5446c75707a4",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.96
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_castling_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_455c0a80396d019441c98ca5b7ed8e0e",
+          "versionId": "ver_e2b781d4238ccc4f8b5fb2b93e85b93c",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_5446c75707a4",
+      "resourceId": "res_f3c984a0bf16",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 101,
+      "name": "lia_castling_03",
+      "file": "lia_castling_03.m4a",
+      "taskId": "tsk_44f6eb4f9232",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_castling_03",
+          "kind": "audio",
+          "resourceId": "res_89a9c50cb9a6",
+          "versionId": "ver_8f859f9a7bf2",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.212
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_castling_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_89d90ee5b4381ffd40bbd1242ec426ba",
+          "versionId": "ver_af43dcad4c3dbf9864f99637e0def793",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_8f859f9a7bf2",
+      "resourceId": "res_89a9c50cb9a6",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 102,
+      "name": "lia_castling_04",
+      "file": "lia_castling_04.m4a",
+      "taskId": "tsk_419101ae724a",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_castling_04",
+          "kind": "audio",
+          "resourceId": "res_d3181a44b653",
+          "versionId": "ver_888de540f9cd",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.888
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_castling_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_b8338c0d8c3cbf43c10c589a20ef1f05",
+          "versionId": "ver_9eee13d3ac67f24c149b75ae730f61f5",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_888de540f9cd",
+      "resourceId": "res_d3181a44b653",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 103,
+      "name": "lia_promotion_01",
+      "file": "lia_promotion_01.m4a",
+      "taskId": "tsk_9c8187394e94",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_promotion_01",
+          "kind": "audio",
+          "resourceId": "res_74985a874ee2",
+          "versionId": "ver_00afa61262a1",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.708
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_promotion_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_f3279f628c820a01b2ba0ccc631dc936",
+          "versionId": "ver_2cb69ffdffcda5191af671c0dc494759",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_00afa61262a1",
+      "resourceId": "res_74985a874ee2",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 104,
+      "name": "lia_promotion_02",
+      "file": "lia_promotion_02.m4a",
+      "taskId": "tsk_31ef1e421645",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_promotion_02",
+          "kind": "audio",
+          "resourceId": "res_5f3aab43371a",
+          "versionId": "ver_9209722292c6",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.652
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_promotion_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_18fec8cf58d5dce8b8ed7b5f25a6dd6f",
+          "versionId": "ver_d58cc0b2ef8fce9147822481b18e3d7e",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_9209722292c6",
+      "resourceId": "res_5f3aab43371a",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 105,
+      "name": "lia_promotion_03",
+      "file": "lia_promotion_03.m4a",
+      "taskId": "tsk_fdefa4fb5d29",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_promotion_03",
+          "kind": "audio",
+          "resourceId": "res_ae0ccfcdbc4f",
+          "versionId": "ver_203887a72720",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.284
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_promotion_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_038b183cb792ee5fcabec9ba2640d650",
+          "versionId": "ver_2d752d147dc28fa36f680011883be9ad",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_203887a72720",
+      "resourceId": "res_ae0ccfcdbc4f",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 106,
+      "name": "lia_promotion_04",
+      "file": "lia_promotion_04.m4a",
+      "taskId": "tsk_d93e37a36dd8",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_promotion_04",
+          "kind": "audio",
+          "resourceId": "res_2a46feaa6c6c",
+          "versionId": "ver_de1431396419",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.968
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_promotion_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_31cd7c5a9666762d50804d6198c54b63",
+          "versionId": "ver_daccd94637fe416d1f0b30cc139ae395",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_de1431396419",
+      "resourceId": "res_2a46feaa6c6c",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 107,
+      "name": "lia_queen_early_01",
+      "file": "lia_queen_early_01.m4a",
+      "taskId": "tsk_540ff672d5d6",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_queen_early_01",
+          "kind": "audio",
+          "resourceId": "res_d0212c60272a",
+          "versionId": "ver_3045ac39a335",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.356
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_queen_early_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_8006ec8028c978e0a40398ff7b3284e8",
+          "versionId": "ver_e2747b1313cd12a2a73a80b625c87712",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_3045ac39a335",
+      "resourceId": "res_d0212c60272a",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 108,
+      "name": "lia_queen_early_02",
+      "file": "lia_queen_early_02.m4a",
+      "taskId": "tsk_1751f6c9895c",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_queen_early_02",
+          "kind": "audio",
+          "resourceId": "res_14334eaa3071",
+          "versionId": "ver_ea4f8a3fb7dc",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.14
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_queen_early_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_629485e0245c82706c231b2944705c2a",
+          "versionId": "ver_04e51509fa26a92e23b7553e4c7e8ab9",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_ea4f8a3fb7dc",
+      "resourceId": "res_14334eaa3071",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 109,
+      "name": "lia_queen_early_03",
+      "file": "lia_queen_early_03.m4a",
+      "taskId": "tsk_8abe7f312346",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_queen_early_03",
+          "kind": "audio",
+          "resourceId": "res_25d7a097bc7a",
+          "versionId": "ver_434bf87af5a1",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.212
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_queen_early_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_9a635910e66e3250e5f1ea18d1d2d42d",
+          "versionId": "ver_a88733855f58a46e09858353173b3a61",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_434bf87af5a1",
+      "resourceId": "res_25d7a097bc7a",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 110,
+      "name": "lia_queen_early_04",
+      "file": "lia_queen_early_04.m4a",
+      "taskId": "tsk_f18c2cbb16a8",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_queen_early_04",
+          "kind": "audio",
+          "resourceId": "res_ec0d6397048a",
+          "versionId": "ver_c72bd1c6ffc2",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.204
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_queen_early_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_84f099e28c25db3c4e73b9ca5a4cbc61",
+          "versionId": "ver_024219c1dfe2eefe9df62d24d4b7a271",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_c72bd1c6ffc2",
+      "resourceId": "res_ec0d6397048a",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 111,
+      "name": "lia_defense_found_01",
+      "file": "lia_defense_found_01.m4a",
+      "taskId": "tsk_bad6dea6b2ff",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_defense_found_01",
+          "kind": "audio",
+          "resourceId": "res_725dfd026459",
+          "versionId": "ver_5dac420a49e5",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.392
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_defense_found_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_d58802cdea8426bf9727643f0ab67a21",
+          "versionId": "ver_096b5a75432b321504f1959cf566b1e4",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_5dac420a49e5",
+      "resourceId": "res_725dfd026459",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 112,
+      "name": "lia_defense_found_02",
+      "file": "lia_defense_found_02.m4a",
+      "taskId": "tsk_1c58f1923c76",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_defense_found_02",
+          "kind": "audio",
+          "resourceId": "res_65ef8531fd07",
+          "versionId": "ver_57508d6b6faa",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.968
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_defense_found_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_4b80fd4d1e3dce63dc7ef07118a6e985",
+          "versionId": "ver_b04007b3d8cca21fab3f696263a89671",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_57508d6b6faa",
+      "resourceId": "res_65ef8531fd07",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 113,
+      "name": "lia_defense_found_03",
+      "file": "lia_defense_found_03.m4a",
+      "taskId": "tsk_cac317c24177",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_defense_found_03",
+          "kind": "audio",
+          "resourceId": "res_5bc4f3564295",
+          "versionId": "ver_94dd27d18252",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.32
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_defense_found_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_0372f4a2c71c242fb3ac7d8b2e693cbf",
+          "versionId": "ver_ca98e38f555ecf04e9ed883dc54a318e",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_94dd27d18252",
+      "resourceId": "res_5bc4f3564295",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 114,
+      "name": "lia_defense_found_04",
+      "file": "lia_defense_found_04.m4a",
+      "taskId": "tsk_ee8af562cb7b",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_defense_found_04",
+          "kind": "audio",
+          "resourceId": "res_9d0909a8d175",
+          "versionId": "ver_84a2cb7e4118",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 2.664
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_defense_found_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_aa99587e2f1e756afdecd0f363896a94",
+          "versionId": "ver_12afbdd3a74c2c33e5c7094acbe95df9",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_84a2cb7e4118",
+      "resourceId": "res_9d0909a8d175",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 115,
+      "name": "lia_player_missed_tactic_01",
+      "file": "lia_player_missed_tactic_01.m4a",
+      "taskId": "tsk_b0913e09de4e",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_missed_tactic_01",
+          "kind": "audio",
+          "resourceId": "res_41f3ff2aff7b",
+          "versionId": "ver_03dc379ea728",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.24
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_missed_tactic_01 · subtitle",
+          "kind": "text",
+          "resourceId": "res_fe72b1b140c52abacfb1d97880dd08eb",
+          "versionId": "ver_d00c2a51c748fbff1415952cad545bc7",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_03dc379ea728",
+      "resourceId": "res_41f3ff2aff7b",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 116,
+      "name": "lia_player_missed_tactic_02",
+      "file": "lia_player_missed_tactic_02.m4a",
+      "taskId": "tsk_36182b92b4ff",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_missed_tactic_02",
+          "kind": "audio",
+          "resourceId": "res_f09ae57b48a2",
+          "versionId": "ver_77cffecee9dd",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 2.7
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_missed_tactic_02 · subtitle",
+          "kind": "text",
+          "resourceId": "res_7a5c1fc407cb9731eebc29f8978f9e72",
+          "versionId": "ver_57d4430f2dd740f2e30c091ff6a6abaa",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_77cffecee9dd",
+      "resourceId": "res_f09ae57b48a2",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 117,
+      "name": "lia_player_missed_tactic_03",
+      "file": "lia_player_missed_tactic_03.m4a",
+      "taskId": "tsk_09c11f5b2b24",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_missed_tactic_03",
+          "kind": "audio",
+          "resourceId": "res_58b2276bf757",
+          "versionId": "ver_f898866c5745",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.472
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_missed_tactic_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_b88292af631965c4330a8a615b444827",
+          "versionId": "ver_5a23b954bfc596f8f3b2c6b500d74d67",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_f898866c5745",
+      "resourceId": "res_58b2276bf757",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 118,
+      "name": "lia_player_missed_tactic_04",
+      "file": "lia_player_missed_tactic_04.m4a",
+      "taskId": "tsk_8cf4ee62e50b",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_player_missed_tactic_04",
+          "kind": "audio",
+          "resourceId": "res_05c14445446f",
+          "versionId": "ver_e5a15221fc47",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 4.212
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_player_missed_tactic_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_7eb456dad3398a046b0302ff3640c6ea",
+          "versionId": "ver_1cb2a468ceba76be9e318010712834ca",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_e5a15221fc47",
+      "resourceId": "res_05c14445446f",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 119,
+      "name": "lia_comeback_03",
+      "file": "lia_comeback_03.m4a",
+      "taskId": "tsk_562e86f9153d",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_comeback_03",
+          "kind": "audio",
+          "resourceId": "res_df76e976a6a8",
+          "versionId": "ver_62c842644f38",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 5.004
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_comeback_03 · subtitle",
+          "kind": "text",
+          "resourceId": "res_f533bb88d12de0022b746de80482bef2",
+          "versionId": "ver_fa81e4be36f20fba9e5b46ddd291cb14",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_62c842644f38",
+      "resourceId": "res_df76e976a6a8",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    },
+    {
+      "index": 120,
+      "name": "lia_comeback_04",
+      "file": "lia_comeback_04.m4a",
+      "taskId": "tsk_3023521421e2",
+      "status": "completed",
+      "outputs": [
+        {
+          "key": "primary",
+          "name": "lia_comeback_04",
+          "kind": "audio",
+          "resourceId": "res_52063f0ddf09",
+          "versionId": "ver_5965cdab41cd",
+          "disposition": "adopted",
+          "availability": "available",
+          "durationSeconds": 3.492
+        },
+        {
+          "key": "subtitle",
+          "name": "lia_comeback_04 · subtitle",
+          "kind": "text",
+          "resourceId": "res_63d1e38a29ff5edd13551eab0700bfb5",
+          "versionId": "ver_2f05c35b1e83a4f3773e91cc8639b334",
+          "disposition": "adopted",
+          "availability": "available"
+        }
+      ],
+      "versionId": "ver_5965cdab41cd",
+      "resourceId": "res_52063f0ddf09",
+      "billing": {
+        "estimatedCredits": 1
+      }
+    }
+  ],
+  "paths": [],
+  "expectedCount": 121
+}

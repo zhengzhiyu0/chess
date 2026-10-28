@@ -1314,15 +1314,8 @@ html:not(.native) .native-only {
   align-self: center;
   overflow-wrap: anywhere;
 }
-.opponent-dialogue .opponent-cn,
-.opponent-dialogue .opponent-en {
+.opponent-dialogue .opponent-cn {
   display: block;
-}
-.opponent-dialogue .opponent-en {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.35;
 }
 .opponent-dialogue .opponent-label {
   display: block;

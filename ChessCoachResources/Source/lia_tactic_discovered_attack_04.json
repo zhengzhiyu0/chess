@@ -1,0 +1,135 @@
+[
+   {
+      "text": "后手的威胁，现在露面了。",
+      "pronounce_text": "后手的威胁，现在露面了。",
+      "time_begin": 0.0,
+      "time_end": 2581.904761904762,
+      "text_begin": 0,
+      "text_end": 12,
+      "pronounce_text_begin": 0,
+      "pronounce_text_end": 12,
+      "is_final_segment": true,
+      "timestamped_words": [
+         {
+            "word": "后",
+            "word_begin": 0,
+            "word_end": 1,
+            "pronounce_word": "后",
+            "pronounce_word_begin": 0,
+            "pronounce_word_end": 1,
+            "time_begin": 42.666666666666664,
+            "time_end": 256.0
+         },
+         {
+            "word": "手",
+            "word_begin": 1,
+            "word_end": 2,
+            "pronounce_word": "手",
+            "pronounce_word_begin": 1,
+            "pronounce_word_end": 2,
+            "time_begin": 256.0,
+            "time_end": 469.3333333333333
+         },
+         {
+            "word": "的",
+            "word_begin": 2,
+            "word_end": 3,
+            "pronounce_word": "的",
+            "pronounce_word_begin": 2,
+            "pronounce_word_end": 3,
+            "time_begin": 469.3333333333333,
+            "time_end": 512.0
+         },
+         {
+            "word": "威",
+            "word_begin": 3,
+            "word_end": 4,
+            "pronounce_word": "威",
+            "pronounce_word_begin": 3,
+            "pronounce_word_end": 4,
+            "time_begin": 512.0,
+            "time_end": 725.3333333333333
+         },
+         {
+            "word": "胁",
+            "word_begin": 4,
+            "word_end": 5,
+            "pronounce_word": "胁",
+            "pronounce_word_begin": 4,
+            "pronounce_word_end": 5,
+            "time_begin": 725.3333333333333,
+            "time_end": 938.6666666666666
+         },
+         {
+            "word": "，",
+            "word_begin": 5,
+            "word_end": 6,
+            "pronounce_word": "，",
+            "pronounce_word_begin": 5,
+            "pronounce_word_end": 6,
+            "time_begin": 938.6666666666666,
+            "time_end": 981.3333333333333
+         },
+         {
+            "word": "现",
+            "word_begin": 6,
+            "word_end": 7,
+            "pronounce_word": "现",
+            "pronounce_word_begin": 6,
+            "pronounce_word_end": 7,
+            "time_begin": 981.3333333333333,
+            "time_end": 1706.6666666666665
+         },
+         {
+            "word": "在",
+            "word_begin": 7,
+            "word_end": 8,
+            "pronounce_word": "在",
+            "pronounce_word_begin": 7,
+            "pronounce_word_end": 8,
+            "time_begin": 1706.6666666666665,
+            "time_end": 1920.0
+         },
+         {
+            "word": "露",
+            "word_begin": 8,
+            "word_end": 9,
+            "pronounce_word": "露",
+            "pronounce_word_begin": 8,
+            "pronounce_word_end": 9,
+            "time_begin": 1920.0,
+            "time_end": 2090.6666666666665
+         },
+         {
+            "word": "面",
+            "word_begin": 9,
+            "word_end": 10,
+            "pronounce_word": "面",
+            "pronounce_word_begin": 9,
+            "pronounce_word_end": 10,
+            "time_begin": 2090.6666666666665,
+            "time_end": 2261.3333333333335
+         },
+         {
+            "word": "了",
+            "word_begin": 10,
+            "word_end": 11,
+            "pronounce_word": "了",
+            "pronounce_word_begin": 10,
+            "pronounce_word_end": 11,
+            "time_begin": 2261.3333333333335,
+            "time_end": 2432.0
+         },
+         {
+            "word": "。",
+            "word_begin": 11,
+            "word_end": 12,
+            "pronounce_word": "。",
+            "pronounce_word_begin": 11,
+            "pronounce_word_end": 12,
+            "time_begin": 2432.0,
+            "time_end": 2602.6666666666665
+         }
+      ]
+   }
+]

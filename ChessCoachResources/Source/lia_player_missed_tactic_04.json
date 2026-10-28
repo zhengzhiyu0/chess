@@ -1,0 +1,205 @@
+[
+   {
+      "text": "好的战术不会一直等人，下一次要快半拍。",
+      "pronounce_text": "好的战术不会一直等人，下一次要快半拍。",
+      "time_begin": 0.0,
+      "time_end": 3441.043083900227,
+      "text_begin": 0,
+      "text_end": 19,
+      "pronounce_text_begin": 0,
+      "pronounce_text_end": 19,
+      "is_final_segment": true,
+      "timestamped_words": [
+         {
+            "word": "好",
+            "word_begin": 0,
+            "word_end": 1,
+            "pronounce_word": "好",
+            "pronounce_word_begin": 0,
+            "pronounce_word_end": 1,
+            "time_begin": 42.666666666666664,
+            "time_end": 213.33333333333331
+         },
+         {
+            "word": "的",
+            "word_begin": 1,
+            "word_end": 2,
+            "pronounce_word": "的",
+            "pronounce_word_begin": 1,
+            "pronounce_word_end": 2,
+            "time_begin": 213.33333333333331,
+            "time_end": 256.0
+         },
+         {
+            "word": "战",
+            "word_begin": 2,
+            "word_end": 3,
+            "pronounce_word": "战",
+            "pronounce_word_begin": 2,
+            "pronounce_word_end": 3,
+            "time_begin": 256.0,
+            "time_end": 469.3333333333333
+         },
+         {
+            "word": "术",
+            "word_begin": 3,
+            "word_end": 4,
+            "pronounce_word": "术",
+            "pronounce_word_begin": 3,
+            "pronounce_word_end": 4,
+            "time_begin": 469.3333333333333,
+            "time_end": 682.6666666666666
+         },
+         {
+            "word": "不",
+            "word_begin": 4,
+            "word_end": 5,
+            "pronounce_word": "不",
+            "pronounce_word_begin": 4,
+            "pronounce_word_end": 5,
+            "time_begin": 682.6666666666666,
+            "time_end": 853.3333333333333
+         },
+         {
+            "word": "会",
+            "word_begin": 5,
+            "word_end": 6,
+            "pronounce_word": "会",
+            "pronounce_word_begin": 5,
+            "pronounce_word_end": 6,
+            "time_begin": 853.3333333333333,
+            "time_end": 938.6666666666666
+         },
+         {
+            "word": "一",
+            "word_begin": 6,
+            "word_end": 7,
+            "pronounce_word": "一",
+            "pronounce_word_begin": 6,
+            "pronounce_word_end": 7,
+            "time_begin": 938.6666666666666,
+            "time_end": 1066.6666666666667
+         },
+         {
+            "word": "直",
+            "word_begin": 7,
+            "word_end": 8,
+            "pronounce_word": "直",
+            "pronounce_word_begin": 7,
+            "pronounce_word_end": 8,
+            "time_begin": 1066.6666666666667,
+            "time_end": 1237.3333333333335
+         },
+         {
+            "word": "等",
+            "word_begin": 8,
+            "word_end": 9,
+            "pronounce_word": "等",
+            "pronounce_word_begin": 8,
+            "pronounce_word_end": 9,
+            "time_begin": 1237.3333333333335,
+            "time_end": 1408.0
+         },
+         {
+            "word": "人",
+            "word_begin": 9,
+            "word_end": 10,
+            "pronounce_word": "人",
+            "pronounce_word_begin": 9,
+            "pronounce_word_end": 10,
+            "time_begin": 1408.0,
+            "time_end": 1536.0
+         },
+         {
+            "word": "，",
+            "word_begin": 10,
+            "word_end": 11,
+            "pronounce_word": "，",
+            "pronounce_word_begin": 10,
+            "pronounce_word_end": 11,
+            "time_begin": 1536.0,
+            "time_end": 1578.6666666666667
+         },
+         {
+            "word": "下",
+            "word_begin": 11,
+            "word_end": 12,
+            "pronounce_word": "下",
+            "pronounce_word_begin": 11,
+            "pronounce_word_end": 12,
+            "time_begin": 1578.6666666666667,
+            "time_end": 2175.9999999999995
+         },
+         {
+            "word": "一",
+            "word_begin": 12,
+            "word_end": 13,
+            "pronounce_word": "一",
+            "pronounce_word_begin": 12,
+            "pronounce_word_end": 13,
+            "time_begin": 2175.9999999999995,
+            "time_end": 2474.666666666667
+         },
+         {
+            "word": "次",
+            "word_begin": 13,
+            "word_end": 14,
+            "pronounce_word": "次",
+            "pronounce_word_begin": 13,
+            "pronounce_word_end": 14,
+            "time_begin": 2474.666666666667,
+            "time_end": 2560.0
+         },
+         {
+            "word": "要",
+            "word_begin": 14,
+            "word_end": 15,
+            "pronounce_word": "要",
+            "pronounce_word_begin": 14,
+            "pronounce_word_end": 15,
+            "time_begin": 2560.0,
+            "time_end": 2730.6666666666665
+         },
+         {
+            "word": "快",
+            "word_begin": 15,
+            "word_end": 16,
+            "pronounce_word": "快",
+            "pronounce_word_begin": 15,
+            "pronounce_word_end": 16,
+            "time_begin": 2730.6666666666665,
+            "time_end": 2816.0
+         },
+         {
+            "word": "半",
+            "word_begin": 16,
+            "word_end": 17,
+            "pronounce_word": "半",
+            "pronounce_word_begin": 16,
+            "pronounce_word_end": 17,
+            "time_begin": 2816.0,
+            "time_end": 2986.6666666666665
+         },
+         {
+            "word": "拍",
+            "word_begin": 17,
+            "word_end": 18,
+            "pronounce_word": "拍",
+            "pronounce_word_begin": 17,
+            "pronounce_word_end": 18,
+            "time_begin": 2986.6666666666665,
+            "time_end": 3157.3333333333335
+         },
+         {
+            "word": "。",
+            "word_begin": 18,
+            "word_end": 19,
+            "pronounce_word": "。",
+            "pronounce_word_begin": 18,
+            "pronounce_word_end": 19,
+            "time_begin": 3157.3333333333335,
+            "time_end": 3370.6666666666665
+         }
+      ]
+   }
+]

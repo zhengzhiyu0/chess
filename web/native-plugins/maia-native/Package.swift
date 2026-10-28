@@ -51,30 +51,12 @@ let package = Package(
                 .define("USE_LITE_NET"),
             ]
         ),
-        .systemLibrary(name: "Czlib", path: "kitten-runtime/Sources/Czlib"),
-        .target(
-            name: "CEPhonemizer",
-            path: "kitten-runtime/Sources/CEPhonemizer",
-            sources: ["phonemizer.cpp", "swift_bridge.cpp"],
-            publicHeadersPath: "include",
-            cxxSettings: [.headerSearchPath(".")]
-        ),
-        .target(
-            name: "KittenTTS",
-            dependencies: [
-                "Czlib",
-                "CEPhonemizer",
-                .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
-            ],
-            path: "kitten-runtime/Sources/KittenTTS"
-        ),
         .target(
             name: "MaiaNativePlugin",
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
                 .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
-                "KittenTTS",
                 "StockfishFull",
                 "StockfishLite",
             ],

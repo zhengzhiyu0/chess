@@ -1,0 +1,155 @@
+[
+   {
+      "text": "这一幕到这里，确实没有续集。",
+      "pronounce_text": "这一幕到这里，确实没有续集。",
+      "time_begin": 0.0,
+      "time_end": 2628.344671201814,
+      "text_begin": 0,
+      "text_end": 14,
+      "pronounce_text_begin": 0,
+      "pronounce_text_end": 14,
+      "is_final_segment": true,
+      "timestamped_words": [
+         {
+            "word": "这",
+            "word_begin": 0,
+            "word_end": 1,
+            "pronounce_word": "这",
+            "pronounce_word_begin": 0,
+            "pronounce_word_end": 1,
+            "time_begin": 42.666666666666664,
+            "time_end": 170.66666666666666
+         },
+         {
+            "word": "一",
+            "word_begin": 1,
+            "word_end": 2,
+            "pronounce_word": "一",
+            "pronounce_word_begin": 1,
+            "pronounce_word_end": 2,
+            "time_begin": 170.66666666666666,
+            "time_end": 384.0
+         },
+         {
+            "word": "幕",
+            "word_begin": 2,
+            "word_end": 3,
+            "pronounce_word": "幕",
+            "pronounce_word_begin": 2,
+            "pronounce_word_end": 3,
+            "time_begin": 384.0,
+            "time_end": 512.0
+         },
+         {
+            "word": "到",
+            "word_begin": 3,
+            "word_end": 4,
+            "pronounce_word": "到",
+            "pronounce_word_begin": 3,
+            "pronounce_word_end": 4,
+            "time_begin": 512.0,
+            "time_end": 640.0
+         },
+         {
+            "word": "这",
+            "word_begin": 4,
+            "word_end": 5,
+            "pronounce_word": "这",
+            "pronounce_word_begin": 4,
+            "pronounce_word_end": 5,
+            "time_begin": 640.0,
+            "time_end": 810.6666666666666
+         },
+         {
+            "word": "里",
+            "word_begin": 5,
+            "word_end": 6,
+            "pronounce_word": "里",
+            "pronounce_word_begin": 5,
+            "pronounce_word_end": 6,
+            "time_begin": 810.6666666666666,
+            "time_end": 938.6666666666666
+         },
+         {
+            "word": "，",
+            "word_begin": 6,
+            "word_end": 7,
+            "pronounce_word": "，",
+            "pronounce_word_begin": 6,
+            "pronounce_word_end": 7,
+            "time_begin": 938.6666666666666,
+            "time_end": 981.3333333333333
+         },
+         {
+            "word": "确",
+            "word_begin": 7,
+            "word_end": 8,
+            "pronounce_word": "确",
+            "pronounce_word_begin": 7,
+            "pronounce_word_end": 8,
+            "time_begin": 981.3333333333333,
+            "time_end": 1536.0
+         },
+         {
+            "word": "实",
+            "word_begin": 8,
+            "word_end": 9,
+            "pronounce_word": "实",
+            "pronounce_word_begin": 8,
+            "pronounce_word_end": 9,
+            "time_begin": 1536.0,
+            "time_end": 1749.3333333333333
+         },
+         {
+            "word": "没",
+            "word_begin": 9,
+            "word_end": 10,
+            "pronounce_word": "没",
+            "pronounce_word_begin": 9,
+            "pronounce_word_end": 10,
+            "time_begin": 1749.3333333333333,
+            "time_end": 1920.0
+         },
+         {
+            "word": "有",
+            "word_begin": 10,
+            "word_end": 11,
+            "pronounce_word": "有",
+            "pronounce_word_begin": 10,
+            "pronounce_word_end": 11,
+            "time_begin": 1920.0,
+            "time_end": 2048.0
+         },
+         {
+            "word": "续",
+            "word_begin": 11,
+            "word_end": 12,
+            "pronounce_word": "续",
+            "pronounce_word_begin": 11,
+            "pronounce_word_end": 12,
+            "time_begin": 2048.0,
+            "time_end": 2133.3333333333335
+         },
+         {
+            "word": "集",
+            "word_begin": 12,
+            "word_end": 13,
+            "pronounce_word": "集",
+            "pronounce_word_begin": 12,
+            "pronounce_word_end": 13,
+            "time_begin": 2133.3333333333335,
+            "time_end": 2304.0
+         },
+         {
+            "word": "。",
+            "word_begin": 13,
+            "word_end": 14,
+            "pronounce_word": "。",
+            "pronounce_word_begin": 13,
+            "pronounce_word_end": 14,
+            "time_begin": 2304.0,
+            "time_end": 2517.333333333333
+         }
+      ]
+   }
+]

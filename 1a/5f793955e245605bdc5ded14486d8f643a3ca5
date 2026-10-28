@@ -1,0 +1,343 @@
+ChessCoachResources/Source/lia_check_01.json
+  s_60788c25554242::t_084c117d122578 1-135
+ChessCoachResources/Source/lia_lia_best_move_01.json
+  s_60788c25554242::t_e3746799db8261 1-175
+ChessCoachResources/Source/lia_promotion_04.json
+  s_60788c25554242::t_084c117d122578 1-185
+ChessCoachResources/Source/lia_player_accurate_03.json
+  s_60788c25554242::t_a6f077cbc44267 1-175
+web/test/lia.test.ts
+  s_60788c25554242::t_e212603bc4c85d 87
+  s_60788c25554242::t_860bf96e0ae4c5 1,3-6,8-10,12-21,24-26,29-34,37-43,46-51,54-60,62,64-67,70-75,78-82,85-86,88-89,91-98
+ChessCoachResources/Source/lia_defense_found_01.json
+  s_60788c25554242::t_084c117d122578 1-185
+ChessCoachResources/Source/lia_missed_mate_04.json
+  s_60788c25554242::t_084c117d122578 1-195
+ChessCoachResources/Source/lia_castling_02.json
+  s_60788c25554242::t_084c117d122578 1-185
+web/test/lia.browser.mjs
+  s_60788c25554242::t_cecac6cdc10665 1-19,21-30,32-33,36-56
+  s_60788c25554242::t_af6a216447072e 20,31
+  s_60788c25554242::t_cc2b36f24a2a53 34-35
+docs/lia-minimax-production-prompt.md
+  s_60788c25554242::t_f4f6474f8f4d4a 20
+  s_60788c25554242::t_95952f402f3e1a 1,414-783
+  s_60788c25554242::t_9f09d124634c38 7,22,43,45,47
+  s_60788c25554242::t_7ca3c2de07923f 269-292
+  s_60788c25554242::t_054269595dff5a 2-6,8-19,21,23,41-42,44,46,48-268,293-413,784-795
+  s_60788c25554242::t_dfa405e8ae9237 26,29,32-36,39
+  s_60788c25554242::t_d6dd32537579c3 24-25,27-28,30-31,37-38,40
+ChessCoachResources/Source/lia_capture_rook_03.json
+  s_60788c25554242::t_2c082bf32b6857 1-165
+ChessCoachResources/Source/lia_opening_book_exit_01.json
+  s_60788c25554242::t_6eea4f2eda43d8 1-205
+web/index.html
+  s_60788c25554242::t_82d96937e49b88 394-396
+  s_60788c25554242::t_713f429339cf20 393
+ChessCoachResources/Source/lia_player_accurate_02.json
+  s_60788c25554242::t_fcb534caaf82e4 1-155
+ChessCoachResources/Source/lia_castling_04.json
+  s_60788c25554242::t_084c117d122578 1-155
+web/public/voices/lia/catalog.json
+  s_60788c25554242::t_0c1dffba7611e0 1-728
+ChessCoachResources/Source/lia_player_best_03.json
+  s_60788c25554242::t_82adc59e276de5 1-165
+ChessCoachResources/Source/lia_player_accurate_04.json
+  s_60788c25554242::t_7150de25f325f2 1-205
+ChessCoachResources/Source/lia_blunder_into_mate_02.json
+  s_60788c25554242::t_417ef34814e208 1-135
+ChessCoachResources/Source/lia_comeback_02.json
+  s_60788c25554242::t_cd374e4e5040a5 1-185
+ChessCoachResources/Source/lia_promotion_01.json
+  s_60788c25554242::t_084c117d122578 1-175
+ChessCoachResources/Source/lia_tactic_fork_02.json
+  s_60788c25554242::t_793ea921f2c002 1-185
+ChessCoachResources/Source/lia_capture_queen_03.json
+  s_60788c25554242::t_433efe88af78a6 1-165
+ChessCoachResources/Source/lia_player_missed_tactic_03.json
+  s_60788c25554242::t_084c117d122578 1-195
+ChessCoachResources/Source/lia_tactic_zwischenzug_01.json
+  s_60788c25554242::t_084c117d122578 1-225
+ChessCoachResources/build-report.json
+  s_60788c25554242::t_37ab1b32934a99 1,6-14
+  s_60788c25554242::t_084c117d122578 2-5
+ChessCoachResources/Source/lia_blunder_into_mate_01.json
+  s_60788c25554242::t_6e452834e94c06 1-135
+ChessCoachResources/Source/lia_lia_best_move_03.json
+  s_60788c25554242::t_6d17f0ceb669f1 1-195
+ChessCoachResources/Source/lia_tactic_sacrifice_03.json
+  s_60788c25554242::t_a83bdf559f637d 1-185
+web/scripts/copy-voices.mjs
+  s_60788c25554242::t_416165335216ce 1-21
+ChessCoachResources/Source/lia_player_loses_queen_01.json
+  s_60788c25554242::t_eb052736706b45 1-175
+ChessCoachResources/Source/lia_capture_rook_02.json
+  s_60788c25554242::t_caa60a6a4df0ff 1-165
+ChessCoachResources/Source/lia_tactic_pin_04.json
+  s_60788c25554242::t_81cde7115a2a84 1-155
+ChessCoachResources/Source/lia_tactic_sacrifice_01.json
+  s_60788c25554242::t_7eec5fed89f67b 1-135
+ChessCoachResources/Source/lia_capture_minor_03.json
+  s_60788c25554242::t_69676cf85e0da3 1-175
+ChessCoachResources/Source/lia_tactic_zwischenzug_02.json
+  s_60788c25554242::t_084c117d122578 1-195
+web/test/navigation.browser.mjs
+  s_60788c25554242::t_cecac6cdc10665 182,187,189-190
+ChessCoachResources/Source/lia_player_loses_minor_03.json
+  s_60788c25554242::t_5922a0e6901027 1-185
+ChessCoachResources/Source/lia_missed_mate_03.json
+  s_60788c25554242::t_084c117d122578 1-185
+ChessCoachResources/Source/lia_player_loses_minor_01.json
+  s_60788c25554242::t_ce172dabc082ef 1-195
+ChessCoachResources/Source/lia_castling_03.json
+  s_60788c25554242::t_084c117d122578 1-175
+ChessCoachResources/Source/lia_player_check_02.json
+  s_60788c25554242::t_084c117d122578 1-175
+ChessCoachResources/Source/lia_comeback_01.json
+  s_60788c25554242::t_8aeac479cdd84c 1-175
+ChessCoachResources/Source/lia_player_loses_rook_04.json
+  s_60788c25554242::t_22ce2967d1c71f 1-165
+ChessCoachResources/Source/lia_tactic_sacrifice_04.json
+  s_60788c25554242::t_2cb31dae7ba2f8 1-195
+ChessCoachResources/Source/lia_capture_pawn_04.json
+  s_60788c25554242::t_b1573911c6249f 1-175
+ChessCoachResources/Source/lia_player_check_01.json
+  s_60788c25554242::t_084c117d122578 1-175
+ChessCoachResources/Source/lia_key_threat_02.json
+  s_60788c25554242::t_084c117d122578 1-185
+ChessCoachResources/Source/lia_capture_rook_01.json
+  s_60788c25554242::t_4812dbee444d66 1-125
+ChessCoachResources/Source/lia_player_loses_queen_04.json
+  s_60788c25554242::t_084c117d122578 1-195
+web/native-plugins/maia-native/src/index.ts
+  s_60788c25554242::t_d7f2d0362b4886 50-52
+ChessCoachResources/Source/lia_queen_early_03.json
+  s_60788c25554242::t_084c117d122578 1-185
+ChessCoachResources/preview.html
+  s_60788c25554242::t_37ab1b32934a99 1-13,16-376,743-753
+  s_60788c25554242::t_084c117d122578 14-15,377-742
+web/scripts/prepare-native.mjs
+  s_60788c25554242::t_82d96937e49b88 89
+ChessCoachResources/Source/lia_player_missed_tactic_01.json
+  s_60788c25554242::t_084c117d122578 1-135
+ChessCoachResources/Source/lia_queen_early_04.json
+  s_60788c25554242::t_084c117d122578 1-145
+ChessCoachResources/coach_lines.json
+  s_60788c25554242::t_37ab1b32934a99 1-848,1703-1705
+  s_60788c25554242::t_084c117d122578 849-1702
+web/src/main.ts
+  s_60788c25554242::t_e57698ff378784 685,689,2518
+  s_60788c25554242::t_af6a216447072e 698,707,738-740,1065,2125,2623
+  s_60788c25554242::t_385feb37ccc918 44-47,149-151,178,307-309,677,679-684,686-688,690-697,699-706,708-710,712-737,758,786,2524,2594,2646,2901-2902,2914-2915,3313,3362,3669,4029-4033
+ChessCoachResources/Source/lia_defense_found_04.json
+  s_60788c25554242::t_084c117d122578 1-135
+ChessCoachResources/Source/lia_tactic_fork_01.json
+  s_60788c25554242::t_04b189edebe591 1-175
+web/src/style.css
+  s_60788c25554242::t_cecac6cdc10665 1317
+scripts/prepare_lia_audio.py
+  s_60788c25554242::t_9f09d124634c38 3-4
+  s_60788c25554242::t_0446982e7b81ef 1-2,5-30,37,40-86,88-100,102-113,117-126,129-167,169,171-181,183-184,187-188
+  s_60788c25554242::t_f1e6cdeefd7da9 127-128
+  s_60788c25554242::t_02c7f317a148fa 31-36,87,101,114-116,170
+ChessCoachResources/Source/lia_player_loses_queen_03.json
+  s_60788c25554242::t_a051ad678cd930 1-185
+ChessCoachResources/Source/lia_check_04.json
+  s_60788c25554242::t_084c117d122578 1-185
+ChessCoachResources/Source/lia_blunder_into_mate_03.json
+  s_60788c25554242::t_084c117d122578 1-155
+ChessCoachResources/Source/lia_tactic_sacrifice_02.json
+  s_60788c25554242::t_f873da57068108 1-195
+ChessCoachResources/Source/lia_lia_best_move_02.json
+  s_60788c25554242::t_3871614b37e134 1-195
+ChessCoachResources/Source/lia_opening_book_entry_02.json
+  s_60788c25554242::t_d0bdc447a4c8ba 1-175
+ChessCoachResources/Source/lia_player_loses_rook_02.json
+  s_60788c25554242::t_7ec50d4ddae325 1-165
+ChessCoachResources/Source/lia_castling_01.json
+  s_60788c25554242::t_084c117d122578 1-115
+ChessCoachResources/Source/lia_player_best_04.json
+  s_60788c25554242::t_ebb7809705a925 1-235
+web/tsconfig.json
+  s_60788c25554242::t_416165335216ce 6
+ChessCoachResources/Source/lia_mate_01.json
+  s_60788c25554242::t_8aad85d644aab0 1-125
+ChessCoachResources/Source/lia_promotion_03.json
+  s_60788c25554242::t_084c117d122578 1-155
+ChessCoachResources/Source/lia_player_loses_minor_02.json
+  s_60788c25554242::t_712306dcdd827d 1-185
+web/test/native-sound.test.ts
+  s_60788c25554242::t_2892742146f19b 3,15-16,29-43
+ChessCoachResources/Source/lia_tactic_zwischenzug_03.json
+  s_60788c25554242::t_084c117d122578 1-125
+ChessCoachResources/Source/lia_comeback_04.json
+  s_60788c25554242::t_084c117d122578 1-175
+ChessCoachResources/Source/lia_missed_mate_01.json
+  s_60788c25554242::t_8189291612ab2a 1-205
+ChessCoachResources/Source/lia_queen_early_01.json
+  s_60788c25554242::t_084c117d122578 1-205
+ChessCoachResources/Source/lia_tactic_zwischenzug_04.json
+  s_60788c25554242::t_084c117d122578 1-155
+ChessCoachResources/Source/lia_opening_book_exit_03.json
+  s_60788c25554242::t_4d44675a249952 1-185
+ChessCoachResources/Source/lia_check_02.json
+  s_60788c25554242::t_084c117d122578 1-135
+web/src/lia/dialogue.ts
+  s_60788c25554242::t_aa17c7642aee76 1,3-18,20-21,23-35,38-41,43-50,52,54-56,58-62,64-78,80-88,90-91
+ChessCoachResources/Source/lia_capture_queen_02.json
+  s_60788c25554242::t_71d36f2916221b 1-165
+web/src/audio/voice.ts
+  s_60788c25554242::t_d7f2d0362b4886 1,3-25,28-29,31-32,35-37,39,42-47,50-52
+  s_60788c25554242::t_713f429339cf20 30
+ChessCoachResources/Source/lia_tactic_fork_04.json
+  s_60788c25554242::t_32f5208ee6f453 1-185
+ChessCoachResources/Source/lia_capture_rook_04.json
+  s_60788c25554242::t_871fde66adab6e 1-165
+ChessCoachResources/Source/lia_promotion_02.json
+  s_60788c25554242::t_084c117d122578 1-215
+ChessCoachResources/Source/lia_tactic_pin_02.json
+  s_60788c25554242::t_f0b5dff9b56000 1-175
+ChessCoachResources/Source/lia_player_check_03.json
+  s_60788c25554242::t_084c117d122578 1-185
+ChessCoachResources/Source/lia_player_loses_rook_01.json
+  s_60788c25554242::t_bedceda72714df 1-185
+ChessCoachResources/Source/lia_opening_book_entry_01.json
+  s_60788c25554242::t_e58f3bb2cfa070 1-175
+web/src/lia/lines.json
+  s_60788c25554242::t_0c1dffba7611e0 1-728
+ChessCoachResources/Source/lia_capture_minor_02.json
+  s_60788c25554242::t_aad5eadc96846c 1-105
+ChessCoachResources/Source/lia_capture_queen_01.json
+  s_60788c25554242::t_bef0d92959d29f 1-145
+ChessCoachResources/Source/lia_key_threat_01.json
+  s_60788c25554242::t_084c117d122578 1-145
+ChessCoachResources/Source/lia_blunder_into_mate_04.json
+  s_60788c25554242::t_084c117d122578 1-195
+ChessCoachResources/Source/lia_tactic_discovered_attack_01.json
+  s_60788c25554242::t_084c117d122578 1-205
+ChessCoachResources/Source/lia_capture_minor_01.json
+  s_60788c25554242::t_c9805bb2166bb1 1-145
+ChessCoachResources/Source/lia_player_best_01.json
+  s_60788c25554242::t_21e3aa83175da7 1-175
+ChessCoachResources/Source/lia_defense_found_02.json
+  s_60788c25554242::t_084c117d122578 1-175
+web/src/lia/events.ts
+  s_60788c25554242::t_aa17c7642aee76 1-51,54-81,83-94,96-102
+  s_60788c25554242::t_d7f2d0362b4886 52-53
+ChessCoachResources/Source/lia_tactic_fork_03.json
+  s_60788c25554242::t_6b4d9d8d926d47 1-185
+ChessCoachResources/Source/lia_tactic_discovered_attack_04.json
+  s_60788c25554242::t_084c117d122578 1-135
+ChessCoachResources/Source/lia_player_brilliant_05.json
+  s_60788c25554242::t_4bde824e885b19 1-175
+ChessCoachResources/Source/lia_comeback_03.json
+  s_60788c25554242::t_084c117d122578 1-205
+docs/lia-voice-line-design.md
+  s_60788c25554242::t_95952f402f3e1a 3,13,318
+  s_60788c25554242::t_78ddb04f0e3b58 1,5-12,14-28,31,33,35,37,39-42,44,46,48-51,53,55,57-60,62,64,66-69,71,73,75-79,81,83,85-88,90,92,94,96,98-101,103,105,107-110,112,114,116-119,121,123,125-128,130,132,134-137,139,141,143-146,148,150,152-155,157,159,161,163-166,168,170,172-175,177,179,181-184,186,188,190-193,195,197,199-202,204-316,320,322,324
+ChessCoachResources/Source/lia_player_loses_rook_03.json
+  s_60788c25554242::t_57d707c8694167 1-185
+ChessCoachResources/Source/lia_player_brilliant_01.json
+  s_60788c25554242::t_471b86053d728c 1-135
+ChessCoachResources/Source/lia_lia_best_move_04.json
+  s_60788c25554242::t_0a38a61e504b32 1-215
+ChessCoachResources/README.md
+  s_60788c25554242::t_adb658023c8b5b 1-28
+ChessCoachResources/Source/lia_player_check_04.json
+  s_60788c25554242::t_084c117d122578 1-185
+ChessCoachResources/Source/lia_tactic_pin_03.json
+  s_60788c25554242::t_edc060b369d1cb 1-205
+ChessCoachResources/Source/lia_key_threat_03.json
+  s_60788c25554242::t_084c117d122578 1-175
+ChessCoachResources/Source/lia_capture_queen_04.json
+  s_60788c25554242::t_d3adb1487cb3bc 1-185
+ChessCoachResources/Source/lia_player_loses_minor_04.json
+  s_60788c25554242::t_a1c0b617ff4ade 1-145
+ChessCoachResources/Source/lia_check_03.json
+  s_60788c25554242::t_084c117d122578 1-165
+web/scripts/copy-assets.mjs
+  s_60788c25554242::t_416165335216ce 5
+ChessCoachResources/Source/lia_tactic_discovered_attack_02.json
+  s_60788c25554242::t_084c117d122578 1-165
+ChessCoachResources/Source/lia_tactic_pin_01.json
+  s_60788c25554242::t_499e467ad59fb8 1-235
+ChessCoachResources/Source/lia_player_brilliant_03.json
+  s_60788c25554242::t_a58f5f09bca95e 1-165
+ChessCoachResources/Source/lia_defense_found_03.json
+  s_60788c25554242::t_084c117d122578 1-155
+web/src/settings.ts
+  s_60788c25554242::t_82d96937e49b88 81,83,148,183-187
+ChessCoachResources/Source/lia_opening_book_exit_02.json
+  s_60788c25554242::t_a94dedd09dcfbb 1-205
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_60788c25554242::t_713f429339cf20 25
+  s_60788c25554242::t_82d96937e49b88 5,10,33-34,44-51,62,69,76,121-123,133,135,141,144-149,152-159,161-162,164-166,214-216,222-224
+web/src/runtime-logs.ts
+  s_60788c25554242::t_82d96937e49b88 34
+README.md
+  s_60788c25554242::t_adb658023c8b5b 90,92
+ChessCoachResources/Source/lia_mate_03.json
+  s_60788c25554242::t_084c117d122578 1-155
+ChessCoachResources/Source/lia_tactic_discovered_attack_03.json
+  s_60788c25554242::t_084c117d122578 1-115
+scripts/lia_voice_build.json
+  s_60788c25554242::t_d4e82e8ea35fc8 4552
+  s_60788c25554242::t_3089341984ffc1 1-734,736-2536,4551,4553
+  s_60788c25554242::t_e99e57a1b9da88 2537-3732,3734-4549
+ChessCoachResources/Source/lia_key_threat_04.json
+  s_60788c25554242::t_084c117d122578 1-145
+ChessCoachResources/Source/lia_mate_02.json
+  s_60788c25554242::t_871c1fe15998bb 1-145
+ChessCoachResources/Source/lia_player_brilliant_04.json
+  s_60788c25554242::t_0ac6c5d63cc2df 1-195
+ChessCoachResources/Source/lia_opening_book_exit_04.json
+  s_60788c25554242::t_e60b8cc11a4e6d 1-135
+web/test/sound-assets.native.swift
+  s_60788c25554242::t_2892742146f19b 27-38,42
+ChessCoachResources/Source/lia_player_loses_queen_02.json
+  s_60788c25554242::t_b617647dfecbe5 1-195
+ChessCoachResources/Source/lia_player_brilliant_02.json
+  s_60788c25554242::t_540fec58eff59b 1-205
+ChessCoachResources/Source/lia_mate_04.json
+  s_60788c25554242::t_084c117d122578 1-165
+ChessCoachResources/Source/lia_player_missed_tactic_04.json
+  s_60788c25554242::t_084c117d122578 1-205
+ChessCoachResources/Source/lia_capture_pawn_02.json
+  s_60788c25554242::t_61e23389db1570 1-135
+ChessCoachResources/Source/lia_opening_book_entry_04.json
+  s_60788c25554242::t_9c3acbddee9088 1-205
+ChessCoachResources/Source/lia_capture_pawn_03.json
+  s_60788c25554242::t_aec7bfb2fdfd65 1-175
+ChessCoachResources/Source/lia_player_missed_tactic_02.json
+  s_60788c25554242::t_084c117d122578 1-125
+ChessCoachResources/Source/lia_queen_early_02.json
+  s_60788c25554242::t_084c117d122578 1-195
+ChessCoachResources/Source/lia_missed_mate_02.json
+  s_60788c25554242::t_f2e774bdda03fe 1-185
+ChessCoachResources/Source/lia_opening_book_entry_03.json
+  s_60788c25554242::t_590fe2971f409d 1-175
+ChessCoachResources/Source/lia_capture_minor_04.json
+  s_60788c25554242::t_1b28e7e7321467 1-205
+ChessCoachResources/Source/lia_player_accurate_01.json
+  s_60788c25554242::t_e380c99319fa0d 1-185
+ChessCoachResources/Source/lia_capture_pawn_01.json
+  s_60788c25554242::t_104981a8360aa9 1-145
+ChessCoachResources/Source/lia_player_best_02.json
+  s_60788c25554242::t_76916aee1e5184 1-185
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1a5f793955e245605bdc5ded14486d8f643a3ca5",
+  "prompts": {},
+  "sessions": {
+    "s_60788c25554242": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17fac-d732-7d80-a436-38b1ba13a621",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}

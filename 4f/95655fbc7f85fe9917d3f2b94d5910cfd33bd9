@@ -1,0 +1,43 @@
+README.md
+  s_7ff17073cdf55d::t_04b2c5d04bb71f 8-9
+web/src/style.css
+  s_7ff17073cdf55d::t_c57ec18a3c51f4 671,686,694,855-856,866,886-888,1256-1257,1951-1953,1958,1967-1968
+web/src/app/fx.ts
+  s_b7f87d2d7cddd3::t_1b62f120efcd5f 3,28,45
+web/src/main.ts
+  s_bfea8d0a5a3f64::t_6a3cd326db058d 40,2186-2188,2193,2195,2200-2202,2715
+web/test/judge.test.ts
+  s_bfea8d0a5a3f64::t_123a6411cc2684 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4f95655fbc7f85fe9917d3f2b94d5910cfd33bd9",
+  "prompts": {},
+  "sessions": {
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_b7f87d2d7cddd3": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "2d5ef69f-047e-4ff4-a214-323f763ee3ea",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_bfea8d0a5a3f64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "407a32d9-e969-4573-a751-79d345b44a9b",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

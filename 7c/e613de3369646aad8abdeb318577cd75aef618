@@ -1,0 +1,99 @@
+README.md
+  s_f400d1da8a280b::t_d6e8e5e95c0f9d 91,93
+  s_7ff17073cdf55d::t_13c955d2937580 8
+web/src/main.ts
+  s_f400d1da8a280b::t_ff2017f56c2afb 1183
+  s_f400d1da8a280b::t_b5622bdb293b61 2240-2241,2262,2264-2265,2269,2322,2328
+  s_f400d1da8a280b::t_03589f580567c7 1583,1726-1728
+  s_f400d1da8a280b::t_f0d295b92527cf 2484-2487
+  s_f400d1da8a280b::t_7d7e6f0bb54c60 2491
+  s_f400d1da8a280b::t_cf1f284040bdb8 2213,2300-2303
+  s_f400d1da8a280b::t_78515f629ac546 141-143,682,686,2522,2783
+  s_f400d1da8a280b::t_c94fb0454babc7 1240-1241,1243-1244,1250-1255,1264,1295,1303-1315
+  s_f400d1da8a280b::t_65a12406a8b8a2 43-44
+  s_f400d1da8a280b::t_8b333f26eb696f 9
+web/native-plugins/maia-native/src/index.ts
+  s_f400d1da8a280b::t_21366e064c3b1b 47
+web/test/sound-assets.native.swift
+  s_f400d1da8a280b::t_d6e8e5e95c0f9d 29
+web/src/settings.ts
+  s_f400d1da8a280b::t_63c6613b78b48a 79
+  s_f400d1da8a280b::t_de679bd092f5b9 271-272
+web/test/coach-dialogue.test.ts
+  s_f400d1da8a280b::t_65a12406a8b8a2 3-4,11-16,24-30,70,72-74
+web/src/app/engines.ts
+  s_f400d1da8a280b::t_c94fb0454babc7 154-158
+web/test/settings-migration.test.ts
+  s_f400d1da8a280b::t_e8fbfe056cf4af 51-52,55-57
+  s_f400d1da8a280b::t_5ff5842ef5d106 53-54
+web/index.html
+  s_f400d1da8a280b::t_d83d30bfe9582b 133-136
+  s_f400d1da8a280b::t_63c6613b78b48a 386
+  s_f400d1da8a280b::t_bf74c15f0f2eea 300,384-385
+  s_f400d1da8a280b::t_8a1eb66b33e435 449
+  s_f400d1da8a280b::t_59143b705a5c3e 180-185
+web/test/engines.test.ts
+  s_f400d1da8a280b::t_e8fbfe056cf4af 82,88,92
+web/src/style.css
+  s_f400d1da8a280b::t_f79f30d0f7df8f 1196,1884-1888
+  s_f400d1da8a280b::t_5cf58cfc9aee4b 1205-1209,1248
+  s_5ed2c4305b37a9::t_0dff42ced6301d 1966
+  s_f400d1da8a280b::t_47f2f4781bbbab 674-676,684,1000-1001,1083,1086
+  s_f400d1da8a280b::t_946ce5ac32c3c1 952,1006,1353,1356
+  s_f400d1da8a280b::t_19846850428027 1016-1017,1040
+  s_f400d1da8a280b::t_c6aac89433d16d 274
+  s_f400d1da8a280b::t_e8bbd548b587ce 1310,1312-1313,1869
+  s_5ed2c4305b37a9::t_da9b5daa779b27 1948-1965,1967-2005
+  s_5ed2c4305b37a9::t_91e955f2b35a6b 1106,1110,1112-1113
+  s_5ed2c4305b37a9::t_c50e5ef73ae663 1107-1109,1111
+  s_f400d1da8a280b::t_ec3645db201b9a 695,875-879
+  s_f400d1da8a280b::t_b9a084ff10f578 686,694
+  s_f400d1da8a280b::t_3be66fcfaaf291 693,854,869,880,886-888,1015,1204,1875,1877,1879,1889,1917,1925-1926,2006
+  s_f400d1da8a280b::t_e827ed970790ee 1874
+  s_f400d1da8a280b::t_6cc6fc276b35c8 1005,1014,1045,1087,1134-1135
+  s_f400d1da8a280b::t_b41853c2bc1445 1865,1870,1873,1923-1924
+  s_f400d1da8a280b::t_5d93422712fab7 3-7,673,1115-1120,1191-1195,1197-1203,1211-1216,1232-1235,1249,1251
+web/test/native-sound.test.ts
+  s_f400d1da8a280b::t_91051ba4e83503 3
+web/test/coach-dialogue.browser.mjs
+  s_f400d1da8a280b::t_88e26ceef9f068 39,44
+  s_f400d1da8a280b::t_787d5352614daa 1,10,18,36-38
+web/src/icons/LICENSE-lucide.txt
+  s_f400d1da8a280b::t_220441909f5c20 1-15
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_f400d1da8a280b::t_8423850c7c99ec 25,167
+web/src/coach-dialogue/dialogue.ts
+  s_f400d1da8a280b::t_3821f552f8f777 11,26,36,65-66,72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ce613de3369646aad8abdeb318577cd75aef618",
+  "prompts": {},
+  "sessions": {
+    "s_5ed2c4305b37a9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18575-8b38-7df3-8191-8f40c0fb574e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_f400d1da8a280b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a184d3-4caf-7092-9c04-3877626b7f64",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

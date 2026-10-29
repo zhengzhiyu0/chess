@@ -27,10 +27,39 @@ jobs:
           path: |
             web/.cache/nnue
           key: native-assets-${{ hashFiles('web/native-plugins/maia-native/stockfish/src/evaluate.h', 'web/scripts/prepare-native.mjs') }}
+      - uses: actions/cache@v4
+        id: coreml-cache
+        with:
+          path: |
+            web/.cache/coreml-build
+            web/.cache/coreml-venv
+          key: coreml-models-${{ hashFiles('web/native-models/maia3-*/manifest.json', 'web/scripts/compile-coreml.py') }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - run: npm ci
       - name: Audio regression tests
         run: npm test -- test/sound.test.ts test/native-sound.test.ts test/coach-voice.test.ts
       - run: npm run build:native
+      - name: Compile bundled Maia CoreML models
+        run: |
+          if [ ! -x .cache/coreml-venv/bin/python ]; then
+            python3 -m venv .cache/coreml-venv
+          fi
+          . .cache/coreml-venv/bin/activate
+          if [ "${{ steps.coreml-cache.outputs.cache-hit }}" != "true" ]; then
+            python -m pip install --upgrade pip
+            python -m pip install 'coremltools==8.3.0' 'onnx==1.17.0' 'onnxruntime==1.20.1' 'onnx2torch==1.5.15' 'numpy==1.26.4' 'torch==2.5.1'
+          fi
+          python scripts/compile-coreml.py
+      - name: Verify bundled native model layout
+        run: |
+          test -d ios/App/App/public/native/maia3-5m.mlmodelc
+          test -d ios/App/App/public/native/maia3-23m.mlmodelc
+          test -d ios/App/App/public/native/maia3-79m.mlmodelc
+          test -f ios/App/App/public/native/nn-1a298aa575a0.nnue
+          test -f ios/App/App/public/native/nn-61e7af4bb97d.nnue
+          ! find ios/App/App/public/native -maxdepth 1 -name 'maia3-*.onnx' -print -quit | grep -q .
 
       - name: Native audio assets and plugin smoke test
         run: swift test/sound-assets.native.swift ios/App/App/public

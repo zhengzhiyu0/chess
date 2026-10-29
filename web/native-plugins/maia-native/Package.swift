@@ -2,8 +2,8 @@
 import PackageDescription
 
 // Native engines for the iOS app: Stockfish 19 (full + lite NNUE, C++ with pthreads/NEON) and
-// Maia-3 via ONNX Runtime (CoreML EP). Engine data files (nn-*.nnue, maia3-*.onnx) are not part of
-// this package; scripts/prepare-native.mjs puts them in dist-native/native/, which Capacitor copies to the bundle's public/native/.
+// Maia-3 via pre-compiled CoreML ML Programs. Engine data files are not part of this package;
+// the native build scripts put them in the app's public/native/ resources.
 
 let sfCommon: [CXXSetting] = [
     .headerSearchPath("../src"),
@@ -29,7 +29,6 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0"),
-        .package(url: "https://github.com/microsoft/onnxruntime-swift-package-manager.git", exact: "1.24.2"),
     ],
     targets: [
         .target(
@@ -56,7 +55,6 @@ let package = Package(
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
-                .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
                 "StockfishFull",
                 "StockfishLite",
             ],

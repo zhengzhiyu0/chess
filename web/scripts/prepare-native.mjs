@@ -1,8 +1,9 @@
 // Builds dist-native/ (the iOS app's web assets) from dist/.
-// The app uses native engines (native-plugins/maia-native), so every WebAssembly engine and the
-// chunked web models are left out; instead dist-native/native/ gets the files the native code loads:
+// The app uses native engines, so every WebAssembly engine and chunked web model is left out;
+// dist-native/native/ gets Stockfish networks and ONNX build intermediates. CI converts the
+// assembled Maia ONNX files to pre-compiled .mlmodelc bundles before xcodebuild.
 //   nn-*.nnue   Stockfish networks (full + lite), downloaded once into .cache/ and verified by hash
-//   maia3-*.onnx  Maia models (fp16, batch 1), reassembled from native-models/ parts
+//   maia3-*.onnx Maia models, reassembled from native-models/ parts for CoreML conversion
 import { createHash } from 'node:crypto';
 import { cpSync, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';

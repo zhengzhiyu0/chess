@@ -51,7 +51,7 @@ jobs:
             python -m pip install --upgrade pip
             python -m pip install 'coremltools==8.3.0' 'onnx==1.17.0' 'onnxruntime==1.20.1' 'onnx2torch==1.5.15' 'numpy==1.26.4' 'torch==2.5.1'
           fi
-          python scripts/compile-coreml.py
+          PYTHONFAULTHANDLER=1 PYTHONUNBUFFERED=1 python scripts/compile-coreml.py
       - name: Verify bundled native model layout
         run: |
           test -d ios/App/App/public/native/maia3-5m.mlmodelc

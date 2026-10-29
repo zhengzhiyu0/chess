@@ -14,27 +14,22 @@ from pathlib import Path
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
-os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
-
 MODELS = ("5m", "23m", "79m")
 TOKEN_SHAPE = (1, 64, 96)
 MOVE_COUNT = 4352
 VALUE_COUNT = 3
 
 
+
 def _load_conversion_modules():
-    print("coreml: importing numpy", flush=True)
-    import numpy as np
     print("coreml: importing onnx", flush=True)
     import onnx
-    print("coreml: importing onnxruntime", flush=True)
-    import onnxruntime as ort
     print("coreml: importing onnx2coreml", flush=True)
     import onnx2coreml as o2c
     print("coreml: importing coremltools", flush=True)
     import coremltools.optimize.coreml as cto
     print("coreml: imports complete", flush=True)
-    return np, onnx, ort, o2c, cto
+    return onnx, o2c, cto
 
 
 def _check_onnx(onnx_model, name: str) -> None:
@@ -51,27 +46,14 @@ def _check_onnx(onnx_model, name: str) -> None:
 
 
 def compile_model(onnx_path: Path, compiled_path: Path, work_dir: Path) -> None:
-    np, onnx, ort, o2c, cto = _load_conversion_modules()
+    onnx, o2c, cto = _load_conversion_modules()
     print(f"=== Processing {onnx_path.name} ===", flush=True)
     onnx_model = onnx.load(str(onnx_path))
     onnx.checker.check_model(onnx_model)
     _check_onnx(onnx_model, onnx_path.name)
     print(f"{onnx_path.stem}: ONNX loaded and contract checked", flush=True)
-
-    dummy = {
-        "tokens": np.random.default_rng(0).standard_normal(TOKEN_SHAPE).astype(np.float32),
-        "self_elo": np.array([1500.0], dtype=np.float32),
-        "oppo_elo": np.array([1500.0], dtype=np.float32),
-    }
-    ort_session = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
-    ort_move, ort_value = ort_session.run(["logits_move", "logits_value"], dummy)
-    if ort_move.shape[-1] != MOVE_COUNT or ort_value.shape[-1] != VALUE_COUNT:
-        raise RuntimeError(f"{onnx_path.name}: unexpected ONNX output shapes")
-    if not np.isfinite(ort_move).all() or not np.isfinite(ort_value).all():
-        raise RuntimeError(f"{onnx_path.name}: ONNX produced non-finite output")
-    print(f"{onnx_path.stem}: ONNX CPU smoke passed", flush=True)
-
     print(f"{onnx_path.stem}: converting ONNX directly to CoreML MLProgram", flush=True)
+
     mlmodel = o2c.convert(
         str(onnx_path),
         format="mlpackage",

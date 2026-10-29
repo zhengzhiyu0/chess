@@ -48,10 +48,8 @@ jobs:
             python3 -m venv .cache/coreml-venv
           fi
           . .cache/coreml-venv/bin/activate
-          if [ "${{ steps.coreml-cache.outputs.cache-hit }}" != "true" ]; then
-            python -m pip install --upgrade pip
-            python -m pip install 'onnx2coreml==1.1.0' 'coremltools==8.3.0' 'onnx==1.17.0' 'onnxruntime==1.20.1' 'numpy==1.26.4'
-          fi
+          python -m pip install --upgrade pip
+          python -m pip install 'onnx2coreml==1.1.0' 'coremltools==8.3.0' 'onnx==1.17.0' 'numpy==1.26.4'
           PYTHONFAULTHANDLER=1 PYTHONUNBUFFERED=1 python scripts/compile-coreml.py 2>&1 | tee coreml-build.log
       - name: Upload CoreML build log
         if: always()

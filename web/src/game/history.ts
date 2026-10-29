@@ -18,8 +18,15 @@ export interface StoredGame {
   coach?: boolean;
   /** coach portrait used for this game; -1 is only valid in settings, games store the resolved index */
   coachAvatar?: number;
+  /** Maia rating locked when the game starts. */
   elo?: number;
-  /** player's rating after this game when automatic rating adjustment was on */
+  /** Player rating and adaptive-opponent state locked when the game starts. */
+  playerElo?: number;
+  ratingDeviation?: number;
+  ratingStreak?: number;
+  autoElo?: boolean;
+  temperature?: number;
+  /** Player's rating after this game when automatic rating adjustment was on. */
   eloAfter?: number;
   model?: string;
   /** time control id, see TIME_CONTROLS */
@@ -36,8 +43,6 @@ export interface StoredGame {
   rating?: RatingInfo;
   /** left unfinished by starting another game (counted as a resignation) */
   abandoned?: boolean;
-  /** finished, rating change not applied yet (waiting for the analysis of the game) */
-  ratePending?: boolean;
 }
 
 export function newGameId(): string {
@@ -142,6 +147,12 @@ const RESULT_SET = new Set(['', '*', '1-0', '0-1', '1/2-1/2']);
 const REASONS = new Set(Object.keys(END_REASON_TEXT));
 const str = (v: unknown, max = 200) => typeof v === 'string' && v.length <= max;
 const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+const inRange = (v: unknown, min: number, max: number, integer = false): v is number =>
+  num(v) && (v as number) >= min && (v as number) <= max && (!integer || Number.isInteger(v));
+const elo = (v: unknown): v is number => inRange(v, 0, 2600, true);
+const deviation = (v: unknown): v is number => inRange(v, 60, 350);
+const streak = (v: unknown): v is number => inRange(v, -8, 8, true);
+const assist = (v: unknown): number => num(v) && Number.isInteger(v) && (v as number) >= 0 ? v as number : 0;
 
 /**
  * Structural check of a stored / imported game (cheap; the move tree itself is verified by
@@ -163,8 +174,13 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
   if (typeof r.reason === 'string' && REASONS.has(r.reason)) g.reason = r.reason as EndReason;
   if (r.coach === true) g.coach = true;
   if (num(r.coachAvatar) && Number.isInteger(r.coachAvatar as number) && (r.coachAvatar as number) >= 0 && (r.coachAvatar as number) <= 999) g.coachAvatar = r.coachAvatar as number;
-  if (num(r.elo)) g.elo = r.elo as number;
-  if (num(r.eloAfter)) g.eloAfter = r.eloAfter as number;
+  if (elo(r.elo)) g.elo = r.elo;
+  if (elo(r.playerElo)) g.playerElo = r.playerElo;
+  if (deviation(r.ratingDeviation)) g.ratingDeviation = r.ratingDeviation;
+  if (streak(r.ratingStreak)) g.ratingStreak = r.ratingStreak;
+  if (typeof r.autoElo === 'boolean') g.autoElo = r.autoElo;
+  if (inRange(r.temperature, 0, 1.5)) g.temperature = r.temperature;
+  if (elo(r.eloAfter)) g.eloAfter = r.eloAfter;
   if (str(r.model, 16)) g.model = r.model as string;
   if (str(r.tc, 16)) g.tc = r.tc as string;
   if (Array.isArray(r.clock) && r.clock.length === 2 && r.clock.every(num)) g.clock = [r.clock[0], r.clock[1]];
@@ -177,27 +193,33 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
   if (isObj(r.assists)) {
     const a = r.assists;
     g.assists = {
-      undo: num(a.undo) ? (a.undo as number) : 0,
-      hint: num(a.hint) ? (a.hint as number) : 0,
-      retry: num(a.retry) ? (a.retry as number) : 0,
+      undo: assist(a.undo),
+      hint: assist(a.hint),
+      retry: assist(a.retry),
       ...(a.aids === true ? { aids: true } : {}),
       ...(a.best === true ? { best: true } : {}),
     };
   }
-  if (isObj(r.rating) && num(r.rating.delta) && num(r.rating.k) && num(r.rating.result) && num(r.rating.score) && num(r.rating.assist)) {
+  if (isObj(r.rating)) {
     const x = r.rating;
-    g.rating = {
-      delta: x.delta as number,
-      k: x.k as number,
-      result: x.result as number,
-      score: x.score as number,
-      assist: x.assist as number,
-      ...(num(x.accuracy) ? { accuracy: x.accuracy as number } : {}),
-      ...(num(x.expected) ? { expected: x.expected as number } : {}),
-      ...(x.abandoned === true ? { abandoned: true } : {}),
-    };
+    if (inRange(x.delta, -2600, 2600, true) && (x.result === 0 || x.result === 0.5 || x.result === 1)
+      && inRange(x.expected, 0, 1) && elo(x.playerBefore) && elo(x.playerAfter) && elo(x.opponent)
+      && deviation(x.rdBefore) && deviation(x.rdAfter) && streak(x.streak) && elo(x.opponentAfter)) {
+      g.rating = {
+        delta: x.delta,
+        result: x.result,
+        expected: x.expected,
+        playerBefore: x.playerBefore,
+        playerAfter: x.playerAfter,
+        opponent: x.opponent,
+        rdBefore: x.rdBefore,
+        rdAfter: x.rdAfter,
+        streak: x.streak,
+        opponentAfter: x.opponentAfter,
+        ...(x.abandoned === true ? { abandoned: true } : {}),
+      };
+    }
   }
   if (r.abandoned === true) g.abandoned = true;
-  if (r.ratePending === true) g.ratePending = true;
   return g;
 }

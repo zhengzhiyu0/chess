@@ -81,3 +81,60 @@ describe('settings whitelist', () => {
     });
   });
 });
+
+describe('separate player rating migration', () => {
+  beforeEach(() => mem.clear());
+
+  it.each([[0, 350], [1, 250], [4, 250], [5, 150], [14, 150], [15, 80], [90, 80]])(
+    'retains %i rated games and assigns legacy uncertainty %i',
+    (ratedGames, ratingDeviation) => {
+      const legacy = { elo: 1820, ratedGames, autoElo: false };
+      mem.set(KEY, JSON.stringify(legacy));
+      const expected = { elo: 1820, playerElo: 1820, ratedGames, ratingDeviation, ratingStreak: 0, autoElo: false };
+      expect(loadSettings()).toMatchObject(expected);
+      expect(sanitizeSettings(legacy)).toMatchObject(expected);
+      expect(legacy).toEqual({ elo: 1820, ratedGames, autoElo: false });
+    },
+  );
+
+  it('migrates the earlier Maia field through the backup sanitizer too', () => {
+    const migrated = sanitizeSettings({ maiaElo: 1230, myElo: 900, ratedGames: 8 });
+    expect(migrated).toMatchObject({ elo: 1230, playerElo: 1230, ratingDeviation: 150, ratedGames: 8 });
+    expect(migrated).not.toHaveProperty('maiaElo');
+    expect(migrated).not.toHaveProperty('myElo');
+    expect(sanitizeSettings({ elo: 1600, maiaElo: 1230 }).playerElo).toBe(1600);
+  });
+
+  it('keeps independent ratings and uncertainty over repeated saves and loads', () => {
+    const settings = { ...defaultSettings(), elo: 1740, playerElo: 1682, ratingDeviation: 91.25, ratingStreak: -3, ratedGames: 27, autoElo: false };
+    saveSettings(settings);
+    for (let i = 0; i < 3; i++) {
+      const loaded = loadSettings();
+      expect(loaded).toMatchObject(settings);
+      saveSettings(loaded);
+    }
+  });
+
+  it('defaults malformed rating fields without discarding valid progress', () => {
+    const d = defaultSettings();
+    for (const value of [null, '1200', -1, 2601, 1500.5, NaN, Infinity]) {
+      expect(sanitizeSettings({ elo: 1900, playerElo: value, ratedGames: 31 })).toMatchObject({
+        elo: 1900, playerElo: d.playerElo, ratedGames: 31, ratingDeviation: 80,
+      });
+    }
+    for (const value of [null, '80', 59, 351, NaN, Infinity]) {
+      expect(sanitizeSettings({ ratingDeviation: value, ratedGames: 31 })).toMatchObject({ ratingDeviation: d.ratingDeviation, ratedGames: 31 });
+    }
+    for (const value of [null, '-3', -9, 9, 0.5, NaN, Infinity]) {
+      expect(sanitizeSettings({ ratingStreak: value }).ratingStreak).toBe(0);
+    }
+    for (const value of [-1, 1.5, Infinity, '30']) {
+      expect(sanitizeSettings({ ratedGames: value })).toMatchObject({ ratedGames: 0, ratingDeviation: 350 });
+    }
+  });
+
+  it('accepts the rating and streak boundaries', () => {
+    expect(sanitizeSettings({ elo: 0, playerElo: 2600, ratingDeviation: 60, ratingStreak: -8 })).toMatchObject({ elo: 0, playerElo: 2600, ratingDeviation: 60, ratingStreak: -8 });
+    expect(sanitizeSettings({ elo: 2600, playerElo: 0, ratingDeviation: 350, ratingStreak: 8 })).toMatchObject({ elo: 2600, playerElo: 0, ratingDeviation: 350, ratingStreak: 8 });
+  });
+});

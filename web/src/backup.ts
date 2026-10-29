@@ -89,7 +89,15 @@ export function parseBackup(text: string): { data: BackupData; skipped: number }
 export function mergeBackup(cur: BackupData, inc: BackupData): BackupData {
   const games = new Map(cur.history.map((g) => [g.id, g]));
   for (const g of inc.history) if (!games.has(g.id)) games.set(g.id, g);
-  const settings = inc.settings.ratedGames > cur.settings.ratedGames ? { ...cur.settings, elo: inc.settings.elo, ratedGames: inc.settings.ratedGames, autoElo: inc.settings.autoElo } : cur.settings;
+  const settings = inc.settings.ratedGames > cur.settings.ratedGames ? {
+    ...cur.settings,
+    playerElo: inc.settings.playerElo,
+    elo: inc.settings.elo,
+    ratingDeviation: inc.settings.ratingDeviation,
+    ratingStreak: inc.settings.ratingStreak,
+    ratedGames: inc.settings.ratedGames,
+    autoElo: inc.settings.autoElo,
+  } : cur.settings;
   return normalizeBackup({
     settings,
     history: [...games.values()],

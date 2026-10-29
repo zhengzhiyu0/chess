@@ -10,10 +10,16 @@ export interface Settings {
   /** app chrome colour scheme */
   theme: 'dark' | 'light';
   model: '5m' | '23m' | '79m';
+  /** Maia rating for the next game, independent of the player's estimate. */
   elo: number;
-  /** adjust `elo` after each finished game according to the result */
+  playerElo: number;
+  /** Player rating uncertainty; lower values mean a more stable estimate. */
+  ratingDeviation: number;
+  /** Consecutive wins (positive) or losses (negative). */
+  ratingStreak: number;
+  /** Rate eligible games and automatically choose the next Maia opponent. */
   autoElo: boolean;
-  /** number of games rated so far (larger early adjustments) */
+  /** Number of games rated so far, retained when migrating older settings. */
   ratedGames: number;
   color: Color | 'random';
   temperature: number;
@@ -101,6 +107,9 @@ export function defaultSettings(): Settings {
     theme: 'dark',
     model: isNative ? '23m' : isIOS ? '5m' : '23m',
     elo: 1500,
+    playerElo: 1500,
+    ratingDeviation: 350,
+    ratingStreak: 0,
     autoElo: true,
     ratedGames: 0,
     color: 'w',
@@ -153,10 +162,6 @@ export function loadSettings(): Settings {
     // AI coach was removed; discard any API key left by older builds.
     localStorage.removeItem('maia-coach.ai-key');
     const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
-    // migrate settings saved by the earlier two-rating version
-    if (saved.elo === undefined && typeof saved.maiaElo === 'number') saved.elo = saved.maiaElo;
-    delete saved.maiaElo;
-    delete saved.myElo;
     // gen 1 moved the old synthesized default to Lichess sfx; gen 2 moves default users to the wooden board set
     if ((saved.soundGen ?? 0) < 2) {
       if (saved.soundTheme === undefined || saved.soundTheme === 'wood' || saved.soundTheme === 'sfx') saved.soundTheme = 'board';
@@ -198,6 +203,9 @@ const RULES: Record<keyof Settings, Rule> = {
   theme: { oneOf: ['dark', 'light'] },
   model: { oneOf: ['5m', '23m', '79m'] },
   elo: { num: [ELO_MIN, ELO_MAX], int: true },
+  playerElo: { num: [ELO_MIN, ELO_MAX], int: true },
+  ratingDeviation: { num: [60, 350] },
+  ratingStreak: { num: [-8, 8], int: true },
   autoElo: { bool: true },
   ratedGames: { num: [0, 1e9], int: true },
   color: { oneOf: ['w', 'b', 'random'] },
@@ -264,22 +272,20 @@ export function sanitizeSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== 'object') return out as unknown as Settings;
   const src = raw as Record<string, unknown>;
   for (const k of Object.keys(RULES) as (keyof Settings)[]) {
-    if (!Object.hasOwn(src, k)) continue;
-    const value = k === 'soundTheme' ? soundThemeOf(src[k]) : src[k];
+    const legacyElo = k === 'elo' && src.elo === undefined && Object.hasOwn(src, 'maiaElo');
+    if (!Object.hasOwn(src, k) && !legacyElo) continue;
+    const value = k === 'soundTheme' ? soundThemeOf(src[k]) : legacyElo ? src.maiaElo : src[k];
     if (valid(RULES[k], value)) out[k] = value;
+  }
+  // Keep migration here so local storage and imported backups share the same rules.
+  if (src.playerElo === undefined) out.playerElo = out.elo;
+  if (src.ratingDeviation === undefined) {
+    const games = out.ratedGames as number;
+    out.ratingDeviation = games === 0 ? 350 : games < 5 ? 250 : games < 15 ? 150 : 80;
   }
   // Lia is the only active coach; keep the other portrait definitions for future use.
   out.coachAvatar = 0;
   return out as unknown as Settings;
-}
-
-/**
- * Rating change after a game against an equally rated Maia (expected score 0.5).
- * K is large for the first games so a new player quickly finds their level.
- */
-export function eloDelta(score: number, ratedGames: number): number {
-  const k = ratedGames < 5 ? 100 : ratedGames < 15 ? 60 : 40;
-  return Math.round((k * (score - 0.5)) / 10) * 10;
 }
 
 export function saveSettings(s: Settings) {

@@ -102,8 +102,13 @@ let node: Node = tree.root;
 let gameId = newGameId();
 let gameDate = Date.now();
 let gameElo: number | undefined = settings.elo;
+let gamePlayerElo: number | undefined = settings.playerElo;
+let gameDeviation = settings.ratingDeviation;
+let gameStreak = settings.ratingStreak;
+let gameAutoElo = settings.autoElo;
+let gameTemperature = settings.temperature;
 let eloAfter: number | undefined;
-let gameModel: string = settings.model;
+let gameModel: Settings['model'] = settings.model;
 let userColor: Color = 'w';
 let result = '';
 let reason: EndReason | undefined;
@@ -166,8 +171,6 @@ let history: StoredGame[] = loadHistory();
 let assists: Assists = emptyAssists();
 /** how the rating change of the current (finished) game was computed */
 let rating: RatingInfo | undefined;
-/** the current game is over but its rating waits for the analysis of the game */
-let ratePending = false;
 let abandoned = false;
 /** The live game stays in its persistent slot while a historical game is open. */
 let suspendedGame: {
@@ -206,7 +209,7 @@ function toggleTheme() {
 }
 
 const engines = new Engines(
-  () => settings,
+  () => !imported && gameElo !== undefined ? { ...settings, model: gameModel } : settings,
   // coached play alternates Maia and Stockfish every move; see Engines
   () => screen === 'home' ? settings.gameType === 'coach' : coachOn && mode === 'play',
   () => liveCtrl?.abort(),
@@ -256,10 +259,6 @@ function resultText(): string {
 }
 
 function stored(): StoredGame {
-  if (!result && !imported) {
-    gameElo = settings.elo;
-    gameModel = settings.model;
-  }
   return {
     id: gameId,
     date: gameDate,
@@ -271,6 +270,11 @@ function stored(): StoredGame {
     coach: coachOn,
     coachAvatar: gameCoachAvatar,
     elo: imported ? undefined : gameElo,
+    playerElo: imported ? undefined : gamePlayerElo,
+    ratingDeviation: gameDeviation,
+    ratingStreak: gameStreak,
+    autoElo: gameAutoElo,
+    temperature: gameTemperature,
     eloAfter,
     model: imported ? undefined : gameModel,
     tc: tcId,
@@ -280,7 +284,6 @@ function stored(): StoredGame {
     assists: assistCount(assists) ? assists : undefined,
     rating,
     abandoned: abandoned || undefined,
-    ratePending: ratePending || undefined,
   };
 }
 
@@ -339,13 +342,15 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     coachOn = Boolean(g.coach);
     gameCoachAvatar = typeof g.coachAvatar === 'number' ? pickCoachAvatar(g.coachAvatar) : pickCoachAvatar(settings.coachAvatar);
     gameElo = g.elo ?? (imported ? undefined : settings.elo);
+    gamePlayerElo = g.playerElo ?? (imported ? undefined : g.elo ?? settings.playerElo);
+    gameDeviation = g.ratingDeviation ?? settings.ratingDeviation;
+    gameStreak = g.ratingStreak ?? settings.ratingStreak;
+    gameAutoElo = g.autoElo ?? settings.autoElo;
+    gameTemperature = g.temperature ?? settings.temperature;
     eloAfter = g.eloAfter;
-    gameModel = g.model ?? settings.model;
+    gameModel = g.model === '5m' || g.model === '79m' ? g.model : g.model === '23m' ? g.model : settings.model;
     assists = g.assists ? { ...g.assists } : emptyAssists();
     rating = g.rating;
-    // Older saved games may have a pending rating from before coach games were
-    // excluded. Never apply that pending adjustment when reopening a coach game.
-    ratePending = Boolean(g.ratePending) && !coachOn;
     abandoned = Boolean(g.abandoned);
     const peak = (raw as { peak?: unknown }).peak;
     peakUserMoves = Math.max(typeof peak === 'number' ? peak : 0, userMovesOf().length);
@@ -425,7 +430,7 @@ function reviewArrows(): ReviewArrow[] {
   const best = liveOn && liveLines[0]?.pv[0] ? liveLines[0].pv[0] : node.a.eval?.best;
   if (best) out.push({ uci: best, kind: 'best', text: `最佳 ${sanOf(node.fen, best)}` });
   const h = node.a.human?.moves[0];
-  if (h && h.uci !== best) out.push({ uci: h.uci, kind: 'human', text: `${settings.elo} 分常走 ${sanOf(node.fen, h.uci)}（${(h.p * 100).toFixed(0)}%）` });
+  if (h && h.uci !== best) out.push({ uci: h.uci, kind: 'human', text: `${humanElo(node)} 分常走 ${sanOf(node.fen, h.uci)}（${(h.p * 100).toFixed(0)}%）` });
   return out;
 }
 
@@ -738,10 +743,14 @@ async function opponentSpeak(n: Node) {
   }
 }
 
+function humanElo(n: Node): number {
+  return turnOf(n.fen) === userColor ? gamePlayerElo ?? settings.playerElo : gameElo ?? settings.elo;
+}
+
 async function maiaEval(n: Node): Promise<MaiaResult> {
   if (n.a.human) return n.a.human;
   const m = await getMaia();
-  const res = await m.evaluate(chessOf(n), maiaFens(n), settings.elo, settings.elo);
+  const res = await m.evaluate(chessOf(n), maiaFens(n), humanElo(n), turnOf(n.fen) === userColor ? gameElo ?? settings.elo : gamePlayerElo ?? settings.playerElo);
   n.a.human = res;
   return res;
 }
@@ -845,7 +854,7 @@ function collectMistakes() {
 function ratingEnabled(): boolean {
   // Coach games are training sessions: hints, retries and explanations make their
   // results incomparable with a normal game, so they must never change Elo.
-  return !coachOn && settings.autoElo && !imported && gameElo !== undefined && tree.root.fen === START_FEN;
+  return !coachOn && gameAutoElo && !imported && gameElo !== undefined && gamePlayerElo !== undefined && tree.root.fen === START_FEN;
 }
 
 function rateable(): boolean {
@@ -853,78 +862,25 @@ function rateable(): boolean {
   return Math.max(peakUserMoves, userMovesOf().length) >= 1 || reason === 'resign';
 }
 
-let rateCtrl: AbortController | null = null;
-
-/** Average accuracy of the user's moves, from the review evals or a quick dedicated search. */
-async function gameAccuracy(signal: AbortSignal): Promise<number | undefined> {
-  const moves = userMovesOf();
-  if (moves.length < 3) return undefined;
-  const need = new Set<Node>();
-  for (const n of moves) for (const x of [n.parent!, n]) if (!x.a.eval) need.add(x);
-  const white = new Map<Node, number>();
-  if (need.size) {
-    const s = await getSf();
-    for (const x of need) {
-      if (signal.aborted) return undefined;
-      const r = await s.analyse(tree.root.fen, { moves: movesTo(x), movetime: 250, depth: 14, signal });
-      if (signal.aborted) return undefined;
-      white.set(x, posEvalFrom(x, r.lines, r.bestmove).white);
-    }
-  }
-  const w = (x: Node) => x.a.eval?.white ?? white.get(x) ?? 50;
-  const accs = moves.map((n) => {
-    const me = userColor === 'w';
-    const before = me ? w(n.parent!) : 100 - w(n.parent!);
-    const after = me ? w(n) : 100 - w(n);
-    return moveAccuracy(before, after);
-  });
-  return accs.reduce((a, b) => a + b, 0) / accs.length;
-}
-
+/** Settle once at game end; review analysis can never change a rating. */
 function startRating() {
-  rateCtrl?.abort();
-  eloAfter = undefined;
-  rating = undefined;
-  ratePending = rateable();
-  if (!ratePending) return;
-  if (abandoned) {
-    applyRating(undefined);
-    return;
-  }
-  const ctrl = new AbortController();
-  rateCtrl = ctrl;
-  const id = gameId;
-  void gameAccuracy(ctrl.signal)
-    .catch((err) => {
-      console.warn('评估本局表现失败', err);
-      return undefined;
-    })
-    .then((acc) => {
-      if (id !== gameId || !ratePending) return;
-      applyRating(acc);
-    });
-}
-
-function applyRating(accuracy: number | undefined) {
-  if (!ratePending) return;
-  ratePending = false;
-  rateCtrl = null;
+  if (rating || eloAfter !== undefined || !rateable() || assistCount(assists)) return;
+  // A backup restore or a manually changed starting estimate must not be overwritten by an older game.
+  if (settings.playerElo !== gamePlayerElo || settings.ratingDeviation !== gameDeviation || settings.ratingStreak !== gameStreak) return;
   const score = result === '1/2-1/2' ? 0.5 : (result === '1-0') === (userColor === 'w') ? 1 : 0;
-  rating = computeRating({ result: score, elo: gameElo!, ratedGames: settings.ratedGames, accuracy, assists, abandoned });
-  eloAfter = Math.max(ELO_MIN, Math.min(ELO_MAX, settings.elo + rating.delta));
-  settings = { ...settings, elo: eloAfter, ratedGames: settings.ratedGames + 1 };
+  rating = computeRating({ result: score, playerElo: gamePlayerElo!, opponentElo: gameElo!, deviation: gameDeviation, streak: gameStreak, abandoned });
+  eloAfter = rating.playerAfter;
+  settings = {
+    ...settings,
+    playerElo: eloAfter,
+    elo: rating.opponentAfter,
+    ratingDeviation: rating.rdAfter,
+    ratingStreak: rating.streak,
+    ratedGames: settings.ratedGames + 1,
+  };
   saveSettings(settings);
-  clearAnn('human');
-  saveGame();
   renderRatingResult();
   if (screen === 'home') renderHome();
-}
-
-/** Rate an unfinished rated game right away (performance unknown) instead of losing it. */
-function flushRating() {
-  if (!ratePending) return;
-  rateCtrl?.abort();
-  applyRating(undefined);
 }
 
 /**
@@ -933,11 +889,10 @@ function flushRating() {
  */
 function leaveGame(): boolean {
   restoreSuspendedGame();
-  flushRating();
   if (result || imported || (tip() === tree.root && !peakUserMoves)) return true;
   const moved = Math.max(peakUserMoves, userMovesOf().length);
   if (moved < 3 || !rateable()) return true;
-  if (!confirm('当前对局还没下完。离开会按认输记录并计算等级分，确定吗？')) return false;
+  if (!confirm(assistCount(assists) ? '当前练习还没下完。离开会按认输记录，但不影响棋力或对手难度，确定吗？' : '当前对局还没下完。离开会按认输记录并计算棋力分，确定吗？')) return false;
   abandoned = true;
   shownResult = userColor === 'w' ? '0-1' : '1-0';
   endGame(shownResult, 'resign');
@@ -962,7 +917,7 @@ async function maiaTurn(attempt = 0) {
     const t0 = performance.now();
     const res = await maiaEval(t);
     if (token !== gameToken || mode !== 'play' || screen !== 'game') return;
-    const pick = sampleMove(res.moves, settings.temperature, 1);
+    const pick = sampleMove(res.moves, gameTemperature, 1);
     if (settings.thinkDelay) {
       // longer "thinking" when the position is less obvious to a human
       const unclear = 1 - res.moves[0].p;
@@ -1011,6 +966,11 @@ function newGame(fen = START_FEN, color?: Color): boolean {
   gameId = newGameId();
   gameDate = Date.now();
   gameElo = settings.elo;
+  gamePlayerElo = settings.playerElo;
+  gameDeviation = settings.ratingDeviation;
+  gameStreak = settings.ratingStreak;
+  gameAutoElo = settings.autoElo;
+  gameTemperature = settings.temperature;
   eloAfter = undefined;
   gameModel = settings.model;
   result = '';
@@ -1019,7 +979,6 @@ function newGame(fen = START_FEN, color?: Color): boolean {
   headers = undefined;
   assists = emptyAssists();
   rating = undefined;
-  ratePending = false;
   abandoned = false;
   peakUserMoves = 0;
   maiaFailed = false;
@@ -1041,11 +1000,11 @@ function newGame(fen = START_FEN, color?: Color): boolean {
 let hintedAt: Node | null = null;
 let assistWarned = '';
 
-/** First use of a help in a game that will be rated: say once that it lowers the rating gain. */
+/** Confirm once before a rated game becomes an assisted practice session. */
 function assistOk(what: string): boolean {
   const willRate = ratingEnabled();
-  if (!willRate || assistWarned === gameId) return true;
-  if (!confirm(`使用${what}后，本局赢棋的加分会按比例减少（输棋照常扣分）。继续吗？`)) return false;
+  if (!willRate || assistCount(assists) || assistWarned === gameId) return true;
+  if (!confirm(`使用${what}后，本局转为辅助练习，不再改变棋力分和下一局难度。继续吗？`)) return false;
   assistWarned = gameId;
   return true;
 }
@@ -1094,6 +1053,7 @@ async function hint() {
     hintedAt = t;
     assists.hint++;
     saveGame();
+    renderPlayInfo();
   }
   try {
     const s = await getSf();
@@ -1107,7 +1067,7 @@ async function hint() {
       if (stale()) return;
       const top = h.moves[0];
       if (top.uci !== best) hintShapes.push(arrow(top.uci, 'blue'));
-      text += `\n${settings.elo} 分棋手最常走：` + h.moves.slice(0, 3).map((x) => `${sanOf(t.fen, x.uci)} ${(x.p * 100).toFixed(0)}%`).join('，');
+      text += `\n${humanElo(t)} 分棋手最常走：` + h.moves.slice(0, 3).map((x) => `${sanOf(t.fen, x.uci)} ${(x.p * 100).toFixed(0)}%`).join('，');
     }
     box.textContent = text;
     refreshShapes();
@@ -1355,12 +1315,12 @@ async function reviewHuman() {
   const want = [n.parent && showMove(n) ? n.parent : null, showSide(n) && !chessOf(n).isGameOver() ? n : null];
   const todo = want.filter((x): x is Node => Boolean(x) && !x!.a.human);
   if (!todo.length) return;
-  // settings changed while Maia ran: the answers belong to the old rating / model
-  const sig = () => `${settings.elo}|${settings.model}|${settings.useHistory}`;
+  // Answers belong to this game's locked ratings and model, even if next-game settings change.
+  const sig = () => `${gameId}|${gameElo}|${gamePlayerElo}|${gameModel}`;
   const asked = sig();
   try {
     const m = await getMaia();
-    const res = await m.evaluateMany(todo.map((x) => ({ chess: chessOf(x), fens: maiaFens(x), selfElo: settings.elo, oppoElo: settings.elo })));
+    const res = await m.evaluateMany(todo.map((x) => ({ chess: chessOf(x), fens: maiaFens(x), selfElo: humanElo(x), oppoElo: turnOf(x.fen) === userColor ? gameElo ?? settings.elo : gamePlayerElo ?? settings.playerElo })));
     if (sig() !== asked) return;
     todo.forEach((x, i) => (x.a.human = res[i]));
   } catch (err) {
@@ -1571,7 +1531,7 @@ function trendRecommendation(): { label: string; tag: string; theme?: string; re
     .sort((a, b) => b.recent - b.previous - (a.recent - a.previous) || b.recent - a.recent || b.total - a.total);
   const s = candidates[0];
   if (!s) return null;
-  const theme = themesForTag(s.tag, settings.elo).find((t) => THEME_LABEL[t]);
+  const theme = themesForTag(s.tag, settings.playerElo).find((t) => THEME_LABEL[t]);
   const trend = s.recent > s.previous ? `近 30 天出现 ${s.recent} 次，比之前 30 天更多` : `近 30 天出现 ${s.recent} 次`;
   return { label: s.label, tag: s.tag, theme, reason: trend };
 }
@@ -1607,7 +1567,7 @@ function renderLearningSummary() {
           const tag = learningTag(n);
           const insight = insightOf(n);
           const best = n.parent?.a.eval?.best;
-          const themes = themesForTag(tag.id, settings.elo).filter((t) => THEME_LABEL[t]);
+          const themes = themesForTag(tag.id, settings.playerElo).filter((t) => THEME_LABEL[t]);
           const saved = loadMistakes().find((m) => m.gameId === gameId && m.id === `${gameId}:${n.ply}`);
           const theme = themes[0];
           // Locally generated insights contain HTML for highlighted SAN moves, as in the coach panel.
@@ -1819,7 +1779,7 @@ function renderCoach() {
     if (h) {
       const played = h.moves.find((m) => m.uci === node.uci);
       parts.push(
-        `<div class="human">${settings.elo} 分棋手在此常走：` +
+        `<div class="human">${humanElo(p)} 分棋手在此常走：` +
           h.moves
             .slice(0, 3)
             .map((m) => `${sanOf(p.fen, m.uci)} ${(m.p * 100).toFixed(0)}%`)
@@ -2515,6 +2475,7 @@ function renderPlayInfo() {
   else if (maiaThinking) box.textContent = 'Maia 思考中…';
   else if (node !== tip()) box.textContent = '正在查看历史局面';
   else box.textContent = turnOf(node.fen) === userColor ? (cg.state.premovable.current ? '轮到你走（已预走）' : '轮到你走') : '等待 Maia';
+  $('game-rating').textContent = imported ? '' : `我 ${gamePlayerElo ?? '?'} · Maia ${gameElo ?? '?'} · ${coachOn ? '教练练习' : assistCount(assists) ? '辅助练习 · 不计分' : gameAutoElo ? '计分对局' : '不计分对局'}`;
 }
 
 function renderOpponentDialogue() {
@@ -2566,14 +2527,15 @@ function checkResult() {
 
 function renderRatingResult() {
   const box = $('result-elo');
-  if (ratePending) {
-    box.textContent = '正在评估本局表现，稍后计算等级分…';
-    box.hidden = false;
-  } else if (!coachOn && eloAfter !== undefined && gameElo !== undefined && rating) {
-    const d = eloAfter - gameElo;
+  const before = gamePlayerElo ?? gameElo;
+  if (!coachOn && eloAfter !== undefined && before !== undefined) {
+    const d = eloAfter - before;
     box.innerHTML =
-      `等级分 ${gameElo} → <b class="${d > 0 ? 'win' : d < 0 ? 'loss' : ''}">${eloAfter}</b>（${d > 0 ? '+' : ''}${d}），下一局 Maia 将按新分数对弈` +
-      `<small>${escapeHtml(ratingBreakdown(rating))}</small>`;
+      `我的棋力 ${before} → <b class="${d > 0 ? 'win' : d < 0 ? 'loss' : ''}">${eloAfter}</b>（${d > 0 ? '+' : ''}${d}）` +
+      (rating ? `<small>${escapeHtml(ratingBreakdown(rating))} · 下局 Maia ${rating.opponentAfter}</small>` : '<small>旧版评级记录</small>');
+    box.hidden = false;
+  } else if (result && !imported) {
+    box.textContent = coachOn ? '教练练习：不改变棋力与对手难度' : assistCount(assists) ? '辅助练习：使用了提示、悔棋或局中分析，不改变棋力与对手难度' : '本局不计分，不改变棋力与对手难度';
     box.hidden = false;
   } else box.hidden = true;
 }
@@ -2645,6 +2607,11 @@ function lastOfLine(): Node {
 }
 
 function setMode(m: 'play' | 'review') {
+  if (m === 'review' && !result && !imported && ratingEnabled() && !assistCount(assists)) {
+    if (!assistOk('局中分析')) return;
+    assists.aids = true;
+    saveGame();
+  }
   const prev = mode;
   mode = m;
   if (m !== 'play') clearOpponentLine();
@@ -2809,20 +2776,20 @@ function openSettings() {
     `${layoutDiag()}<br>` +
     `版本：${__APP_VERSION__}`;
   dlg.returnValue = '';
-  // the rating can move while the dialog is open (a finished game's analysis completes): only an edit counts
-  const openElo = settings.elo;
+  const openPlayerElo = settings.playerElo;
   dlg.onclose = () => {
     if (dlg.returnValue !== 'ok') return;
     const old = settings;
     const num = (n: string) => Number(el(n).value);
-    const eloEdited = num('elo') !== openElo;
+    const playerEdited = num('playerElo') !== openPlayerElo;
     settings = {
       ...old,
       model: el('model').value as Settings['model'],
-      elo: eloEdited ? num('elo') : old.elo,
+      elo: num('elo'),
+      playerElo: playerEdited ? Math.max(ELO_MIN, Math.min(ELO_MAX, Math.round(num('playerElo')))) : old.playerElo,
+      ratingDeviation: playerEdited ? 350 : old.ratingDeviation,
+      ratingStreak: playerEdited ? 0 : old.ratingStreak,
       autoElo: el('autoElo').checked,
-      // a manually chosen rating restarts the fast early calibration
-      ratedGames: eloEdited ? 0 : old.ratedGames,
       color: el('color').value as Settings['color'],
       temperature: num('temperature'),
       backend: el('backend').value as Settings['backend'],
@@ -2920,6 +2887,7 @@ function gameHeaders(): Record<string, string> {
     Result: result || '*',
   };
   h[userColor === 'w' ? 'BlackElo' : 'WhiteElo'] = elo;
+  h[userColor === 'w' ? 'WhiteElo' : 'BlackElo'] = String(gamePlayerElo ?? settings.playerElo);
   h.TimeControl = pgnTimeControl(clock?.tc ?? null);
   h.Termination = !result ? 'Unterminated' : reason === 'timeout' ? 'Time forfeit' : 'Normal';
   return h;
@@ -3014,10 +2982,10 @@ function loadImported(p: Parsed) {
   gameId = newGameId();
   gameDate = Date.now();
   gameElo = undefined;
+  gamePlayerElo = undefined;
   eloAfter = undefined;
   assists = emptyAssists();
   rating = undefined;
-  ratePending = false;
   abandoned = false;
   peakUserMoves = 0;
   maiaFailed = false;
@@ -3089,7 +3057,6 @@ function currentData(): BackupData {
 }
 
 async function exportBackup() {
-  flushRating();
   saveGame();
   const text = JSON.stringify(makeBackup(currentData(), `${isNative ? 'ios' : 'web'} ${__APP_VERSION__}`));
   try {
@@ -3163,6 +3130,7 @@ async function exportAllPgn() {
             White: g.userColor === 'w' ? '我' : name,
             Black: g.userColor === 'b' ? '我' : name,
             [g.userColor === 'w' ? 'BlackElo' : 'WhiteElo']: String(g.elo ?? ''),
+            [g.userColor === 'w' ? 'WhiteElo' : 'BlackElo']: String(g.playerElo ?? g.elo ?? ''),
             TimeControl: pgnTimeControl(timeControlOf(g.tc)),
           };
       h.Result = g.result || '*';
@@ -3208,7 +3176,7 @@ function openData() {
 const trainerCtx: TrainerCtx = {
   show: () => showScreen('train'),
   close: () => showScreen('home'),
-  elo: () => settings.elo,
+  elo: () => settings.playerElo,
   askPromotion,
 };
 
@@ -3232,11 +3200,12 @@ function setHomeTab(tab: HomeTab) {
 function renderHome() {
   const elo = $<HTMLInputElement>('home-elo');
   elo.value = String(settings.elo);
-  $('home-elo-val').textContent = settings.autoElo ? `${settings.elo} · 自动` : String(settings.elo);
+  $('home-elo-val').textContent = settings.autoElo && settings.gameType !== 'coach' ? `${settings.elo} · 自动` : String(settings.elo);
+  $('home-rating').textContent = `我的棋力 ${settings.playerElo} · ${settings.ratingDeviation > 150 ? '定位中' : '已定位'} · ${settings.ratedGames} 局计分对局`;
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => b.classList.toggle('active', b.dataset.color === settings.color));
   document.querySelectorAll<HTMLButtonElement>('#home-type button').forEach((b) => b.classList.toggle('active', b.dataset.type === settings.gameType));
   $<HTMLSelectElement>('home-tc').value = settings.timeControl;
-  $('home-coach-desc').textContent = settings.gameType === 'coach' ? '走出' + JUDGEMENT_INFO[settings.coachLevel].label + '时暂停讲解，可重走' : '无提示，自由对弈';
+  $('home-coach-desc').textContent = settings.gameType === 'coach' ? '走出' + JUDGEMENT_INFO[settings.coachLevel].label + '时暂停讲解，可重走' : '无辅助时计分；提示或悔棋将转为练习';
   const t = tip();
   const has = t !== tree.root;
   const canContinue = has && result === '' && !imported;
@@ -3281,7 +3250,7 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
             dialogue: coachDialogue, line: opponentLine, flipped, coachFrom,
             coachPaused: coachState === 'paused', coachReveal,
           };
-        } else flushRating();
+        }
         gameToken++;
         maiaThinking = false;
         batchCtrl?.abort();
@@ -3441,7 +3410,7 @@ function bind() {
   $<HTMLInputElement>('home-elo').oninput = (e) => {
     $('home-elo-val').textContent = (e.target as HTMLInputElement).value;
   };
-  $<HTMLInputElement>('home-elo').onchange = (e) => saveHomeSettings({ elo: Number((e.target as HTMLInputElement).value), ratedGames: 0 });
+  $<HTMLInputElement>('home-elo').onchange = (e) => saveHomeSettings({ elo: Number((e.target as HTMLInputElement).value) });
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => {
     b.onclick = () => saveHomeSettings({ color: b.dataset.color as Settings['color'] });
   });
@@ -3976,8 +3945,6 @@ function init() {
   onStorageFull(() => {
     alert('本机存储空间已满，部分数据可能没能保存。请到「数据与备份」导出备份，然后清理一些历史对局。');
   });
-  // a rating left pending by closing the app mid-analysis is settled now (performance unknown)
-  if (ratePending) flushRating();
   setStatus(isNative ? '就绪（原生引擎）' : self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
 
   // Prioritise the selected engines over the much larger optional offline package.

@@ -2,6 +2,7 @@ import { $, escapeHtml } from './dom';
 import { computeStats, mainlineLength, outcomeOf, type Outcome, type StoredGame, type Tally } from '../game/history';
 import { END_REASON_TEXT } from '../game/rules';
 import { TIME_CONTROLS } from '../game/clock';
+import { assistCount } from '../game/rating';
 
 export interface HistoryCtx {
   games(): StoredGame[];
@@ -32,13 +33,14 @@ function listHtml(games: StoredGame[]) {
     .map((g) => {
       const o = outcomeOf(g);
       const tc = TIME_CONTROLS.find((t) => t.id === g.tc && t.tc)?.id;
+      const playerBefore = g.playerElo ?? g.elo;
       const meta = [
         g.userColor === 'w' ? '执白' : '执黑',
         `${Math.ceil(mainlineLength(g.tree) / 2)} 回合`,
         g.reason ? END_REASON_TEXT[g.reason] : '',
         tc ?? '',
-        g.coach ? '教练' : '',
-        g.eloAfter !== undefined && g.elo !== undefined ? `等级分 ${g.eloAfter - g.elo >= 0 ? '+' : ''}${g.eloAfter - g.elo}` : '',
+        g.coach ? '教练' : assistCount(g.assists) > 0 ? '辅助练习' : '',
+        g.eloAfter !== undefined && playerBefore !== undefined ? `等级分 ${g.eloAfter - playerBefore >= 0 ? '+' : ''}${g.eloAfter - playerBefore}` : '',
       ].filter(Boolean);
       return (
         `<div class="hg" data-id="${escapeHtml(g.id)}">` +

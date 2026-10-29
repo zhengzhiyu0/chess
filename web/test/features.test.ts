@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 // settings.ts reads a few browser globals for its defaults
 Object.assign(globalThis, { matchMedia: () => ({ matches: false }) });
-import { assistFactor, computeRating, emptyAssists, expectedAccuracy, ratingBreakdown } from '../src/game/rating';
 import { sanitizeSettings, defaultSettings } from '../src/settings';
 import { sanitizeGame } from '../src/game/history';
 import { parsePgn, splitPgn } from '../src/game/pgn';
@@ -14,45 +13,6 @@ import { mistakeTag } from '../src/coach/explain';
 import { GameTree } from '../src/game/tree';
 import { START_FEN } from '../src/game/rules';
 
-describe('rating', () => {
-  const base = { elo: 1500, ratedGames: 20, assists: emptyAssists() };
-  it('win gains, loss loses, quality scales the amount', () => {
-    const good = computeRating({ ...base, result: 1, accuracy: 95 });
-    const bad = computeRating({ ...base, result: 1, accuracy: 50 });
-    expect(good.delta).toBeGreaterThan(bad.delta);
-    expect(bad.delta).toBeGreaterThan(0);
-    const lossGood = computeRating({ ...base, result: 0, accuracy: 95 });
-    const lossBad = computeRating({ ...base, result: 0, accuracy: 50 });
-    expect(lossGood.delta).toBeLessThan(0);
-    expect(lossGood.delta).toBeGreaterThan(lossBad.delta);
-  });
-  it('a typical draw is neutral, a strong draw gains', () => {
-    expect(computeRating({ ...base, result: 0.5, accuracy: expectedAccuracy(1500) }).delta).toBe(0);
-    expect(computeRating({ ...base, result: 0.5, accuracy: 95 }).delta).toBeGreaterThan(0);
-  });
-  it('assists shrink gains only', () => {
-    const a = { undo: 2, hint: 1, retry: 0 };
-    const win = computeRating({ ...base, result: 1, accuracy: 80 });
-    const helped = computeRating({ ...base, result: 1, accuracy: 80, assists: a });
-    expect(helped.delta).toBeLessThan(win.delta);
-    expect(helped.delta).toBeGreaterThanOrEqual(0);
-    const loss = computeRating({ ...base, result: 0, accuracy: 80 });
-    expect(computeRating({ ...base, result: 0, accuracy: 80, assists: a }).delta).toBe(loss.delta);
-    expect(assistFactor({ undo: 10, hint: 0, retry: 0 })).toBe(0);
-    expect(assistFactor({ undo: 0, hint: 0, retry: 0, best: true })).toBeCloseTo(0.2);
-  });
-  it('explains a gain wiped out by help as a scaled gain, not as "losses unchanged"', () => {
-    const r = computeRating({ ...base, result: 1, accuracy: 80, assists: { undo: 5, hint: 0, retry: 0 } });
-    expect(r.delta).toBe(0);
-    expect(ratingBreakdown(r)).toContain('加分 ×0.00');
-    const loss = computeRating({ ...base, result: 0, accuracy: 80, assists: { undo: 1, hint: 0, retry: 0 } });
-    expect(ratingBreakdown(loss)).toContain('不减少扣分');
-  });
-  it('abandoning is the worst loss', () => {
-    const r = computeRating({ ...base, result: 0, accuracy: 95, abandoned: true });
-    expect(r.delta).toBe(computeRating({ ...base, result: 0, accuracy: 0 }).delta);
-  });
-});
 
 describe('validation', () => {
   it('drops malformed settings', () => {

@@ -40,10 +40,11 @@
               </div>
               <button class="coach-line" id="btn-home-coach"><span id="home-coach-desc"></span><span class="link">教练设置 ›</span></button>
               <div class="setup-head">
-                <span>对手水平</span>
+                <span>下一局 Maia 水平</span>
                 <b id="home-elo-val"></b>
               </div>
-              <input type="range" id="home-elo" min="0" max="2600" step="50" />
+              <input type="range" id="home-elo" min="0" max="2600" step="1" aria-label="下一局 Maia 水平" />
+              <small class="muted" id="home-rating"></small>
               <div class="seg" id="home-color">
                 <button data-color="w"><span class="pc w">♚</span>执白</button>
                 <button data-color="random"><span class="pc r">?</span>随机</button>
@@ -144,6 +145,7 @@
             <div class="panel">
               <div class="tab" id="tab-play">
                 <div class="info" id="play-info"></div>
+                <small class="muted" id="game-rating"></small>
                 <div class="opponent-dialogue" id="opponent-dialogue" aria-live="polite"></div>
                 <div class="coach-live" id="coach-live"></div>
                 <div class="hint" id="hint-box"></div>
@@ -305,10 +307,15 @@
             <option value="79m">Maia-3 79M（312MB，最准）</option>
           </select>
         </label>
-        <label>等级分（Maia 与我相同；开启自动调整时为初始分） <output name="eloOut"></output>
-          <input type="range" name="elo" min="0" max="2600" step="50" />
+        <label>下一局 Maia 水平 <output name="eloOut"></output>
+          <input type="range" name="elo" min="0" max="2600" step="1" />
         </label>
-        <label class="check"><input type="checkbox" name="autoElo" /> 正式对弈模式根据胜负和准确率自动调整等级分（教练对局只计入训练记录）</label>
+        <label>我的棋力起点（修改后重新定位）
+          <input type="number" name="playerElo" min="0" max="2600" step="1" required />
+        </label>
+        <small class="muted">有未完成对局也可修改；当前棋局保留原参数，旧局结束不会覆盖新起点。</small>
+        <label class="check"><input type="checkbox" name="autoElo" /> 无辅助正式对局计分，并在赛后自动匹配 Maia 水平</label>
+        <p class="muted">棋力、对手水平、计分开关、Maia 模型与随机性变更从新局生效。评级只看结果与对手分，不依赖复盘准确率；提示、悔棋、局中分析及教练对局不计分。低于 600 的 Maia 水平为模型外推，不等同于正式赛事等级分。</p>
         <label>我执
           <select name="color">
             <option value="w">白棋</option>

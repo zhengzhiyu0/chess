@@ -3,7 +3,6 @@ import { GameTree } from '../src/game/tree';
 import { exportPgn, fmtClock, parseClock, parsePgn } from '../src/game/pgn';
 import { START_FEN, canMate, isThreefold, pvToSan, sanOf, terminalOf, timeoutResult } from '../src/game/rules';
 import { ChessClock, fmtClockShort, pgnTimeControl, thinkBudget, timeControlOf } from '../src/game/clock';
-import { eloDelta } from '../src/settings';
 import { computeStats, mainlineLength, outcomeOf, upsert, type StoredGame } from '../src/game/history';
 
 const lineOf = (tree: GameTree, ...ucis: string[]) => {
@@ -265,15 +264,5 @@ describe('history', () => {
     expect(h.map((x) => x.id)).toEqual(['b', 'a']);
     expect(h[1].result).toBe('1/2-1/2');
     expect(upsert(h, g('c', 3, 'w', '1-0'), 2).map((x) => x.id)).toEqual(['c', 'b']);
-  });
-});
-
-describe('auto rating', () => {
-  it('moves faster during calibration and is symmetric', () => {
-    expect(eloDelta(1, 0)).toBe(50);
-    expect(eloDelta(0, 0)).toBe(-50);
-    expect(eloDelta(0.5, 0)).toBe(0);
-    expect(eloDelta(1, 10)).toBe(30);
-    expect(eloDelta(0, 30)).toBe(-20);
   });
 });

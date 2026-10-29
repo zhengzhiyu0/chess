@@ -11,19 +11,34 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
 
+# PyTorch/ONNX Runtime can initialize competing OpenMP/Accelerate pools on macOS arm64.
+# Keep the conversion process deterministic and avoid native thread-pool SIGSEGVs.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+
 
 def _load_conversion_modules():
+    print("coreml: importing numpy", flush=True)
     import numpy as np
+    print("coreml: importing onnx", flush=True)
     import onnx
+    print("coreml: importing onnxruntime", flush=True)
     import onnxruntime as ort
+    print("coreml: importing torch", flush=True)
     import torch
+    print("coreml: importing onnx2torch", flush=True)
     from onnx2torch import convert as onnx_to_torch
+    print("coreml: importing coremltools", flush=True)
     import coremltools as ct
     import coremltools.optimize.coreml as cto
+    print("coreml: imports complete", flush=True)
     return np, onnx, ort, torch, onnx_to_torch, ct, cto
 
 MODELS = ("5m", "23m", "79m")
@@ -34,6 +49,8 @@ VALUE_COUNT = 3
 
 def compile_model(onnx_path: Path, compiled_path: Path, work_dir: Path) -> None:
     np, onnx, ort, torch, onnx_to_torch, ct, cto = _load_conversion_modules()
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
 
     class Float32Wrapper(torch.nn.Module):
         def __init__(self, base_model: torch.nn.Module) -> None:
@@ -44,8 +61,9 @@ def compile_model(onnx_path: Path, compiled_path: Path, work_dir: Path) -> None:
             move, value = self.base(tokens, self_elo, oppo_elo)
             return move.float(), value.float()
 
-    print(f"=== Processing {onnx_path.name} ===")
+    print(f"=== Processing {onnx_path.name} ===", flush=True)
     onnx_model = onnx.load(str(onnx_path))
+    print(f"{onnx_path.stem}: ONNX loaded", flush=True)
     expected_inputs = {"tokens": [1, 64, 96], "self_elo": [1], "oppo_elo": [1]}
     actual_inputs = {
         value.name: [dimension.dim_value for dimension in value.type.tensor_type.shape.dim]
@@ -56,12 +74,32 @@ def compile_model(onnx_path: Path, compiled_path: Path, work_dir: Path) -> None:
     actual_outputs = [value.name for value in onnx_model.graph.output]
     if actual_outputs != ["logits_move", "logits_value"]:
         raise RuntimeError(f"{onnx_path.name}: unexpected outputs {actual_outputs}")
+    print(f"{onnx_path.stem}: converting ONNX to Torch", flush=True)
     wrapped = Float32Wrapper(onnx_to_torch(onnx_model)).eval()
+    print(f"{onnx_path.stem}: ONNX to Torch complete", flush=True)
     dummy_tokens = torch.randn(*TOKEN_SHAPE, dtype=torch.float32)
     dummy_self_elo = torch.tensor([1500.0], dtype=torch.float32)
     dummy_oppo_elo = torch.tensor([1500.0], dtype=torch.float32)
     with torch.no_grad():
         traced = torch.jit.trace(wrapped, (dummy_tokens, dummy_self_elo, dummy_oppo_elo))
+    print(f"{onnx_path.stem}: torch trace complete", flush=True)
+    ort_session = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
+    ort_move, ort_value = ort_session.run(
+        ["logits_move", "logits_value"],
+        {"tokens": dummy_tokens.numpy(), "self_elo": dummy_self_elo.numpy(), "oppo_elo": dummy_oppo_elo.numpy()},
+    )
+    with torch.no_grad():
+        torch_move, torch_value = wrapped(dummy_tokens, dummy_self_elo, dummy_oppo_elo)
+    torch_move = torch_move.numpy()
+    torch_value = torch_value.numpy()
+    move_diff = float(np.max(np.abs(ort_move - torch_move)))
+    value_diff = float(np.max(np.abs(ort_value - torch_value)))
+    same_top = int(np.argmax(ort_move)) == int(np.argmax(torch_move))
+    print(f"{onnx_path.stem}: ONNX/Torch parity — move {move_diff:.4f}, value {value_diff:.4f}, top1={same_top}", flush=True)
+    assert ort_move.shape[-1] == MOVE_COUNT and torch_move.shape[-1] == MOVE_COUNT
+    assert ort_value.shape[-1] == VALUE_COUNT and torch_value.shape[-1] == VALUE_COUNT
+    assert same_top or move_diff < 0.25, f"{onnx_path.stem}: ONNX/Torch parity check failed"
+    print(f"{onnx_path.stem}: converting to CoreML MLProgram", flush=True)
     mlmodel = ct.convert(
         traced,
         inputs=[
@@ -77,30 +115,15 @@ def compile_model(onnx_path: Path, compiled_path: Path, work_dir: Path) -> None:
         compute_units=ct.ComputeUnit.ALL,
         convert_to="mlprogram",
     )
-    ort_session = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
-    ort_move, ort_value = ort_session.run(
-        ["logits_move", "logits_value"],
-        {"tokens": dummy_tokens.numpy(), "self_elo": dummy_self_elo.numpy(), "oppo_elo": dummy_oppo_elo.numpy()},
-    )
-    # CoreML's host-side predictor can abort on some macOS/CoreML versions when given an
-    # INT8-weight MLProgram. Compare the float MLProgram here; compiler validation below still
-    # validates the exact quantized artifact shipped to iOS.
-    coreml_output = mlmodel.predict(
-        {"tokens": dummy_tokens.numpy(), "self_elo": dummy_self_elo.numpy(), "oppo_elo": dummy_oppo_elo.numpy()}
-    )
-    coreml_move = np.asarray(coreml_output["logits_move"])
-    coreml_value = np.asarray(coreml_output["logits_value"])
-    move_diff = float(np.max(np.abs(ort_move - coreml_move)))
-    value_diff = float(np.max(np.abs(ort_value - coreml_value)))
-    same_top = int(np.argmax(ort_move)) == int(np.argmax(coreml_move))
-    print(f"{onnx_path.stem}: float CoreML parity — move {move_diff:.4f}, value {value_diff:.4f}, top1={same_top}", flush=True)
-    assert ort_move.shape[-1] == MOVE_COUNT and coreml_move.shape[-1] == MOVE_COUNT
-    assert ort_value.shape[-1] == VALUE_COUNT and coreml_value.shape[-1] == VALUE_COUNT
-    assert same_top or move_diff < 0.25, f"{onnx_path.stem}: CoreML parity check failed"
+    spec_outputs = [item.name for item in mlmodel.get_spec().description.output]
+    if spec_outputs != ["logits_move", "logits_value"]:
+        raise RuntimeError(f"{onnx_path.name}: unexpected CoreML outputs {spec_outputs}")
+    print(f"{onnx_path.stem}: CoreML conversion complete", flush=True)
     quantizer = cto.OpLinearQuantizerConfig(mode="linear_symmetric", weight_threshold=512)
     quantized = cto.linear_quantize_weights(
         mlmodel, config=cto.OptimizationConfig(global_config=quantizer)
     )
+    print(f"{onnx_path.stem}: INT8 quantization complete", flush=True)
     package_path = work_dir / f"{onnx_path.stem}.mlpackage"
     compile_dir = work_dir / f"compiled-{onnx_path.stem}"
     shutil.rmtree(package_path, ignore_errors=True)

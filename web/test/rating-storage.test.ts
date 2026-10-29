@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { makeBackup, mergeBackup, parseBackup, type BackupData } from '../src/backup';
 import { loadHistory, sanitizeGame, saveHistory, type StoredGame } from '../src/game/history';
 import { defaultSettings, type Settings } from '../src/settings';
-import { computeRating } from '../src/game/rating';
+import { assistCount, computeRating } from '../src/game/rating';
 import { defaultProgress } from '../src/training/puzzles';
 import { START_FEN } from '../src/game/rules';
 
@@ -21,7 +21,7 @@ const game: StoredGame = {
   id: 'rated-game', date: 100, startFen: START_FEN, tree: {}, userColor: 'w', result: '1-0',
   elo: 1600, playerElo: 1420, ratingDeviation: 150, ratingStreak: 1, autoElo: true,
   temperature: 0.8, model: '23m', eloAfter: rating.playerAfter, rating,
-  assists: { undo: 0, hint: 0, retry: 0 },
+  assists: { undo: 0, hint: 0 },
 };
 
 const backupData = (settings: Partial<Settings>, history: StoredGame[] = []): BackupData => ({
@@ -99,10 +99,37 @@ describe('persisted rating snapshots', () => {
   it('normalizes invalid assistance counts to zero and preserves real assistance', () => {
     for (const bad of [-1, -10, NaN, Infinity, 0.5, '2', null]) {
       expect(sanitizeGame({ ...game, assists: { undo: bad, hint: bad, retry: bad, aids: true, best: true } })?.assists)
-        .toEqual({ undo: 0, hint: 0, retry: 0, aids: true, best: true });
+        .toEqual({ undo: 0, hint: 0, aids: true, best: true });
     }
-    expect(sanitizeGame({ ...game, assists: { undo: 2, hint: 1, retry: 3, aids: false, best: false } })?.assists)
-      .toEqual({ undo: 2, hint: 1, retry: 3 });
+    expect(sanitizeGame({ ...game, assists: { undo: 2, hint: 1, aids: false, best: false } })?.assists)
+      .toEqual({ undo: 2, hint: 1 });
+  });
+
+  it('retains legacy coach games as assisted games without changing their recorded rating', () => {
+    for (const assists of [undefined, null, { undo: 2, hint: 1, aids: false }]) {
+      const migrated = sanitizeGame({ ...game, coach: true, coachPaused: true, coachReveal: true, assists });
+      expect(migrated).toMatchObject({ result: game.result, eloAfter: game.eloAfter, rating, assists: { aids: true } });
+      expect(assistCount(migrated?.assists)).toBeGreaterThan(0);
+      for (const field of ['coach', 'coachPaused', 'coachReveal']) expect(migrated).not.toHaveProperty(field);
+      expect(saveHistory([migrated!])).toBe(true);
+      expect(loadHistory()).toEqual([migrated]);
+    }
+    expect(sanitizeGame({ ...game, coach: false, assists: undefined })).not.toHaveProperty('assists');
+    expect(sanitizeGame({ ...game, coach: 'true', assists: undefined })).not.toHaveProperty('assists');
+  });
+
+  it('adds legacy retries to undo once and removes the obsolete counter', () => {
+    for (const [undo, retry, total] of [[2, 3, 5], [0, 3, 3], [2, 0, 2]]) {
+      const migrated = sanitizeGame({ ...game, assists: { undo, hint: 1, retry, best: true } });
+      expect(migrated?.assists).toEqual({ undo: total, hint: 1, best: true });
+      expect(migrated?.rating).toEqual(rating);
+      expect(sanitizeGame(migrated)).toEqual(migrated);
+      expect(saveHistory([migrated!])).toBe(true);
+      expect(loadHistory()).toEqual([migrated]);
+    }
+    expect(sanitizeGame({ ...game, assists: { retry: 4 } })?.assists).toEqual({ undo: 4, hint: 0 });
+    expect(sanitizeGame({ ...game, assists: { undo: -1, retry: 3 } })?.assists).toEqual({ undo: 3, hint: 0 });
+    expect(sanitizeGame({ ...game, assists: { undo: 2, retry: -1 } })?.assists).toEqual({ undo: 2, hint: 0 });
   });
 });
 
@@ -119,6 +146,20 @@ describe('rating backups', () => {
     expect(data.history[0].eloAfter).toBe(1860);
     expect(data.history[0]).not.toHaveProperty('rating');
     expect(data.history[0]).not.toHaveProperty('ratePending');
+  });
+
+  it('migrates legacy assistance through backup import without rerating historical results', () => {
+    const file = JSON.stringify({
+      format: 'maia-coach-backup', version: 1,
+      settings: { gameType: 'coach', coachThreats: true, coachEval: true, aidEval: false },
+      history: [{ ...game, coach: true, assists: { undo: 2, hint: 1, retry: 3 } }],
+    });
+    const { data, skipped } = parseBackup(file);
+    expect(skipped).toBe(0);
+    expect(data.settings).toMatchObject({ aidWinPct: false, aidThreats: true, aidEval: false });
+    expect(data.settings).not.toHaveProperty('gameType');
+    expect(data.history[0]).toEqual({ ...game, assists: { undo: 5, hint: 1, aids: true } });
+    expect(parseBackup(JSON.stringify(makeBackup(data, 'test'))).data).toEqual(data);
   });
 
   it('round-trips all rating fields and merges more advanced progress as one unit in either direction', () => {

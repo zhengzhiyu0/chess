@@ -5,7 +5,7 @@ import { chromium, devices } from 'playwright';
 const baseURL = process.argv[2] ?? 'http://127.0.0.1:5173';
 const settings = {
   elo: 1500, playerElo: 1500, ratingDeviation: 80, ratingStreak: 2, ratedGames: 20,
-  autoElo: true, gameType: 'normal', model: '5m', autoOffline: false,
+  autoElo: true, model: '5m', autoOffline: false,
   sound: false, opponentTalk: false, sfLite: true, sfThreads: 1, sfHash: 16,
 };
 const game = {

@@ -15,10 +15,8 @@ export interface StoredGame {
   userColor: Color;
   result: string;
   reason?: EndReason;
-  coach?: boolean;
   /** coach portrait used for this game; -1 is only valid in settings, games store the resolved index */
   coachAvatar?: number;
-  /** Maia rating locked when the game starts. */
   elo?: number;
   /** Player rating and adaptive-opponent state locked when the game starts. */
   playerElo?: number;
@@ -172,7 +170,6 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
     result: typeof r.result === 'string' && RESULT_SET.has(r.result) ? (r.result === '*' ? '' : r.result) : '',
   };
   if (typeof r.reason === 'string' && REASONS.has(r.reason)) g.reason = r.reason as EndReason;
-  if (r.coach === true) g.coach = true;
   if (num(r.coachAvatar) && Number.isInteger(r.coachAvatar as number) && (r.coachAvatar as number) >= 0 && (r.coachAvatar as number) <= 999) g.coachAvatar = r.coachAvatar as number;
   if (elo(r.elo)) g.elo = r.elo;
   if (elo(r.playerElo)) g.playerElo = r.playerElo;
@@ -190,13 +187,12 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
     g.headers = h;
   }
   if (r.imported === true) g.imported = true;
-  if (isObj(r.assists)) {
-    const a = r.assists;
+  if (isObj(r.assists) || r.coach === true) {
+    const a: Record<string, unknown> = isObj(r.assists) ? r.assists : {};
     g.assists = {
-      undo: assist(a.undo),
+      undo: assist(a.undo) + assist(a.retry),
       hint: assist(a.hint),
-      retry: assist(a.retry),
-      ...(a.aids === true ? { aids: true } : {}),
+      ...(a.aids === true || r.coach === true ? { aids: true } : {}),
       ...(a.best === true ? { best: true } : {}),
     };
   }

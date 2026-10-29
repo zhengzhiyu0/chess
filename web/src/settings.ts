@@ -39,17 +39,16 @@ export interface Settings {
   warmup: boolean;
   /** on startup, download app + Stockfish + selected Maia model into the offline cache */
   autoOffline: boolean;
-  /** home page choice: free play or coached game */
-  gameType: 'normal' | 'coach';
-  /** pause and explain moves at or worse than this level */
-  coachLevel: 'inaccuracy' | 'mistake' | 'blunder';
+  /** show the estimated winning percentage during play */
+  aidWinPct: boolean;
+  /** show the engine evaluation during play */
+  aidEval: boolean;
   /** arrow for what the opponent threatens if you ignore it */
-  coachThreats: boolean;
+  aidThreats: boolean;
   /** circle your attacked, under-defended pieces */
-  coachHanging: boolean;
+  aidHanging: boolean;
   /** always show the engine's best move on your turn */
-  coachBest: boolean;
-  coachEval: boolean;
+  aidBest: boolean;
   /** time control id, see TIME_CONTROLS ('none' = untimed) */
   timeControl: string;
   sound: boolean;
@@ -124,12 +123,11 @@ export function defaultSettings(): Settings {
     lowMemory: isIOS && !isNative,
     warmup: true,
     autoOffline: true,
-    gameType: 'coach',
-    coachLevel: 'mistake',
-    coachThreats: true,
-    coachHanging: true,
-    coachBest: false,
-    coachEval: false,
+    aidWinPct: false,
+    aidEval: false,
+    aidThreats: false,
+    aidHanging: false,
+    aidBest: false,
     timeControl: 'none',
     sound: true,
     soundTheme: 'board',
@@ -146,11 +144,11 @@ export function defaultSettings(): Settings {
     boardFxMate: motion,
     boardSizePlay: 100,
     boardSizeReview: 100,
-    autoplayMs: 1200,
+    autoplayMs: 6000,
     reviewOpponent: false,
     avatar: '',
     coachAvatar: 0,
-    opponentTalk: true,
+    opponentTalk: false,
   };
 }
 
@@ -218,12 +216,11 @@ const RULES: Record<keyof Settings, Rule> = {
   lowMemory: { bool: true },
   warmup: { bool: true },
   autoOffline: { bool: true },
-  gameType: { oneOf: ['normal', 'coach'] },
-  coachLevel: { oneOf: ['inaccuracy', 'mistake', 'blunder'] },
-  coachThreats: { bool: true },
-  coachHanging: { bool: true },
-  coachBest: { bool: true },
-  coachEval: { bool: true },
+  aidWinPct: { bool: true },
+  aidEval: { bool: true },
+  aidThreats: { bool: true },
+  aidHanging: { bool: true },
+  aidBest: { bool: true },
   timeControl: { oneOf: TIME_CONTROLS.map((t) => t.id) },
   sound: { bool: true },
   soundTheme: { oneOf: Object.keys(SOUND_THEMES) },
@@ -274,6 +271,14 @@ export function sanitizeSettings(raw: unknown): Settings {
     if (valid(RULES[k], value)) out[k] = value;
   }
   // Keep migration here so local storage and imported backups share the same rules.
+  if (src.gameType === 'coach') {
+    for (const [current, legacy] of [
+      ['aidEval', 'coachEval'], ['aidThreats', 'coachThreats'],
+      ['aidHanging', 'coachHanging'], ['aidBest', 'coachBest'],
+    ] as const) {
+      if (!Object.hasOwn(src, current) && typeof src[legacy] === 'boolean') out[current] = src[legacy];
+    }
+  }
   if (src.playerElo === undefined) out.playerElo = out.elo;
   if (src.ratingDeviation === undefined) {
     const games = out.ratedGames as number;

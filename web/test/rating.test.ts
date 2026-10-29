@@ -110,6 +110,7 @@ describe('独立棋力评级', () => {
   it('保留辅助使用记录但不参与评级', () => {
     expect(assistCount(undefined)).toBe(0);
     expect(assistCount(emptyAssists())).toBe(0);
-    expect(assistCount({ undo: 2, hint: 1, retry: 1, aids: true, best: true })).toBe(6);
+    expect(emptyAssists()).toEqual({ undo: 0, hint: 0 });
+    expect(assistCount({ undo: 3, hint: 1, aids: true, best: true })).toBe(6);
   });
 });

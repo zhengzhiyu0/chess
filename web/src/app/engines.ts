@@ -20,7 +20,7 @@ export class Engines {
 
   constructor(
     private settings: () => Settings,
-    /** coached play alternates Maia and Stockfish every move, so both must stay resident */
+    /** real-time assistance uses Stockfish alongside Maia, so both must stay resident */
     private needBoth: () => boolean,
     private beforeSfUnload: () => void,
   ) {}
@@ -35,18 +35,18 @@ export class Engines {
     return !isNative && st.lowMemory && !st.sfLite && !this.needBoth();
   }
 
-  readyForGame(review: boolean, coached: boolean): boolean {
+  readyForGame(review: boolean, assisted: boolean): boolean {
     const st = this.settings();
     const maiaReady = this.maia?.alive && this.maia.model === st.model && this.maiaWanted === st.backend;
     const sfReady = this.sf?.alive && this.sf.lite === st.sfLite;
-    return Boolean(review ? sfReady : maiaReady && (!coached || sfReady));
+    return Boolean(review ? sfReady : maiaReady && (!assisted || sfReady));
   }
 
-  async prepareGame(review: boolean, coached: boolean, isCurrent = () => true): Promise<void> {
+  async prepareGame(review: boolean, assisted: boolean, isCurrent = () => true): Promise<void> {
     if (!review) await this.getMaia();
     // A user may have left or switched to ordinary low-memory play during the Maia load.
-    // Starting a stale coach load now would evict the engine their new game needs.
-    if ((review || coached) && isCurrent()) await this.getSf();
+    // Starting a stale assistance load now would evict the engine their new game needs.
+    if ((review || assisted) && isCurrent()) await this.getSf();
   }
 
   unloadMaia() {

@@ -82,6 +82,46 @@ describe('settings whitelist', () => {
   });
 });
 
+describe('independent assistance migration', () => {
+  const disabled = { aidWinPct: false, aidEval: false, aidThreats: false, aidHanging: false, aidBest: false };
+  const legacyAids = { coachEval: true, coachThreats: true, coachHanging: true, coachBest: true };
+
+  beforeEach(() => mem.clear());
+
+  it.each(['normal', undefined, 'unknown'])('does not enable stale coach aids for gameType %s', (gameType) => {
+    const legacy = { gameType, ...legacyAids };
+    mem.set(KEY, JSON.stringify(legacy));
+    expect(loadSettings()).toMatchObject(disabled);
+    expect(sanitizeSettings(legacy)).toMatchObject(disabled);
+  });
+
+  it('maps enabled legacy coach options without retaining the mode or lesson controls', () => {
+    const legacy = { gameType: 'coach', coachLevel: 'blunder', ...legacyAids, coachHanging: false };
+    mem.set(KEY, JSON.stringify(legacy));
+    const expected = { ...disabled, aidEval: true, aidThreats: true, aidBest: true };
+    expect(loadSettings()).toMatchObject(expected);
+    const migrated = sanitizeSettings(legacy);
+    expect(migrated).toMatchObject(expected);
+    for (const key of ['gameType', 'coachLevel', ...Object.keys(legacyAids)]) expect(migrated).not.toHaveProperty(key);
+    expect(legacy).toEqual({ gameType: 'coach', coachLevel: 'blunder', ...legacyAids, coachHanging: false });
+    saveSettings(migrated);
+    expect(loadSettings()).toMatchObject(expected);
+  });
+
+  it('gives explicit new fields precedence over old coach options', () => {
+    const migrated = sanitizeSettings({ gameType: 'coach', ...legacyAids, ...disabled, aidWinPct: true, opponentTalk: true });
+    expect(migrated).toMatchObject({ ...disabled, aidWinPct: true, opponentTalk: true });
+    expect(sanitizeSettings({ gameType: 'normal', aidThreats: true, aidBest: true })).toMatchObject({ aidThreats: true, aidBest: true });
+  });
+
+  it('does not revive legacy options when explicit new fields are malformed', () => {
+    expect(sanitizeSettings({
+      gameType: 'coach', ...legacyAids, aidWinPct: 1, aidEval: null, aidThreats: 'true', aidHanging: 1, aidBest: undefined,
+    })).toMatchObject(disabled);
+    expect(sanitizeSettings({ gameType: 'coach', coachThreats: 'true', coachHanging: 1 })).toMatchObject(disabled);
+  });
+});
+
 describe('separate player rating migration', () => {
   beforeEach(() => mem.clear());
 

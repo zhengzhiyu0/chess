@@ -667,8 +667,11 @@ input[type='checkbox'] {
   border-bottom-color: var(--green);
 }
 
+#game { --eval-space: 0px; }
+#game.has-eval { --eval-space: 24px; }
+
 .game-main {
-  --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 2 * 24px - 190px)) * var(--bs-play, 1));
+  --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 2 * 24px - 190px - var(--eval-space))) * var(--bs-play, 1));
   flex: 1;
   min-height: 0;
   padding-bottom: calc(58px + var(--safe-b));
@@ -948,11 +951,12 @@ html:not(.native) .native-only {
 
 .board-wrap {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 6px;
   margin-top: 10px;
 }
 .board-box {
-  flex: 1;
+  width: 100%;
   aspect-ratio: 1;
   position: relative;
 }
@@ -963,37 +967,34 @@ html:not(.native) .native-only {
   height: 100%;
 }
 .evalbar {
-  width: 14px;
+  width: 100%;
+  height: 18px;
   flex: none;
-  background: #403d39;
+  background: #454545;
   position: relative;
-  border-radius: 2px;
+  border-radius: 4px;
   overflow: hidden;
   display: flex;
-  flex-direction: column-reverse;
-}
-.evalbar.flip {
-  flex-direction: column;
+  isolation: isolate;
 }
 .evalbar .fill {
+  width: 50%;
+  flex-shrink: 0;
+  height: 100%;
   background: #fff;
-  transition: height 0.4s;
+  transition: width 0.4s;
 }
 .evalbar span {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 2px;
-  font-size: 8px;
-  text-align: center;
-  color: #403d39;
-  font-weight: 800;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-}
-.evalbar.flip span {
-  bottom: auto;
-  top: 2px;
+  inset: 0 auto 0 50%;
+  transform: translateX(-50%);
+  padding: 0 6px;
+  color: #fff;
+  mix-blend-mode: difference;
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .side {
@@ -1205,7 +1206,7 @@ html:not(.native) .native-only {
 .toolbar [data-nav='prev'] { grid-column: 2; }
 .toolbar #btn-hint { grid-column: 3; }
 .toolbar #btn-undo { grid-column: 4; }
-.toolbar #btn-coach { grid-column: 5; }
+.toolbar #btn-aids { grid-column: 5; }
 .toolbar [data-nav='next'] { grid-column: 6; }
 .tool {
   display: inline-flex;
@@ -1254,21 +1255,9 @@ html:not(.native) .native-only {
   padding-bottom: var(--safe-b);
 }
 #game[data-mode='review'] .game-main {
-  --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 190px)) * var(--bs-review, 1));
+  --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 190px - var(--eval-space))) * var(--bs-review, 1));
 }
-#game[data-mode='play'] .evalbar {
-  display: none;
-}
-#game.show-eval[data-mode='play'] .evalbar {
-  display: flex;
-}
-
-/* 对局类型与教练 */
-.seg.type button {
-  font-size: 15px;
-  padding: 10px 4px;
-}
-.coach-line {
+.aids-line {
   justify-content: space-between;
   gap: 8px;
   padding: 0;
@@ -1279,27 +1268,91 @@ html:not(.native) .native-only {
   color: var(--muted);
   text-align: left;
 }
-.coach-line:hover {
+.aids-line:hover {
   background: none;
 }
-.coach-line:active {
+.aids-line:active {
   transform: none;
 }
-.coach-line .link {
+.aids-line .link {
   color: var(--green);
   font-weight: 700;
   white-space: nowrap;
 }
-#home:has(#home-type [data-type='normal'].active) .coach-line .link {
-  visibility: hidden;
+.play-aids {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
-.coach-live {
+.play-aids:empty {
+  display: none;
+}
+.review-progress {
+  padding: 8px 2px 0;
+}
+.review-progress-track {
+  position: relative;
+  height: 6px;
+  border-radius: 5px;
+  background: var(--panel3);
+}
+.review-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+  transition: width .2s ease;
+}
+.review-marker {
+  position: absolute;
+  top: -3px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--panel);
+  border-radius: 50%;
+  background: var(--yellow);
+  transform: translateX(-50%);
+}
+.review-marker.done { background: var(--green); }
+.review-marker.current { box-shadow: 0 0 0 3px color-mix(in srgb, var(--yellow) 25%, transparent); }
+.review-progress small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Guided review uses the three card actions only. */
+.guided-review + .review-ctrl,
+.guided-review ~ .review-ctrl {
+  display: none;
+}
+.review-moment {
+  padding: 16px 2px 8px;
+  line-height: 1.65;
+}
+.review-moment small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.review-moment h3 {
+  margin: 8px 0;
+  font-size: 19px;
+}
+.review-moment p {
+  margin: 8px 0 16px;
+}
+.moment-actions {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-.coach-live:empty {
+.guided-review #coach-box,
+.guided-review #sf-lines,
+.guided-review #arrow-legend,
+.guided-review #var-actions,
+.guided-review [data-review-nav],
+.guided-review .rc-issues,
+.guided-review .rc-opp,
+.guided-review .rc-sep {
   display: none;
 }
 .opponent-dialogue {
@@ -1346,21 +1399,6 @@ html:not(.native) .native-only {
   from { opacity: 0; transform: translateY(-3px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.cl-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--green);
-  border-radius: 6px;
-  padding: 7px 10px;
-  color: #17200f;
-}
-.cl-row.warn {
-  border-left: 3px solid #d9443a;
-}
-.cl-row .dots {
-  margin: 0;
-}
 .tag {
   flex: none;
   display: inline-grid;
@@ -1380,29 +1418,6 @@ html:not(.native) .native-only {
 .tag.good {
   background: var(--green);
 }
-.coach-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--panel2);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-.cc-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-.cc-title {
-  font-weight: 900;
-  font-size: 16px;
-}
-.cc-win {
-  color: var(--text2);
-  font-size: 12px;
-  white-space: nowrap;
-}
 .cc-why {
   display: flex;
   align-items: baseline;
@@ -1417,17 +1432,6 @@ html:not(.native) .native-only {
   color: var(--muted);
   padding-left: 30px;
   margin-top: -4px;
-}
-.cc-plain {
-  font-size: 13px;
-  color: var(--text2);
-}
-.cc-prompt {
-  padding: 8px 10px;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--panel3) 70%, transparent);
-  color: var(--text2);
-  font-size: 13px;
 }
 .demo-btn {
   display: inline;
@@ -1469,27 +1473,12 @@ html:not(.native) .native-only {
   text-align: center;
   color: var(--text2);
 }
-.cl-row.praise {
-  border-left: 3px solid var(--green);
-}
 .coach .praise {
   color: var(--green);
   font-weight: 700;
 }
 .coach .cc-why {
   margin-top: 4px;
-}
-.cc-actions {
-  display: flex;
-  gap: 6px;
-  margin-top: 2px;
-}
-.cc-actions button {
-  flex: 1;
-  min-width: 0;
-  padding: 10px 6px;
-  font-size: 13px;
-  white-space: nowrap;
 }
 
 /* 提示条 */
@@ -1872,11 +1861,11 @@ dialog input[type='color'] {
   .board-col {
     grid-row: auto;
     align-self: center;
-    width: calc(min(calc(100vw - 32px - 16px - 360px), calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 24px - 2 * 20px)) * var(--bs-play, 1));
+    width: calc(min(calc(100vw - 32px - 16px - 360px), calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 24px - 2 * 20px - var(--eval-space))) * var(--bs-play, 1));
   }
 
   #game[data-mode='review'] .board-col {
-    width: calc(min(calc(100vw - 32px - 16px - 360px), calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 24px - 2 * 20px)) * var(--bs-review, 1));
+    width: calc(min(calc(100vw - 32px - 16px - 360px), calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 24px - 2 * 20px - var(--eval-space))) * var(--bs-review, 1));
   }
   #game[data-mode='review'] .player {
     display: flex;
@@ -1958,6 +1947,13 @@ dialog input[type='color'] {
     align-self: end;
   }
 
+  #game[data-mode='review'] .game-main {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  #game[data-mode='review'] .board-col {
+    align-self: start;
+  }
+
   #game .side {
     transform: none;
     padding-bottom: 0;
@@ -1969,8 +1965,7 @@ dialog input[type='color'] {
     padding: 0 14px;
   }
 
-  /* Lichess-style coach callouts: quiet surface, green reserved for emphasis. */
-  #game .cl-row,
+  /* Quiet optional callouts; green is reserved for emphasis. */
   #game .opponent-dialogue,
   #game .hint {
     color: var(--text2);
@@ -1979,23 +1974,10 @@ dialog input[type='color'] {
     border-radius: 8px;
   }
 
-  #game .cl-row {
-    min-height: 54px;
-    padding: 9px 12px;
-  }
-
-  #game .cl-row > span:last-child,
   #game .opponent-line {
     color: var(--text2);
   }
 
-  #game .cl-row .tag,
-  #game .cl-row .tag.good {
-    color: var(--green-hover);
-    background: transparent;
-  }
-
-  #game .cl-row b,
   #game .opponent-dialogue .opponent-cn {
     color: var(--green-hover);
   }
@@ -2693,12 +2675,6 @@ html[data-theme='light'] .clock {
 html[data-theme='light'] .clock.active {
   background: #ffffff;
   color: var(--text);
-}
-html[data-theme='light'] .evalbar {
-  background: var(--panel3);
-}
-html[data-theme='light'] .evalbar span {
-  color: var(--panel3);
 }
 html[data-theme='light'] .lines b {
   background: var(--panel3);

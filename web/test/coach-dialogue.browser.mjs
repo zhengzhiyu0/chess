@@ -15,7 +15,7 @@ try {
       if (!localStorage.getItem('lia-browser-seeded')) {
         localStorage.clear();
         localStorage.setItem('lia-browser-seeded', '1');
-        localStorage.setItem('maia-coach.settings', JSON.stringify({ gameType: 'normal', coachAvatar: coachIndex, opponentTalk: true, sound: false, autoOffline: false, thinkDelay: false, sfLite: true }));
+        localStorage.setItem('maia-coach.settings', JSON.stringify({ coachAvatar: coachIndex, opponentTalk: true, sound: false, autoOffline: false, thinkDelay: false, sfLite: true }));
         localStorage.setItem('maia-coach.game', JSON.stringify({ id: 'lia-browser', date: 1, startFen: '4k3/8/8/8/8/q7/8/R3K3 b - - 0 1', tree: { c: [{ u: 'a3a2' }] }, userColor: 'w', result: '', coachAvatar: coachIndex, peak: 0 }));
       }
     }, coachIndex);

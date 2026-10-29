@@ -4,9 +4,7 @@
 export interface Assists {
   undo: number;
   hint: number;
-  /** "重走这步" after the coach paused on a bad move */
-  retry: number;
-  /** coach aids were on while the player moved: threat arrows / under-defended pieces */
+  /** independent position aids were on while the player moved */
   aids?: boolean;
   /** the engine's best move was shown on every move */
   best?: boolean;
@@ -26,10 +24,10 @@ export interface RatingInfo {
   abandoned?: boolean;
 }
 
-export const emptyAssists = (): Assists => ({ undo: 0, hint: 0, retry: 0 });
+export const emptyAssists = (): Assists => ({ undo: 0, hint: 0 });
 
 export function assistCount(a: Assists | undefined): number {
-  return a ? a.undo + a.hint + a.retry + (a.aids ? 1 : 0) + (a.best ? 1 : 0) : 0;
+  return a ? a.undo + a.hint + (a.aids ? 1 : 0) + (a.best ? 1 : 0) : 0;
 }
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));

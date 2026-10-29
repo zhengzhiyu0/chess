@@ -39,7 +39,7 @@ function listHtml(games: StoredGame[]) {
         `${Math.ceil(mainlineLength(g.tree) / 2)} 回合`,
         g.reason ? END_REASON_TEXT[g.reason] : '',
         tc ?? '',
-        g.coach ? '教练' : assistCount(g.assists) > 0 ? '辅助练习' : '',
+        assistCount(g.assists) > 0 ? '辅助练习' : '',
         g.eloAfter !== undefined && playerBefore !== undefined ? `等级分 ${g.eloAfter - playerBefore >= 0 ? '+' : ''}${g.eloAfter - playerBefore}` : '',
       ].filter(Boolean);
       return (

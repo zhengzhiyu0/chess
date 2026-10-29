@@ -97,7 +97,7 @@ describe('startup and game readiness', () => {
     expect(sfCreates).toHaveLength(1);
   });
 
-  it.each([false, true])('waits for both engines in coached play (native=%s)', async (native) => {
+  it.each([false, true])('waits for both engines in assisted play (native=%s)', async (native) => {
     platform.isNative = native;
     settings.lowMemory = true;
     const e = new Engines(() => settings as never, () => true, () => undefined);
@@ -125,14 +125,14 @@ describe('startup and game readiness', () => {
     expect(sfCreates).toHaveLength(0);
   });
 
-  it('does not let a cancelled coach entry evict Maia from a newer ordinary game', async () => {
+  it('does not let a cancelled assisted entry evict Maia from a newer ordinary game', async () => {
     settings.lowMemory = true;
-    let coached = true;
+    let assisted = true;
     let current = true;
-    const e = new Engines(() => settings as never, () => coached, () => undefined);
+    const e = new Engines(() => settings as never, () => assisted, () => undefined);
     const oldEntry = e.prepareGame(false, true, () => current);
     current = false;
-    coached = false;
+    assisted = false;
     const newEntry = e.prepareGame(false, false);
     const maia = new FakeMaia('23m', 'wasm');
     maiaCreates[0].d.resolve(maia);

@@ -75,7 +75,7 @@ try {
       localStorage.setItem('maia-coach.game', JSON.stringify(live));
       localStorage.setItem('maia-coach.history', JSON.stringify(games));
       localStorage.setItem('maia-coach.settings', JSON.stringify({
-        elo:1500, autoElo:true, ratedGames:20, color:'w', gameType:'normal',
+        elo:1500, autoElo:true, ratedGames:20, color:'w',
         autoOffline:false, thinkDelay:false, sound:false, opponentTalk:true, sfLite:true, coachAvatar:3,
       }));
     }, { live, games });

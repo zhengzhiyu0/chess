@@ -43,6 +43,7 @@ jobs:
       - run: npm run build:native
       - name: Compile bundled Maia CoreML models
         run: |
+          set -o pipefail
           if [ ! -x .cache/coreml-venv/bin/python ]; then
             python3 -m venv .cache/coreml-venv
           fi
@@ -51,7 +52,14 @@ jobs:
             python -m pip install --upgrade pip
             python -m pip install 'coremltools==8.3.0' 'onnx==1.17.0' 'onnxruntime==1.20.1' 'onnx2torch==1.5.15' 'numpy==1.26.4' 'torch==2.4.1'
           fi
-          PYTHONFAULTHANDLER=1 PYTHONUNBUFFERED=1 python scripts/compile-coreml.py
+          PYTHONFAULTHANDLER=1 PYTHONUNBUFFERED=1 python scripts/compile-coreml.py 2>&1 | tee coreml-build.log
+      - name: Upload CoreML build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coreml-build-log
+          path: web/coreml-build.log
+          if-no-files-found: warn
       - name: Verify bundled native model layout
         run: |
           test -d ios/App/App/public/native/maia3-5m.mlmodelc

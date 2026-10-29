@@ -1,0 +1,83 @@
+README.md
+  s_7ff17073cdf55d::t_72f3b22d1f4f33 3,6-7,9-10,15,19,31-32
+web/index.html
+  s_7ff17073cdf55d::t_2c21a0d7040927 37,135,146,150,153-156,170,183,315,432,434-441
+web/src/app/engines.ts
+  s_bfea8d0a5a3f64::t_a3d82061b58e98 23,38,42,45,48-49
+web/src/game/history.ts
+  s_bfea8d0a5a3f64::t_402ac7e67f49bb 190-191,193,195
+web/src/settings.ts
+  s_7ff17073cdf55d::t_6b40822274707a 42-45,47,49,51,126-130,147,151,219-223,274-281
+web/src/style.css
+  s_7ff17073cdf55d::t_5528f3ccf017f4 670-672,674,954-955,959,970-971,973,975,978,981-983,985,989-997,1209,1258,1260,1271,1274,1277,1282-1338,1340-1343,1345-1346,1348-1355,1864,1868,1950-1956,1968
+web/test/coach-dialogue.browser.mjs
+  s_60788c25554242::t_a4b43e0bb7e13a 18
+web/test/engines.test.ts
+  s_bfea8d0a5a3f64::t_9adf6933d529a9 100,128,130,132,135
+web/test/navigation.browser.mjs
+  s_e33be402c80617::t_1aae9e04632a9f 78
+web/src/app/history-ui.ts
+  s_4831d73f5b41b0::t_eee9f6998a9150 42
+web/src/game/rating.ts
+  s_bfea8d0a5a3f64::t_c5a20c0a9675ac 7,27,30
+web/src/main.ts
+  s_bfea8d0a5a3f64::t_315fcd8be1dfc5 202-203,298-299,315,373-374,378,423,533-736,756,758-785,793-794,797,804-809,820-821,828,859,866,900,904,927,984-985,1000,1011,1063,1116,1158,1196,1232,1243,1249-1250,1328,1433-1436,1511,1601,1878,1960-1967,2115,2134,2138,2140,2209,2260-2261,2263-2264,2271-2272,2274-2277,2279,2299,2303,2306,2324,2326,2336-2352,2354,2356-2357,2359-2361,2365,2368-2370,2374-2378,2381-2382,2384,2386,2390-2392,2394-2400,2539-2540,2542-2548,2557,2562,2582,2584-2585,2589,2613,2620,2646,2649,2656,2668-2675,2706,2715,2724,2937,2952-2953,2970,3214,3290,3294,3308,3336,3342,3404,3473,3497-3498,3544,3571-3600,3665-3672,3712-3713,3721
+web/test/settings-migration.test.ts
+  s_606fa452a148a0::t_260b2e8ba6445f 85-124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6d6758ee62e042af5572af682c4fccd299968ca0",
+  "prompts": {},
+  "sessions": {
+    "s_4831d73f5b41b0": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "95740e41-ea0c-478b-a199-54ce9a1df550",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_606fa452a148a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-ac9fda059a758dc27",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_60788c25554242": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17fac-d732-7d80-a436-38b1ba13a621",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_bfea8d0a5a3f64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "407a32d9-e969-4573-a751-79d345b44a9b",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_e33be402c80617": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a176ac-9a48-75d0-bea2-89edad600210",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

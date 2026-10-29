@@ -1,0 +1,59 @@
+README.md
+  s_7ff17073cdf55d::t_f887fbe3207895 3,18,24-33
+web/index.html
+  s_7ff17073cdf55d::t_3be03c722e1360 43,46-47,148,310-311,313-318
+web/src/game/history.ts
+  s_bfea8d0a5a3f64::t_36120f325b4f35 21,23-29,150-155,177-183,196-198,203,205-221
+web/src/settings.ts
+  s_7ff17073cdf55d::t_8b781231709b96 13,15-20,22,110-112,206-208,275-277,280-285
+web/src/app/history-ui.ts
+  s_4831d73f5b41b0::t_6b7d2678808e80 5,36,42-43
+web/src/backup.ts
+  s_606fa452a148a0::t_cca220343eb7de 92-100
+web/src/game/rating.ts
+  s_bfea8d0a5a3f64::t_c1d65a0e52db5a 1,18-25,35,39-42,45-59,61-70,77-83
+web/src/main.ts
+  s_bfea8d0a5a3f64::t_85a37668d88f6a 105-109,111,212,273-277,345-349,351,433,746-749,753,857,865,867-869,871-880,895,920,969-973,1003,1006-1007,1056,1070,1318-1319,1323,1534,1570,1782,2478,2530-2532,2534-2538,2610-2614,2779,2784,2788-2791,2890,2985,3133,3179,3203-3204,3208,3253,3413
+web/test/settings-migration.test.ts
+  s_606fa452a148a0::t_346b5bb53486f3 84-140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "724778beb9678cd76c8aabc220e9e043e391f125",
+  "prompts": {},
+  "sessions": {
+    "s_4831d73f5b41b0": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "95740e41-ea0c-478b-a199-54ce9a1df550",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_606fa452a148a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-ac9fda059a758dc27",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_bfea8d0a5a3f64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "407a32d9-e969-4573-a751-79d345b44a9b",
+        "model": "anthropic.claude-opus-5-5:1m"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

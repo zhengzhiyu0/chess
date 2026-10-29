@@ -1,0 +1,21 @@
+.github/workflows/ios.yml
+  s_3ce749e80efed9::t_3504208e1b6616 30-39,44-62
+web/scripts/prepare-native.mjs
+  s_3ce749e80efed9::t_0384e099a866bd 2-4,6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aae952de614ae3d5933b20d4d9ecb4882d879d33",
+  "prompts": {},
+  "sessions": {
+    "s_3ce749e80efed9": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "a7329e4d-57d0-49ce-8685-412b0d3b4f70",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

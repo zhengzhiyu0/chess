@@ -1,14 +1,11 @@
 // Board effects layer: particles (canvas) and board shake on top of chessground. Badge pop-in,
 // hanging-piece breathing and check pulse are pure CSS (see `.fx-on` rules in style.css).
-import { Chess, type Square } from 'chess.js';
+import { Chess } from 'chess.js';
 import type { Judgement } from '../coach/coach';
 import { toMove } from '../game/rules';
 
 export interface MoveFx {
-  from: string;
   to: string;
-  /** type of the piece that moved, used to route knight effects around the L */
-  piece: string;
   /** square of the captured piece (differs from `to` for en passant) */
   captured?: { square: string; color: 'w' | 'b' };
   /** king square of the side in check / mated */
@@ -17,13 +14,7 @@ export interface MoveFx {
   judgement?: Judgement;
   /** castling: the rook's journey */
   rook?: { from: string; to: string };
-  /** enemy pieces the moved piece now attacks (worth attacking) */
-  attacks: string[];
-  /** own threatened pieces the moved piece now defends */
-  defends: string[];
 }
-
-const VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
 
 /** Describes the move `uci` played from `fen` for {@link BoardFx.move}; null if illegal. */
 export function moveFxOf(fen: string, uci: string, judgement?: Judgement): MoveFx | null {
@@ -34,24 +25,11 @@ export function moveFxOf(fen: string, uci: string, judgement?: Judgement): MoveF
   } catch {
     return null;
   }
-  const out: MoveFx = { from: mv.from, to: mv.to, piece: mv.piece, judgement, attacks: [], defends: [] };
+  const out: MoveFx = { to: mv.to, judgement };
   if (mv.flags.includes('k') || mv.flags.includes('q')) {
     const r = mv.from[1];
     out.rook = mv.flags.includes('k') ? { from: 'h' + r, to: 'f' + r } : { from: 'a' + r, to: 'd' + r };
   }
-  const me = mv.color;
-  const opp = me === 'w' ? 'b' : 'w';
-  const at = (out.rook?.to ?? mv.to) as Square;
-  const mine = VALUE[c.get(at)?.type ?? 'p'];
-  for (const row of c.board())
-    for (const p of row) {
-      if (!p || p.square === at || !c.attackers(p.square, me).includes(at)) continue;
-      if (p.color === opp) {
-        if (p.type === 'k' || VALUE[p.type] > mine || !c.attackers(p.square, opp).length) out.attacks.push(p.square);
-      } else if (p.type !== 'k' && c.isAttacked(p.square, opp)) out.defends.push(p.square);
-    }
-  out.attacks = out.attacks.slice(0, 3);
-  out.defends = out.defends.slice(0, 2);
   if (mv.captured) {
     const sq = mv.flags.includes('e') ? mv.to[0] + mv.from[1] : mv.to;
     out.captured = { square: sq, color: mv.color === 'w' ? 'b' : 'w' };
@@ -64,8 +42,7 @@ export function moveFxOf(fen: string, uci: string, judgement?: Judgement): MoveF
   return out;
 }
 
-type Shape = 'rect' | 'circle' | 'star' | 'ring' | 'line' | 'fill';
-type Point = [number, number];
+type Shape = 'rect' | 'circle' | 'star' | 'ring';
 interface Particle {
   x: number;
   y: number;
@@ -82,21 +59,11 @@ interface Particle {
   vr: number;
   /** confetti: width/height flip to fake 3D rotation */
   flip?: number;
-  /** line: end point */
-  x2?: number;
-  y2?: number;
-  /** line/fill route through the board (knights have a two-segment L route) */
-  points?: Point[];
-  /** fill: colour-wash square size (usually one board square) */
-  fillSize?: number;
 }
 
 const PIECE_SHARDS = { w: ['#ffffff', '#e8e6e1', '#c9c5bc'], b: ['#4a4744', '#2b2927', '#6b6763'] };
 const CONFETTI = ['#ffd54a', '#5fae3e', '#4fb3ff', '#ff6b8b', '#b98cff', '#ffffff', '#ff9f43'];
 const MAX = 260;
-/** attack/defence path timing (seconds) */
-const LINE_GROW = 0.38;
-const LINE_FADE = 0.45;
 const RING: Partial<Record<Judgement, string>> = {
   brilliant: '#3fe0d6',
   great: '#6aa8ff',
@@ -118,7 +85,6 @@ export class BoardFx {
   captureEnabled = true;
   checkEnabled = true;
   mateEnabled = true;
-  arrowStyle: 'line' | 'fill' = 'line';
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private ps: Particle[] = [];
@@ -128,8 +94,6 @@ export class BoardFx {
   private timers: number[] = [];
   private castleAnim: Animation | null = null;
   private orient: 'white' | 'black' = 'white';
-  /** pending start of the paths of the last move */
-  private lineTimer = 0;
 
   constructor(
     private box: HTMLElement,
@@ -168,7 +132,6 @@ export class BoardFx {
   clear() {
     for (const t of this.timers) clearTimeout(t);
     this.timers = [];
-    clearTimeout(this.lineTimer);
     this.ps = [];
     this.castleAnim?.cancel();
     this.box.classList.remove('fx-shake');
@@ -181,11 +144,8 @@ export class BoardFx {
     // fast stepping: the previous move's pending bursts would land on squares that changed meanwhile
     for (const t of this.timers) clearTimeout(t);
     this.timers = [];
-    clearTimeout(this.lineTimer);
     // its removal timer was just cancelled
     this.box.classList.remove('fx-shake');
-    // the previous move's paths point at a position that no longer exists; fade them out now
-    for (const p of this.ps) if (p.shape === 'line' || p.shape === 'fill') p.life = Math.min(p.life, Math.max(p.t, 0) + 0.15);
     this.castleAnim?.cancel();
     if (m.rook) this.castle(m);
     this.later(delay, () => {
@@ -203,12 +163,6 @@ export class BoardFx {
         }
       }
       if (j === 'blunder') this.shake();
-      const from = m.rook?.to ?? m.to;
-      // after the rook has landed when castling
-      this.lineTimer = window.setTimeout(() => {
-        for (const sq of m.attacks) this.arrow(from, sq, '#ff4b3e', m.piece);
-        for (const sq of m.defends) this.arrow(from, sq, '#4fd18b', m.piece);
-      }, m.rook ? 320 : 80);
       if (m.checkSq && this.checkEnabled) {
         const [kx, ky] = this.center(m.checkSq);
         this.ring(kx, ky, '#ff3b30', 0.8, 0.12);
@@ -353,104 +307,6 @@ export class BoardFx {
     });
   }
 
-  private route(a: string, b: string, piece: string): Point[] {
-    const start = this.center(a);
-    const end = this.center(b);
-    if (piece !== 'n') return [start, end];
-    const af = a.charCodeAt(0) - 97;
-    const ar = Number(a[1]) - 1;
-    const bf = b.charCodeAt(0) - 97;
-    const br = Number(b[1]) - 1;
-    if (Math.abs(af - bf) !== 1 || Math.abs(ar - br) !== 2) {
-      if (Math.abs(af - bf) !== 2 || Math.abs(ar - br) !== 1) return [start, end];
-    }
-    // Use the square at the destination rank first, which gives the familiar L turn.
-    const bend = this.center(String.fromCharCode(97 + af) + String(br + 1));
-    return [start, bend, end];
-  }
-
-  private pathLength(points: Point[]): number {
-    let n = 0;
-    for (let i = 1; i < points.length; i++) n += Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]);
-    return n;
-  }
-
-  /** Discrete board squares visited by an attack/defence effect, excluding the origin square. */
-  private squares(a: string, b: string, piece: string): string[] {
-    const af = a.charCodeAt(0) - 97;
-    const ar = Number(a[1]) - 1;
-    const bf = b.charCodeAt(0) - 97;
-    const br = Number(b[1]) - 1;
-    if (piece === 'n' && Math.abs(af - bf) <= 2 && Math.abs(ar - br) <= 2) {
-      const bend = String.fromCharCode(97 + af) + String(br + 1);
-      return [bend, b];
-    }
-    const steps = Math.max(Math.abs(af - bf), Math.abs(ar - br));
-    if (!steps) return [b];
-    const sf = Math.sign(bf - af);
-    const sr = Math.sign(br - ar);
-    const out: string[] = [];
-    for (let i = 1; i <= steps; i++) out.push(String.fromCharCode(97 + af + sf * i) + String(ar + sr * i + 1));
-    return out;
-  }
-
-  private pointAt(points: Point[], distance: number): { p: Point; ux: number; uy: number } {
-    let left = Math.max(0, distance);
-    for (let i = 1; i < points.length; i++) {
-      const x = points[i][0] - points[i - 1][0];
-      const y = points[i][1] - points[i - 1][1];
-      const len = Math.hypot(x, y);
-      if (left <= len || i === points.length - 1) {
-        const t = len ? Math.min(1, left / len) : 1;
-        return { p: [points[i - 1][0] + x * t, points[i - 1][1] + y * t], ux: len ? x / len : 0, uy: len ? y / len : 0 };
-      }
-      left -= len;
-    }
-    const last = points[points.length - 1];
-    const prev = points[Math.max(0, points.length - 2)];
-    const len = Math.hypot(last[0] - prev[0], last[1] - prev[1]);
-    return { p: last, ux: len ? (last[0] - prev[0]) / len : 0, uy: len ? (last[1] - prev[1]) / len : 0 };
-  }
-
-  /** Attack / defence path: a line that grows along the legal route, then fades. */
-  private line(a: string, b: string, color: string, piece: string) {
-    const points = this.route(a, b, piece);
-    const [x, y] = points[0];
-    this.push({ x, y, vx: 0, vy: 0, g: 0, drag: 0, t: 0, life: 2.4, size: this.size / 8, color, shape: 'line', rot: 0, vr: 0, points });
-    this.start();
-  }
-
-  /** Attack / defence path: colour each square in sequence, then fade the wash out. */
-  private fill(a: string, b: string, color: string, piece: string) {
-    const squares = this.squares(a, b, piece);
-    const s = this.size / 8;
-    for (let i = 0; i < squares.length; i++) {
-      const [x, y] = this.center(squares[i]);
-      this.push({
-        x,
-        y,
-        vx: 0,
-        vy: 0,
-        g: 0,
-        drag: 0,
-        t: -i * 0.1,
-        life: 0.82,
-        size: s,
-        fillSize: s,
-        color,
-        shape: 'fill',
-        rot: 0,
-        vr: 0,
-      });
-    }
-    this.start();
-  }
-
-  private arrow(a: string, b: string, color: string, piece: string) {
-    if (this.arrowStyle === 'fill') this.fill(a, b, color, piece);
-    else this.line(a, b, color, piece);
-  }
-
   private shake() {
     this.box.classList.remove('fx-shake');
     void this.box.offsetWidth;
@@ -487,21 +343,6 @@ export class BoardFx {
       p.rot += p.vr * dt;
       const q = p.t / p.life;
       c.save();
-      if (p.shape === 'line') {
-        this.drawLine(p);
-        c.restore();
-        continue;
-      }
-      if (p.shape === 'fill') {
-        const q = p.t / p.life;
-        // A full square starts with a strong wash and only fades; there is no scale animation.
-        c.globalAlpha = Math.max(0, 1 - q) * 0.72;
-        c.fillStyle = p.color;
-        const s = p.fillSize ?? p.size;
-        c.fillRect(p.x - s / 2, p.y - s / 2, s, s);
-        c.restore();
-        continue;
-      }
       c.globalAlpha = p.shape === 'ring' ? (1 - q) * 0.9 : Math.min(1, (1 - q) * 2.2);
       c.translate(p.x, p.y);
       c.rotate(p.rot);
@@ -536,59 +377,4 @@ export class BoardFx {
     this.raf = this.ps.length ? requestAnimationFrame(this.frame) : 0;
     if (!this.raf) c.clearRect(0, 0, this.canvas.width, this.canvas.height);
   };
-
-  private drawLine(p: Particle) {
-    const c = this.ctx;
-    const s = p.size;
-    const points = p.points ?? [[p.x, p.y], [p.x2!, p.y2!]];
-    const len = this.pathLength(points);
-    // from the piece's edge to just short of the target
-    const start = s * 0.32;
-    const end = len - s * 0.42;
-    // fixed-time grow and fade so a longer life only lengthens the hold
-    const grow = Math.min(1, p.t / LINE_GROW);
-    const head = start + Math.max(0, end - start) * (1 - (1 - grow) ** 3);
-    const alpha = Math.min(1, (p.life - p.t) / LINE_FADE) * 0.9;
-    const from = this.pointAt(points, start);
-    const tip = this.pointAt(points, head);
-    const target = this.pointAt(points, len);
-    c.strokeStyle = c.fillStyle = p.color;
-    c.lineCap = 'round';
-    c.beginPath();
-    c.moveTo(from.p[0], from.p[1]);
-    let travelled = 0;
-    for (let i = 1; i < points.length; i++) {
-      const seg = Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]);
-      travelled += seg;
-      if (travelled < start) continue;
-      if (travelled >= head) break;
-      c.lineTo(points[i][0], points[i][1]);
-    }
-    c.lineTo(tip.p[0], tip.p[1]);
-    // soft glow as a wide translucent stroke: shadowBlur is a full-canvas blur per draw and drops frames on phones
-    c.globalAlpha = alpha * 0.25;
-    c.lineWidth = s * 0.24;
-    c.stroke();
-    c.globalAlpha = alpha;
-    c.lineWidth = s * 0.09;
-    c.setLineDash([s * 0.16, s * 0.12]);
-    c.lineDashOffset = -p.t * s * 0.9;
-    c.stroke();
-    c.setLineDash([]);
-    const w = s * 0.14;
-    c.beginPath();
-    c.moveTo(tip.p[0] + tip.ux * w * 1.4, tip.p[1] + tip.uy * w * 1.4);
-    c.lineTo(tip.p[0] - tip.uy * w, tip.p[1] + tip.ux * w);
-    c.lineTo(tip.p[0] + tip.uy * w, tip.p[1] - tip.ux * w);
-    c.closePath();
-    c.fill();
-    // target ring pulses once the line arrives
-    if (grow >= 1) {
-      const k = Math.min(1, (p.t - LINE_GROW) / 0.2);
-      c.lineWidth = s * 0.06;
-      c.beginPath();
-      c.arc(target.p[0], target.p[1], s * (0.36 + 0.05 * Math.sin(p.t * 12)) * k, 0, Math.PI * 2);
-      c.stroke();
-    }
-  }
 }

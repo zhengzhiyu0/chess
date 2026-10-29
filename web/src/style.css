@@ -668,12 +668,12 @@ input[type='checkbox'] {
 }
 
 .game-main {
+  --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 2 * 24px - 190px)) * var(--bs-play, 1));
   flex: 1;
   min-height: 0;
   padding-bottom: calc(58px + var(--safe-b));
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  transition: grid-template-rows 220ms ease;
 }
 
 .board-col {
@@ -683,7 +683,7 @@ input[type='checkbox'] {
   align-self: center;
   grid-row: 1;
   /* 正方形棋盘：按可用宽度和高度二者取小 */
-  width: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 2 * 20px - 190px)) * var(--bs-play, 1));
+  width: var(--board-size);
   min-width: 240px;
 }
 
@@ -691,7 +691,7 @@ input[type='checkbox'] {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 20px;
+  height: 24px;
   padding: 0 4px;
 }
 .avatar {
@@ -852,8 +852,8 @@ html:not(.native) .native-only {
   display: flex;
   align-items: center;
   flex: 1 1 auto;
-  height: 18px;
-  line-height: 18px;
+  height: 24px;
+  line-height: 24px;
   color: var(--text2);
   min-width: 0;
   overflow: hidden;
@@ -863,7 +863,7 @@ html:not(.native) .native-only {
   align-items: center;
   flex: 1 1 auto;
   min-width: 0;
-  height: 18px;
+  height: 24px;
   gap: 2px;
   white-space: nowrap;
   overflow-x: hidden;
@@ -883,9 +883,9 @@ html:not(.native) .native-only {
 }
 .caps .cap-piece {
   display: block;
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
 }
 .caps .cap-piece.black {
@@ -1253,8 +1253,8 @@ html:not(.native) .native-only {
 #game .side {
   padding-bottom: var(--safe-b);
 }
-#game[data-mode='review'] .board-col {
-  width: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 190px)) * var(--bs-review, 1));
+#game[data-mode='review'] .game-main {
+  --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 190px)) * var(--bs-review, 1));
 }
 #game[data-mode='play'] .evalbar {
   display: none;
@@ -1948,13 +1948,14 @@ dialog input[type='color'] {
 /* ---------- 紧凑的手机对局布局 ---------- */
 @media (max-aspect-ratio: 1/1), (max-width: 719px) {
   #game .game-main {
-    grid-template-rows: auto auto;
-    align-content: safe center;
+    /* 棋盘轨道只由视口和棋盘尺寸决定，气泡仅占用剩余空间。 */
+    grid-template-rows: minmax(min-content, calc(50% + var(--board-size) / 2)) minmax(0, 1fr);
+    align-content: start;
     gap: 8px;
   }
 
   #game .board-col {
-    align-self: center;
+    align-self: end;
   }
 
   #game .side {
@@ -1963,7 +1964,8 @@ dialog input[type='color'] {
   }
 
   #game .panel {
-    max-height: min(28dvh, 220px);
+    flex: 1;
+    max-height: 100%;
     padding: 0 14px;
   }
 

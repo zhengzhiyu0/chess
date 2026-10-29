@@ -37,6 +37,7 @@ import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './app/avatar';
 import { findNode, movesHtml } from './app/moves-ui';
 import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
+import { coachArrow } from './app/coach-arrow';
 import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
@@ -397,8 +398,6 @@ const BRUSHES = {
   human: { key: 'kh', color: '#3b82d6', opacity: 0.8, lineWidth: 5 },
   /** after a bad move: what should have been played in the previous position */
   should: { key: 'ks', color: '#d9a43a', opacity: 0.75, lineWidth: 6 },
-  /** opponent's threat (coach) */
-  threat: { key: 'kt', color: '#e8402f', opacity: 0.75, lineWidth: 6 },
   /** next move while stepping through a line */
   demo: { key: 'kd', color: '#8a5cd6', opacity: 0.8, lineWidth: 7 },
 };
@@ -510,7 +509,6 @@ function applyFx() {
   fx.captureEnabled = settings.boardFxCapture;
   fx.checkEnabled = settings.boardFxCheck;
   fx.mateEnabled = settings.boardFxMate;
-  fx.arrowStyle = settings.boardFxArrowStyle;
   dodge.enabled = settings.boardFx;
   const wrap = $('board').parentElement!;
   wrap.classList.toggle('fx-on', settings.boardFx);
@@ -2185,20 +2183,23 @@ function hangingSquares(n: Node): Square[] {
 function coachShapes(): DrawShape[] {
   const t = tip();
   if (!coachOn || mode !== 'play' || node !== t || result !== '') return [];
+  const orientation = (userColor === 'w') !== flipped ? 'white' : 'black';
+  const hint = (uci: string, position: Node, kind: 'threat' | 'best') =>
+    coachArrow(uci, chessOf(position).get(uci.slice(0, 2) as Square)?.type === 'n', orientation, kind);
   if (coachState === 'paused' && coachFrom) {
     const out: DrawShape[] = [];
     const bad = coachFrom.children[0];
     const ref = bad?.a.eval?.best;
-    if (ref) out.push(arrow(ref, 'red'));
+    if (settings.coachThreats && ref && bad) out.push(hint(ref, bad, 'threat'));
     const better = coachFrom.a.eval?.best;
-    if (coachReveal && better && better !== bad?.uci) out.push({ ...arrow(better, 'green'), modifiers: { lineWidth: 8 } });
+    if (settings.coachBest && coachReveal && better && better !== bad?.uci) out.push(hint(better, coachFrom, 'best'));
     return out;
   }
   if (coachState !== 'idle' || turnOf(t.fen) !== userColor) return [];
   const out: DrawShape[] = [];
-  if (settings.coachBest && t.a.eval?.best) out.push(arrow(t.a.eval.best, 'green'));
-  else if (settings.coachThreats && t.a.threat) out.push(arrow(t.a.threat.uci, 'threat'));
-  else if (settings.coachHanging)
+  if (settings.coachThreats && t.a.threat) out.push(hint(t.a.threat.uci, t, 'threat'));
+  if (settings.coachBest && t.a.eval?.best) out.push(hint(t.a.eval.best, t, 'best'));
+  if (!out.length && settings.coachHanging)
     for (const sq of hangingSquares(t))
       out.push({ orig: sq as Key, customSvg: { html: HANGING_GLOW }, below: true }, { orig: sq as Key, customSvg: { html: HANGING_BADGE } });
   return out;
@@ -2711,7 +2712,7 @@ function openSettings() {
   };
   const syncFxDetailControls = () => {
     const on = el('boardFx').checked;
-    for (const name of ['boardFxBadge', 'boardFxCapture', 'boardFxCheck', 'boardFxMate', 'boardFxArrowStyle']) el(name).disabled = !on;
+    for (const name of ['boardFxBadge', 'boardFxCapture', 'boardFxCheck', 'boardFxMate']) el(name).disabled = !on;
   };
   let prevBoard = settings.boardTheme;
   boardSel.onchange = () => {
@@ -2814,7 +2815,6 @@ function openSettings() {
       boardFxCapture: el('boardFxCapture').checked,
       boardFxCheck: el('boardFxCheck').checked,
       boardFxMate: el('boardFxMate').checked,
-      boardFxArrowStyle: el('boardFxArrowStyle').value as Settings['boardFxArrowStyle'],
       boardSizePlay: num('boardSizePlay'),
       boardSizeReview: num('boardSizeReview'),
       reviewOpponent: el('reviewOpponent').checked,

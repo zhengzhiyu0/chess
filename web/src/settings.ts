@@ -71,8 +71,6 @@ export interface Settings {
   boardFxCapture: boolean;
   boardFxCheck: boolean;
   boardFxMate: boolean;
-  /** threat/protection animation: a growing arrow or a square-by-square colour wash */
-  boardFxArrowStyle: 'line' | 'fill';
   /** board size in % of the largest size that fits (play / review layouts) */
   boardSizePlay: number;
   boardSizeReview: number;
@@ -146,7 +144,6 @@ export function defaultSettings(): Settings {
     boardFxCapture: motion,
     boardFxCheck: motion,
     boardFxMate: motion,
-    boardFxArrowStyle: 'line',
     boardSizePlay: 100,
     boardSizeReview: 100,
     autoplayMs: 1200,
@@ -241,7 +238,6 @@ const RULES: Record<keyof Settings, Rule> = {
   boardFxCapture: { bool: true },
   boardFxCheck: { bool: true },
   boardFxMate: { bool: true },
-  boardFxArrowStyle: { oneOf: ['line', 'fill'] },
   boardSizePlay: { num: [60, 100] },
   boardSizeReview: { num: [60, 100] },
   autoplayMs: { num: [100, 10000] },

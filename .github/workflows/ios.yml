@@ -60,6 +60,15 @@ jobs:
           name: coreml-build-log
           path: web/coreml-build.log
           if-no-files-found: warn
+      - name: Publish CoreML failure detail
+        if: failure()
+        run: |
+          while IFS= read -r line; do
+            line=${line//'%'/'%25'}
+            line=${line//$'\r'/'%0D'}
+            line=${line//$'\n'/'%0A'}
+            echo "::error file=web/scripts/compile-coreml.py,line=1::$line"
+          done < coreml-build.log
       - name: Verify bundled native model layout
         run: |
           test -d ios/App/App/public/native/maia3-5m.mlmodelc

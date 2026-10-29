@@ -22,7 +22,7 @@ private enum AudioRuntimeLog {
     }
 }
 
-/// Play bundled effects and character recordings outside WKWebView's audio lifecycle.
+/// Play bundled effects outside WKWebView's audio lifecycle.
 @objc(SoundNativePlugin)
 public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelegate {
     public let identifier = "SoundNativePlugin"
@@ -30,8 +30,6 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "playVoice", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "stopVoice", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getLogs", returnType: CAPPluginReturnPromise),
     ]
 
@@ -41,19 +39,6 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     private var recordings: [URL: Data] = [:]
     private var observers: [NSObjectProtocol] = []
     private var sessionActive = false
-    private var voicePlayer: AVAudioPlayer?
-    private struct VoiceClip: Decodable { let file: String; let role: String }
-    private lazy var voiceFiles: [String: VoiceClip] = {
-        guard let url = Bundle.main.url(forResource: "catalog", withExtension: "json", subdirectory: "public/voices"),
-              let data = try? Data(contentsOf: url),
-              let clips = try? JSONDecoder().decode([VoiceClip].self, from: data) else { return [:] }
-        let roles: Set<String> = ["lia", "xiaoyou", "leo", "victor", "zara", "ajian", "oscar", "meiyi"]
-        var result: [String: VoiceClip] = [:]
-        for clip in clips where roles.contains(clip.role) && clip.file.hasPrefix("\(clip.role)_") && !clip.file.contains("/") && !clip.file.contains("\\") && clip.file.hasSuffix(".m4a") {
-            result[clip.file] = clip
-        }
-        return result
-    }()
 
     /// Configure the session once when the plugin is loaded. Reapplying the
     /// category for every move can make iOS renegotiate the route while a very
@@ -71,14 +56,12 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
             observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 // Discard interrupted and scheduled sounds; never replay them on return.
                 self?.stopPlayers()
-                self?.stopVoiceNow()
                 self?.sessionActive = false
             })
         }
         observers.append(center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: .main) { [weak self] _ in
             self?.stopPlayers()
             self?.recordings.removeAll()
-            self?.stopVoiceNow()
             self?.sessionActive = false
         })
     }
@@ -123,11 +106,6 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         sessionActive = true
     }
 
-    private func stopVoiceNow() {
-        voicePlayer?.stop()
-        voicePlayer = nil
-    }
-
     @objc func stop(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [self] in
             stopPlayers()
@@ -135,42 +113,8 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         }
     }
 
-    @objc func stopVoice(_ call: CAPPluginCall) {
-        DispatchQueue.main.async { [self] in
-            stopVoiceNow()
-            call.resolve()
-        }
-    }
-
     @objc func getLogs(_ call: CAPPluginCall) {
         call.resolve(["logs": AudioRuntimeLog.text()])
-    }
-
-    @objc func playVoice(_ call: CAPPluginCall) {
-        DispatchQueue.main.async { [self] in
-            guard UIApplication.shared.applicationState == .active else { return call.resolve() }
-            guard let file = call.getString("file"), let clip = voiceFiles[file],
-                  let url = Bundle.main.url(forResource: String(file.dropLast(4)), withExtension: "m4a", subdirectory: "public/voices/\(clip.role)") else {
-                return call.reject("Unknown coach recording")
-            }
-            do {
-                stopVoiceNow()
-                try activateSession()
-                let player = try AVAudioPlayer(contentsOf: url)
-                player.delegate = self
-                voicePlayer = player
-                guard player.prepareToPlay(), player.play() else {
-                    stopVoiceNow()
-                    return call.reject("Could not start coach recording")
-                }
-                AudioRuntimeLog.record("Coach recording started file=\(file)")
-                call.resolve()
-            } catch {
-                stopVoiceNow()
-                AudioRuntimeLog.record("Coach playback failed: \(error.localizedDescription)")
-                call.reject("角色录音播放失败：\(error.localizedDescription)", nil, error)
-            }
-        }
     }
 
     @objc func play(_ call: CAPPluginCall) {
@@ -216,19 +160,10 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
 
     public func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         players.removeAll { $0 === player }
-        if player === voicePlayer {
-            AudioRuntimeLog.record("voice playback finished successfully=\(flag)")
-            voicePlayer = nil
-        }
     }
 
     public func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
         players.removeAll { $0 === player }
-        if player === voicePlayer {
-            AudioRuntimeLog.record("voice decode failed: \(error?.localizedDescription ?? "unknown error")")
-            voicePlayer = nil
-        } else {
-            NSLog("原生音效解码失败：%@", error?.localizedDescription ?? "unknown error")
-        }
+        NSLog("原生音效解码失败：%@", error?.localizedDescription ?? "unknown error")
     }
 }

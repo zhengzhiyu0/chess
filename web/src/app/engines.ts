@@ -151,12 +151,10 @@ export class Engines {
   }
 
   async warmup() {
-    try {
-      await this.getMaia();
-      // in exclusive low-memory mode both engines can't be resident; keep the one needed to play
-      if (!this.exclusive()) await this.getSf();
-    } catch (err) {
-      console.warn('预加载失败', err);
-    }
+    // Native startup prepares both engines together; the first iOS game can then enter immediately.
+    // Web low-memory mode still loads only Maia until Stockfish is needed.
+    const loads = this.exclusive() ? [this.getMaia()] : [this.getMaia(), this.getSf()];
+    const results = await Promise.allSettled(loads);
+    for (const result of results) if (result.status === 'rejected') console.warn('预加载失败', result.reason);
   }
 }

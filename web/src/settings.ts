@@ -76,12 +76,10 @@ export interface Settings {
   reviewOpponent: boolean;
   /** my avatar, see app/avatar.ts ('' = default) */
   avatar: string;
-  /** Maia's coach portrait; -1 means choose a coach at the start of each game. */
+  /** Active coach portrait. The app currently uses Lia (index 0); other portraits remain bundled for future use. */
   coachAvatar: number;
   /** Key-event bubbles for the selected coach. */
   opponentTalk: boolean;
-  /** Play the selected coach's offline Chinese recording matching the bubble. */
-  opponentVoice: boolean;
   /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
   engineGen?: number;
   /** sound theme default migration: 1 = Lichess sfx, 2 = wooden board set */
@@ -147,7 +145,6 @@ export function defaultSettings(): Settings {
     avatar: '',
     coachAvatar: 0,
     opponentTalk: true,
-    opponentVoice: true,
   };
 }
 
@@ -245,7 +242,6 @@ const RULES: Record<keyof Settings, Rule> = {
   avatar: { str: /^[^<>"]{0,200000}$/s },
   coachAvatar: { num: [-1, 999], int: true },
   opponentTalk: { bool: true },
-  opponentVoice: { bool: true },
   engineGen: { optInt: true },
   soundGen: { optInt: true },
   coachGen: { optInt: true },
@@ -272,6 +268,8 @@ export function sanitizeSettings(raw: unknown): Settings {
     const value = k === 'soundTheme' ? soundThemeOf(src[k]) : src[k];
     if (valid(RULES[k], value)) out[k] = value;
   }
+  // Lia is the only active coach; keep the other portrait definitions for future use.
+  out.coachAvatar = 0;
   return out as unknown as Settings;
 }
 

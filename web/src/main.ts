@@ -6,7 +6,7 @@ import type { DrawBrushes, DrawShape } from '@lichess-org/chessground/draw';
 import '@lichess-org/chessground/assets/chessground.base.css';
 import './style.css';
 
-import { MODELS, type MaiaResult } from './maia/maia';
+import { type MaiaResult } from './maia/maia';
 import { sampleMove } from './maia/sample';
 import type { Stockfish, SfLine } from './engine/stockfish';
 import { flushEvals, getEval, putEval } from './engine/eval-cache';
@@ -35,16 +35,14 @@ import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from
 import { Engines } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './app/avatar';
-import { COACHES, COACH_STYLE_LABELS, RANDOM_COACH } from './app/coach-avatars';
 import { findNode, movesHtml } from './app/moves-ui';
 import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
 import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
-import { CoachDialogue, hasCoachVoice, type CoachEvent } from './coach-voice/dialogue';
-import { coachEvents } from './coach-voice/events';
+import { CoachDialogue, type CoachEvent } from './coach-dialogue/dialogue';
+import { coachEvents } from './coach-dialogue/events';
 import type { SfResult } from './engine/stockfish';
-import { playCoachVoice, stopCoachVoice, unlockCoachVoice } from './audio/voice';
 import { installRuntimeLogCapture, runtimeLogText } from './runtime-logs';
 
 installRuntimeLogCapture();
@@ -140,8 +138,9 @@ let screen: 'home' | 'game' | 'train' = 'home';
 type HomeTab = 'play' | 'train' | 'data';
 let homeTab: HomeTab = 'play';
 function pickCoachAvatar(selection: number): number {
-  if (selection >= 0 && selection < COACHES.length) return selection;
-  return Math.floor(Math.random() * COACHES.length);
+  // Other portraits remain available as project assets, but Lia is the only active coach.
+  void selection;
+  return 0;
 }
 
 let gameCoachAvatar = pickCoachAvatar(settings.coachAvatar);
@@ -304,7 +303,6 @@ function resetTransient() {
   liveLines = [];
   hintedAt = null;
   opponentLine = '';
-  stopCoachVoice();
   coachDialogue = new CoachDialogue();
   dialogueCtrl?.abort();
   coachReset();
@@ -676,23 +674,21 @@ function maiaFens(n: Node): string[] {
 function clearOpponentLine() {
   dialogueCtrl?.abort();
   opponentLine = '';
-  stopCoachVoice();
 }
 
 /** Analyze only when a coach reaction could be played; never block the player's move. */
 async function opponentSpeak(n: Node) {
   dialogueCtrl?.abort();
-  if (!settings.opponentTalk || !hasCoachVoice(gameCoachAvatar) || coachOn || imported || mode !== 'play' || screen !== 'game' || !n.parent || !n.uci) return;
+  if (!settings.opponentTalk || coachOn || imported || mode !== 'play' || screen !== 'game' || !n.parent || !n.uci) return;
   const ctrl = new AbortController();
   dialogueCtrl = ctrl;
   const id = gameId;
-  const stale = () => ctrl.signal.aborted || gameId !== id || tip() !== n || node !== n || screen !== 'game' || mode !== 'play' || document.hidden || !settings.opponentTalk || coachOn || !hasCoachVoice(gameCoachAvatar);
+  const stale = () => ctrl.signal.aborted || gameId !== id || tip() !== n || node !== n || screen !== 'game' || mode !== 'play' || document.hidden || !settings.opponentTalk || coachOn;
   const emit = (events: CoachEvent[]) => {
     if (stale()) return;
     const clip = coachDialogue.pick(events, n.ply, performance.now(), gameCoachAvatar);
     if (!clip) return;
     opponentLine = clip.text;
-    playCoachVoice(clip, settings.opponentVoice, gameCoachAvatar);
     renderOpponentDialogue();
   };
   let fallback: CoachEvent[] = [];
@@ -1184,7 +1180,7 @@ function clockView(color: Color): { text: string; active: boolean; low: boolean 
   let ms: number | null = null;
   if (mode === 'review' && node.clock) ms = node.clock[i];
   else if (clock) ms = clock.time(color, performance.now());
-  if (ms === null) return { text: color === 'w' ? '白' : '黑', active: turnOf(node.fen) === color && !result, low: false };
+  if (ms === null) return { text: '', active: false, low: false };
   const active = clock ? clock.active === color : false;
   return { text: fmtClockShort(ms), active, low: ms < 20_000 && (active || mode === 'play') };
 }
@@ -1241,16 +1237,22 @@ function depthCap(kind: keyof typeof DEPTH_CAP): number | undefined {
 /** Search settings that change an evaluation's result; part of the persistent cache key. */
 const evalSig = () => `${settings.sfLite ? 'l' : 'f'}${settings.sfMovetime}${settings.ecoAnalysis ? 'e' : ''}`;
 
-async function evalNode(s: Stockfish, n: Node, signal: AbortSignal) {
-  if (n.a.eval) return;
+async function evalNode(s: Stockfish, n: Node, signal: AbortSignal, effort: 'scan' | 'full' = 'full', force = false) {
+  if (n.a.eval && !force) return;
   // the FEN includes the move counters, so a repetition (scored as a draw) rarely shares a key
-  const key = `${evalSig()}|${n.fen}`;
+  const scan = effort === 'scan';
+  const key = `${evalSig()}${scan ? '|scan' : ''}|${n.fen}`;
   const hit = getEval(key);
   if (hit) {
     n.a.eval = posEvalFrom(n, hit.line ? [hit.line] : [], hit.best);
     return;
   }
-  const r = await s.analyse(tree.root.fen, { moves: movesTo(n), movetime: settings.sfMovetime, depth: depthCap('eval'), signal });
+  const r = await s.analyse(tree.root.fen, {
+    moves: movesTo(n),
+    movetime: scan ? 180 : settings.sfMovetime,
+    depth: scan ? 12 : depthCap('eval'),
+    signal,
+  });
   if (signal.aborted) return;
   // no bestmove on a live position means the engine died mid-search; don't cache a fake "½"
   if (!r.bestmove && !chessOf(n).isGameOver()) return;
@@ -1259,7 +1261,7 @@ async function evalNode(s: Stockfish, n: Node, signal: AbortSignal) {
   if (thermalState < 2) putEval(key, { line: r.lines[0] ?? null, best: r.bestmove });
 }
 
-/** Review mode runs automatically: whole-game analysis first, then live multi-PV on the current position. */
+/** Review mode quickly scans the game, deepens its three main issues, then starts live analysis. */
 function startReview() {
   if (mode !== 'review' || screen !== 'game') return;
   liveOn = true;
@@ -1290,7 +1292,7 @@ async function analyseGame() {
       if (ctrl.signal.aborted) return;
       // killed by the watchdog: its searches now return nothing at once; don't report a hollow "done"
       if (!s.alive) throw new Error('Stockfish 中途退出');
-      await evalNode(s, nodes[i], ctrl.signal);
+      await evalNode(s, nodes[i], ctrl.signal, 'scan');
       if (ctrl.signal.aborted) return;
       analysisDone = nodes.filter((x) => Boolean(x.a.eval)).length;
       setFill(((i + 1) / n) * 100);
@@ -1298,6 +1300,19 @@ async function analyseGame() {
     }
     // aborted during the last position: the game (and `result`) may already be another one
     if (ctrl.signal.aborted) return;
+    const focus = learningIssues().slice(0, 3);
+    const deepen = [...new Set(focus.flatMap((x) => [x.parent, x]).filter((x): x is Node => Boolean(x)))];
+    analysisTotal = n + deepen.length;
+    renderReportHint();
+    for (const [i, position] of deepen.entries()) {
+      if (ctrl.signal.aborted) return;
+      if (!s.alive) throw new Error('Stockfish 中途退出');
+      await evalNode(s, position, ctrl.signal, 'full', true);
+      if (ctrl.signal.aborted) return;
+      analysisDone = n + i + 1;
+      setFill((analysisDone / analysisTotal) * 100);
+      update();
+    }
     analysisDone = nodes.filter((x) => Boolean(x.a.eval)).length;
     if (analysisDone < n) {
       analysisStatus = 'interrupted';
@@ -1565,7 +1580,7 @@ function renderLearningSummary() {
   const box = $('learning-report-summary');
   if (mode === 'review' && gameLine().length && analysisStatus !== 'complete') {
     const retry = analysisStatus === 'interrupted' || analysisStatus === 'failed';
-    const detail = analysisStatus === 'running' ? 'Stockfish 正在逐步检查整局，完成后才会生成最终的学习结论。' : analysisStatus === 'idle' ? '正在准备完整复盘，完成后才会生成最终的学习结论。' : analysisError || '分析没有覆盖整局，暂不生成最终结论。';
+    const detail = analysisStatus === 'running' ? '先快速检查整局，再深入分析最值得学习的几个问题。' : analysisStatus === 'idle' ? '正在准备复盘分析。' : analysisError || '分析没有覆盖整局，暂不生成最终结论。';
     box.classList.remove('hidden');
     box.innerHTML = `<div class="learning-kicker">本地学习总结</div><h3>等待完整复盘</h3><p>${escapeHtml(detail)}</p>${retry ? '<button type="button" class="primary" data-learning-analysis>继续分析</button>' : ''}`;
     return;
@@ -1708,7 +1723,9 @@ function renderReportHint() {
   const empty = $('summary').dataset.empty === 'true';
   const hint = $('report-hint');
   if (analysing || analysisStatus === 'running') {
-    hint.textContent = analysisTotal ? `正在分析整局… ${analysisDone}/${analysisTotal}` : '正在分析整局…';
+    hint.textContent = analysisTotal
+      ? `快速检查整局并深入分析重点问题… ${analysisDone}/${analysisTotal}`
+      : '正在准备复盘…';
   } else if (analysisStatus === 'interrupted') {
     hint.textContent = `${analysisError || '分析未完成'}，可继续分析。`;
   } else if (analysisStatus === 'failed') {
@@ -2193,6 +2210,7 @@ function coachContinue() {
   coachState = 'idle';
   coachFrom = null;
   coachReveal = false;
+  coachNote = '错误已经发生，先处理对手的回应，再寻找最稳的防守。';
   update();
   void maiaTurn();
 }
@@ -2219,8 +2237,8 @@ function coachShapes(): DrawShape[] {
   if (coachState !== 'idle' || turnOf(t.fen) !== userColor) return [];
   const out: DrawShape[] = [];
   if (settings.coachBest && t.a.eval?.best) out.push(arrow(t.a.eval.best, 'green'));
-  if (settings.coachThreats && t.a.threat) out.push(arrow(t.a.threat.uci, 'threat'));
-  if (settings.coachHanging)
+  else if (settings.coachThreats && t.a.threat) out.push(arrow(t.a.threat.uci, 'threat'));
+  else if (settings.coachHanging)
     for (const sq of hangingSquares(t))
       out.push({ orig: sq as Key, customSvg: { html: HANGING_GLOW }, below: true }, { orig: sq as Key, customSvg: { html: HANGING_BADGE } });
   return out;
@@ -2241,14 +2259,14 @@ function explainMistake(from: Node, reveal = false): string {
     `<div class="cc-plain">走完这步后：${plainOf(mv)}</div>`,
   ];
   const l = after.lines[0];
-  if (reveal && after.best && ins?.problem.length) {
+  if (after.best && ins?.problem.length) {
     parts.push(
-      `<div class="cc-why"><span class="tag bad">问题</span><span>${ins.problem.join('；')}</span></div>`,
-      `<div class="cc-pv">${demoControls(mv.fen, l?.pv ?? [], 'bad', `演示对手的应对：${pvToSan(mv.fen, l?.pv ?? [], 6)}`)}</div>`,
+      `<div class="cc-why"><span class="tag bad">关键问题</span><span>${ins.problem[0]}</span></div>`,
+      `<div class="cc-pv">${demoControls(mv.fen, l?.pv ?? [], 'bad', `看对手的回应：${pvToSan(mv.fen, l?.pv ?? [], 5)}`)}</div>`,
     );
   }
   if (!reveal) {
-    parts.push('<div class="cc-prompt"><b>先想一想：</b>你能找出这步棋漏掉的威胁，以及更安全的候选着吗？</div>');
+    parts.push('<div class="cc-prompt"><b>轮到你：</b>能否找到一步处理这个问题的棋？</div>');
     return parts.join('');
   }
   if (before.best && before.best !== mv.uci) {
@@ -2279,8 +2297,10 @@ function renderCoachLive() {
     box.innerHTML =
       `<div class="coach-card">${explainMistake(coachFrom, coachReveal)}` +
       `<div class="cc-actions">${
-        coachReveal ? '' : '<button data-act="reveal">查看更好的走法</button>'
-      }<button class="primary" data-act="retry">重走这步</button><button data-act="go">继续对局</button></div></div>`;
+        '<button class="primary" data-act="go">继续应对</button>' +
+        (coachReveal ? '' : '<button data-act="reveal">查看原本更好的走法</button>') +
+        '<button data-act="retry">重走这步</button>'
+      } </div></div>`;
     return;
   }
   const parts: string[] = [];
@@ -2299,13 +2319,13 @@ function renderCoachLive() {
   if (result === '' && node === t && turnOf(t.fen) === userColor) {
     if (settings.coachEval && t.a.eval) parts.push(`<div class="cl-row muted"><span class="tag">≈</span><span>形势：${plainOf(t)}</span></div>`);
     if (settings.coachThreats && t.a.threat) parts.push(`<div class="cl-row warn"><span class="tag bad">!</span><span>${t.a.threat.text}</span></div>`);
-    if (settings.coachHanging) {
+    else if (settings.coachHanging) {
       const h = hangingSquares(t);
       const c = chessOf(t);
       if (h.length) parts.push(`<div class="cl-row warn"><span class="tag bad">!</span><span>保护不足：${h.map((q) => PIECE_NAME[c.get(q)!.type] + q).join('、')}</span></div>`);
     }
     const e = t.a.eval;
-    if (settings.coachBest && e?.best) parts.push(`<div class="cl-row"><span class="tag good">★</span><span>推荐 <b>${sanOf(t.fen, e.best)}</b>（${e.text}）</span></div>`);
+    if (settings.coachBest && e?.best && !t.a.threat && !(settings.coachHanging && hangingSquares(t).length)) parts.push(`<div class="cl-row"><span class="tag good">★</span><span>推荐 <b>${sanOf(t.fen, e.best)}</b></span></div>`);
   }
   box.innerHTML = parts.join('');
 }
@@ -2455,36 +2475,20 @@ function sideAvatar(c: Color, cls = ''): string {
 }
 
 function renderPlayers() {
-  const model = MODELS[settings.model].label.split('（')[0];
   const oppColor: Color = userColor === 'w' ? 'b' : 'w';
   const card = (who: 'me' | 'maia') => {
     const color = who === 'me' ? userColor : oppColor;
     const m = material(node, color);
-    let name = who === 'me' ? '我' : model;
-    let elo = `(${gameElo ?? settings.elo})`;
-    if (imported) {
-      name = escapeHtml((color === 'w' ? headers?.White : headers?.Black) || (color === 'w' ? '白方' : '黑方'));
-      const e = color === 'w' ? headers?.WhiteElo : headers?.BlackElo;
-      elo = e ? `(${escapeHtml(e)})` : '';
-    }
-    const avatar = sideAvatar(color, who === 'me' ? 'pick' : '');
     const thinking = who === 'maia' && maiaThinking ? '<span class="dots"><i></i><i></i><i></i></span>' : '';
     const v = clockView(color);
-    return (
-      `${avatar}<div class="pinfo"><div class="pname">${name} <span class="elo">${elo}</span>${thinking}</div>` +
-      `<div class="caps ${color === 'w' ? 'by-w' : 'by-b'}"><div class="caps-track">${m.html}</div>${m.diff > 0 ? `<span class="adv">+${m.diff}</span>` : ''}</div></div>` +
-      `<div class="clock${v.active ? ' active' : ''}${v.low ? ' low' : ''}${clock || node.clock ? ' timed' : ''}" data-clock="${color}">${v.text}</div>`
-    );
+    const clockHtml = clock || node.clock
+      ? `<div class="clock${v.active ? ' active' : ''}${v.low ? ' low' : ''} timed" data-clock="${color}">${v.text}</div>`
+      : '';
+    return `<div class="caps ${color === 'w' ? 'by-w' : 'by-b'}"><div class="caps-track">${m.html}</div>${m.diff > 0 ? `<span class="adv">+${m.diff}</span>` : ''}${thinking}</div>${clockHtml}`;
   };
-  const actions = $('my-actions');
   $('player-top').innerHTML = card(flipped ? 'me' : 'maia');
   $('player-bottom').innerHTML = card(flipped ? 'maia' : 'me');
-  // 手机对弈：提示/悔棋/教练放在“我”的信息栏里（时钟左侧）
-  const mine = $(flipped ? 'player-top' : 'player-bottom');
-  mine.insertBefore(actions, mine.querySelector('.clock'));
-  // The mobile actions shrink the player's info column. Scroll only after
-  // they are inserted and the flex layout has settled, otherwise scrollLeft
-  // is clamped before the captured-piece strip becomes narrow.
+  // Keep the most recently captured piece at the visible end of its row.
   requestAnimationFrame(() => {
     for (const id of ['player-top', 'player-bottom']) {
       const track = document.querySelector<HTMLElement>(`#${id} .caps-track`);
@@ -2515,7 +2519,7 @@ function renderPlayInfo() {
 
 function renderOpponentDialogue() {
   const box = $('opponent-dialogue');
-  const visible = Boolean(opponentLine) && settings.opponentTalk && hasCoachVoice(gameCoachAvatar) && !coachOn && !imported && mode === 'play' && node === tip();
+  const visible = Boolean(opponentLine) && settings.opponentTalk && !coachOn && !imported && mode === 'play' && node === tip();
   box.classList.toggle('show', visible);
   if (!visible) {
     box.innerHTML = '';
@@ -2708,39 +2712,6 @@ function openAvatar() {
   dlg.showModal();
 }
 
-function openCoachAvatar() {
-  const dlg = $<HTMLDialogElement>('dlg-coach-avatar');
-  let pick = settings.coachAvatar;
-  const draw = () => {
-    $('coach-current').innerHTML = coachAvatarHtml(pick === RANDOM_COACH ? 0 : pick, 'big');
-    $('coach-name').textContent = pick === RANDOM_COACH ? '每局随机教练（8 位）' : `${COACHES[pick]?.name ?? ''} · ${COACH_STYLE_LABELS[COACHES[pick]?.style ?? 'precise']}`;
-    $('coach-grid').innerHTML = `<button type="button" data-random class="${pick === RANDOM_COACH ? 'on' : ''}" aria-label="每局随机教练"><span class="coach-random">🎲</span><small>随机</small></button>` + COACHES.map(
-      (c, i) => `<button type="button" data-i="${i}" class="${i === pick ? 'on' : ''}" aria-label="${c.name}">${coachAvatarHtml(i)}</button>`,
-    ).join('');
-  };
-  $('coach-grid').onclick = (e) => {
-    if ((e.target as HTMLElement).closest('[data-random]')) {
-      pick = RANDOM_COACH;
-      draw();
-      return;
-    }
-    const i = (e.target as HTMLElement).closest<HTMLElement>('[data-i]')?.dataset.i;
-    if (i === undefined) return;
-    pick = Number(i);
-    draw();
-  };
-  draw();
-  dlg.returnValue = '';
-  dlg.onclose = () => {
-    if (dlg.returnValue !== 'ok' || pick === settings.coachAvatar) return;
-    settings = { ...settings, coachAvatar: pick };
-    saveSettings(settings);
-    $('set-coach').innerHTML = coachAvatarHtml(settings.coachAvatar === RANDOM_COACH ? 0 : settings.coachAvatar);
-    update();
-  };
-  dlg.showModal();
-}
-
 // ---------- settings dialog ----------
 
 function openSettings() {
@@ -2809,8 +2780,7 @@ function openSettings() {
   syncFxDetailControls();
   $('set-avatar').innerHTML = avatarHtml(settings.avatar);
   $('btn-set-avatar').onclick = openAvatar;
-  $('set-coach').innerHTML = coachAvatarHtml(settings.coachAvatar === RANDOM_COACH ? 0 : settings.coachAvatar);
-  $('btn-set-coach').onclick = openCoachAvatar;
+  $('set-coach').innerHTML = `${coachAvatarHtml(0)}<span class="coach-fixed-label">莉亚 · 精准克制</span>`;
   $('btn-export-launch-logs').onclick = async () => {
     const button = $<HTMLButtonElement>('btn-export-launch-logs');
     button.disabled = true;
@@ -2882,7 +2852,6 @@ function openSettings() {
       boardSizeReview: num('boardSizeReview'),
       reviewOpponent: el('reviewOpponent').checked,
       opponentTalk: el('opponentTalk').checked,
-      opponentVoice: el('opponentVoice').checked,
     };
     applySettings(old);
   };
@@ -2899,7 +2868,6 @@ function applyBoardSize() {
 function applySettings(old: Settings) {
   saveSettings(settings);
   if (!settings.opponentTalk) clearOpponentLine();
-  else if (old.opponentVoice && !settings.opponentVoice) stopCoachVoice();
   applyTheme(settings.theme);
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
   applyAppearance(settings.boardTheme, settings.customLight, settings.customDark, settings.pieceSet);
@@ -3504,7 +3472,6 @@ function bind() {
     flipped = !flipped;
     update();
   };
-  $('btn-menu-top').onclick = () => $('btn-menu').click();
   $('btn-menu').onclick = () => {
     const live = mode === 'play' && result === '' && !imported && tip() !== tree.root;
     $<HTMLButtonElement>('btn-resign').disabled = !live;
@@ -3528,9 +3495,6 @@ function bind() {
   $('btn-menu-settings').onclick = fromMenu(openSettings);
   $('btn-undo').onclick = undo;
   $('btn-hint').onclick = () => void hint();
-  $('btn-undo-m').onclick = undo;
-  $('btn-hint-m').onclick = () => void hint();
-  $('btn-coach-m').onclick = openCoachSettings;
   for (const id of ['player-top', 'player-bottom'])
     $(id).addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('.avatar.pick')) openAvatar();
@@ -4029,5 +3993,4 @@ init();
 
 // Unlock only the selected recording player, directly within a user gesture.
 for (const name of ['pointerdown', 'keydown']) document.addEventListener(name, () => {
-  if (settings.opponentVoice && settings.opponentTalk && hasCoachVoice(gameCoachAvatar)) unlockCoachVoice(gameCoachAvatar);
 }, { passive: true });

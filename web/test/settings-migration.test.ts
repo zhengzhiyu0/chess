@@ -48,6 +48,13 @@ describe('settings engine migration (iOS app)', () => {
     loadSettings();
     expect(mem.has('maia-coach.ai-key')).toBe(false);
   });
+
+  it('always resolves legacy coach selections to Lia', () => {
+    // Older builds persisted a selectable portrait and a recording toggle.
+    mem.set(KEY, JSON.stringify({ coachAvatar: 7, recordingEnabled: true }));
+    expect(loadSettings()).toMatchObject({ coachAvatar: 0 });
+    expect(sanitizeSettings({ coachAvatar: -1 }).coachAvatar).toBe(0);
+  });
 });
 
 describe('settings whitelist', () => {

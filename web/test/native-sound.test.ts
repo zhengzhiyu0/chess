@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const native = vi.hoisted(() => ({ play: vi.fn(), stop: vi.fn(), playVoice: vi.fn(), stopVoice: vi.fn() }));
+const native = vi.hoisted(() => ({ play: vi.fn(), stop: vi.fn() }));
 vi.mock('../src/native', () => ({ isNative: true }));
 vi.mock('../src/audio/haptics', () => ({ configureHaptics: vi.fn(), haptic: vi.fn() }));
 vi.mock('maia-native', () => ({ SoundNative: native }));
@@ -12,8 +12,6 @@ beforeEach(() => {
   vi.useFakeTimers();
   native.play.mockResolvedValue(undefined);
   native.stop.mockResolvedValue(undefined);
-  native.playVoice.mockResolvedValue(undefined);
-  native.stopVoice.mockResolvedValue(undefined);
   doc = Object.assign(new EventTarget(), { hidden: false });
   vi.stubGlobal('document', doc);
   vi.stubGlobal('fetch', vi.fn(() => { throw new Error('Native sound must not fetch through WKWebView'); }));
@@ -26,28 +24,6 @@ afterEach(() => {
 });
 
 describe('iOS 原生 MP3 播放', () => {
-  it('each character plays its own recording; mismatched portraits, disabled and background requests stay silent', async () => {
-    const { playCoachVoice, stopCoachVoice } = await import('../src/audio/voice');
-    const { COACH_CLIPS, COACH_VOICES } = await import('../src/coach-voice/dialogue');
-    for (const role of COACH_VOICES) {
-      const clip = COACH_CLIPS.find(clip => clip.coachIndex === role.coachIndex)!;
-      playCoachVoice(clip, true, role.coachIndex);
-      expect(native.playVoice).toHaveBeenLastCalledWith({ file: clip.file });
-      const count = native.playVoice.mock.calls.length;
-      playCoachVoice(clip, true, (role.coachIndex + 1) % 8);
-      playCoachVoice(clip, false, role.coachIndex);
-      doc.hidden = true;
-      playCoachVoice(clip, true, role.coachIndex);
-      doc.hidden = false;
-      expect(native.playVoice).toHaveBeenCalledTimes(count);
-    }
-    doc.hidden = true;
-    doc.dispatchEvent(new Event('visibilitychange'));
-    expect(native.stopVoice).toHaveBeenCalledTimes(1);
-    stopCoachVoice();
-    expect(native.stopVoice).toHaveBeenCalledTimes(2);
-  });
-
   it('首次落子无需 WebView 音频解锁，所有音效主题都走原生播放器', async () => {
     const { SOUND_THEMES, configureSound, play, unlockAudio } = await import('../src/audio/sound');
     for (const theme of Object.keys(SOUND_THEMES)) {

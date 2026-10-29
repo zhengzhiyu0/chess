@@ -79,16 +79,17 @@ beforeEach(() => {
 });
 
 describe('startup and game readiness', () => {
-  it('reuses a startup load when entering a normal game before it finishes', async () => {
+  it('starts both engines during warmup and reuses Maia when entering a normal game', async () => {
     const e = make();
     const startup = e.warmup();
     const entry = e.prepareGame(false, false);
     expect(e.readyForGame(false, false)).toBe(false);
     expect(maiaCreates).toHaveLength(1);
+    expect(sfCreates).toHaveLength(1);
     maiaCreates[0].d.resolve(new FakeMaia('23m', 'wasm'));
     await entry;
     expect(e.readyForGame(false, false)).toBe(true);
-    // Ordinary play can begin while the optional analysis engine is still starting.
+    // Ordinary play can begin while Stockfish finishes preparing in the background.
     expect(e.readyForGame(false, true)).toBe(false);
     sfCreates[0].resolve(new FakeSf());
     await startup;

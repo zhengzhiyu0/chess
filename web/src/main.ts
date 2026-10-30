@@ -3345,9 +3345,9 @@ function setHomeTab(tab: HomeTab) {
 function renderHome() {
   const elo = $<HTMLInputElement>('home-elo');
   elo.value = String(MAIA_LEVELS.findIndex(level => level === settings.elo));
-  const levelLabel = `Maia ${settings.elo}${settings.elo < 600 ? ' · 入门（模型外推）' : ' · 固定'}`;
+  const levelLabel = `Maia ${settings.elo}`;
   elo.setAttribute('aria-valuetext', levelLabel);
-  $('home-elo-val').textContent = `${settings.elo} · ${settings.elo < 600 ? '入门外推' : '固定'}`;
+  $('home-elo-val').textContent = String(settings.elo);
   $('home-rating').textContent = `我的棋力 ${settings.playerElo} · ${settings.ratingDeviation > 150 ? '定位中' : '已定位'} · ${settings.ratedGames} 局计分对局`;
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => b.classList.toggle('active', b.dataset.color === settings.color));
   $<HTMLSelectElement>('home-tc').value = settings.timeControl;

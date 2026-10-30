@@ -86,6 +86,19 @@ describe('settings whitelist', () => {
 describe('board effect settings', () => {
   beforeEach(() => mem.clear());
 
+  const fxKeys = ['boardFxRing', 'boardFxSparkle', 'boardFxBadge', 'boardFxHang', 'boardFxCapture', 'boardFxCheck', 'boardFxMate', 'boardFxCastle', 'boardFxDodge'] as const;
+
+  it('defaults every motion effect on and accepts each one being switched off alone', () => {
+    const d = defaultSettings();
+    for (const key of fxKeys) {
+      expect(d[key]).toBe(true);
+      expect(sanitizeSettings({ [key]: false })[key]).toBe(false);
+      // the other switches keep their defaults
+      const s = sanitizeSettings({ [key]: false });
+      for (const other of fxKeys) if (other !== key) expect(s[other]).toBe(true);
+    }
+  });
+
   it('keeps shake off by default but accepts explicit opt-in', () => {
     expect(defaultSettings().boardFxShake).toBe(false);
     expect(sanitizeSettings({}).boardFxShake).toBe(false);

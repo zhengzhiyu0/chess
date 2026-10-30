@@ -34,7 +34,7 @@ import { computeStats, loadHistory, newGameId, ratingHistory, sanitizeGame, save
 import { dragHaptics, installTapHaptics } from './audio/haptics';
 import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio, type EndKind } from './audio/sound';
 import { $, escapeHtml, setStatus } from './app/dom';
-import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, boardImage, pieceUrl } from './app/appearance';
+import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardImageSize, boardPreview, pieceUrl } from './app/appearance';
 import { Engines } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './app/avatar';
@@ -203,7 +203,7 @@ function toggleTheme() {
 const engines = new Engines(
   () => !imported && gameElo !== undefined ? { ...settings, model: gameModel } : settings,
   // Live engine aids need both engines resident; pure play can stay in low-memory mode.
-  () => engineAidsOn() && (screen === 'home' || mode === 'play'),
+  () => analysisForPlay() && (screen === 'home' || mode === 'play'),
   () => liveCtrl?.abort(),
 );
 const getMaia = () => engines.getMaia();
@@ -211,7 +211,7 @@ const getSf = () => engines.getSf();
 const samplingControls = mountSamplingControls($('sampling-controls'));
 const maiaComparison = mountMaiaComparison($('maia-comparison'), {
   context: () => {
-    if (screen !== 'game' || mode !== 'review' || reviewTour || pendingReviewGame === gameId || autoplayOn() || document.hidden) return null;
+    if (screen !== 'game' || mode !== 'review' || document.hidden) return null;
     return {
       identity: `${gameId}|${!imported && gameElo !== undefined ? gameModel : settings.model}|${settings.backend}`,
       fen: node.fen,
@@ -327,7 +327,6 @@ function resetTransient() {
   coachDialogue = new CoachDialogue();
   dialogueCtrl?.abort();
   resetAids();
-  clearReviewTour();
   $('hint-box').textContent = '';
 }
 
@@ -400,7 +399,7 @@ function dests(c: Chess): Map<Key, Key[]> {
 
 function canUserMove(): boolean {
   if (gameLoading) return false;
-  if (mode === 'review') return reviewTour?.phase === 'answer' && node === currentReviewMoment()?.parent && pendingReviewGame !== gameId;
+  if (mode === 'review') return true;
   return node === tip() && result === '' && !maiaThinking && turnOf(node.fen) === userColor;
 }
 
@@ -408,7 +407,7 @@ function canPremove(): boolean {
   return !gameLoading && mode === 'play' && settings.premove && node === tip() && result === '' && turnOf(node.fen) !== userColor;
 }
 
-/** Arrow brushes for review: green = engine best, blue = what players at your rating usually play, amber = what the previous (bad) move should have been. */
+/** Arrow brushes for review: green = engine best, red = the other side's best reply, blue = typical human move, amber = what the previous bad move should have been. */
 const BRUSHES = {
   best: { key: 'kb', color: '#5fa83f', opacity: 0.85, lineWidth: 7 },
   human: { key: 'kh', color: '#3b82d6', opacity: 0.8, lineWidth: 5 },
@@ -416,13 +415,17 @@ const BRUSHES = {
   should: { key: 'ks', color: '#d9a43a', opacity: 0.75, lineWidth: 6 },
   /** next move while stepping through a line */
   demo: { key: 'kd', color: '#8a5cd6', opacity: 0.8, lineWidth: 7 },
+  /** the other side's best move, from the position after this side's best */
+  threat: { key: 'kt', color: '#e8402f', opacity: 0.75, lineWidth: 10 },
 };
-const LEGEND_TEXT: Record<string, string> = { best: '最佳', human: '常见', should: '上一步应走' };
 
+const LEGEND_TEXT: Record<string, string> = { best: '最佳', human: '常见', should: '上一步应走', threat: '对方最佳' };
 interface ReviewArrow {
   uci: string;
   kind: keyof typeof BRUSHES;
   text: string;
+  /** position the arrow is drawn in, when it isn't the shown position (e.g. the opponent's reply) */
+  fen?: string;
 }
 
 /** Whether the move leading to `n` is judged in review (by default only the user's own moves; both sides in tried-out lines). */
@@ -433,24 +436,25 @@ function showMove(n: Node): boolean {
 /** Whether suggestions for the side to move in `n` are shown; in a tried-out line always, e.g. how the opponent should answer. */
 const showSide = (n: Node) => settings.reviewOpponent || imported || Boolean(n.x) || turnOf(n.fen) === userColor;
 
-/** Review arrows: after a bad move, the move that should have been played; plus the best (and typical human) move for the side to move now. */
+/** Review arrows: both sides' engine best, the missed move and the typical human move. */
 function reviewArrows(): ReviewArrow[] {
-  if (pendingReviewGame === gameId || reviewTour) {
-    const current = currentReviewMoment();
-    const best = current?.parent?.a.eval?.best;
-    return reviewTour?.phase === 'answer' && node === current?.parent && best
-      ? [{ uci: best, kind: 'best', text: `最佳 ${sanOf(node.fen, best)}` }]
-      : [];
-  }
   const out: ReviewArrow[] = [];
   const p = node.parent;
   const r = p && showMove(node) ? reviewOf(node) : null;
   if (p && r && SEVERITY[r.judgement] > 0 && p.a.eval?.best) {
     out.push({ uci: p.a.eval.best, kind: 'should', text: `上一步应走 ${sanOf(p.fen, p.a.eval.best)}` });
   }
+  const line = liveOn && liveLines[0] ? liveLines[0] : node.a.eval?.lines[0];
+  const best = line?.pv[0] ?? node.a.eval?.best;
+  if (best) {
+    out.push({ uci: best, kind: 'best', text: `最佳 ${sanOf(node.fen, best)}` });
+    const reply = line?.pv[1];
+    if (reply) {
+      const replyFen = fenAt(node.fen, [best], 1);
+      out.push({ uci: reply, kind: 'threat', text: `对方最佳 ${sanOf(replyFen, reply)}`, fen: replyFen });
+    }
+  }
   if (!showSide(node)) return out;
-  const best = liveOn && liveLines[0]?.pv[0] ? liveLines[0].pv[0] : node.a.eval?.best;
-  if (best) out.push({ uci: best, kind: 'best', text: `最佳 ${sanOf(node.fen, best)}` });
   const h = node.a.human?.moves[0];
   if (h && h.uci !== best) out.push({ uci: h.uci, kind: 'human', text: `${humanElo(node)} 分常走 ${sanOf(node.fen, h.uci)}（${(h.p * 100).toFixed(0)}%）` });
   return out;
@@ -459,9 +463,17 @@ function reviewArrows(): ReviewArrow[] {
 function arrows(): DrawShape[] {
   const shapes: DrawShape[] = [...hintShapes.map(({ uci, brush }) => arrowWithOutline(uci, brush)), ...aidShapes()];
   if (mode === 'review') {
-    for (const a of reviewArrows()) shapes.push(arrowWithOutline(a.uci, a.kind));
-    const r = node.uci && showMove(node) ? reviewOf(node) : null;
-    if (r && node.uci) shapes.push({ orig: node.uci.slice(2, 4) as Key, customSvg: { html: judgeBoardSvg(r.judgement) } });
+    const orientation = boardOrientation();
+    for (const a of reviewArrows()) {
+      if (a.kind === 'best' || a.kind === 'threat') {
+        const from = new Chess(a.fen ?? node.fen).get(a.uci.slice(0, 2) as Square);
+        shapes.push(coachArrow(a.uci, from?.type === 'n', orientation, a.kind, settings.aidArrowOutline));
+      } else shapes.push(arrowWithOutline(a.uci, a.kind));
+    }
+  }
+  if (node.uci && badgeOn() && (mode === 'play' || showMove(node))) {
+    const r = reviewOf(node);
+    if (r) shapes.push({ orig: node.uci.slice(2, 4) as Key, customSvg: { html: judgeBoardSvg(r.judgement) } });
   }
   return shapes;
 }
@@ -520,7 +532,7 @@ function renderBoard() {
   moveFx();
 }
 
-// ---------- board effects & autoplay ----------
+// ---------- board effects ----------
 
 let fx: BoardFx;
 let dodge: DodgeFx;
@@ -528,17 +540,21 @@ let fxLast: Node | null = null;
 
 function applyFx() {
   fx.enabled = settings.boardFx;
+  fx.ringEnabled = settings.boardFxRing;
+  fx.sparkleEnabled = settings.boardFxSparkle;
   fx.badgeEnabled = settings.boardFxBadge;
   fx.captureEnabled = settings.boardFxCapture;
   fx.checkEnabled = settings.boardFxCheck;
   fx.mateEnabled = settings.boardFxMate;
+  fx.castleEnabled = settings.boardFxCastle;
   fx.shakeEnabled = settings.boardFxShake;
-  dodge.enabled = settings.boardFx;
+  dodge.enabled = settings.boardFx && settings.boardFxDodge;
   const wrap = $('board').parentElement!;
   wrap.classList.toggle('fx-on', settings.boardFx);
   wrap.classList.toggle('fx-badge-on', settings.boardFx && settings.boardFxBadge);
   wrap.classList.toggle('fx-check-on', settings.boardFx && settings.boardFxCheck);
   if (!settings.boardFx) fx.clear();
+  if (!dodge.enabled) dodge.clear();
 }
 
 /** Fires move effects when the shown position advanced by exactly one move; any other jump cancels them. */
@@ -557,328 +573,12 @@ function moveFx() {
 
 /** Starts move effects right after the board has been set; the rook flight replaces chessground's rook slide. */
 function playFx(m: MoveFx) {
-  if (m.rook && fx.enabled) {
+  if (m.rook && fx.enabled && fx.castleEnabled) {
     cg.state.animation.current?.plan.anims.delete(m.rook.to as Key);
     // render synchronously so the rook element is already keyed to its new square for the flight
     cg.state.dom.redrawNow(true);
   }
   fx.move(m);
-}
-
-let autoTimer = 0;
-/** true while an autoplay step is moving the board (autoTimer is momentarily 0 then) */
-let autoStepping = false;
-type ReviewTour = {
-  line: Node[];
-  moments: Node[];
-  index: number;
-  phase: 'playing' | 'waiting' | 'answer' | 'trailing' | 'done';
-  feedback: string;
-};
-let pendingReviewGame: string | null = null;
-let reviewTour: ReviewTour | null = null;
-
-const REVIEW_STEP_MS = 350;
-let autoEpoch = 0;
-
-function cancelAutoplayTimer() {
-  clearTimeout(autoTimer);
-  autoTimer = 0;
-  autoEpoch++;
-}
-
-function clearReviewTour() {
-  cancelAutoplayTimer();
-  pendingReviewGame = null;
-  reviewTour = null;
-  if (demo?.key === 'tour-best') demo = null;
-}
-
-/** All analyzed mistakes in game order: every one is a stop-and-answer checkpoint. */
-function tourMoments(): Node[] {
-  return learningIssues().sort((a, b) => a.ply - b.ply);
-}
-
-function startGuidedReview() {
-  stopAutoplay();
-  clearReviewTour();
-  demo = null;
-  pendingReviewGame = gameId;
-  closeReport(true);
-  if (analysisStatus === 'complete') beginReviewTour();
-  else {
-    update();
-    if ((!batchCtrl || batchCtrl.signal.aborted) && !gameLoading) void analyseGame();
-  }
-}
-
-function beginReviewTour() {
-  if (gameLoading || document.hidden || pendingReviewGame !== gameId || mode !== 'review' || screen !== 'game' || analysisStatus !== 'complete') return;
-  pendingReviewGame = null;
-  const line = gameLine();
-  const moments = tourMoments().filter((n) => line.includes(n));
-  reviewTour = { line, moments, index: 0, phase: 'playing', feedback: '' };
-  demo = null;
-  liveCtrl?.abort();
-  liveLines = [];
-  autoStepping = true;
-  goto(line[0], true);
-  autoStepping = false;
-  scheduleReviewStep();
-}
-
-function scheduleReviewStep(delay = REVIEW_STEP_MS) {
-  cancelAutoplayTimer();
-  if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden) return renderAutoplay();
-  const epoch = autoEpoch;
-  const tour = reviewTour;
-  const id = gameId;
-  autoTimer = window.setTimeout(() => {
-    if (epoch !== autoEpoch || tour !== reviewTour || id !== gameId) return;
-    autoplayStep();
-  }, delay);
-  renderAutoplay();
-}
-
-function currentReviewMoment(): Node | undefined {
-  return reviewTour?.moments[reviewTour.index];
-}
-
-function waitForReviewMove() {
-  const tour = reviewTour;
-  const current = currentReviewMoment();
-  if (!tour || !current) return;
-  tour.phase = 'waiting';
-  const ins = insightOf(current);
-  tour.feedback = ins?.problem[0] || '这步棋漏掉了对手的直接威胁。';
-  demo = null;
-  update();
-}
-
-function showReviewBetter() {
-  const tour = reviewTour;
-  if (!tour || tour.phase === 'done' || tour.phase === 'trailing') return;
-  if (tour.phase === 'answer') return advanceReviewMoment();
-  const current = currentReviewMoment();
-  const best = current?.parent?.a.eval?.best;
-  if (!current) return;
-  if (!best || best === current.uci) return advanceReviewMoment();
-  cancelAutoplayTimer();
-  tour.phase = 'answer';
-  tour.feedback = '';
-  demo = null;
-  autoStepping = true;
-  goto(current.parent!, true);
-  autoStepping = false;
-  update();
-}
-
-function finishReviewTour() {
-  if (!reviewTour) return;
-  cancelAutoplayTimer();
-  reviewTour.phase = 'done';
-  reviewTour.feedback = '';
-  demo = null;
-  update();
-  autoplayEnd();
-}
-
-function showTourMoment(index: number) {
-  const tour = reviewTour;
-  const target = tour?.moments[index];
-  if (!tour || !target) return;
-  cancelAutoplayTimer();
-  tour.index = index;
-  tour.phase = 'playing';
-  tour.feedback = '';
-  demo = null;
-  autoStepping = true;
-  goto(target.parent ?? target, true);
-  autoStepping = false;
-  scheduleReviewStep();
-}
-
-/** Always leave a tried answer via its recorded move, never via the answer's variation. */
-function advanceReviewMoment(schedule = true) {
-  const tour = reviewTour;
-  const current = currentReviewMoment();
-  if (!tour || !current || tour.phase === 'done' || tour.phase === 'trailing') return;
-  cancelAutoplayTimer();
-  tour.index++;
-  tour.phase = tour.index < tour.moments.length ? 'playing' : 'trailing';
-  tour.feedback = '';
-  demo = null;
-  autoStepping = true;
-  goto(current, true);
-  autoStepping = false;
-  if (schedule) scheduleReviewStep();
-}
-
-function handleReviewMove(from: Node, uci: string): boolean {
-  const tour = reviewTour;
-  const current = currentReviewMoment();
-  if (!tour || tour.phase !== 'answer' || !current || from !== current.parent) return false;
-  const best = current.parent?.a.eval?.best;
-  if (!best || uci !== best) {
-    play('illegal');
-    tour.feedback = '这不是推荐走法，再试一次。';
-    update();
-    return true;
-  }
-  const answer = tree.add(from, uci, true);
-  if (!answer) return true;
-  node = answer;
-  tour.feedback = `很好，${answer.san} 是更好的选择。`;
-  play(soundForSan(answer.san));
-  update();
-  scheduleReviewStep();
-  return true;
-}
-
-function renderReviewProgress() {
-  const box = $('review-progress');
-  const track = $('review-progress-track');
-  const tour = reviewTour;
-  if (mode !== 'review' || !tour) {
-    box.classList.add('hidden');
-    track.innerHTML = '';
-    return;
-  }
-  const total = Math.max(1, tour.line.length - 1);
-  const current = Math.min(100, (realOf(node).ply / total) * 100);
-  track.innerHTML = `<span class="review-progress-fill" style="width:${current}%"></span>` + tour.moments.map((n, i) => {
-    const left = Math.min(100, (n.ply / total) * 100);
-    const state = i < tour.index || (i === tour.index && tour.phase === 'answer') ? ' done' : i === tour.index ? ' current' : '';
-    return `<i class="review-marker${state}" style="left:${left}%" title="关键节点 ${i + 1}"></i>`;
-  }).join('');
-  box.classList.remove('hidden');
-}
-
-function renderReviewMoment() {
-  const box = $('review-moment');
-  const visible = mode === 'review' && Boolean(pendingReviewGame === gameId || reviewTour);
-  $('game').classList.toggle('guided-review', visible);
-  box.classList.toggle('hidden', !visible);
-  $('tab-review').classList.toggle('guided-review', visible);
-  if (!visible) {
-    box.innerHTML = '';
-    return;
-  }
-  const report = '<button data-tour="report" class="tour-report">回到总复盘</button>';
-  if (pendingReviewGame === gameId) {
-    const failed = analysisStatus === 'failed' || analysisStatus === 'interrupted';
-    box.innerHTML = `<b>${failed ? '分析尚未完成' : '正在分析这局棋…'}</b><p>${failed ? escapeHtml(analysisError || '完成分析后再开始互动复盘。') : '准备关键节点…'}</p>${failed ? '<button data-tour="retry" class="primary">重试分析</button>' : ''}${report}`;
-    return;
-  }
-  const tour = reviewTour!;
-  const n = currentReviewMoment();
-  const answer = tour.phase === 'answer';
-  const done = tour.phase === 'done';
-  const trailing = tour.phase === 'trailing';
-  const actions = `<div class="moment-actions"><button data-tour="prev" class="tour-prev"${tour.index > 0 && tour.moments.length ? '' : ' disabled'}>返回上一个</button><button data-tour="view" class="tour-view primary"${!n || done || trailing ? ' disabled' : ''}>${answer ? '继续' : '查看'}</button><button data-tour="next" class="tour-next"${done ? ' disabled' : ''}>继续下一个</button></div>${report}`;
-  if (done || trailing || !n) {
-    box.innerHTML = `<b>${done ? '互动复盘完成' : trailing ? '回看关键点后续' : '快速回看棋局'}</b><p>${done ? '本轮回顾已完成。' : trailing ? '沿实战棋谱播放至下一次将军或棋局末尾。' : '本局没有需要停下的关键节点，正在快速播放完整棋谱。'}</p>${actions}`;
-    return;
-  }
-  const r = reviewOf(n)!;
-  const ins = insightOf(n);
-  const p = n.parent!;
-  const waiting = tour.phase === 'waiting';
-  const num = `${moveNumberOf(p.fen)}${turnOf(p.fen) === 'w' ? '.' : '…'}`;
-  const tag = SEVERITY[r.judgement] ? learningTag(n) : null;
-  const problem = ins?.problem[0] || (tag ? `${tag.label}。${checkForTag(tag.id)}` : '这步棋还有更好的选择。');
-  const best = p.a.eval?.best;
-  const bestSan = best ? escapeHtml(sanOf(p.fen, best)) : '';
-  const heading = answer ? `更好的选择：${bestSan}` : `${num} ${escapeHtml(n.san)} · ${JUDGEMENT_INFO[r.judgement].label}`;
-  const explanation = answer
-    ? `${tour.feedback ? `${escapeHtml(tour.feedback)}<br>` : ''}推荐走 ${bestSan}。${ins?.better[0] || ''}<br>请在棋盘上尝试推荐着法，或点继续回看实战。`
-    : waiting ? `${problem}<br>先想一想，再点查看揭示推荐走法。` : '正在快速播放棋局…';
-  box.innerHTML = `${waiting ? '' : `<small>${answer ? '请走推荐着法' : '播放中 · 每步 350 毫秒'}</small>`}<h3>${heading}</h3><p>${explanation}</p>${actions}`;
-}
-
-function autoplayOn() {
-  return autoTimer !== 0 || autoStepping;
-}
-
-function stopAutoplay() {
-  cancelAutoplayTimer();
-  // A cancelled pending analysis must not start a tour later in the background.
-  pendingReviewGame = null;
-  renderAutoplay();
-  if (liveOn && !gameLoading && !document.hidden) void runLive();
-}
-
-function autoplayEnd() {
-  renderAutoplay();
-  if (liveOn) void runLive();
-}
-
-function autoplayStep() {
-  autoTimer = 0;
-  const tour = reviewTour;
-  if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden) return autoplayEnd();
-  if (tour) {
-    if (tour.phase === 'waiting') return update();
-    if (tour.phase === 'answer') advanceReviewMoment(false);
-    if (tour.phase === 'done') return autoplayEnd();
-    const target = currentReviewMoment();
-    if (target === node) return waitForReviewMove();
-    const position = tour.line.indexOf(node);
-    const next = position >= 0 ? tour.line[position + 1] : undefined;
-    if (!next) return finishReviewTour();
-    autoStepping = true;
-    goto(next, true);
-    autoStepping = false;
-    play(soundForSan(next.san));
-    if (tour.phase === 'trailing' && chessOf(next).inCheck()) return finishReviewTour();
-    if (next === tour.line[tour.line.length - 1] && !currentReviewMoment()) return finishReviewTour();
-    if (next === target) return waitForReviewMove();
-    scheduleReviewStep();
-    return;
-  }
-  if (demo) {
-    if (demo.idx >= demo.pv.length) return autoplayEnd();
-    stepDemo(1);
-  } else {
-    const next = mainChild(node);
-    if (!next) return autoplayEnd();
-    autoStepping = true;
-    goto(next, true);
-    autoStepping = false;
-    play(soundForSan(next.san));
-  }
-  scheduleReviewStep();
-}
-
-function toggleAutoplay() {
-  if (autoplayOn()) return stopAutoplay();
-  if (gameLoading || pendingReviewGame === gameId || document.hidden) return;
-  unlockAudio();
-  if (reviewTour) {
-    if (reviewTour.phase === 'done') return startGuidedReview();
-    if (reviewTour.phase === 'waiting' || reviewTour.phase === 'answer') return;
-    scheduleReviewStep();
-    liveCtrl?.abort();
-    return;
-  }
-  if (demo ? demo.idx >= demo.pv.length : !mainChild(node)) {
-    if (demo) stepDemo(-99);
-    else goto(tree.root, true);
-  }
-  scheduleReviewStep();
-  liveCtrl?.abort();
-}
-
-function renderAutoplay() {
-  const btn = $<HTMLButtonElement>('btn-autoplay');
-  btn.disabled = gameLoading || pendingReviewGame === gameId || Boolean(reviewTour && !autoplayOn() && (reviewTour.phase === 'waiting' || reviewTour.phase === 'answer'));
-  const on = autoplayOn();
-  $('game').classList.toggle('review-autoplay', mode === 'review' && on);
-  btn.classList.toggle('on', on);
-  btn.setAttribute('aria-label', on ? '暂停' : '自动播放');
-  btn.innerHTML = on
-    ? '<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>'
-    : '<svg viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
 }
 
 function askPromotion(color: Color): Promise<string> {
@@ -909,7 +609,6 @@ async function onUserMove(orig: Key, dest: Key, meta?: MoveMetadata) {
   const piece = c.get(orig as Square);
   let uci = orig + dest;
   if (piece?.type === 'p' && (dest[1] === '8' || dest[1] === '1')) uci += meta?.premove ? 'q' : await askPromotion(c.turn());
-  if (mode === 'review' && reviewTour && handleReviewMove(from, uci)) return;
   if (mode === 'play') {
     if (!playMove(uci)) {
       play('illegal');
@@ -920,7 +619,6 @@ async function onUserMove(orig: Key, dest: Key, meta?: MoveMetadata) {
     return;
   }
   // review: explore freely; explorations never change the game record
-  stopAutoplay();
   const next = tree.add(from, uci, true);
   if (!next) {
     play('illegal');
@@ -931,6 +629,9 @@ async function onUserMove(orig: Key, dest: Key, meta?: MoveMetadata) {
   hintShapes = [];
   play(soundForSan(next.san));
   saveGame();
+  // the previous position's PV is not legal here
+  liveCtrl?.abort();
+  liveLines = [];
   update();
   if (liveOn) void runLive();
 }
@@ -1491,7 +1192,7 @@ function startReview() {
   if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden) return;
   liveOn = true;
   if (analysisStatus === 'complete') {
-    beginReviewTour();
+    void runLive();
     return;
   }
   if (!batchCtrl || batchCtrl.signal.aborted) void analyseGame();
@@ -1569,7 +1270,6 @@ async function analyseGame() {
       void runLive();
     }
     update();
-    if (analysisStatus === 'complete') beginReviewTour();
   }
 }
 
@@ -1578,7 +1278,7 @@ async function analyseGame() {
  * it, computed when a position is viewed rather than for the whole game up front.
  */
 async function reviewHuman() {
-  if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden || autoplayOn()) return;
+  if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden) return;
   // a single resident engine: loading Maia now would evict Stockfish mid-search
   const busy = (batchCtrl && !batchCtrl.signal.aborted) || (liveCtrl && !liveCtrl.signal.aborted);
   if (singleEngine() && busy) return;
@@ -1659,7 +1359,7 @@ function setLive(on: boolean) {
 const singleEngine = () => !isNative && settings.lowMemory && !settings.sfLite;
 
 async function runLive() {
-  if (gameLoading || screen !== 'game' || document.hidden || reviewTour || pendingReviewGame === gameId) return;
+  if (gameLoading || screen !== 'game' || document.hidden) return;
   // with a single resident engine, Maia must wait until the live search is done
   const early = !singleEngine();
   if (early) void reviewHuman();
@@ -1676,14 +1376,14 @@ async function liveSearch() {
   const n = node;
   if (n.a.live) {
     liveLines = n.a.live;
+    if (!n.a.eval && n.a.live[0]) n.a.eval = posEvalFrom(n, n.a.live, n.a.live[0].pv[0] ?? null);
     renderLines();
     renderEvalBar();
     refreshShapes();
     renderLegend();
     return;
   }
-  // autoplay moves on every ~1s: a search per step would keep the engine busy the whole time
-  if (document.hidden || autoplayOn()) return;
+  if (document.hidden) return;
   const ctrl = new AbortController();
   liveCtrl = ctrl;
   // engine output arrives every ~50ms; re-rendering PV text + arrows that often costs more than it shows
@@ -1717,7 +1417,9 @@ async function liveSearch() {
       },
     });
     if (timer) clearTimeout(timer);
-    if (!ctrl.signal.aborted && r.bestmove && r.lines.length) n.a.live = r.lines;
+    if (!ctrl.signal.aborted && r.bestmove && r.lines.length) {
+      n.a.live = r.lines;
+    }
     flush();
   } catch (err) {
     console.error(err);
@@ -1936,11 +1638,6 @@ function backToReport(): boolean {
 }
 
 function openReport() {
-  stopAutoplay();
-  clearReviewTour();
-  renderReviewMoment();
-  renderReviewProgress();
-  renderAutoplay();
   reportOpen = true;
   returnToReport = false;
   renderBackTarget();
@@ -2000,6 +1697,21 @@ function jumpReviewIssue(direction: -1 | 1, side: IssueSide = splitIssueNav() ? 
   goto(target);
 }
 
+/** Position before the shown problem move: the user can retry it as a new branch. */
+function reviewRetryTarget(): Node | null {
+  const p = node.parent;
+  if (!p || mode !== 'review' || gameLoading) return null;
+  const r = showMove(node) ? reviewOf(node) : null;
+  return r && SEVERITY[r.judgement] > 0 ? p : null;
+}
+
+function retryReviewMove() {
+  const target = reviewRetryTarget();
+  if (!target) return;
+  goto(target);
+  setStatus('已退回上一步，可以自由走棋');
+}
+
 function renderReviewNav() {
   const split = splitIssueNav();
   const counts: Record<'me' | 'opp', Node[]> = { me: reviewIssues(split ? 'me' : 'all'), opp: split ? reviewIssues('opp') : [] };
@@ -2011,6 +1723,7 @@ function renderReviewNav() {
   $('review-issues').title = split ? '我的问题着法（不精确/错误/漏着）' : '问题着法（不精确/错误/漏着）';
   $('review-issues-opp').textContent = label(counts.opp);
   $('review-issues-opp').title = '对手的问题着法（不精确/错误/漏着）';
+  $<HTMLButtonElement>('btn-review-retry').disabled = !reviewRetryTarget();
   $('review-opp-nav').classList.toggle('hidden', !split);
   document.querySelectorAll<HTMLButtonElement>('[data-review-nav]').forEach((button) => {
     const opp = button.dataset.reviewSide === 'opp';
@@ -2023,10 +1736,6 @@ function renderReviewNav() {
 function renderCoach() {
   const box = $('coach-box');
   if (mode !== 'review') {
-    box.innerHTML = '';
-    return;
-  }
-  if (pendingReviewGame === gameId || reviewTour) {
     box.innerHTML = '';
     return;
   }
@@ -2325,7 +2034,9 @@ async function computeThreat(s: Stockfish, n: Node, signal: AbortSignal) {
 /** Optional analysis never blocks a move or pauses the clock. */
 async function prepareAids() {
   const t = tip();
-  if (gameLoading || !engineAidsOn() || screen !== 'game' || mode !== 'play' || result || prep?.node === t) return;
+  const aids = engineAidsOn();
+  const badge = badgeOn();
+  if (gameLoading || (!aids && !badge) || screen !== 'game' || mode !== 'play' || result || prep?.node === t) return;
   resetAids();
   const ctrl = new AbortController();
   prepCtrl = ctrl;
@@ -2333,7 +2044,10 @@ async function prepareAids() {
     try {
       const s = await getSf();
       if (ctrl.signal.aborted) return;
-      await evalNode(s, t, ctrl.signal);
+      // the badge judges the move that led here, so it needs the position before it as well
+      if (badge && t.parent && !t.parent.a.eval) await evalNode(s, t.parent, ctrl.signal, 'scan');
+      if (ctrl.signal.aborted || tip() !== t || mode !== 'play' || screen !== 'game') return;
+      await evalNode(s, t, ctrl.signal, aids ? 'full' : 'scan');
       if (ctrl.signal.aborted || tip() !== t || mode !== 'play' || screen !== 'game') return;
       update();
       if (settings.aidThreats && turnOf(t.fen) === userColor) {
@@ -2366,10 +2080,10 @@ function resumeGame() {
   const entry = ++gameEntry;
   if (screen !== 'game') return;
   const review = mode === 'review';
-  if (!engines.readyForGame(review, engineAidsOn())) {
+  if (!engines.readyForGame(review, analysisForPlay())) {
     setGameLoading(true);
     update();
-    void engines.prepareGame(review, engineAidsOn(), () => entry === gameEntry).then(() => {
+    void engines.prepareGame(review, analysisForPlay(), () => entry === gameEntry).then(() => {
       if (entry !== gameEntry) return;
       setGameLoading(false);
       update();
@@ -2400,8 +2114,18 @@ function hangingSquares(n: Node): Square[] {
   return hangingMemo.out;
 }
 
+/** Board judgement badges need Stockfish evals even when the optional aids are off. */
+function badgeOn(s = settings): boolean {
+  return s.boardFx && s.boardFxBadge;
+}
+
 function engineAidsOn(s = settings): boolean {
   return s.aidWinPct || s.aidEval || s.aidThreats || s.aidBest;
+}
+
+/** Stockfish must be resident during play for the optional aids and for move badges. */
+function analysisForPlay(s = settings): boolean {
+  return engineAidsOn(s) || badgeOn(s);
 }
 
 function assistanceOn(s = settings): boolean {
@@ -2426,8 +2150,11 @@ function aidShapes(): DrawShape[] {
   if (settings.aidThreats && t.a.threat) out.push(hint(t.a.threat.uci, 'threat'));
   if (settings.aidBest && t.a.eval?.best) out.push(hint(t.a.eval.best, 'best'));
   if (settings.aidHanging) {
-    for (const sq of hangingSquares(t))
-      out.push({ orig: sq as Key, customSvg: { html: HANGING_GLOW }, below: true }, { orig: sq as Key, customSvg: { html: HANGING_BADGE } });
+    const glow = settings.boardFx && settings.boardFxHang;
+    for (const sq of hangingSquares(t)) {
+      if (glow) out.push({ orig: sq as Key, customSvg: { html: HANGING_GLOW }, below: true });
+      out.push({ orig: sq as Key, customSvg: { html: HANGING_BADGE } });
+    }
   }
   return out;
 }
@@ -2604,8 +2331,7 @@ function renderPlayers() {
 }
 
 function renderEvalBar() {
-  const e = demo?.key === 'tour-best' ? node.parent?.a.eval
-    : liveOn && liveLines[0] ? posEvalFrom(node, liveLines, liveLines[0].pv[0]) : node.a.eval;
+  const e = liveOn && liveLines[0] ? posEvalFrom(node, liveLines, liveLines[0].pv[0]) : node.a.eval;
   const bar = $('evalbar');
   bar.classList.toggle('hidden', mode !== 'review' && !settings.aidEval);
   const white = e?.white ?? 50;
@@ -2649,10 +2375,7 @@ function update() {
   renderEvalBar();
   renderGraph();
   renderSummary();
-  renderAutoplay();
   renderReportHint();
-  renderReviewMoment();
-  renderReviewProgress();
   renderCoach();
   renderVarActions();
   renderLegend();
@@ -2707,11 +2430,8 @@ function renderAppearance() {
     card.dataset.board = id;
     const swatch = document.createElement('span');
     swatch.className = 'board-choice-preview';
-    const colors = boardColors(id, settings.customLight, settings.customDark);
-    swatch.style.backgroundImage = theme.image
-      ? boardImage(id)
-      : `conic-gradient(${colors.dark} 0 25%, ${colors.light} 0 50%, ${colors.dark} 0 75%, ${colors.light} 0)`;
-    swatch.style.backgroundSize = theme.image ? '100% 100%' : '25% 25%';
+    swatch.style.backgroundImage = boardPreview(id, settings.customLight, settings.customDark);
+    swatch.style.backgroundSize = boardImageSize(id);
     const label = document.createElement('strong');
     label.textContent = theme.label;
     card.append(swatch, label);
@@ -2805,8 +2525,6 @@ function showScreen(s: 'home' | 'game' | 'train' | 'appearance' | 'settings' | '
     clearOpponentLine();
     gameEntry++;
     setGameLoading(false);
-    stopAutoplay();
-    clearReviewTour();
     gameToken++;
     maiaThinking = false;
     resetAids();
@@ -2827,11 +2545,7 @@ function showScreen(s: 'home' | 'game' | 'train' | 'appearance' | 'settings' | '
 
 const history_ = window.history;
 
-function goto(n: Node | null | undefined, auto = false) {
-  if (!auto) {
-    stopAutoplay();
-    clearReviewTour();
-  }
+function goto(n: Node | null | undefined) {
   if (!n || n === node) {
     update();
     return;
@@ -2839,6 +2553,9 @@ function goto(n: Node | null | undefined, auto = false) {
   clearOpponentLine();
   node = n;
   hintShapes = [];
+  // the previous position's PV is not legal here
+  liveCtrl?.abort();
+  liveLines = [];
   update();
   if (!analyseMissing() && liveOn) void runLive();
 }
@@ -2865,8 +2582,6 @@ function setMode(m: 'play' | 'review') {
   const prev = mode;
   mode = m;
   if (m !== 'play') clearOpponentLine();
-  stopAutoplay();
-  clearReviewTour();
   if (m === 'play' && !tree.isMainline(node)) node = tip();
   if (m === 'play') closeReport();
   else if (prev !== 'review') openReport();
@@ -2950,7 +2665,8 @@ function openSettings() {
   };
   const syncFxDetailControls = () => {
     const on = el('boardFx').checked;
-    for (const name of ['boardFxBadge', 'boardFxCapture', 'boardFxCheck', 'boardFxMate', 'boardFxShake']) el(name).disabled = !on;
+    for (const name of ['boardFxRing', 'boardFxSparkle', 'boardFxBadge', 'boardFxHang', 'boardFxCapture', 'boardFxCheck', 'boardFxMate', 'boardFxCastle', 'boardFxDodge', 'boardFxShake'])
+      el(name).disabled = !on;
   };
   f.oninput = () => { outs(); syncFxDetailControls(); };
   outs();
@@ -3011,10 +2727,15 @@ function openSettings() {
       premove: el('premove').checked,
       aidArrowOutline: el('aidArrowOutline').checked,
       boardFx: el('boardFx').checked,
+      boardFxRing: el('boardFxRing').checked,
+      boardFxSparkle: el('boardFxSparkle').checked,
       boardFxBadge: el('boardFxBadge').checked,
+      boardFxHang: el('boardFxHang').checked,
       boardFxCapture: el('boardFxCapture').checked,
       boardFxCheck: el('boardFxCheck').checked,
       boardFxMate: el('boardFxMate').checked,
+      boardFxCastle: el('boardFxCastle').checked,
+      boardFxDodge: el('boardFxDodge').checked,
       boardFxShake: el('boardFxShake').checked,
       boardSizePlay: num('boardSizePlay'),
       boardSizeReview: num('boardSizeReview'),
@@ -3539,9 +3260,7 @@ function bind() {
   });
   document.querySelectorAll<HTMLButtonElement>('[data-nav]').forEach((b) => {
     b.onclick = () => {
-      stopAutoplay();
       const nav = b.dataset.nav;
-      if (reviewTour || pendingReviewGame === gameId) clearReviewTour();
       if (demo) {
         stepDemo(nav === 'first' ? -99 : nav === 'prev' ? -1 : nav === 'next' ? 1 : 99);
         return;
@@ -3694,7 +3413,6 @@ function bind() {
     $<HTMLDialogElement>('dlg-result').close();
     node = tree.root;
     setMode('review');
-    startGuidedReview();
   };
   $('btn-result-new').onclick = () => {
     $<HTMLDialogElement>('dlg-result').close();
@@ -3721,30 +3439,12 @@ function bind() {
     goto(l[Math.round(((e.clientX - rect.left) / rect.width) * (l.length - 1))]);
   };
   $('btn-report').onclick = openReport;
-  $('btn-report-start').onclick = startGuidedReview;
+  $('btn-review-retry').onclick = retryReviewMove;
   $('btn-report-free').onclick = () => {
     closeReport(true);
     goto(node);
     $('maia-comparison').querySelector('details')!.open = true;
     maiaComparison.update();
-  };
-  $('review-moment').onclick = (e) => {
-    const button = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-tour]');
-    const action = button?.dataset.tour;
-    if (!action || button?.disabled) return;
-    stopAutoplay();
-    if (action === 'retry') {
-      pendingReviewGame = gameId;
-      if (!gameLoading) void analyseGame();
-    } else if (action === 'report') openReport();
-    else if (reviewTour) {
-      if (action === 'view') showReviewBetter();
-      else if (action === 'prev') showTourMoment(reviewTour.index - 1);
-      else if (action === 'next' && reviewTour.phase !== 'done') {
-        if (currentReviewMoment()) advanceReviewMoment();
-        else scheduleReviewStep();
-      }
-    }
   };
   $('learning-report-summary').onclick = (e) => {
     const t = e.target as HTMLElement;
@@ -3804,20 +3504,6 @@ function bind() {
       if (e.key === 'Escape' || e.key === 'Enter') closeReport(true);
       return;
     }
-    if (mode === 'review' && e.key === ' ' && !(e.target as HTMLElement).closest('button')) {
-      e.preventDefault();
-      toggleAutoplay();
-      return;
-    }
-    if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'].includes(e.key)) stopAutoplay();
-    if (reviewTour && ['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'].includes(e.key)) {
-      clearReviewTour();
-      if (e.key === 'Escape') {
-        update();
-        e.preventDefault();
-        return;
-      }
-    }
     if (demo) {
       if (e.key === 'ArrowLeft') stepDemo(-1);
       else if (e.key === 'ArrowRight') stepDemo(1);
@@ -3857,7 +3543,6 @@ function bind() {
     // open-ended live search or the whole-game analysis burn battery there (aborted searches
     // aren't cached, and analyseGame skips positions already evaluated when it resumes)
     if (document.hidden) {
-      stopAutoplay();
       resetAids();
       pausedBatch = Boolean(batchCtrl && !batchCtrl.signal.aborted);
       batchCtrl?.abort();
@@ -3873,8 +3558,6 @@ function bind() {
     }
   });
   window.addEventListener('pagehide', () => {
-    cancelAutoplayTimer();
-    pendingReviewGame = null;
     saveGame();
     flushEvals();
   });
@@ -4161,8 +3844,6 @@ function init() {
   fx = new BoardFx($('board').parentElement!, () => cg.state.orientation);
   dodge = new DodgeFx(cg, $('board'));
   applyFx();
-  $('btn-autoplay').onclick = toggleAutoplay;
-  renderAutoplay();
   void loadBook().then(() => {
     renderMoves();
     renderSummary();

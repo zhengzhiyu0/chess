@@ -1,4 +1,7 @@
 // Board colours and piece sets. Piece assets live in public/pieces/<set>/ and board textures in public/boards/; both are precached for offline use.
+// A url() inside a custom property is resolved against the stylesheet that reads it, so production
+// builds looked for assets/boards/* instead of boards/* and iOS painted the flat fallback colour.
+// Resolve texture URLs against the document up front.
 
 type BoardTheme = { label: string; light: string; dark: string; image?: string };
 
@@ -66,13 +69,31 @@ export function boardColors(theme: string, light: string, dark: string) {
   return Object.hasOwn(BOARD_THEMES, theme) ? BOARD_THEMES[theme] : BOARD_THEMES.green;
 }
 
+function textureUrl(image: string) {
+  return `url('${new URL(`boards/${image}`, document.baseURI).href}')`;
+}
+
+function squares(dark: string, light: string) {
+  return `conic-gradient(${dark} 0 25%, ${light} 0 50%, ${dark} 0 75%, ${light} 0)`;
+}
+
+// The live board uses the applied colours, so the underlay tracks --light-sq / --dark-sq.
+const SQUARES = squares('var(--dark-sq)', 'var(--light-sq)');
+
 export function boardImage(theme: string) {
   const image = BOARD_THEMES[theme]?.image;
-  return image ? `url('boards/${image}')` : 'conic-gradient(var(--dark-sq) 0 25%, var(--light-sq) 0 50%, var(--dark-sq) 0 75%, var(--light-sq) 0)';
+  return image ? `${textureUrl(image)}, ${SQUARES}` : SQUARES;
+}
+
+/** Appearance card: the theme's own colours, not the colours currently applied to the board. */
+export function boardPreview(theme: string, light: string, dark: string) {
+  const c = boardColors(theme, light, dark);
+  const pattern = squares(c.dark, c.light);
+  return 'image' in c && c.image ? `${textureUrl(c.image)}, ${pattern}` : pattern;
 }
 
 export function boardImageSize(theme: string) {
-  return BOARD_THEMES[theme]?.image ? '100% 100%' : '25% 25%';
+  return BOARD_THEMES[theme]?.image ? '100% 100%, 25% 25%' : '25% 25%';
 }
 
 let styleEl: HTMLStyleElement | null = null;

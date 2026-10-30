@@ -32,6 +32,19 @@ export class DodgeFx {
     this.raf = requestAnimationFrame(this.tick);
   }
 
+  /** Cancels pending work and removes every marker, e.g. when the effect is switched off. */
+  clear() {
+    clearTimeout(this.poll);
+    this.poll = 0;
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = 0;
+    for (const el of this.marked.keys()) {
+      el.classList.remove('fx-dodge', 'fx-nervous');
+      el.style.transformOrigin = '';
+    }
+    this.marked.clear();
+  }
+
   /** Capturable enemy pieces for the currently selected / dragged piece. */
   private targets(orig: Key): Key[] {
     const s = this.cg.state;

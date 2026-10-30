@@ -81,10 +81,13 @@ const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 export class BoardFx {
   enabled = true;
+  ringEnabled = true;
+  sparkleEnabled = true;
   badgeEnabled = true;
   captureEnabled = true;
   checkEnabled = true;
   mateEnabled = true;
+  castleEnabled = true;
   shakeEnabled = false;
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -148,14 +151,14 @@ export class BoardFx {
     // its removal timer was just cancelled
     this.box.classList.remove('fx-shake');
     this.castleAnim?.cancel();
-    if (m.rook) this.castle(m);
+    if (m.rook && this.castleEnabled) this.castle(m);
     this.later(delay, () => {
       const [x, y] = this.center(m.to);
       if (m.captured && this.captureEnabled) this.shards(...this.center(m.captured.square), m.captured.color);
       const j = m.judgement;
       const big = j === 'best' || j === 'blunder' || j === 'brilliant' || j === 'great';
-      if (this.badgeEnabled) {
-        this.ring(x, y, (j && RING[j]) || 'rgba(255,255,255,.85)', big ? 0.75 : 0.6);
+      if (this.ringEnabled) this.ring(x, y, (j && RING[j]) || 'rgba(255,255,255,.85)', big ? 0.75 : 0.6);
+      if (this.sparkleEnabled) {
         if (j === 'best') this.sparkles(x, y);
         if (j === 'great') this.sparkles(x, y, GREAT);
         if (j === 'brilliant') {

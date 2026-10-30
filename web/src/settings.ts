@@ -68,10 +68,21 @@ export interface Settings {
   /** board animations: badge pop-in, capture particles, check pulse, mate confetti */
   boardFx: boolean;
   /** individual board effects; kept separate so motion can be reduced without disabling the board */
+  /** expanding ring on the square a move lands on */
+  boardFxRing: boolean;
+  /** star burst for best / great / brilliant moves */
+  boardFxSparkle: boolean;
+  /** judgement badge on the board in play and review, including its pop-in */
   boardFxBadge: boolean;
+  /** breathing glow under an attacked, under-defended piece */
+  boardFxHang: boolean;
   boardFxCapture: boolean;
   boardFxCheck: boolean;
   boardFxMate: boolean;
+  /** rook flight and landing dust when castling */
+  boardFxCastle: boolean;
+  /** threatened pieces flinch and dodge while an attacker is selected or dragged */
+  boardFxDodge: boolean;
   /** shake the board after a blunder */
   boardFxShake: boolean;
   /** board size in % of the largest size that fits (play / review layouts) */
@@ -141,10 +152,15 @@ export function defaultSettings(): Settings {
     pieceSet: 'cburnett',
     premove: true,
     boardFx: motion,
+    boardFxRing: motion,
+    boardFxSparkle: motion,
     boardFxBadge: motion,
+    boardFxHang: motion,
     boardFxCapture: motion,
     boardFxCheck: motion,
     boardFxMate: motion,
+    boardFxCastle: motion,
+    boardFxDodge: motion,
     boardFxShake: false,
     boardSizePlay: 100,
     boardSizeReview: 100,
@@ -238,10 +254,15 @@ const RULES: Record<keyof Settings, Rule> = {
   pieceSet: { oneOf: Object.keys(PIECE_SETS) },
   premove: { bool: true },
   boardFx: { bool: true },
+  boardFxRing: { bool: true },
+  boardFxSparkle: { bool: true },
   boardFxBadge: { bool: true },
+  boardFxHang: { bool: true },
   boardFxCapture: { bool: true },
   boardFxCheck: { bool: true },
   boardFxMate: { bool: true },
+  boardFxCastle: { bool: true },
+  boardFxDodge: { bool: true },
   boardFxShake: { bool: true },
   boardSizePlay: { num: [60, 100] },
   boardSizeReview: { num: [60, 100] },

@@ -152,7 +152,6 @@
               <div class="moves" id="moves"></div>
             </div>
             <div class="board-wrap">
-              <div class="review-progress hidden" id="review-progress"><div class="review-progress-track" id="review-progress-track"></div></div>
               <div class="evalbar hidden" id="evalbar" role="meter" aria-label="局面评估（白方视角）" aria-valuemin="0" aria-valuemax="100"><div class="fill" id="evalbar-fill"></div><span id="evalbar-text"></span></div>
               <div class="board-box"><div id="board" class="cg-wrap"></div></div>
             </div>
@@ -168,11 +167,10 @@
               </div>
               <div class="tab hidden" id="tab-review">
                 <div class="review-ctrl">
-                  <button type="button" id="btn-autoplay" class="rc-btn" aria-label="自动播放" title="自动播放（空格）"></button>
-                  <span class="rc-sep"></span>
                   <button type="button" class="rc-btn" data-review-nav="prev" aria-label="上一个问题" title="上一个问题（[）"><svg viewBox="0 0 24 24"><path d="M18 6l-6 6 6 6M11 6l-6 6 6 6" /></svg></button>
                   <span class="rc-issues" id="review-issues"></span>
                   <button type="button" class="rc-btn" data-review-nav="next" aria-label="下一个问题" title="下一个问题（]）"><svg viewBox="0 0 24 24"><path d="M6 6l6 6-6 6M13 6l6 6-6 6" /></svg></button>
+                  <button type="button" class="rc-btn rc-retry" id="btn-review-retry" aria-label="重走：退回上一步自由走棋" title="重走：退回上一步自由走棋">重走</button>
                   <span class="rc-opp hidden" id="review-opp-nav">
                     <span class="rc-sep"></span>
                     <button type="button" class="rc-btn" data-review-nav="prev" data-review-side="opp" aria-label="对手上一个问题" title="对手上一个问题（{）"><svg viewBox="0 0 24 24"><path d="M18 6l-6 6 6 6M11 6l-6 6 6 6" /></svg></button>
@@ -181,7 +179,6 @@
                   </span>
                   <button type="button" class="rc-btn" id="btn-report" aria-label="复盘报告" title="复盘报告"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7" /></svg></button>
                 </div>
-                <div id="review-moment" class="review-moment hidden" aria-live="polite"></div>
                 <div class="var-actions" id="var-actions"></div>
                 <div class="arrow-legend" id="arrow-legend"></div>
                 <div class="coach" id="coach-box"></div>
@@ -211,8 +208,7 @@
             <div class="learning-report-summary hidden" id="learning-report-summary"></div>
           </div>
           <div class="report-foot">
-            <button type="button" id="btn-report-start" class="primary big">开始回顾</button>
-            <button type="button" id="btn-report-free">自由复盘 · 水平对比</button>
+            <button type="button" id="btn-report-free" class="primary big">开始复盘</button>
           </div>
         </div>
       </section>
@@ -353,11 +349,16 @@
         <small class="muted">作用于提示、威胁、最佳着法和复盘箭头；开启后箭头完全不透明，仅改变外观，不开启对局辅助。</small>
         <label class="check"><input type="checkbox" name="boardFx" /> 棋盘动效</label>
         <div class="settings-subgroup" aria-label="棋盘动效详细设置">
-          <label class="check"><input type="checkbox" name="boardFxBadge" /> 徽标弹出与优秀着法闪光</label>
+          <label class="check"><input type="checkbox" name="boardFxRing" /> 走子光圈</label>
+          <label class="check"><input type="checkbox" name="boardFxSparkle" /> 精彩着法星光</label>
+          <label class="check"><input type="checkbox" name="boardFxBadge" /> 着法判断徽标</label>
+          <label class="check"><input type="checkbox" name="boardFxHang" /> 受攻棋子呼吸光晕</label>
           <label class="check"><input type="checkbox" name="boardFxCapture" /> 吃子粒子</label>
           <label class="check"><input type="checkbox" name="boardFxCheck" /> 将军脉冲</label>
           <label class="check"><input type="checkbox" name="boardFxMate" /> 将杀彩带</label>
           <label class="check"><input type="checkbox" name="boardFxShake" /> 失误时棋盘抖动</label>
+          <label class="check"><input type="checkbox" name="boardFxCastle" /> 王车易位飞跃</label>
+          <label class="check"><input type="checkbox" name="boardFxDodge" /> 被吃棋子躲闪</label>
         </div>
         <label>对局棋盘大小 <output name="bsPlayOut"></output>
           <input type="range" name="boardSizePlay" min="60" max="100" step="5" />

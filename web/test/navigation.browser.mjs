@@ -60,8 +60,10 @@ try {
     activePage = page;
     page.setDefaultTimeout(12000);
     const openMenu = async () => {
-      if (!mobile && await page.locator('#report:not(.hidden)').isVisible()) await page.locator('#btn-report-start').click();
-      await page.locator('#btn-menu-top:visible, #btn-menu:visible').first().click();
+      if (await page.locator('#report:not(.hidden)').isVisible()) await page.locator('#btn-report-free').click();
+      if (await page.locator('#game').getAttribute('data-mode') === 'review') await page.locator('.tabs button[data-tab="play"]').click();
+      await page.locator('#btn-menu:visible').first().click();
+      await page.locator('#dlg-menu').evaluate(async (el) => { await Promise.all(el.getAnimations().map((animation) => animation.finished)); });
     };
     const errors = [];
     const dialogs = [];

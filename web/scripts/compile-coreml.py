@@ -159,12 +159,15 @@ def compile_model(onnx_path: Path, compiled_path: Path, work_dir: Path) -> None:
     print(f"{onnx_path.stem}: CoreML conversion complete", flush=True)
 
     quantizer = cto.OpLinearQuantizerConfig(mode="linear_symmetric", weight_threshold=512)
-    # GAB's shared projection feeds every attention layer. Keep this small shared
-    # tensor in fp16 so its rounding error does not compound across the stack.
+    # Preserve GAB's attention-bias generator: its error is injected into every
+    # attention map. The main transformer matrices still use INT8 weights.
     preserved = {
-        name: None for name in cto.get_weights_metadata(mlmodel, weight_threshold=512)
+        name: None
+        for name, metadata in cto.get_weights_metadata(mlmodel, weight_threshold=512).items()
         if 'Einsum_output_0_weight_transposed' in name
+        or any('self_attn_sm' in child.name for child in metadata.child_ops)
     }
+    print(f'{onnx_path.stem}: preserving {len(preserved)} attention-bias tensors in fp16', flush=True)
     quantized = cto.linear_quantize_weights(
         mlmodel, config=cto.OptimizationConfig(global_config=quantizer, op_name_configs=preserved)
     )

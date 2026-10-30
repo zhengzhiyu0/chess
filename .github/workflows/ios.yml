@@ -96,7 +96,29 @@ jobs:
             -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            build
+            build 2>&1 | tee xcode-build.log
+
+      - name: Upload Xcode build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcode-build-log
+          path: web/xcode-build.log
+          if-no-files-found: warn
+
+      - name: Publish Xcode failure detail
+        if: failure()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          log = Path('xcode-build.log')
+          if log.exists():
+              text = log.read_text(errors='replace')
+              errors = [line for line in text.splitlines() if 'error:' in line.lower()]
+              detail = '\n'.join(errors)[-3500:] if errors else text[-3500:]
+              detail = detail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print(f'::error title=Xcode build failed::{detail}')
+          PY
 
       - name: Package IPA
         run: |

@@ -3344,7 +3344,7 @@ function setHomeTab(tab: HomeTab) {
 
 function renderHome() {
   const elo = $<HTMLInputElement>('home-elo');
-  elo.value = String(MAIA_LEVELS.findIndex(level => level === settings.elo));
+  elo.value = String(Math.max(0, MAIA_LEVELS.findIndex(level => level === settings.elo)));
   const levelLabel = `Maia ${settings.elo}`;
   elo.setAttribute('aria-valuetext', levelLabel);
   $('home-elo-val').textContent = String(settings.elo);

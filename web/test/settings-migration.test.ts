@@ -176,13 +176,13 @@ describe('separate player rating migration', () => {
   });
 
   it('accepts the rating and streak boundaries', () => {
-    expect(sanitizeSettings({ elo: 0, playerElo: 2600, ratingDeviation: 60, ratingStreak: -8 })).toMatchObject({ elo: 0, playerElo: 2600, ratingDeviation: 60, ratingStreak: -8 });
-    expect(sanitizeSettings({ elo: 2600, playerElo: 0, ratingDeviation: 350, ratingStreak: 8 })).toMatchObject({ elo: 2600, playerElo: 0, ratingDeviation: 350, ratingStreak: 8 });
+    expect(sanitizeSettings({ elo: 0, playerElo: 2600, ratingDeviation: 60, ratingStreak: -8 })).toMatchObject({ elo: 600, playerElo: 2600, ratingDeviation: 60, ratingStreak: -8 });
+    expect(sanitizeSettings({ elo: 300, playerElo: 0, ratingDeviation: 350, ratingStreak: 8 })).toMatchObject({ elo: 600, playerElo: 0, ratingDeviation: 350, ratingStreak: 8 });
   });
 
   it('snaps only the next opponent to the nearest fixed level, keeping exact player estimates', () => {
     for (const level of MAIA_LEVELS) expect(sanitizeSettings({ elo: level }).elo).toBe(level);
-    for (const [old, level] of [[1810, 1800], [1740, 1800], [1450, 1400], [1499, 1500], [20, 0], [420, 300]]) {
+    for (const [old, level] of [[1810, 1800], [1740, 1800], [1450, 1400], [1499, 1500], [20, 600], [420, 600]]) {
       const settings = sanitizeSettings({ elo: old, autoElo: false });
       expect(settings.elo).toBe(level);
       expect(settings.playerElo).toBe(old);

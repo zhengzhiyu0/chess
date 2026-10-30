@@ -188,8 +188,8 @@ export function loadSettings(): Settings {
 export const ELO_MIN = 0;
 export const ELO_MAX = 2600;
 
-/** Fixed Maia opponent presets; values below 600 extrapolate beyond the training range. */
-export const MAIA_LEVELS = [0, 300, 600, 800, 1000, 1200, 1400, 1500, 1600, 1800, 2000, 2200, 2400, 2600] as const;
+/** Fixed Maia opponent presets within the supported product range. */
+export const MAIA_LEVELS = [600, 800, 1000, 1200, 1400, 1500, 1600, 1800, 2000, 2200, 2400, 2600] as const;
 
 type Rule = { oneOf: readonly unknown[] } | { num: [number, number]; int?: boolean } | { bool: true } | { str: RegExp } | { optInt: true };
 

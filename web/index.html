@@ -41,20 +41,24 @@
               </div>
               <input type="range" id="home-elo" min="0" max="2600" step="1" aria-label="下一局 Maia 水平" />
               <small class="muted" id="home-rating"></small>
-              <div class="seg" id="home-color">
-                <button data-color="w"><span class="pc w">♚</span>执白</button>
-                <button data-color="random"><span class="pc r">?</span>随机</button>
-                <button data-color="b"><span class="pc b">♚</span>执黑</button>
+              <div class="seg" id="home-color" role="group" aria-label="选择执色">
+                <button data-color="w"><span class="color-dot color-dot-white" aria-hidden="true"></span>执白</button>
+                <button data-color="random"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m17 3 4 4-4 4M3 17h3c5 0 7-10 12-10h3M17 13l4 4-4 4M3 7h3c2 0 3 1 4 3m4 4c1 2 2 3 4 3h3" /></svg>随机</button>
+                <button data-color="b"><span class="color-dot color-dot-black" aria-hidden="true"></span>执黑</button>
               </div>
               <label class="setup-tc"><span>用时</span><select id="home-tc"></select></label>
             </div>
 
-            <button id="btn-play" class="primary home-game-action">开始对局</button>
+            <button id="btn-play" class="primary home-game-action">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+              <span>开始对局</span><span class="game-action-arrow" aria-hidden="true">↗</span>
+            </button>
 
             <div class="home-actions">
               <button id="btn-continue" class="tile home-game-action">
-                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 5 9 7-9 7z" /></svg>
                 <span><b id="continue-title">继续对局</b><small id="continue-sub"></small></span>
+                <span class="game-action-arrow" aria-hidden="true">→</span>
               </button>
             </div>
           </section>
@@ -142,6 +146,7 @@
               <div class="moves" id="moves"></div>
             </div>
             <div class="board-wrap">
+              <div class="review-progress hidden" id="review-progress"><div class="review-progress-track" id="review-progress-track"></div></div>
               <div class="evalbar hidden" id="evalbar" role="meter" aria-label="局面评估（白方视角）" aria-valuemin="0" aria-valuemax="100"><div class="fill" id="evalbar-fill"></div><span id="evalbar-text"></span></div>
               <div class="board-box"><div id="board" class="cg-wrap"></div></div>
             </div>
@@ -157,7 +162,6 @@
                 <div class="hint" id="hint-box"></div>
               </div>
               <div class="tab hidden" id="tab-review">
-                <div class="review-progress hidden" id="review-progress"><div class="review-progress-track" id="review-progress-track"></div><small id="review-progress-label"></small></div>
                 <div class="review-ctrl">
                   <button type="button" id="btn-autoplay" class="rc-btn" aria-label="自动播放" title="自动播放（空格）"></button>
                   <span class="rc-sep"></span>

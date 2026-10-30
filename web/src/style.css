@@ -114,6 +114,7 @@ button {
   transition:
     background 0.12s,
     transform 0.08s,
+    scale 0.08s,
     box-shadow 0.08s;
 }
 button:hover {
@@ -121,7 +122,7 @@ button:hover {
   color: var(--text);
 }
 button:active {
-  transform: translateY(2px);
+  scale: 0.97;
   box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.25);
 }
 button:disabled {
@@ -456,28 +457,59 @@ input[type='checkbox'] {
   color: var(--text);
   background: var(--panel3);
 }
-.pc {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  font-size: 22px;
-  line-height: 1;
+#home-color {
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel2);
 }
-.pc.w {
-  background: #fff;
-  color: #312e2b;
+#home-color button {
+  min-height: 40px;
+  flex-direction: row;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  color: var(--muted);
+  font-size: 13px;
 }
-.pc.b {
-  background: #1a1917;
-  color: #fff;
+#home-color button:hover {
+  background: var(--panel3);
+  color: var(--text);
 }
-.pc.r {
-  background: linear-gradient(135deg, #fff 50%, #1a1917 50%);
-  color: var(--green);
-  font-weight: 900;
-  font-size: 18px;
+#home-color button.active {
+  background: color-mix(in srgb, var(--green) 15%, var(--panel2));
+  color: var(--green-hover);
+}
+#home-color button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: -2px;
+}
+#home-color .color-dot {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border-radius: 50%;
+}
+.color-dot-white {
+  background: #f3f3ed;
+  border: 1px solid #b6b8ae;
+}
+.color-dot-black {
+  background: #242724;
+  border: 1px solid #747970;
+}
+#home-color svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .home-actions {
   display: flex;
@@ -520,17 +552,66 @@ input[type='checkbox'] {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.home-game-action {
+/* 首页对局入口：扁平描边，主入口随可继续状态切换。 */
+button.home-game-action {
   width: 100%;
-  min-height: 44px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 700;
+  min-height: 48px;
+  align-self: center;
+  transform: none;
+  scale: none;
+  transform-origin: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel2);
+  color: var(--text2);
+  box-shadow: none;
+  text-shadow: none;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 650;
 }
-#btn-continue { gap: 8px; }
-#btn-continue svg { width: 20px; height: 20px; }
-#btn-continue span { line-height: 1.25; }
+button.home-game-action.primary {
+  border-color: var(--green);
+  background: color-mix(in srgb, var(--green) 12%, var(--bg));
+  color: var(--green-hover);
+}
+button.home-game-action:hover {
+  background: var(--panel3);
+  box-shadow: none;
+}
+button.home-game-action.primary:hover {
+  background: color-mix(in srgb, var(--green) 20%, var(--bg));
+}
+button.home-game-action:active {
+  transform: scale(0.97);
+  scale: none;
+  box-shadow: none;
+}
+button.home-game-action:focus-visible {
+  outline: 2px solid var(--green-hover);
+  outline-offset: 3px;
+}
+.home-game-action svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: inherit;
+}
+.home-game-action .game-action-arrow {
+  margin-left: auto;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+}
+#btn-continue span { line-height: 1.35; }
 #btn-continue small { font-size: 11px; }
 .home-foot {
   text-align: center;
@@ -928,6 +1009,42 @@ html:not(.native) .native-only {
   font-variant-numeric: tabular-nums;
 }
 
+#game[data-mode='review'] .board-wrap {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  column-gap: 6px;
+  row-gap: 10px;
+}
+#game[data-mode='review'] .review-progress {
+  grid-column: 2;
+  grid-row: 1;
+  padding: 3px 8px 0;
+}
+#game[data-mode='review'] .board-box {
+  grid-column: 2;
+  grid-row: 2;
+}
+#game[data-mode='review'] .evalbar {
+  grid-column: 1;
+  grid-row: 2;
+  width: 18px;
+  height: auto;
+  align-self: stretch;
+  flex-direction: column-reverse;
+}
+#game[data-mode='review'] .evalbar .fill {
+  width: 100%;
+  height: var(--white-share, 50%);
+  transition: height 0.4s;
+}
+#game[data-mode='review'] .evalbar span {
+  inset: 50% 0 auto;
+  transform: translateY(-50%);
+  padding: 3px 0;
+  writing-mode: vertical-rl;
+  text-align: center;
+}
+
 .side {
   grid-row: 2;
   flex: none;
@@ -1218,7 +1335,16 @@ html:not(.native) .native-only {
   display: none;
 }
 .review-progress {
-  padding: 8px 2px 0;
+  width: 100%;
+  min-width: 0;
+  flex: none;
+  padding: 4px 8px 3px;
+}
+#game.guided-review .move-bar {
+  display: none;
+}
+#game.guided-review .board-wrap {
+  margin-top: 0;
 }
 .review-progress-track {
   position: relative;
@@ -1245,15 +1371,11 @@ html:not(.native) .native-only {
 }
 .review-marker.done { background: var(--green); }
 .review-marker.current { box-shadow: 0 0 0 3px color-mix(in srgb, var(--yellow) 25%, transparent); }
-.review-progress small {
-  display: block;
-  margin-top: 6px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
 /* Guided review uses the three card actions only. */
-.guided-review + .review-ctrl,
-.guided-review ~ .review-ctrl {
+#game.guided-review .review-ctrl,
+#game[data-mode='review'] .toolbar,
+#game.guided-review #moves,
+#game.review-autoplay #moves {
   display: none;
 }
 .review-moment {
@@ -1265,7 +1387,7 @@ html:not(.native) .native-only {
   font-variant-numeric: tabular-nums;
 }
 .review-moment h3 {
-  margin: 8px 0;
+  margin: 0 0 8px;
   font-size: 19px;
 }
 .review-moment p {
@@ -1898,6 +2020,7 @@ dialog input[type='color'] {
 
   #game .board-col {
     align-self: end;
+    justify-self: center;
   }
 
   #game[data-mode='review'] .game-main {
@@ -2871,5 +2994,56 @@ html[data-theme='light'] .review-ctrl .rc-btn:hover {
     align-self: center;
     justify-content: center;
     padding-bottom: 24px;
+  }
+}
+
+/* 统一按压反馈；仅主操作保留描边，工具和设置按钮使用无边框表面。 */
+@layer button-contract {
+  button {
+    border: 1px solid transparent !important;
+    border-radius: 12px !important;
+    background: var(--panel2) !important;
+    color: var(--text2) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    outline: none !important;
+    transform: none !important;
+    transform-origin: center !important;
+    scale: none !important;
+    transition: background 0.12s, transform 0.08s !important;
+  }
+  button:is(.primary, .home-game-action):not(#dlg-settings button, #dlg-menu button, #dlg-aids button, #dlg-avatar button, #game button) {
+    border-color: var(--line) !important;
+  }
+  button.primary:not(#dlg-settings button, #dlg-menu button, #dlg-aids button, #dlg-avatar button, #game button) {
+    border-color: var(--green) !important;
+  }
+  #game button,
+  :is(#dlg-settings, #dlg-menu, #dlg-aids, #dlg-avatar) button {
+    border: 0 !important;
+  }
+  #game button:not(.primary, .active, .on, [aria-pressed='true']),
+  :is(#dlg-settings, #dlg-menu, #dlg-aids, #dlg-avatar) button:not(.primary, .active, .on, [aria-pressed='true']),
+  button.icon:not(.primary, .active, .on, [aria-pressed='true']) {
+    background: transparent !important;
+  }
+  button:is(.primary, .active, .on, [aria-pressed='true']) {
+    background: color-mix(in srgb, var(--green) 12%, var(--bg)) !important;
+    color: var(--green-hover) !important;
+  }
+  button:hover {
+    background: var(--panel3) !important;
+    color: var(--text) !important;
+  }
+  button:is(.primary, .active, .on, [aria-pressed='true']):hover {
+    background: color-mix(in srgb, var(--green) 20%, var(--bg)) !important;
+    color: var(--green-hover) !important;
+  }
+  button:active:not(:disabled, [aria-disabled='true']) {
+    transform: scale(0.97) !important;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--green-hover) !important;
+    outline-offset: -3px !important;
   }
 }

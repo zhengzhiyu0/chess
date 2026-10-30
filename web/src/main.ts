@@ -722,12 +722,12 @@ function renderReviewProgress() {
     return `<i class="review-marker${state}" style="left:${left}%" title="关键节点 ${i + 1}"></i>`;
   }).join('');
   box.classList.remove('hidden');
-  $('review-progress-label').textContent = tour.phase === 'done' ? '回顾完成' : `${Math.min(realOf(node).ply, total)} / ${total} · ${tour.phase === 'trailing' ? '回看关键点后续' : tour.moments.length ? `关键节点 ${Math.min(tour.index + 1, tour.moments.length)} / ${tour.moments.length}` : '完整棋谱回看'}`;
 }
 
 function renderReviewMoment() {
   const box = $('review-moment');
   const visible = mode === 'review' && Boolean(pendingReviewGame === gameId || reviewTour);
+  $('game').classList.toggle('guided-review', visible);
   box.classList.toggle('hidden', !visible);
   $('tab-review').classList.toggle('guided-review', visible);
   if (!visible) {
@@ -763,7 +763,7 @@ function renderReviewMoment() {
   const explanation = answer
     ? `${tour.feedback ? `${escapeHtml(tour.feedback)}<br>` : ''}推荐走 ${bestSan}。${ins?.better[0] || ''}<br>请在棋盘上尝试推荐着法，或点继续回看实战。`
     : waiting ? `${problem}<br>先想一想，再点查看揭示推荐走法。` : '正在快速播放棋局…';
-  box.innerHTML = `<small>${waiting ? '关键时刻 · 已暂停' : answer ? '请走推荐着法' : '播放中 · 每步 350 毫秒'}</small><h3>${heading}</h3><p>${explanation}</p>${actions}`;
+  box.innerHTML = `${waiting ? '' : `<small>${answer ? '请走推荐着法' : '播放中 · 每步 350 毫秒'}</small>`}<h3>${heading}</h3><p>${explanation}</p>${actions}`;
 }
 
 function autoplayOn() {
@@ -843,6 +843,7 @@ function renderAutoplay() {
   const btn = $<HTMLButtonElement>('btn-autoplay');
   btn.disabled = gameLoading || pendingReviewGame === gameId || Boolean(reviewTour && !autoplayOn() && (reviewTour.phase === 'waiting' || reviewTour.phase === 'answer'));
   const on = autoplayOn();
+  $('game').classList.toggle('review-autoplay', mode === 'review' && on);
   btn.classList.toggle('on', on);
   btn.setAttribute('aria-label', on ? '暂停' : '自动播放');
   btn.innerHTML = on
@@ -2570,7 +2571,9 @@ function renderEvalBar() {
   bar.classList.toggle('hidden', mode !== 'review' && !settings.aidEval);
   const white = e?.white ?? 50;
   $('game').classList.toggle('has-eval', mode === 'review' || settings.aidEval);
-  $('evalbar-fill').style.width = `${white}%`;
+  const fill = $('evalbar-fill');
+  fill.style.width = mode === 'review' ? '100%' : `${white}%`;
+  fill.style.setProperty('--white-share', `${white}%`);
   $('evalbar-text').textContent = e?.text ?? '…';
   bar.setAttribute('aria-label', e ? `白方视角评估 ${e.text}` : '正在分析局面');
   bar.setAttribute('aria-valuenow', String(Math.round(white)));

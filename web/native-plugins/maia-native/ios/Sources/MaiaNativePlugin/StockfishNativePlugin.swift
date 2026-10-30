@@ -27,16 +27,41 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
         private var pending: [String] = []
         private let lock = NSLock()
         private var scheduled = false
+        private var hasStarted = false
+        private var startupStart: UInt64?
+        private var firstOutputSeen = false
+
+        func beginStartup() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            if hasStarted { return true }
+            hasStarted = true
+            startupStart = NativeRuntimeLog.now()
+            return false
+        }
 
         init(flavour: String) { self.flavour = flavour }
 
         func push(_ line: String) {
             lock.lock()
+            var startupMessage: String?
+            if let startupStart {
+                if line == "uciok" {
+                    // The C bridge loads NNUE before processing UCI. This interval also includes
+                    // engine initialization and command queueing; it is not an isolated NNUE timer.
+                    startupMessage = "startup handshake uciok engine=\(flavour) startup_handshake_ms=\(NativeRuntimeLog.elapsed(startupStart)) includes=initialization/possibly_NNUE_loading NNUE_only_ms=unavailable"
+                    self.startupStart = nil
+                } else if !firstOutputSeen {
+                    firstOutputSeen = true
+                    startupMessage = "first output engine=\(flavour) since_start_ms=\(NativeRuntimeLog.elapsed(startupStart))"
+                }
+            }
             pending.append(line)
             let urgent = line.hasPrefix("bestmove") || line == "readyok" || line == "uciok"
             let schedule = !urgent && !scheduled
             if schedule { scheduled = true }
             lock.unlock()
+            if let startupMessage { NativeRuntimeLog.record(startupMessage, subsystem: "Stockfish") }
             if urgent {
                 flush()
             } else if schedule {
@@ -92,18 +117,28 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func start(_ call: CAPPluginCall) {
+        let requested = NativeRuntimeLog.now()
         guard let f = flavour(call), let box = Self.outboxes[f], let netName = Self.nets[f] else {
+            NativeRuntimeLog.record("start failed reason=unknown_engine total_ms=\(NativeRuntimeLog.elapsed(requested))", subsystem: "Stockfish")
             return call.reject("unknown engine")
         }
+        let context = "engine=\(f) network=\(netName)"
+        NativeRuntimeLog.record("start requested \(context)", subsystem: "Stockfish")
+        let resourceStart = NativeRuntimeLog.now()
         guard let net = Bundle.main.path(forResource: netName, ofType: "nnue", inDirectory: "public/native") else {
+            NativeRuntimeLog.record("start failed \(context) stage=NNUE_resource resource_ms=\(NativeRuntimeLog.elapsed(resourceStart)) total_ms=\(NativeRuntimeLog.elapsed(requested)) reason=network_not_bundled", subsystem: "Stockfish")
             return call.reject("network \(netName).nnue is missing from the app bundle")
         }
+        NativeRuntimeLog.record("NNUE resource found \(context) resource_ms=\(NativeRuntimeLog.elapsed(resourceStart))", subsystem: "Stockfish")
         box.plugin = self
         let ctx = Unmanaged.passUnretained(box).toOpaque()
+        let reused = box.beginStartup()
+        let dispatchStart = NativeRuntimeLog.now()
         net.withCString { path in
             if f == "full" { sf_full_start(path, Self.onLine, ctx) } else { sf_lite_start(path, Self.onLine, ctx) }
         }
         started.insert(f)
+        NativeRuntimeLog.record("start dispatched \(context) reused=\(reused) dispatch_ms=\(NativeRuntimeLog.elapsed(dispatchStart)) total_ms=\(NativeRuntimeLog.elapsed(requested)) ready=pending_uci_handshake", subsystem: "Stockfish")
         call.resolve()
     }
 

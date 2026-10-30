@@ -155,6 +155,7 @@ let coachDialogue = new CoachDialogue();
 let dialogueCtrl: AbortController | null = null;
 let dialogueAnalysis = new WeakMap<Node, SfResult>();
 let gameLoading = false;
+let gameLoadingFailed = false;
 /** Invalidates a pending entry when leaving, changing modes, or starting another game. */
 let gameEntry = 0;
 let shownResult = '';
@@ -370,7 +371,7 @@ function dests(c: Chess): Map<Key, Key[]> {
 
 function canUserMove(): boolean {
   if (gameLoading) return false;
-  if (mode === 'review') return reviewTour?.phase === 'answer' && pendingReviewGame !== gameId;
+  if (mode === 'review') return reviewTour?.phase === 'answer' && node === currentReviewMoment()?.parent && pendingReviewGame !== gameId;
   return node === tip() && result === '' && !maiaThinking && turnOf(node.fen) === userColor;
 }
 
@@ -405,6 +406,13 @@ const showSide = (n: Node) => settings.reviewOpponent || imported || Boolean(n.x
 
 /** Review arrows: after a bad move, the move that should have been played; plus the best (and typical human) move for the side to move now. */
 function reviewArrows(): ReviewArrow[] {
+  if (pendingReviewGame === gameId || reviewTour) {
+    const current = currentReviewMoment();
+    const best = current?.parent?.a.eval?.best;
+    return reviewTour?.phase === 'answer' && node === current?.parent && best
+      ? [{ uci: best, kind: 'best', text: `最佳 ${sanOf(node.fen, best)}` }]
+      : [];
+  }
   const out: ReviewArrow[] = [];
   const p = node.parent;
   const r = p && showMove(node) ? reviewOf(node) : null;
@@ -531,21 +539,26 @@ let autoTimer = 0;
 /** true while an autoplay step is moving the board (autoTimer is momentarily 0 then) */
 let autoStepping = false;
 type ReviewTour = {
+  line: Node[];
   moments: Node[];
   index: number;
-  phase: 'playing' | 'waiting' | 'answer' | 'done';
-  regularMoves: number;
+  phase: 'playing' | 'waiting' | 'answer' | 'trailing' | 'done';
   feedback: string;
 };
 let pendingReviewGame: string | null = null;
 let reviewTour: ReviewTour | null = null;
 
-const reviewReadMs = () => settings.autoplayMs >= 7000 ? 8000 : settings.autoplayMs >= 5000 ? 6000 : 4000;
-const reviewStepDelay = () => Math.max(350, Math.round(Math.min(1800, reviewReadMs() / 2) * Math.pow(0.88, reviewTour?.regularMoves ?? 0)));
+const REVIEW_STEP_MS = 350;
+let autoEpoch = 0;
 
-function clearReviewTour() {
+function cancelAutoplayTimer() {
   clearTimeout(autoTimer);
   autoTimer = 0;
+  autoEpoch++;
+}
+
+function clearReviewTour() {
+  cancelAutoplayTimer();
   pendingReviewGame = null;
   reviewTour = null;
   if (demo?.key === 'tour-best') demo = null;
@@ -565,28 +578,35 @@ function startGuidedReview() {
   if (analysisStatus === 'complete') beginReviewTour();
   else {
     update();
-    if (!batchCtrl && !gameLoading) void analyseGame();
+    if ((!batchCtrl || batchCtrl.signal.aborted) && !gameLoading) void analyseGame();
   }
 }
 
 function beginReviewTour() {
-  if (pendingReviewGame !== gameId || mode !== 'review' || screen !== 'game' || analysisStatus !== 'complete') return;
+  if (gameLoading || document.hidden || pendingReviewGame !== gameId || mode !== 'review' || screen !== 'game' || analysisStatus !== 'complete') return;
   pendingReviewGame = null;
-  const moments = tourMoments();
-  reviewTour = { moments, index: 0, phase: moments.length ? 'playing' : 'done', regularMoves: 0, feedback: '' };
-  if (!moments.length) {
-    update();
-    return;
-  }
+  const line = gameLine();
+  const moments = tourMoments().filter((n) => line.includes(n));
+  reviewTour = { line, moments, index: 0, phase: 'playing', feedback: '' };
+  demo = null;
+  liveCtrl?.abort();
+  liveLines = [];
   autoStepping = true;
-  goto(tree.root, true);
+  goto(line[0], true);
   autoStepping = false;
-  scheduleReviewStep(350);
+  scheduleReviewStep();
 }
 
-function scheduleReviewStep(delay = reviewStepDelay()) {
-  clearTimeout(autoTimer);
-  autoTimer = window.setTimeout(autoplayStep, delay);
+function scheduleReviewStep(delay = REVIEW_STEP_MS) {
+  cancelAutoplayTimer();
+  if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden) return renderAutoplay();
+  const epoch = autoEpoch;
+  const tour = reviewTour;
+  const id = gameId;
+  autoTimer = window.setTimeout(() => {
+    if (epoch !== autoEpoch || tour !== reviewTour || id !== gameId) return;
+    autoplayStep();
+  }, delay);
   renderAutoplay();
 }
 
@@ -607,10 +627,15 @@ function waitForReviewMove() {
 
 function showReviewBetter() {
   const tour = reviewTour;
+  if (!tour || tour.phase === 'done' || tour.phase === 'trailing') return;
+  if (tour.phase === 'answer') return advanceReviewMoment();
   const current = currentReviewMoment();
   const best = current?.parent?.a.eval?.best;
-  if (!tour || !current || !best || best === current.uci) return scheduleReviewStep(0);
+  if (!current) return;
+  if (!best || best === current.uci) return advanceReviewMoment();
+  cancelAutoplayTimer();
   tour.phase = 'answer';
+  tour.feedback = '';
   demo = null;
   autoStepping = true;
   goto(current.parent!, true);
@@ -620,6 +645,7 @@ function showReviewBetter() {
 
 function finishReviewTour() {
   if (!reviewTour) return;
+  cancelAutoplayTimer();
   reviewTour.phase = 'done';
   reviewTour.feedback = '';
   demo = null;
@@ -628,19 +654,34 @@ function finishReviewTour() {
 }
 
 function showTourMoment(index: number) {
-  if (!reviewTour || !reviewTour.moments[index]) return;
-  clearTimeout(autoTimer);
-  autoTimer = 0;
-  reviewTour.index = index;
-  reviewTour.phase = 'playing';
-  reviewTour.regularMoves = 0;
-  reviewTour.feedback = '';
+  const tour = reviewTour;
+  const target = tour?.moments[index];
+  if (!tour || !target) return;
+  cancelAutoplayTimer();
+  tour.index = index;
+  tour.phase = 'playing';
+  tour.feedback = '';
   demo = null;
-  const target = reviewTour.moments[index];
   autoStepping = true;
   goto(target.parent ?? target, true);
   autoStepping = false;
-  scheduleReviewStep(350);
+  scheduleReviewStep();
+}
+
+/** Always leave a tried answer via its recorded move, never via the answer's variation. */
+function advanceReviewMoment(schedule = true) {
+  const tour = reviewTour;
+  const current = currentReviewMoment();
+  if (!tour || !current || tour.phase === 'done' || tour.phase === 'trailing') return;
+  cancelAutoplayTimer();
+  tour.index++;
+  tour.phase = tour.index < tour.moments.length ? 'playing' : 'trailing';
+  tour.feedback = '';
+  demo = null;
+  autoStepping = true;
+  goto(current, true);
+  autoStepping = false;
+  if (schedule) scheduleReviewStep();
 }
 
 function handleReviewMove(from: Node, uci: string): boolean {
@@ -660,21 +701,7 @@ function handleReviewMove(from: Node, uci: string): boolean {
   tour.feedback = `很好，${answer.san} 是更好的选择。`;
   play(soundForSan(answer.san));
   update();
-  clearTimeout(autoTimer);
-  autoTimer = window.setTimeout(() => {
-    if (!reviewTour || currentReviewMoment() !== current || mode !== 'review') return;
-    tour.index++;
-    tour.regularMoves = 0;
-    if (tour.index >= tour.moments.length) {
-      finishReviewTour();
-      return;
-    }
-    node = current;
-    tour.phase = 'playing';
-    tour.feedback = '';
-    update();
-    scheduleReviewStep(700);
-  }, 700);
+  scheduleReviewStep();
   return true;
 }
 
@@ -687,7 +714,7 @@ function renderReviewProgress() {
     track.innerHTML = '';
     return;
   }
-  const total = Math.max(1, gameLine().length);
+  const total = Math.max(1, tour.line.length - 1);
   const current = Math.min(100, (realOf(node).ply / total) * 100);
   track.innerHTML = `<span class="review-progress-fill" style="width:${current}%"></span>` + tour.moments.map((n, i) => {
     const left = Math.min(100, (n.ply / total) * 100);
@@ -695,7 +722,7 @@ function renderReviewProgress() {
     return `<i class="review-marker${state}" style="left:${left}%" title="关键节点 ${i + 1}"></i>`;
   }).join('');
   box.classList.remove('hidden');
-  $('review-progress-label').textContent = tour.phase === 'done' ? '回顾完成' : `${Math.min(realOf(node).ply, total)} / ${total} · 关键节点 ${Math.min(tour.index + 1, tour.moments.length)} / ${tour.moments.length}`;
+  $('review-progress-label').textContent = tour.phase === 'done' ? '回顾完成' : `${Math.min(realOf(node).ply, total)} / ${total} · ${tour.phase === 'trailing' ? '回看关键点后续' : tour.moments.length ? `关键节点 ${Math.min(tour.index + 1, tour.moments.length)} / ${tour.moments.length}` : '完整棋谱回看'}`;
 }
 
 function renderReviewMoment() {
@@ -707,32 +734,36 @@ function renderReviewMoment() {
     box.innerHTML = '';
     return;
   }
+  const report = '<button data-tour="report" class="tour-report">回到总复盘</button>';
   if (pendingReviewGame === gameId) {
     const failed = analysisStatus === 'failed' || analysisStatus === 'interrupted';
-    box.innerHTML = `<b>${failed ? '分析尚未完成' : '正在分析这局棋…'}</b><p>${failed ? escapeHtml(analysisError || '完成分析后再开始互动复盘。') : '准备关键节点…'}</p>`;
+    box.innerHTML = `<b>${failed ? '分析尚未完成' : '正在分析这局棋…'}</b><p>${failed ? escapeHtml(analysisError || '完成分析后再开始互动复盘。') : '准备关键节点…'}</p>${failed ? '<button data-tour="retry" class="primary">重试分析</button>' : ''}${report}`;
     return;
   }
   const tour = reviewTour!;
-  if (tour.phase === 'done') {
-    const actions = '<button data-tour="view" class="primary">查看</button><button data-tour="prev">返回上一个</button><button data-tour="next">继续下一个</button>';
-    box.innerHTML = `<b>互动复盘完成</b><p>所有关键节点都已走过。</p><div class="moment-actions">${actions}</div>`;
+  const n = currentReviewMoment();
+  const answer = tour.phase === 'answer';
+  const done = tour.phase === 'done';
+  const trailing = tour.phase === 'trailing';
+  const actions = `<div class="moment-actions"><button data-tour="prev" class="tour-prev"${tour.index > 0 && tour.moments.length ? '' : ' disabled'}>返回上一个</button><button data-tour="view" class="tour-view primary"${!n || done || trailing ? ' disabled' : ''}>${answer ? '继续' : '查看'}</button><button data-tour="next" class="tour-next"${done ? ' disabled' : ''}>继续下一个</button></div>${report}`;
+  if (done || trailing || !n) {
+    box.innerHTML = `<b>${done ? '互动复盘完成' : trailing ? '回看关键点后续' : '快速回看棋局'}</b><p>${done ? '本轮回顾已完成。' : trailing ? '沿实战棋谱播放至下一次将军或棋局末尾。' : '本局没有需要停下的关键节点，正在快速播放完整棋谱。'}</p>${actions}`;
     return;
   }
-  const n = currentReviewMoment()!;
   const r = reviewOf(n)!;
   const ins = insightOf(n);
   const p = n.parent!;
   const waiting = tour.phase === 'waiting';
-  const answer = tour.phase === 'answer';
   const num = `${moveNumberOf(p.fen)}${turnOf(p.fen) === 'w' ? '.' : '…'}`;
   const tag = SEVERITY[r.judgement] ? learningTag(n) : null;
-  const problem = ins?.problem[0] || (tag ? `${escapeHtml(tag.label)}。${escapeHtml(checkForTag(tag.id))}` : '这步棋还有更好的选择。');
+  const problem = ins?.problem[0] || (tag ? `${tag.label}。${checkForTag(tag.id)}` : '这步棋还有更好的选择。');
   const best = p.a.eval?.best;
-  const better = best && best !== n.uci ? `更好的走法：${escapeHtml(sanOf(p.fen, best))}${ins?.better[0] ? `。${ins.better[0]}` : ''}` : '这步棋是当前分析中的最佳选择。';
-  const heading = waiting ? `${num} ${escapeHtml(n.san)} · ${JUDGEMENT_INFO[r.judgement].label}` : answer ? `更好的选择：${escapeHtml(sanOf(p.fen, best!))}` : `${num} ${escapeHtml(n.san)} · ${JUDGEMENT_INFO[r.judgement].label}`;
-  const explanation = waiting ? `${problem}<br><b>${better}</b>` : answer ? `推荐走 ${escapeHtml(sanOf(p.fen, best!))}。` : '正在播放棋局…';
-  const actions = '<button data-tour="view" class="primary">查看</button><button data-tour="prev">返回上一个</button><button data-tour="next">继续下一个</button>';
-  box.innerHTML = `<small>${waiting ? '关键时刻 · 已暂停' : answer ? '请走推荐着法' : '播放中 · 普通着法会逐渐加快'}</small><h3>${heading}</h3><p>${explanation}</p><div class="moment-actions">${actions}</div>`;
+  const bestSan = best ? escapeHtml(sanOf(p.fen, best)) : '';
+  const heading = answer ? `更好的选择：${bestSan}` : `${num} ${escapeHtml(n.san)} · ${JUDGEMENT_INFO[r.judgement].label}`;
+  const explanation = answer
+    ? `${tour.feedback ? `${escapeHtml(tour.feedback)}<br>` : ''}推荐走 ${bestSan}。${ins?.better[0] || ''}<br>请在棋盘上尝试推荐着法，或点继续回看实战。`
+    : waiting ? `${problem}<br>先想一想，再点查看揭示推荐走法。` : '正在快速播放棋局…';
+  box.innerHTML = `<small>${waiting ? '关键时刻 · 已暂停' : answer ? '请走推荐着法' : '播放中 · 每步 350 毫秒'}</small><h3>${heading}</h3><p>${explanation}</p>${actions}`;
 }
 
 function autoplayOn() {
@@ -740,10 +771,11 @@ function autoplayOn() {
 }
 
 function stopAutoplay() {
-  clearTimeout(autoTimer);
-  autoTimer = 0;
+  cancelAutoplayTimer();
+  // A cancelled pending analysis must not start a tour later in the background.
+  pendingReviewGame = null;
   renderAutoplay();
-  if (liveOn) void runLive();
+  if (liveOn && !gameLoading && !document.hidden) void runLive();
 }
 
 function autoplayEnd() {
@@ -754,32 +786,23 @@ function autoplayEnd() {
 function autoplayStep() {
   autoTimer = 0;
   const tour = reviewTour;
-  if (mode !== 'review' || screen !== 'game' || document.hidden) return autoplayEnd();
+  if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden) return autoplayEnd();
   if (tour) {
     if (tour.phase === 'waiting') return update();
-    if (tour.phase === 'answer') {
-      const current = currentReviewMoment();
-      if (!current) return finishReviewTour();
-      tour.index++;
-      tour.regularMoves = 0;
-      if (tour.index >= tour.moments.length) return finishReviewTour();
-      tour.phase = 'playing';
-      autoStepping = true;
-      goto(current, true);
-      autoStepping = false;
-      scheduleReviewStep(700);
-      return;
-    }
+    if (tour.phase === 'answer') advanceReviewMoment(false);
     if (tour.phase === 'done') return autoplayEnd();
     const target = currentReviewMoment();
-    const next = mainChild(node);
-    if (target && target === node) return waitForReviewMove();
+    if (target === node) return waitForReviewMove();
+    const position = tour.line.indexOf(node);
+    const next = position >= 0 ? tour.line[position + 1] : undefined;
     if (!next) return finishReviewTour();
     autoStepping = true;
     goto(next, true);
     autoStepping = false;
     play(soundForSan(next.san));
-    tour.regularMoves++;
+    if (tour.phase === 'trailing' && chessOf(next).inCheck()) return finishReviewTour();
+    if (next === tour.line[tour.line.length - 1] && !currentReviewMoment()) return finishReviewTour();
+    if (next === target) return waitForReviewMove();
     scheduleReviewStep();
     return;
   }
@@ -794,16 +817,17 @@ function autoplayStep() {
     autoStepping = false;
     play(soundForSan(next.san));
   }
-  autoTimer = window.setTimeout(autoplayStep, reviewReadMs());
-  renderAutoplay();
+  scheduleReviewStep();
 }
 
 function toggleAutoplay() {
   if (autoplayOn()) return stopAutoplay();
+  if (gameLoading || pendingReviewGame === gameId || document.hidden) return;
   unlockAudio();
   if (reviewTour) {
-    if (reviewTour.phase === 'done') return showTourMoment(0);
-    scheduleReviewStep(350);
+    if (reviewTour.phase === 'done') return startGuidedReview();
+    if (reviewTour.phase === 'waiting' || reviewTour.phase === 'answer') return;
+    scheduleReviewStep();
     liveCtrl?.abort();
     return;
   }
@@ -811,21 +835,19 @@ function toggleAutoplay() {
     if (demo) stepDemo(-99);
     else goto(tree.root, true);
   }
-  autoTimer = window.setTimeout(autoplayStep, 350);
+  scheduleReviewStep();
   liveCtrl?.abort();
-  renderAutoplay();
 }
 
 function renderAutoplay() {
   const btn = $<HTMLButtonElement>('btn-autoplay');
-  btn.disabled = pendingReviewGame === gameId || Boolean(reviewTour && (reviewTour.phase === 'waiting' || reviewTour.phase === 'answer'));
+  btn.disabled = gameLoading || pendingReviewGame === gameId || Boolean(reviewTour && !autoplayOn() && (reviewTour.phase === 'waiting' || reviewTour.phase === 'answer'));
   const on = autoplayOn();
   btn.classList.toggle('on', on);
   btn.setAttribute('aria-label', on ? '暂停' : '自动播放');
   btn.innerHTML = on
     ? '<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>'
     : '<svg viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
-  $<HTMLSelectElement>('autoplay-speed').value = String(reviewReadMs());
 }
 
 function askPromotion(color: Color): Promise<string> {
@@ -1217,7 +1239,7 @@ function assistOk(what: string): boolean {
 
 function undo() {
   const t = tip();
-  if (t === tree.root || mode !== 'play') return;
+  if (gameLoading || t === tree.root || mode !== 'play') return;
   if (result) {
     setStatus('对局已结束，不能悔棋');
     return;
@@ -1245,7 +1267,7 @@ function undo() {
 
 async function hint() {
   const t = tip();
-  if (result !== '' || mode !== 'play') return;
+  if (gameLoading || screen !== 'game' || result !== '' || mode !== 'play') return;
   // A hint is for the user's move, never Maia's reply.
   if (turnOf(t.fen) !== userColor || maiaThinking) return;
   if (!assistOk('提示')) return;
@@ -1428,7 +1450,7 @@ async function evalNode(s: Stockfish, n: Node, signal: AbortSignal, effort: 'sca
 
 /** Review mode quickly scans the game, deepens its three main issues, then starts live analysis. */
 function startReview() {
-  if (mode !== 'review' || screen !== 'game') return;
+  if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden) return;
   liveOn = true;
   if (analysisStatus === 'complete') {
     beginReviewTour();
@@ -1438,6 +1460,7 @@ function startReview() {
 }
 
 async function analyseGame() {
+  if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden) return;
   batchCtrl?.abort();
   const ctrl = new AbortController();
   batchCtrl = ctrl;
@@ -1517,7 +1540,7 @@ async function analyseGame() {
  * it, computed when a position is viewed rather than for the whole game up front.
  */
 async function reviewHuman() {
-  if (mode !== 'review' || screen !== 'game' || autoplayOn()) return;
+  if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden || autoplayOn()) return;
   // a single resident engine: loading Maia now would evict Stockfish mid-search
   const busy = (batchCtrl && !batchCtrl.signal.aborted) || (liveCtrl && !liveCtrl.signal.aborted);
   if (singleEngine() && busy) return;
@@ -1598,7 +1621,7 @@ function setLive(on: boolean) {
 const singleEngine = () => !isNative && settings.lowMemory && !settings.sfLite;
 
 async function runLive() {
-  if (reviewTour || pendingReviewGame === gameId) return;
+  if (gameLoading || screen !== 'game' || document.hidden || reviewTour || pendingReviewGame === gameId) return;
   // with a single resident engine, Maia must wait until the live search is done
   const early = !singleEngine();
   if (early) void reviewHuman();
@@ -1610,7 +1633,7 @@ async function liveSearch() {
   liveCtrl?.abort();
   liveLines = [];
   renderLines();
-  if (!liveOn || mode !== 'review' || (batchCtrl && !batchCtrl.signal.aborted)) return;
+  if (gameLoading || screen !== 'game' || !liveOn || mode !== 'review' || (batchCtrl && !batchCtrl.signal.aborted)) return;
   const n = node;
   if (n.a.live) {
     liveLines = n.a.live;
@@ -1876,6 +1899,9 @@ function backToReport(): boolean {
 function openReport() {
   stopAutoplay();
   clearReviewTour();
+  renderReviewMoment();
+  renderReviewProgress();
+  renderAutoplay();
   reportOpen = true;
   returnToReport = false;
   renderBackTarget();
@@ -2284,14 +2310,15 @@ async function prepareAids() {
 
 function setGameLoading(loading: boolean, failed = false) {
   gameLoading = loading;
-  const overlay = $('engine-loading');
-  overlay.classList.toggle('hidden', !loading);
-  overlay.classList.toggle('failed', failed);
-  $('engine-loading-title').textContent = failed ? '引擎暂时未能就绪' : '正在准备对局';
-  $('engine-loading-note').textContent = failed ? '请重试，或返回首页稍后再来' : '引擎加载完成后将自动开始';
-  $('btn-engine-retry').classList.toggle('hidden', !failed);
+  gameLoadingFailed = loading && failed;
+  const notice = $('engine-loading');
+  notice.classList.toggle('hidden', !gameLoadingFailed);
+  notice.classList.toggle('failed', gameLoadingFailed);
+  $('engine-loading-title').textContent = '引擎暂时未能就绪';
+  $('engine-loading-note').textContent = '请重试，或返回首页稍后再来';
+  $('btn-engine-retry').classList.toggle('hidden', !gameLoadingFailed);
   $('game').setAttribute('aria-busy', String(loading && !failed));
-  document.querySelectorAll<HTMLElement>('#game .game-main, #game .report').forEach((el) => { el.inert = loading; });
+  renderPlayInfo();
   syncClock();
 }
 
@@ -2320,6 +2347,7 @@ function resumeGame() {
 }
 
 function runGame() {
+  if (gameLoading || screen !== 'game' || document.hidden) return;
   if (mode === 'review') return startReview();
   recordAssistance();
   void maiaTurn();
@@ -2550,7 +2578,8 @@ function renderEvalBar() {
 
 function renderPlayInfo() {
   const box = $('play-info');
-  if (result) box.textContent = `对局结束：${resultText()}`;
+  if (gameLoading) box.textContent = gameLoadingFailed ? '引擎暂不可用，可重试或返回首页' : '正在准备引擎，棋盘已就绪…';
+  else if (result) box.textContent = `对局结束：${resultText()}`;
   else if (maiaThinking) box.textContent = 'Maia 思考中…';
   else if (node !== tip()) box.textContent = '正在查看历史局面';
   else box.textContent = turnOf(node.fen) === userColor ? (cg.state.premovable.current ? '轮到你走（已预走）' : '轮到你走') : '等待 Maia';
@@ -2682,7 +2711,7 @@ function goto(n: Node | null | undefined, auto = false) {
 
 /** Starts the whole-game analysis when the shown game line (e.g. a PGN variation) has unanalysed positions. */
 function analyseMissing(): boolean {
-  if (mode !== 'review' || screen !== 'game' || (batchCtrl && !batchCtrl.signal.aborted)) return false;
+  if (gameLoading || mode !== 'review' || screen !== 'game' || (batchCtrl && !batchCtrl.signal.aborted)) return false;
   if (!gameLine().some((x) => !x.a.eval)) return false;
   void analyseGame();
   return true;
@@ -2855,7 +2884,7 @@ function openSettings() {
   const maia = engines.maia;
   $('env-info').innerHTML =
     (isNative
-      ? `引擎：原生（Stockfish C++ / NEON 多线程，Maia ONNX Runtime）　CPU 核心：${navigator.hardwareConcurrency || '?'}<br>`
+      ? `引擎：原生（Stockfish C++ / NEON 多线程，Maia CoreML）　CPU 核心：${navigator.hardwareConcurrency || '?'}<br>`
       : `跨源隔离：${self.crossOriginIsolated ? '✅（多线程可用）' : '❌（单线程）'}<br>` +
         `WebGPU：${'gpu' in navigator ? '✅' : '❌'}　CPU 核心：${navigator.hardwareConcurrency || '?'}<br>`) +
     `Stockfish：${sf ? `${sf.lite ? '轻量' : '满血'} · ${sf.multiThreaded ? sf.threads + ' 线程' : '单线程'}` : '未加载'}　` +
@@ -3299,10 +3328,7 @@ function renderHome() {
   const play = $<HTMLButtonElement>('btn-play');
   btn.disabled = !has;
   btn.classList.toggle('primary', canContinue);
-  btn.classList.toggle('big', canContinue);
-  btn.classList.toggle('resume-primary', canContinue);
   play.classList.toggle('primary', !canContinue);
-  play.classList.toggle('big', !canContinue);
   $('continue-title').textContent = canContinue ? '继续对局' : '上一局';
   const tc = clock ? `${tcId} · ` : '';
   $('continue-sub').textContent = has ? `${tc}${Math.ceil(t.ply / 2)} 回合 · ${result || '进行中'}` : '暂无';
@@ -3570,31 +3596,20 @@ function bind() {
   $('btn-report').onclick = openReport;
   $('btn-report-start').onclick = startGuidedReview;
   $('review-moment').onclick = (e) => {
-    const action = (e.target as HTMLElement).closest<HTMLElement>('[data-tour]')?.dataset.tour;
-    if (!action) return;
+    const button = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-tour]');
+    const action = button?.dataset.tour;
+    if (!action || button?.disabled) return;
     stopAutoplay();
-    if (action === 'retry') void analyseGame();
-    else if (action === 'report') openReport();
-    else if (action === 'free') {
-      clearReviewTour();
-      demo = null;
-      update();
-      if (liveOn) void runLive();
-    } else if (reviewTour) {
+    if (action === 'retry') {
+      pendingReviewGame = gameId;
+      if (!gameLoading) void analyseGame();
+    } else if (action === 'report') openReport();
+    else if (reviewTour) {
       if (action === 'view') showReviewBetter();
-      else if (action === 'prev') showTourMoment(Math.max(0, reviewTour.index - 1));
-      else if (action === 'next') {
-        if (reviewTour.phase === 'waiting' || reviewTour.phase === 'answer') {
-          const current = currentReviewMoment();
-          reviewTour.index++;
-          if (reviewTour.index >= reviewTour.moments.length) finishReviewTour();
-          else {
-            reviewTour.phase = 'playing';
-            node = current ?? node;
-            update();
-            scheduleReviewStep(0);
-          }
-        } else scheduleReviewStep(0);
+      else if (action === 'prev') showTourMoment(reviewTour.index - 1);
+      else if (action === 'next' && reviewTour.phase !== 'done') {
+        if (currentReviewMoment()) advanceReviewMoment();
+        else scheduleReviewStep();
       }
     }
   };
@@ -3649,7 +3664,7 @@ function bind() {
   // iOS 上 click 偶尔不触发，用 touchend 兜底
   reloadBtn.addEventListener('touchend', reloadForUpdate);
   document.addEventListener('keydown', (e) => {
-    if (gameLoading || screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
+    if (screen !== 'game' || (e.target as HTMLElement).closest('dialog')) return;
     // Alt+← is the browser's back; arrows in a select / input belong to that control
     if (e.altKey || e.ctrlKey || e.metaKey || (e.target as HTMLElement).closest('input, select, textarea, [contenteditable]')) return;
     if (reportOpen) {
@@ -3719,8 +3734,14 @@ function bind() {
       void analyseGame();
     } else if (liveOn) void runLive();
     if (!document.hidden && mode === 'play' && screen === 'game') void prepareAids();
+    if (!document.hidden && !gameLoading && screen === 'game') {
+      if (mode === 'play' && !maiaThinking && !maiaFailed) void maiaTurn();
+      else if (mode === 'review' && analysisStatus === 'idle') startReview();
+    }
   });
   window.addEventListener('pagehide', () => {
+    cancelAutoplayTimer();
+    pendingReviewGame = null;
     saveGame();
     flushEvals();
   });
@@ -4008,10 +4029,6 @@ function init() {
   dodge = new DodgeFx(cg, $('board'));
   applyFx();
   $('btn-autoplay').onclick = toggleAutoplay;
-  $<HTMLSelectElement>('autoplay-speed').onchange = (e) => {
-    settings = { ...settings, autoplayMs: Number((e.target as HTMLSelectElement).value) };
-    saveSettings(settings);
-  };
   renderAutoplay();
   void loadBook().then(() => {
     renderMoves();

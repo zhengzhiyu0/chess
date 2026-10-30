@@ -49,10 +49,10 @@
               <label class="setup-tc"><span>用时</span><select id="home-tc"></select></label>
             </div>
 
-            <button id="btn-play" class="primary big">开始对局</button>
+            <button id="btn-play" class="primary home-game-action">开始对局</button>
 
             <div class="home-actions">
-              <button id="btn-continue" class="tile">
+              <button id="btn-continue" class="tile home-game-action">
                 <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                 <span><b id="continue-title">继续对局</b><small id="continue-sub"></small></span>
               </button>
@@ -123,6 +123,16 @@
           <button id="btn-flip" class="icon" title="翻转棋盘" aria-label="翻转棋盘"><svg viewBox="0 0 24 24"><path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3" /></svg></button>
           <button class="icon theme-toggle" type="button" title="切换浅色模式" aria-label="切换浅色模式"></button>
         </header>
+        <div id="engine-loading" class="engine-notice hidden" role="alert">
+          <div>
+            <b id="engine-loading-title">引擎暂时未能就绪</b>
+            <p id="engine-loading-note">请重试，或返回首页稍后再来</p>
+          </div>
+          <div class="engine-notice-actions">
+            <button type="button" id="btn-engine-retry" class="primary">重新加载</button>
+            <button type="button" id="btn-engine-home">返回首页</button>
+          </div>
+        </div>
 
         <div class="game-main">
           <div class="board-col">
@@ -150,11 +160,6 @@
                 <div class="review-progress hidden" id="review-progress"><div class="review-progress-track" id="review-progress-track"></div><small id="review-progress-label"></small></div>
                 <div class="review-ctrl">
                   <button type="button" id="btn-autoplay" class="rc-btn" aria-label="自动播放" title="自动播放（空格）"></button>
-                  <select id="autoplay-speed" aria-label="回顾阅读速度">
-                    <option value="8000">慢</option>
-                    <option value="6000">中</option>
-                    <option value="4000">快</option>
-                  </select>
                   <span class="rc-sep"></span>
                   <button type="button" class="rc-btn" data-review-nav="prev" aria-label="上一个问题" title="上一个问题（[）"><svg viewBox="0 0 24 24"><path d="M18 6l-6 6 6 6M11 6l-6 6 6 6" /></svg></button>
                   <span class="rc-issues" id="review-issues"></span>
@@ -186,34 +191,6 @@
           </section>
         </div>
 
-        <div id="engine-loading" class="engine-loading hidden">
-          <div class="engine-loading-content" role="status" aria-live="polite">
-            <svg class="engine-loader" viewBox="0 0 96 96" fill="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="loader-orbit" x1="16" y1="16" x2="80" y2="80" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#c4e6a1" /><stop offset="1" stop-color="#81b64c" stop-opacity=".12" />
-                </linearGradient>
-              </defs>
-              <circle cx="48" cy="48" r="39" stroke="currentColor" stroke-opacity=".08" />
-              <g class="loader-orbit">
-                <circle cx="48" cy="48" r="39" stroke="url(#loader-orbit)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="156 90" />
-                <circle cx="48" cy="9" r="3.5" fill="#c4e6a1" />
-              </g>
-              <g class="loader-tiles" fill="currentColor">
-                <rect x="31" y="31" width="15" height="15" rx="4" />
-                <rect x="50" y="31" width="15" height="15" rx="4" />
-                <rect x="50" y="50" width="15" height="15" rx="4" />
-                <rect x="31" y="50" width="15" height="15" rx="4" />
-              </g>
-            </svg>
-            <h2 id="engine-loading-title">正在准备对局</h2>
-            <p id="engine-loading-note">引擎加载完成后将自动开始</p>
-          </div>
-          <div class="engine-loading-actions">
-            <button type="button" id="btn-engine-retry" class="primary hidden">重新加载</button>
-            <button type="button" id="btn-engine-home">返回首页</button>
-          </div>
-        </div>
 
         <div class="report hidden" id="report">
           <div class="report-body">

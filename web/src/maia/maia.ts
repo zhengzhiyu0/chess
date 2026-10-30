@@ -44,7 +44,7 @@ function toBase64(f: Float32Array): string {
   return btoa(s);
 }
 
-/** The app's native Maia (ONNX Runtime + CoreML, see native-plugins/maia-native). */
+/** The app's native Maia uses bundled, pre-compiled CoreML models (see native-plugins/maia-native). */
 class NativeMaia {
   /** the plugin holds one process-wide session; only its newest owner may unload it */
   private static current: NativeMaia | null = null;
@@ -57,17 +57,35 @@ class NativeMaia {
   }
 
   static async create(model: ModelId): Promise<NativeMaia> {
-    const { MaiaNative } = await import('maia-native');
-    const m = new NativeMaia(model, MaiaNative);
-    NativeMaia.current = m;
-    const res = await MaiaNative.load({
-      model,
-      probeTokens: toBase64(buildTokens([START])),
-      probeLegal: START_LEGAL.map(uciToIndex),
-      probeTop: START_TOP.map(uciToIndex),
-    });
-    m.provider = res.provider;
-    return m;
+    const requested = performance.now();
+    let stage = 'plugin_import';
+    let stageStart = requested;
+    console.info('[engine/Maia] native load requested', { model, computeUnits: 'all' });
+    try {
+      // Platform-specific Capacitor bridge is unavailable in browser/worker runtimes.
+      const { MaiaNative } = await import('maia-native');
+      console.info('[engine/Maia] plugin imported', { model, import_ms: (performance.now() - stageStart).toFixed(1) });
+      const m = new NativeMaia(model, MaiaNative);
+      NativeMaia.current = m;
+      stage = 'probe_prepare';
+      stageStart = performance.now();
+      const request = {
+        model,
+        probeTokens: toBase64(buildTokens([START])),
+        probeLegal: START_LEGAL.map(uciToIndex),
+        probeTop: START_TOP.map(uciToIndex),
+      };
+      console.info('[engine/Maia] probe prepared', { model, prepare_ms: (performance.now() - stageStart).toFixed(1) });
+      stage = 'native_load';
+      stageStart = performance.now();
+      const res = await MaiaNative.load(request);
+      m.provider = res.provider;
+      console.info('[engine/Maia] native load success', { model, provider: res.provider, computeUnits: 'all', bridge_load_ms: (performance.now() - stageStart).toFixed(1), total_ms: (performance.now() - requested).toFixed(1) });
+      return m;
+    } catch (err) {
+      console.info('[engine/Maia] native load failed', { model, computeUnits: 'all', stage, stage_ms: (performance.now() - stageStart).toFixed(1), total_ms: (performance.now() - requested).toFixed(1), error: err instanceof Error ? err.message : String(err) });
+      throw err;
+    }
   }
 
   async evaluate(chess: Chess, fens: string[], selfElo: number, oppoElo: number): Promise<MaiaResult> {
@@ -203,6 +221,8 @@ export class Maia {
       m.native = await NativeMaia.create(model);
       return m;
     }
+    const requested = performance.now();
+    console.info('[engine/Maia] worker load requested', { model, backend, lean });
     const m = new Maia(model, backend);
     m.onProgress = onProgress ?? null;
     const numThreads = threads ?? (self.crossOriginIsolated ? Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1)) : 1);
@@ -214,7 +234,9 @@ export class Maia {
         numThreads,
         lean,
       });
+      console.info('[engine/Maia] worker load success', { model, backend, threads: numThreads, total_ms: (performance.now() - requested).toFixed(1) });
     } catch (err) {
+      console.info('[engine/Maia] worker load failed', { model, backend, threads: numThreads, stage: 'worker_load', total_ms: (performance.now() - requested).toFixed(1), error: err instanceof Error ? err.message : String(err) });
       m.dispose();
       throw err;
     }

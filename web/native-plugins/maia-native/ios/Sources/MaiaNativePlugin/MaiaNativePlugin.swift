@@ -105,32 +105,60 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func load(_ call: CAPPluginCall) {
-        guard let name = call.getString("model") else { return call.reject("missing model") }
+        let requested = NativeRuntimeLog.now()
+        guard let name = call.getString("model") else {
+            NativeRuntimeLog.record("load failed stage=request reason=missing_model total_ms=\(NativeRuntimeLog.elapsed(requested))", subsystem: "Maia")
+            return call.reject("missing model")
+        }
+        let context = "model=\(name) computeUnits=all"
+        NativeRuntimeLog.record("load requested \(context)", subsystem: "Maia")
         // Start-position probe from JS: reject a corrupt or incompatible compiled model early.
         let probe = call.getString("probeTokens").flatMap { Data(base64Encoded: $0) }
         let probeLegal = call.getArray("probeLegal", Int.self) ?? []
         let probeTop = Set(call.getArray("probeTop", Int.self) ?? [])
+        NativeRuntimeLog.record("request decoded \(context) request_ms=\(NativeRuntimeLog.elapsed(requested))", subsystem: "Maia")
+        let enqueued = NativeRuntimeLog.now()
         queue.async { [self] in
-            if loaded == name, model != nil { return call.resolve(["provider": "coreml"]) }
+            NativeRuntimeLog.record("load dequeued \(context) queue_wait_ms=\(NativeRuntimeLog.elapsed(enqueued))", subsystem: "Maia")
+            if loaded == name, model != nil {
+                NativeRuntimeLog.record("load success reused=true \(context) total_ms=\(NativeRuntimeLog.elapsed(requested))", subsystem: "Maia")
+                return call.resolve(["provider": "coreml"])
+            }
             model = nil
             loaded = nil
+            var stage = "model_resource"
+            var stageStart = NativeRuntimeLog.now()
             guard let url = modelURL(name) else {
+                NativeRuntimeLog.record("load failed \(context) stage=\(stage) stage_ms=\(NativeRuntimeLog.elapsed(stageStart)) total_ms=\(NativeRuntimeLog.elapsed(requested)) reason=model_not_bundled", subsystem: "Maia")
                 return call.reject("模型 maia3-\(name).mlmodelc 未打包")
             }
+            NativeRuntimeLog.record("model resource found \(context) resource_ms=\(NativeRuntimeLog.elapsed(stageStart))", subsystem: "Maia")
             do {
                 let config = MLModelConfiguration()
                 config.computeUnits = .all
+                stage = "MLModel"
+                stageStart = NativeRuntimeLog.now()
+                NativeRuntimeLog.record("MLModel loading \(context)", subsystem: "Maia")
                 model = try MLModel(contentsOf: url, configuration: config)
+                NativeRuntimeLog.record("MLModel success \(context) MLModel_ms=\(NativeRuntimeLog.elapsed(stageStart))", subsystem: "Maia")
                 if let probe, !probeLegal.isEmpty {
+                    stage = "first_probe"
+                    stageStart = NativeRuntimeLog.now()
+                    NativeRuntimeLog.record("first probe predicting \(context)", subsystem: "Maia")
                     let (logits, _) = try run(probe, 1500, 1500)
                     guard plausible(logits, probeLegal, probeTop) else {
                         throw NSError(domain: "maia", code: 4, userInfo: [NSLocalizedDescriptionKey: "CoreML 推理结果异常"])
                     }
+                    NativeRuntimeLog.record("first probe success \(context) first_probe_ms=\(NativeRuntimeLog.elapsed(stageStart))", subsystem: "Maia")
+                } else {
+                    NativeRuntimeLog.record("first probe skipped \(context) reason=no_probe", subsystem: "Maia")
                 }
                 loaded = name
+                NativeRuntimeLog.record("load success reused=false \(context) total_ms=\(NativeRuntimeLog.elapsed(requested))", subsystem: "Maia")
                 call.resolve(["provider": "coreml"])
             } catch {
                 model = nil
+                NativeRuntimeLog.record("load failed \(context) stage=\(stage) stage_ms=\(NativeRuntimeLog.elapsed(stageStart)) total_ms=\(NativeRuntimeLog.elapsed(requested)) error=\(error.localizedDescription)", subsystem: "Maia")
                 call.reject("Maia 加载失败：\(error.localizedDescription)")
             }
         }
@@ -161,9 +189,9 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
         let oppoElo = Float(call.getDouble("oppoElo") ?? 1500)
         queue.async { [self] in
             do {
-                let t0 = CFAbsoluteTimeGetCurrent()
+                let t0 = NativeRuntimeLog.now()
                 let (all, v) = try run(tokens, selfElo, oppoElo)
-                call.resolve(pick(all, v, indices, (CFAbsoluteTimeGetCurrent() - t0) * 1000))
+                call.resolve(pick(all, v, indices, Double(NativeRuntimeLog.now() - t0) / 1_000_000))
             } catch {
                 call.reject(error.localizedDescription)
             }
@@ -185,9 +213,9 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
             do {
                 var results: [[String: Any]] = []
                 for (tokens, indices, selfElo, oppoElo) in jobs {
-                    let t0 = CFAbsoluteTimeGetCurrent()
+                    let t0 = NativeRuntimeLog.now()
                     let (all, v) = try run(tokens, selfElo, oppoElo)
-                    results.append(pick(all, v, indices, (CFAbsoluteTimeGetCurrent() - t0) * 1000))
+                    results.append(pick(all, v, indices, Double(NativeRuntimeLog.now() - t0) / 1_000_000))
                 }
                 call.resolve(["results": results])
             } catch {

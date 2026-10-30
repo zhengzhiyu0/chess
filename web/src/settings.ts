@@ -73,8 +73,6 @@ export interface Settings {
   /** board size in % of the largest size that fits (play / review layouts) */
   boardSizePlay: number;
   boardSizeReview: number;
-  /** review autoplay delay per move in ms */
-  autoplayMs: number;
   /** review: also judge the opponent's moves (default: only mine) */
   reviewOpponent: boolean;
   /** my avatar, see app/avatar.ts ('' = default) */
@@ -144,7 +142,6 @@ export function defaultSettings(): Settings {
     boardFxMate: motion,
     boardSizePlay: 100,
     boardSizeReview: 100,
-    autoplayMs: 6000,
     reviewOpponent: false,
     avatar: '',
     coachAvatar: 0,
@@ -237,7 +234,6 @@ const RULES: Record<keyof Settings, Rule> = {
   boardFxMate: { bool: true },
   boardSizePlay: { num: [60, 100] },
   boardSizeReview: { num: [60, 100] },
-  autoplayMs: { num: [100, 10000] },
   reviewOpponent: { bool: true },
   // '' / '<glyph>|#rrggbb' / small JPEG data URL; rendering validates the format again
   avatar: { str: /^[^<>"]{0,200000}$/s },

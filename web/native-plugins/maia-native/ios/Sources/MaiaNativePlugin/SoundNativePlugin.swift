@@ -2,12 +2,19 @@ import AVFoundation
 import Capacitor
 import UIKit
 
-private enum AudioRuntimeLog {
+// Shared by audio and engine plugins; exported through the existing SoundNative.getLogs bridge.
+enum NativeRuntimeLog {
     private static let lock = NSLock()
     private static var entries: [String] = []
 
-    static func record(_ message: String) {
-        let line = "\(ISO8601DateFormatter().string(from: Date())) [iOS/Audio] \(message)"
+    static func now() -> UInt64 { DispatchTime.now().uptimeNanoseconds }
+
+    static func elapsed(_ start: UInt64) -> String {
+        String(format: "%.1f", Double(now() - start) / 1_000_000)
+    }
+
+    static func record(_ message: String, subsystem: String = "Audio") {
+        let line = "\(ISO8601DateFormatter().string(from: Date())) [iOS/\(subsystem)] \(message)"
         lock.lock()
         entries.append(line)
         if entries.count > 500 { entries.removeFirst(entries.count - 500) }
@@ -49,7 +56,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         do {
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
         } catch {
-            AudioRuntimeLog.record("audio session setup failed: \(error.localizedDescription)")
+            NativeRuntimeLog.record("audio session setup failed: \(error.localizedDescription)")
         }
         let center = NotificationCenter.default
         for name in [UIApplication.willResignActiveNotification, AVAudioSession.interruptionNotification] {
@@ -114,7 +121,7 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     }
 
     @objc func getLogs(_ call: CAPPluginCall) {
-        call.resolve(["logs": AudioRuntimeLog.text()])
+        call.resolve(["logs": NativeRuntimeLog.text()])
     }
 
     @objc func play(_ call: CAPPluginCall) {

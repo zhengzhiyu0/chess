@@ -31,6 +31,6 @@ export function installRuntimeLogCapture() {
 
 export function runtimeLogText(nativeLogs = ''): string {
   const sections = [`Maia Coach launch diagnostics`, `Exported: ${new Date().toISOString()}`, '', '=== JavaScript ===', ...entries];
-  if (nativeLogs) sections.push('', '=== iOS native audio ===', nativeLogs);
+  if (nativeLogs) sections.push('', '=== iOS native (engines + audio) ===', nativeLogs);
   return sections.join('\n') + '\n';
 }

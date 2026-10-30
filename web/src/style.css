@@ -261,78 +261,24 @@ button svg {
   padding-bottom: 0;
 }
 
-.engine-loading {
-  position: absolute;
-  inset: calc(var(--safe-t) + 52px) 0 0;
-  z-index: 40;
+.engine-notice {
+  flex: none;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 24px 24px calc(24px + var(--safe-b));
-  background: rgba(0, 0, 0, 0.96);
-  text-align: center;
-}
-.engine-loading-content {
-  display: grid;
-  justify-items: center;
-}
-.engine-loader {
-  width: 96px;
-  height: 96px;
-  margin-bottom: 24px;
-  color: var(--green);
-  overflow: visible;
-}
-.loader-orbit {
-  transform-origin: 48px 48px;
-  animation: engine-orbit 2.4s linear infinite;
-}
-.loader-tiles rect {
-  animation: engine-tile 1.8s ease-in-out infinite;
-}
-.loader-tiles rect:nth-child(2) { animation-delay: 0.15s; }
-.loader-tiles rect:nth-child(3) { animation-delay: 0.3s; }
-.loader-tiles rect:nth-child(4) { animation-delay: 0.45s; }
-.engine-loading h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: 1px;
-}
-.engine-loading p {
-  margin: 10px 0 0;
-  color: var(--text2);
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 12px 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
   font-size: 13px;
 }
-.engine-loading-actions {
-  display: flex;
-  gap: 12px;
-}
-.engine-loading-actions button {
-  padding: 10px 20px;
-  font-size: 13px;
-}
-.engine-loading.failed .engine-loader {
-  opacity: 0.4;
-}
-.engine-loading.failed .loader-orbit,
-.engine-loading.failed .loader-tiles rect {
-  animation: none;
-}
-@keyframes engine-orbit {
-  to { transform: rotate(360deg); }
-}
-@keyframes engine-tile {
-  0%, 100% { opacity: 0.3; }
-  45% { opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .loader-orbit,
-  .loader-tiles rect {
-    animation: none;
-  }
+.engine-notice p { margin: 4px 0 0; color: var(--muted); }
+.engine-notice-actions { display: flex; flex-wrap: wrap; gap: 6px; flex: none; }
+.engine-notice-actions button { min-height: 40px; padding: 8px 10px; font-size: 12px; }
+@media (max-width: 420px) {
+  .engine-notice { align-items: flex-start; flex-direction: column; }
 }
 
 .appbar {
@@ -574,33 +520,18 @@ input[type='checkbox'] {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* When a game is in progress, make resuming it the primary home action while
-   keeping the move count and coach context visible in the same button. */
-.tile.resume-primary {
-  justify-content: center;
-  padding: 16px;
-  border-radius: 12px;
-  background: var(--green);
-  color: #fff;
-  box-shadow: 0 4px 0 0 var(--green-dark);
-  text-align: center;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+.home-game-action {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
 }
-.tile.resume-primary:hover {
-  background: var(--green-hover);
-}
-.tile.resume-primary:active {
-  box-shadow: 0 1px 0 0 var(--green-dark);
-}
-.tile.resume-primary svg {
-  color: #fff;
-}
-.tile.resume-primary span {
-  align-items: center;
-}
-.tile.resume-primary small {
-  color: rgba(255, 255, 255, 0.82);
-}
+#btn-continue { gap: 8px; }
+#btn-continue svg { width: 20px; height: 20px; }
+#btn-continue span { line-height: 1.25; }
+#btn-continue small { font-size: 11px; }
 .home-foot {
   text-align: center;
   font-size: 12px;
@@ -1341,9 +1272,31 @@ html:not(.native) .native-only {
   margin: 8px 0 16px;
 }
 .moment-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 1.3fr) minmax(0, 1fr);
+  align-items: center;
   gap: 8px;
+  margin-top: 16px;
+}
+.moment-actions button {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 6px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+.moment-actions .tour-prev { grid-column: 1; }
+.moment-actions .tour-view { grid-column: 2; min-height: 52px; font-size: 16px; }
+.moment-actions .tour-next { grid-column: 3; }
+.tour-report {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 20px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
 }
 .guided-review #coach-box,
 .guided-review #sf-lines,
@@ -2476,12 +2429,6 @@ dialog input[type='color'] {
   fill: currentColor;
   stroke: none;
 }
-.review-ctrl select {
-  width: auto;
-  height: 28px;
-  padding: 0 6px;
-  font-size: 12px;
-}
 .rc-sep {
   width: 1px;
   height: 18px;
@@ -2683,9 +2630,6 @@ html[data-theme='light'] .lines b {
 html[data-theme='light'] .toast {
   background: rgba(31, 41, 55, 0.92);
   color: #f9fafb;
-}
-html[data-theme='light'] .engine-loading {
-  background: rgba(245, 246, 247, 0.96);
 }
 html[data-theme='light'] .menu-list button:hover,
 html[data-theme='light'] button.icon:hover,

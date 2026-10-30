@@ -105,26 +105,39 @@ class NativeTransport implements Transport {
   }
 
   static async open(flavour: SfFlavour, onLine: (l: string) => void): Promise<NativeTransport> {
-    const { StockfishNative } = await import('maia-native');
-    NativeTransport.hooked ??= StockfishNative.addListener('lines', (e) => {
-      for (const h of [...NativeTransport.subs[e.engine]]) for (const l of e.lines) h(l);
-    }).catch((err) => {
-      NativeTransport.hooked = null;
-      throw err;
-    });
-    await NativeTransport.hooked;
-    // a previous instance may have been dropped mid-search; it must not see this one's output
-    NativeTransport.subs[flavour].clear();
-    const t = new NativeTransport(flavour, onLine, StockfishNative);
-    NativeTransport.subs[flavour].add(onLine);
+    const requested = performance.now();
+    let stage = 'plugin_import';
+    let stageStart = requested;
+    console.info('[engine/Stockfish] native start requested', { engine: flavour });
     try {
+      // Platform-specific Capacitor bridge is unavailable in browser/worker runtimes.
+      const { StockfishNative } = await import('maia-native');
+      console.info('[engine/Stockfish] plugin imported', { engine: flavour, import_ms: (performance.now() - stageStart).toFixed(1) });
+      stage = 'output_listener';
+      stageStart = performance.now();
+      NativeTransport.hooked ??= StockfishNative.addListener('lines', (e) => {
+        for (const h of [...NativeTransport.subs[e.engine]]) for (const l of e.lines) h(l);
+      }).catch((err) => {
+        NativeTransport.hooked = null;
+        throw err;
+      });
+      await NativeTransport.hooked;
+      console.info('[engine/Stockfish] output listener ready', { engine: flavour, listener_ms: (performance.now() - stageStart).toFixed(1) });
+      // a previous instance may have been dropped mid-search; it must not see this one's output
+      NativeTransport.subs[flavour].clear();
+      const t = new NativeTransport(flavour, onLine, StockfishNative);
+      NativeTransport.subs[flavour].add(onLine);
+      stage = 'native_start';
+      stageStart = performance.now();
       await StockfishNative.start({ engine: flavour });
       if (!NativeTransport.subs[flavour].has(onLine)) throw new Error('Stockfish 已卸载');
       t.post('stop');
       t.post('ucinewgame');
+      console.info('[engine/Stockfish] native start dispatched', { engine: flavour, bridge_start_ms: (performance.now() - stageStart).toFixed(1), total_ms: (performance.now() - requested).toFixed(1), ready: 'pending_uci_handshake' });
       return t;
     } catch (err) {
       NativeTransport.subs[flavour].delete(onLine);
+      console.info('[engine/Stockfish] native start failed', { engine: flavour, stage, stage_ms: (performance.now() - stageStart).toFixed(1), total_ms: (performance.now() - requested).toFixed(1), error: err instanceof Error ? err.message : String(err) });
       throw err;
     }
   }
@@ -191,12 +204,19 @@ export class Stockfish {
     const file = `engines/stockfish-19${lite ? '-lite' : ''}${multi ? '' : '-single'}.js`;
     const sf = new Stockfish(multi, multi ? threads : 1, lite);
     sf.transport = new WorkerTransport(new URL(file, document.baseURI).href, sf.onLine, sf.onError);
+    console.info('[engine/Stockfish] worker created', { engine: lite ? 'lite' : 'full', multiThreaded: multi, threads: sf.threads });
     // compiling the ~100MB NNUE build takes 5-20s in Firefox / on phones (longer while Maia loads)
     return sf.handshake(threads, hash, 90000);
   }
 
   private async handshake(threads: number, hash: number, timeoutMs: number): Promise<Stockfish> {
+    const requested = performance.now();
+    const context = { engine: this.lite ? 'lite' : 'full', native: this.native, threads: this.threads, hash };
+    let stage = 'uci_startup';
+    let stageStart = requested;
+    console.info('[engine/Stockfish] handshake requested', context);
     try {
+      // Keep the executor form: the ES2022 iOS runtime baseline has no Promise.withResolvers.
       await new Promise<void>((resolve, reject) => {
         this.failed = reject;
         // only count time the page is visible, since background tabs are throttled
@@ -208,17 +228,35 @@ export class Stockfish {
           else setTimeout(tick, 1000);
         };
         setTimeout(tick, 1000);
-        // the timeout and crash detection stay armed until readyok, not just uciok
+        // The first uciok includes startup/initialization (and may include NNUE loading),
+        // not a pure NNUE timer. isready barriers below measure completed option application.
         this.waitFor('uci', (l) => l === 'uciok')
-          .then(() => {
-            if (this.multiThreaded) this.send(`setoption name Threads value ${threads}`);
+          .then(async () => {
+            console.info('[engine/Stockfish] startup uciok', { ...context, startup_handshake_ms: (performance.now() - stageStart).toFixed(1), includes: 'initialization/possibly_NNUE_loading', NNUE_only_ms: 'unavailable' });
+            if (this.multiThreaded) {
+              stage = 'Threads_ready_barrier';
+              stageStart = performance.now();
+              this.send(`setoption name Threads value ${threads}`);
+              await this.waitFor('isready', (l) => l === 'readyok');
+              console.info('[engine/Stockfish] Threads applied (isready barrier)', { ...context, Threads_ready_ms: (performance.now() - stageStart).toFixed(1) });
+            } else {
+              console.info('[engine/Stockfish] Threads unchanged', { ...context, reason: 'single_threaded' });
+            }
+            stage = 'Hash_ready_barrier';
+            stageStart = performance.now();
             this.send(`setoption name Hash value ${hash}`);
+            await this.waitFor('isready', (l) => l === 'readyok');
+            console.info('[engine/Stockfish] Hash applied (isready barrier)', { ...context, Hash_ready_ms: (performance.now() - stageStart).toFixed(1) });
+            stage = 'final_ready_barrier';
+            stageStart = performance.now();
             this.send('setoption name UCI_ShowWDL value true');
-            return this.waitFor('isready', (l) => l === 'readyok');
+            await this.waitFor('isready', (l) => l === 'readyok');
+            console.info('[engine/Stockfish] final readyok (isready barrier)', { ...context, ready_ms: (performance.now() - stageStart).toFixed(1), total_ms: (performance.now() - requested).toFixed(1) });
           })
           .then(resolve, reject);
       });
     } catch (err) {
+      console.info('[engine/Stockfish] handshake failed', { ...context, stage, stage_ms: (performance.now() - stageStart).toFixed(1), total_ms: (performance.now() - requested).toFixed(1), error: err instanceof Error ? err.message : String(err) });
       this.terminate();
       throw err;
     } finally {

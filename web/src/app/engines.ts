@@ -69,7 +69,10 @@ export class Engines {
     if (this.maia?.crashed && this.maia.backend === 'webgpu') this.webgpuFailed = true;
     if (this.maia?.alive && this.maia.model === st.model && this.maiaWanted === st.backend) return this.maia;
     if (this.maiaLoading) {
+      const waiting = performance.now();
+      console.info('[engine/Maia] waiting for in-flight load', { model: st.model, backend: st.backend });
       const m = await this.maiaLoading;
+      console.info('[engine/Maia] in-flight wait complete', { model: st.model, wait_ms: (performance.now() - waiting).toFixed(1) });
       if (m.crashed && m.backend === 'webgpu') this.webgpuFailed = true;
       if (m.alive && m.model === st.model && this.maiaWanted === st.backend) return m;
     }
@@ -80,6 +83,8 @@ export class Engines {
     const backend = st.backend === 'webgpu' && this.webgpuFailed ? 'wasm' : st.backend;
     const model = st.model;
     const lean = st.lowMemory;
+    const requested = performance.now();
+    console.info('[engine/Maia] app load requested', { model, backend: isNative ? 'native' : backend, lowMemory: lean });
     this.maiaLoading = Maia.create(model, backend, undefined, lean)
       .catch(async (err) => {
         if (isNative || backend !== 'webgpu' || gen !== this.maiaGen) throw err;
@@ -89,8 +94,8 @@ export class Engines {
       })
       .catch(async (err) => {
         if (isNative || gen !== this.maiaGen) throw err;
-        // iOS: ORT's wasm init fails ("no available backend found") when memory is tight,
-        // typically with multi-threaded Stockfish resident; free it and retry single-threaded
+        // Browser ORT wasm init may fail when memory is tight; native iOS uses CoreML
+        // and never enters this fallback. Free Stockfish and retry single-threaded.
         console.warn('Maia 加载失败，释放 Stockfish 后以单线程重试', err);
         if (this.sf || this.sfLoading) this.unloadSf();
         setStatus('内存不足，正在以省内存方式重新加载 Maia…');
@@ -99,14 +104,17 @@ export class Engines {
       .then((m) => {
         if (gen !== this.maiaGen) {
           // unloaded (or superseded) while loading: don't resurrect it
+          console.info('[engine/Maia] app load superseded', { model, total_ms: (performance.now() - requested).toFixed(1) });
           m.dispose();
           if (this.maiaLoading) return this.maiaLoading;
           throw new Error('Maia 已卸载');
         }
         this.maia = m;
+        console.info('[engine/Maia] app load success', { model, backend: m.backend, provider: m.provider, total_ms: (performance.now() - requested).toFixed(1) });
         return m;
       })
       .catch((err) => {
+        console.info('[engine/Maia] app load failed', { model, stage: 'app_load', total_ms: (performance.now() - requested).toFixed(1), error: err instanceof Error ? err.message : String(err) });
         // a stale load must not clear the handle of a newer one
         if (gen === this.maiaGen) {
           this.maiaLoading = null;
@@ -125,22 +133,33 @@ export class Engines {
       this.sf = null;
       this.sfLoading = null;
     }
-    if (this.sfLoading) return this.sfLoading;
+    if (this.sfLoading) {
+      const waiting = performance.now();
+      console.info('[engine/Stockfish] waiting for in-flight load');
+      const sf = await this.sfLoading;
+      console.info('[engine/Stockfish] in-flight wait complete', { wait_ms: (performance.now() - waiting).toFixed(1) });
+      return sf;
+    }
     const st = this.settings();
     if (this.exclusive()) this.unloadMaia();
     const gen = this.sfGen;
+    const requested = performance.now();
+    console.info('[engine/Stockfish] app load requested', { engine: st.sfLite ? 'lite' : 'full', threads: st.sfThreads, hash: st.sfHash });
     this.sfLoading = Stockfish.create(st.sfThreads, st.sfHash, st.sfLite)
       .then((s) => {
         if (gen !== this.sfGen) {
           // unloaded (or superseded) while booting: don't resurrect it
+          console.info('[engine/Stockfish] app load superseded', { total_ms: (performance.now() - requested).toFixed(1) });
           s.terminate();
           if (this.sfLoading) return this.sfLoading;
           throw new Error('Stockfish 已卸载');
         }
         this.sf = s;
+        console.info('[engine/Stockfish] app load success', { engine: s.lite ? 'lite' : 'full', threads: s.threads, total_ms: (performance.now() - requested).toFixed(1) });
         return s;
       })
       .catch((err) => {
+        console.info('[engine/Stockfish] app load failed', { engine: st.sfLite ? 'lite' : 'full', stage: 'app_load', total_ms: (performance.now() - requested).toFixed(1), error: err instanceof Error ? err.message : String(err) });
         if (gen === this.sfGen) {
           this.sfLoading = null;
           setStatus('Stockfish 加载失败：' + (err as Error).message);

@@ -159,8 +159,14 @@ def compile_model(onnx_path: Path, compiled_path: Path, work_dir: Path) -> None:
     print(f"{onnx_path.stem}: CoreML conversion complete", flush=True)
 
     quantizer = cto.OpLinearQuantizerConfig(mode="linear_symmetric", weight_threshold=512)
+    # GAB's shared projection feeds every attention layer. Keep this small shared
+    # tensor in fp16 so its rounding error does not compound across the stack.
+    preserved = {
+        name: None for name in cto.get_weights_metadata(mlmodel, weight_threshold=512)
+        if 'Einsum_output_0_weight_transposed' in name
+    }
     quantized = cto.linear_quantize_weights(
-        mlmodel, config=cto.OptimizationConfig(global_config=quantizer)
+        mlmodel, config=cto.OptimizationConfig(global_config=quantizer, op_name_configs=preserved)
     )
     print(f"{onnx_path.stem}: INT8 quantization complete", flush=True)
     package_path = work_dir / f"{onnx_path.stem}.mlpackage"

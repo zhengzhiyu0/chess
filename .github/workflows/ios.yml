@@ -64,7 +64,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           text = Path('coreml-build.log').read_text(errors='replace')
-          detail = '\n'.join(text.splitlines()[-80:])
+          detail = text[-3500:]
           detail = detail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
           print(f'::error title=CoreML conversion failed::{detail}')
           PY

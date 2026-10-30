@@ -1,0 +1,29 @@
+README.md
+  s_7ff17073cdf55d::t_1eb7256e78b89a 3,101,104-105
+.github/workflows/ios.yml
+  s_3ce749e80efed9::t_6e1b03ad54086d 36,52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e22eb4bbd3319d28c67e8097b05f057b82e8e0d6",
+  "prompts": {},
+  "sessions": {
+    "s_3ce749e80efed9": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "a7329e4d-57d0-49ce-8685-412b0d3b4f70",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

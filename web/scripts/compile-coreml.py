@@ -45,6 +45,98 @@ def _check_onnx(onnx_model, name: str) -> None:
         raise RuntimeError(f"{name}: unexpected outputs {actual_outputs}")
 
 
+def prepare_coreml_graph(model):
+    """Normalize the fp16 export to fp32 MIL authoring; the backend restores fp16 compute."""
+    import numpy as np
+    import onnx
+
+    nodes = []
+    for node in model.graph.node:
+        if node.op_type == 'Constant':
+            value = next(attr.t for attr in node.attribute if attr.name == 'value')
+            tensor = onnx.TensorProto()
+            tensor.CopyFrom(value)
+            tensor.name = node.output[0]
+            model.graph.initializer.append(tensor)
+        elif node.op_type == 'Einsum':
+            equation = next(attr.s for attr in node.attribute if attr.name == 'equation')
+            if equation != b'bhi,oi->bho':
+                raise ValueError(f'Unsupported Einsum equation: {equation!r}')
+            transposed = node.output[0] + '_weight_transposed'
+            nodes.append(onnx.helper.make_node(
+                'Transpose', [node.input[1]], [transposed], perm=[1, 0], name=node.name + '_transpose',
+            ))
+            nodes.append(onnx.helper.make_node(
+                'MatMul', [node.input[0], transposed], list(node.output), name=node.name,
+            ))
+        else:
+            nodes.append(node)
+    for tensor in model.graph.initializer:
+        if tensor.data_type == onnx.TensorProto.FLOAT16:
+            tensor.CopyFrom(onnx.numpy_helper.from_array(
+                onnx.numpy_helper.to_array(tensor).astype(np.float32), name=tensor.name,
+            ))
+    for value in (*model.graph.input, *model.graph.output, *model.graph.value_info):
+        if value.type.tensor_type.elem_type == onnx.TensorProto.FLOAT16:
+            value.type.tensor_type.elem_type = onnx.TensorProto.FLOAT
+    for node in nodes:
+        for attr in node.attribute:
+            if node.op_type == 'Cast' and attr.name == 'to' and attr.i == onnx.TensorProto.FLOAT16:
+                attr.i = onnx.TensorProto.FLOAT
+    del model.graph.node[:]
+    model.graph.node.extend(nodes)
+    onnx.checker.check_model(model)
+    return model
+
+
+def verify_compiled_model(compiled: Path, source: Path) -> None:
+    """Run the shipped INT8 model against ONNX on existing encoded chess fixtures."""
+    import numpy as np
+    import onnxruntime as ort
+    import coremltools as ct
+
+    cases = json.loads((Path(__file__).resolve().parents[1] / 'test/golden.json').read_text())['cases']
+    fixtures = [case for case in cases if case['model'] == '5m']
+    options = ort.SessionOptions()
+    options.intra_op_num_threads = 1
+    options.inter_op_num_threads = 1
+    options.log_severity_level = 3  # fp16 constant folding uses inserted Casts on CPU.
+    reference = ort.InferenceSession(str(source), options, providers=['CPUExecutionProvider'])
+    model = ct.models.CompiledMLModel(str(compiled), compute_units=ct.ComputeUnit.ALL)
+
+    def probabilities(logits):
+        values = np.exp(logits.astype(np.float64) - np.max(logits))
+        return values / values.sum()
+
+    worst_move = worst_value = 0.0
+    for case in fixtures:
+        tokens = np.zeros(TOKEN_SHAPE, dtype=np.float32)
+        for square, feature in case['tokens_nonzero']:
+            tokens[0, square, feature] = 1
+        inputs = {
+            'tokens': tokens,
+            'self_elo': np.array([case['self']], dtype=np.float32),
+            'oppo_elo': np.array([case['oppo']], dtype=np.float32),
+        }
+        expected = reference.run(['logits_move', 'logits_value'], inputs)
+        result = model.predict(inputs)
+        actual = [result['logits_move'], result['logits_value']]
+        for index, shape in enumerate(((1, MOVE_COUNT), (1, VALUE_COUNT))):
+            if actual[index].shape != shape or not np.isfinite(actual[index]).all():
+                raise RuntimeError(f'{source.stem}/{case["name"]}: invalid CoreML output {index}')
+            left, right = expected[index][0], actual[index][0]
+            if index == 0:
+                left, right = left[case['legal_idx']], right[case['legal_idx']]
+            delta = float(np.max(np.abs(probabilities(left) - probabilities(right))))
+            if not np.isfinite(delta) or delta > 0.02:
+                raise RuntimeError(f'{source.stem}/{case["name"]}: probability delta {delta:.6f} exceeds 0.02 (output {index})')
+            if index == 0:
+                worst_move = max(worst_move, delta)
+            else:
+                worst_value = max(worst_value, delta)
+    print(f'{source.stem}: {len(fixtures)} compiled-model samples passed; max probability delta move={worst_move:.6f}, value={worst_value:.6f}', flush=True)
+
+
 def compile_model(onnx_path: Path, compiled_path: Path, work_dir: Path) -> None:
     onnx, o2c, cto = _load_conversion_modules()
     print(f"=== Processing {onnx_path.name} ===", flush=True)
@@ -55,7 +147,7 @@ def compile_model(onnx_path: Path, compiled_path: Path, work_dir: Path) -> None:
     print(f"{onnx_path.stem}: converting ONNX directly to CoreML MLProgram", flush=True)
 
     mlmodel = o2c.convert(
-        str(onnx_path),
+        prepare_coreml_graph(onnx_model),
         format="mlpackage",
         minimum_deployment_target="iOS17",
         compute_precision="fp16",
@@ -82,6 +174,7 @@ def compile_model(onnx_path: Path, compiled_path: Path, work_dir: Path) -> None:
     generated = compile_dir / f"{onnx_path.stem}.mlmodelc"
     if not generated.is_dir():
         raise RuntimeError(f"coremlcompiler did not produce {generated}")
+    verify_compiled_model(generated, onnx_path)
     shutil.rmtree(compiled_path, ignore_errors=True)
     shutil.copytree(generated, compiled_path)
     print(f"{onnx_path.stem}: compiled bundle ready", flush=True)

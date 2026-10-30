@@ -35,7 +35,6 @@ const NET_URLS = (n) => [
   `https://tests.stockfishchess.org/api/nn/${n}`,
 ];
 const MODELS = ['5m', '23m', '79m'];
-const cacheKeys = {};
 
 const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
 
@@ -79,12 +78,8 @@ for (const m of MODELS) {
   const buf = Buffer.concat(manifest.parts.map((p) => readFileSync(join(dir, p))));
   if (buf.length !== manifest.size || createHash('sha256').update(buf).digest('hex') !== manifest.sha256)
     throw new Error(`maia3-${m}: parts do not match manifest`);
-  if (!manifest.cacheKey) throw new Error(`maia3-${m}: not a native export (no cacheKey), rerun tools/export_onnx.py --targets native`);
   writeFileSync(join(out, `maia3-${m}.onnx`), buf);
-  cacheKeys[m] = manifest.cacheKey;
 }
-// MaiaNativePlugin deletes compiled CoreML models whose key is not listed here (older app versions)
-writeFileSync(join(out, 'maia-models.json'), JSON.stringify({ cacheKeys }));
 
 const size = (d) => readdirSync(d).reduce((a, n) => a + (statSync(join(d, n)).isDirectory() ? size(join(d, n)) : statSync(join(d, n)).size), 0);
 console.log(`dist-native ready: ${(size(dst) / 1048576).toFixed(0)}MB (native engines ${(size(out) / 1048576).toFixed(0)}MB)`);

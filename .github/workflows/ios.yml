@@ -33,7 +33,7 @@ jobs:
           path: |
             web/.cache/coreml-build
             web/.cache/coreml-venv
-          key: coreml-models-${{ hashFiles('web/native-models/maia3-*/manifest.json', 'web/scripts/compile-coreml.py') }}
+          key: coreml-models-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('web/native-models/maia3-*/manifest.json', 'web/scripts/compile-coreml.py', 'web/test/golden.json', '.github/workflows/ios.yml') }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -49,7 +49,7 @@ jobs:
           fi
           . .cache/coreml-venv/bin/activate
           python -m pip install --upgrade pip
-          python -m pip install 'onnx2coreml==1.1.0' 'coremltools==8.3.0' 'onnx==1.17.0' 'numpy==1.26.4'
+          python -m pip install 'onnx2coreml==1.1.0' 'coremltools==8.3.0' 'onnx==1.17.0' 'numpy==1.26.4' 'onnxruntime==1.20.1'
           PYTHONFAULTHANDLER=1 PYTHONUNBUFFERED=1 python scripts/compile-coreml.py 2>&1 | tee coreml-build.log
       - name: Upload CoreML build log
         if: always()

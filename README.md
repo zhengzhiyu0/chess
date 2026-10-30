@@ -1,6 +1,6 @@
 # Maia Coach（iOS 原生国际象棋教练 / 离线 PWA）
 
-- **对手**：Maia-3（官方权重导出为 ONNX，可选 5M / 23M / 79M，难度参数 0–2600，与玩家棋力估计分开；低于 600 为模型外推）。无辅助正式局结束后自动匹配下一局难度，辅助对局只计入练习记录。iOS App 使用 ONNX Runtime 原生推理与 CoreML 加速，网页版使用 `onnxruntime-web`。
+- **对手**：Maia-3（官方权重导出为 ONNX，可选 5M / 23M / 79M，难度参数 0–2600，与玩家棋力估计分开；低于 600 为模型外推）。无辅助正式局结束后自动匹配下一局难度，辅助对局只计入练习记录。iOS App 使用预编译 CoreML MLProgram 原生推理，网页版使用 `onnxruntime-web`。
 - **教练**：Stockfish 19 完整 NNUE 版，iOS App 使用 C++ 原生多线程，网页版使用 WASM（支持跨源隔离时多线程）；可在设置中切换为小网络的轻量版（秒开、省内存）。
 - **功能**：
   - 启动 iOS App / PWA 后自动在后台加载当前设置的引擎；进入新对局、继续对局或复盘时，若所需引擎尚未就绪，显示简洁的 SVG 等待动画，加载完成后自动进入。等待期间棋钟暂停，加载失败可重试。
@@ -98,11 +98,11 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 - 免费 Apple ID 签名的 App **7 天后过期**，需要重新签名（棋局和设置保留）。AltStore 可以在同一 Wi-Fi 下自动续签。
 - App 内的引擎**全部原生实现，不使用 WebAssembly**（[native-plugins/maia-native](web/native-plugins/maia-native)）：
   - **Stockfish 19**：C++ 源码直接编进 App（-O3 + ThinLTO），原生多线程 + ARM NEON/dotprod。**满血版**（完整 NNUE）和**轻量版**（小网络）都已预装，在「设置 → Stockfish 版本」中切换。默认 2 线程（性能核数量），避免发热。切换版本时旧实例的 Hash 缩至 1MB，重新启用时恢复设定值；进入后台由原生通知兜底停止搜索。
-  - **Maia-3 5M / 23M / 79M**：ONNX Runtime iOS 原生推理。App 使用单独导出的 fp16、固定 batch 1 模型（共约 212MB，网页版 fp32 为 424MB），让 CoreML 能把整张图放到神经网络引擎上；不支持时回退到 CPU。首次加载某个模型时 CoreML 要编译一次，编译结果按模型内容缓存，App 更新后仍可复用，旧版本的缓存会自动清理。加载前会检查可用内存，不够时直接提示，而不是被系统强杀。
+  - **Maia-3 5M / 23M / 79M**：CoreML 原生推理，预装 INT8 权重量化、fp16 计算的 `.mlmodelc`。CI 从固定 batch 1 的 native ONNX 转换模型：将 Constant 提为 initializer、把 GAB 的 Einsum 等价展开为矩阵乘法，并统一 MIL 编写精度以避免 LayerNorm 类型冲突。编译后的实际模型须通过 7 个现有棋局样本的 ONNX 对照（合法走法概率和胜和负概率最大误差均不超过 0.02），通过后才进入 App bundle；iOS 不再依赖 ONNX Runtime，也不再生成或清理 ORT 模型缓存。
   - **关键事件文字提示**：普通对弈中由莉亚头像显示简短的战术和棋力反馈；其他教练头像资源保留在项目内，当前不参与选择或运行时逻辑。
   - 全部预装，无需下载，完全离线可用；App 内没有下载按钮和离线包管理。「设置 → 环境信息」显示当前引擎的实际运行方式。
-- App 的对弈界面与手机网页版一致：菜单在顶部，提示/悔棋/教练在“我”的信息栏里。点自己的头像（或「设置 → 我的头像」）可换成预设头像或相册照片。iOS 音效由 AVAudioPlayer 直接播放内置 MP3，通过应用内音效开关控制，使用媒体音量，允许与其他应用音频混音；每次播放重新激活音频会话，进入后台或被电话中断时停止旧声音，回来后只播放新事件。70 毫秒内的重复落子音效会被过滤；原生 Maia 推理失败后下一次请求会重建会话。
-- 本地准备 iOS 工程：`cd web && npm run build:native`，依次执行构建、生成 `dist-native/`（[prepare-native.mjs](web/scripts/prepare-native.mjs)：去掉所有 wasm，下载并校验 NNUE 网络，拼接 `native-models/` 中的 ONNX 模型）、`cap sync ios`。Xcode 工程位于 `web/ios/`。
+- App 的对弈界面与手机网页版一致：菜单在顶部，提示/悔棋/教练在“我”的信息栏里。点自己的头像（或「设置 → 我的头像」）可换成预设头像或相册照片。iOS 音效由 AVAudioPlayer 直接播放内置 MP3，通过应用内音效开关控制，使用媒体音量，允许与其他应用音频混音；每次播放重新激活音频会话，进入后台或被电话中断时停止旧声音，回来后只播放新事件。70 毫秒内的重复落子音效会被过滤。
+- 本地准备 iOS 工程：`cd web && npm run build:native`，依次执行构建、生成 `dist-native/`（[prepare-native.mjs](web/scripts/prepare-native.mjs)：去掉所有 wasm，下载并校验 NNUE 网络，拼接 `native-models/` 中的 ONNX 中间文件）、`cap sync ios`；随后在 macOS 按 [ios.yml](.github/workflows/ios.yml) 安装 Python 转换依赖，执行 `python scripts/compile-coreml.py`，完成模型转换、量化、编译和数值对照，再用 Xcode 构建。编译产物按源 ONNX 内容缓存，最终 bundle 不保留 Maia ONNX。Xcode 工程位于 `web/ios/`。
 - 原生 Stockfish 可以脱离 Xcode 单独测试：`sh web/native-plugins/maia-native/stockfish/test/build_smoke.sh web/.cache/nnue`（CI 也会在 arm64 macOS 上跑这一步）。
 - Stockfish 以 GPL-3.0 发布，源码见 [stockfish/](web/native-plugins/maia-native/stockfish)。
 - 私有仓库使用 macOS runner 会按 10 倍分钟数计费，公开仓库免费。

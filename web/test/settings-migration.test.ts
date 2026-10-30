@@ -13,7 +13,8 @@ Object.assign(globalThis, {
   },
 });
 
-const { loadSettings, saveSettings, sanitizeSettings, defaultSettings } = await import('../src/settings');
+// Load after browser globals are installed: settings reads navigator/matchMedia during initialization.
+const { loadSettings, saveSettings, sanitizeSettings, defaultSettings, MAIA_LEVELS } = await import('../src/settings');
 const KEY = 'maia-coach.settings';
 
 describe('settings engine migration (iOS app)', () => {
@@ -130,23 +131,24 @@ describe('separate player rating migration', () => {
     (ratedGames, ratingDeviation) => {
       const legacy = { elo: 1820, ratedGames, autoElo: false };
       mem.set(KEY, JSON.stringify(legacy));
-      const expected = { elo: 1820, playerElo: 1820, ratedGames, ratingDeviation, ratingStreak: 0, autoElo: false };
+      const expected = { elo: 1800, playerElo: 1820, ratedGames, ratingDeviation, ratingStreak: 0 };
       expect(loadSettings()).toMatchObject(expected);
       expect(sanitizeSettings(legacy)).toMatchObject(expected);
+      expect(loadSettings()).not.toHaveProperty('autoElo');
       expect(legacy).toEqual({ elo: 1820, ratedGames, autoElo: false });
     },
   );
 
   it('migrates the earlier Maia field through the backup sanitizer too', () => {
     const migrated = sanitizeSettings({ maiaElo: 1230, myElo: 900, ratedGames: 8 });
-    expect(migrated).toMatchObject({ elo: 1230, playerElo: 1230, ratingDeviation: 150, ratedGames: 8 });
+    expect(migrated).toMatchObject({ elo: 1200, playerElo: 1230, ratingDeviation: 150, ratedGames: 8 });
     expect(migrated).not.toHaveProperty('maiaElo');
     expect(migrated).not.toHaveProperty('myElo');
     expect(sanitizeSettings({ elo: 1600, maiaElo: 1230 }).playerElo).toBe(1600);
   });
 
   it('keeps independent ratings and uncertainty over repeated saves and loads', () => {
-    const settings = { ...defaultSettings(), elo: 1740, playerElo: 1682, ratingDeviation: 91.25, ratingStreak: -3, ratedGames: 27, autoElo: false };
+    const settings = { ...defaultSettings(), elo: 1800, playerElo: 1682, ratingDeviation: 91.25, ratingStreak: -3, ratedGames: 27 };
     saveSettings(settings);
     for (let i = 0; i < 3; i++) {
       const loaded = loadSettings();
@@ -158,8 +160,8 @@ describe('separate player rating migration', () => {
   it('defaults malformed rating fields without discarding valid progress', () => {
     const d = defaultSettings();
     for (const value of [null, '1200', -1, 2601, 1500.5, NaN, Infinity]) {
-      expect(sanitizeSettings({ elo: 1900, playerElo: value, ratedGames: 31 })).toMatchObject({
-        elo: 1900, playerElo: d.playerElo, ratedGames: 31, ratingDeviation: 80,
+      expect(sanitizeSettings({ elo: 1800, playerElo: value, ratedGames: 31 })).toMatchObject({
+        elo: 1800, playerElo: d.playerElo, ratedGames: 31, ratingDeviation: 80,
       });
     }
     for (const value of [null, '80', 59, 351, NaN, Infinity]) {
@@ -176,5 +178,16 @@ describe('separate player rating migration', () => {
   it('accepts the rating and streak boundaries', () => {
     expect(sanitizeSettings({ elo: 0, playerElo: 2600, ratingDeviation: 60, ratingStreak: -8 })).toMatchObject({ elo: 0, playerElo: 2600, ratingDeviation: 60, ratingStreak: -8 });
     expect(sanitizeSettings({ elo: 2600, playerElo: 0, ratingDeviation: 350, ratingStreak: 8 })).toMatchObject({ elo: 2600, playerElo: 0, ratingDeviation: 350, ratingStreak: 8 });
+  });
+
+  it('snaps only the next opponent to the nearest fixed level, keeping exact player estimates', () => {
+    for (const level of MAIA_LEVELS) expect(sanitizeSettings({ elo: level }).elo).toBe(level);
+    for (const [old, level] of [[1810, 1800], [1740, 1800], [1450, 1400], [1499, 1500], [20, 0], [420, 300]]) {
+      const settings = sanitizeSettings({ elo: old, autoElo: false });
+      expect(settings.elo).toBe(level);
+      expect(settings.playerElo).toBe(old);
+      expect(settings).not.toHaveProperty('autoElo');
+    }
+    expect(sanitizeSettings({ elo: 1810, playerElo: 1682 })).toMatchObject({ elo: 1800, playerElo: 1682 });
   });
 });

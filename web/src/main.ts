@@ -8,12 +8,15 @@ import './style.css';
 
 import { type MaiaResult } from './maia/maia';
 import { sampleMove } from './maia/sample';
+import { recordSamplingDecision } from './maia/sampling-capture';
+import { mountMaiaComparison } from './app/maia-comparison';
+import { mountSamplingControls } from './app/sampling-ui';
 import type { Stockfish, SfLine } from './engine/stockfish';
 import { flushEvals, getEval, putEval } from './engine/eval-cache';
 import { classify, evalText, JUDGEMENTS, JUDGEMENT_INFO, moveAccuracy, SEVERITY, whiteWinPct, winPct, type Judgement } from './coach/coach';
 import { bookReady, inBook, loadBook } from './coach/book';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, isSacrifice, plainEval, type MoveInsight, type Sides } from './coach/explain';
-import { ELO_MAX, ELO_MIN, isIOS, loadSettings, saveSettings, type Settings } from './settings';
+import { ELO_MAX, ELO_MIN, MAIA_LEVELS, isIOS, loadSettings, saveSettings, type Settings } from './settings';
 import { assistCount, computeRating, emptyAssists, ratingBreakdown, type Assists, type RatingInfo } from './game/rating';
 import { onStorageFull, readJson, safeSet } from './storage';
 import { addMistakes, loadMistakes, mistakeStats, setDeletedMistakes, setMistakes, type Mistake } from './training/mistakes';
@@ -106,7 +109,6 @@ let gameElo: number | undefined = settings.elo;
 let gamePlayerElo: number | undefined = settings.playerElo;
 let gameDeviation = settings.ratingDeviation;
 let gameStreak = settings.ratingStreak;
-let gameAutoElo = settings.autoElo;
 let gameTemperature = settings.temperature;
 let eloAfter: number | undefined;
 let gameModel: Settings['model'] = settings.model;
@@ -206,6 +208,25 @@ const engines = new Engines(
 );
 const getMaia = () => engines.getMaia();
 const getSf = () => engines.getSf();
+const samplingControls = mountSamplingControls($('sampling-controls'));
+const maiaComparison = mountMaiaComparison($('maia-comparison'), {
+  context: () => {
+    if (screen !== 'game' || mode !== 'review' || reviewTour || pendingReviewGame === gameId || autoplayOn() || document.hidden) return null;
+    return {
+      identity: `${gameId}|${!imported && gameElo !== undefined ? gameModel : settings.model}|${settings.backend}`,
+      fen: node.fen,
+      fens: maiaFens(node),
+      playerElo: gamePlayerElo ?? settings.playerElo,
+      best: node.a.live?.[0]?.pv[0] ?? node.a.eval?.best ?? undefined,
+      waiting: gameLoading ? '引擎准备中…' : singleEngine() && ((batchCtrl && !batchCtrl.signal.aborted) || (liveCtrl && !liveCtrl.signal.aborted))
+        ? '省内存模式：等待 Stockfish 完成本局面分析后再比较。' : undefined,
+    };
+  },
+  evaluate: async (fen, fens, ratings) => {
+    const maia = await getMaia();
+    return maia.evaluateMany(ratings.map(rating => ({ chess: new Chess(fen), fens, selfElo: rating, oppoElo: rating })));
+  },
+});
 const enginesCtx: EnginesCtx = {
   settings: () => settings,
   patchSettings: (patch) => {
@@ -262,7 +283,6 @@ function stored(): StoredGame {
     playerElo: imported ? undefined : gamePlayerElo,
     ratingDeviation: gameDeviation,
     ratingStreak: gameStreak,
-    autoElo: gameAutoElo,
     temperature: gameTemperature,
     eloAfter,
     model: imported ? undefined : gameModel,
@@ -333,7 +353,6 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     gamePlayerElo = g.playerElo ?? (imported ? undefined : g.elo ?? settings.playerElo);
     gameDeviation = g.ratingDeviation ?? settings.ratingDeviation;
     gameStreak = g.ratingStreak ?? settings.ratingStreak;
-    gameAutoElo = g.autoElo ?? settings.autoElo;
     gameTemperature = g.temperature ?? settings.temperature;
     eloAfter = g.eloAfter;
     gameModel = g.model === '5m' || g.model === '79m' ? g.model : g.model === '23m' ? g.model : settings.model;
@@ -1081,9 +1100,9 @@ function collectMistakes() {
   if (added) setStatus(`${added} 步错着已收进错题本`);
 }
 
-/** Automatic rating applies only to formal games from the standard start in which the user moved (or resigned). */
+/** Eligible ratings require a formal game from the standard start. */
 function ratingEnabled(): boolean {
-  return gameAutoElo && !imported && gameElo !== undefined && gamePlayerElo !== undefined && tree.root.fen === START_FEN;
+  return !imported && gameElo !== undefined && gamePlayerElo !== undefined && tree.root.fen === START_FEN;
 }
 
 function rateable(): boolean {
@@ -1102,7 +1121,6 @@ function startRating() {
   settings = {
     ...settings,
     playerElo: eloAfter,
-    elo: rating.opponentAfter,
     ratingDeviation: rating.rdAfter,
     ratingStreak: rating.streak,
     ratedGames: settings.ratedGames + 1,
@@ -1160,6 +1178,15 @@ async function maiaTurn(attempt = 0) {
     maiaThinking = false;
     const played = playMove(pick.uci);
     if (played) {
+      if (settings.samplingCapture) {
+        const captured = recordSamplingDecision({
+          committed: true, gameId, model: gameModel,
+          selfElo: humanElo(t), oppoElo: gamePlayerElo ?? settings.playerElo,
+          fen: t.fen, temperature: gameTemperature, topP: 1,
+          moves: res.moves, chosen: pick.uci, ms: res.ms, wdl: res.wdl,
+        });
+        if (!captured.ok) setStatus(`落子已完成；${captured.error}`);
+      }
       update();
       if (settings.premove) cg.playPremove();
     }
@@ -1198,7 +1225,6 @@ function newGame(fen = START_FEN, color?: Color): boolean {
   gamePlayerElo = settings.playerElo;
   gameDeviation = settings.ratingDeviation;
   gameStreak = settings.ratingStreak;
-  gameAutoElo = settings.autoElo;
   gameTemperature = settings.temperature;
   eloAfter = undefined;
   gameModel = settings.model;
@@ -1233,7 +1259,7 @@ let assistWarned = '';
 function assistOk(what: string): boolean {
   const willRate = ratingEnabled();
   if (!willRate || assistCount(assists) || assistWarned === gameId) return true;
-  if (!confirm(`使用${what}后，本局转为辅助练习，不再改变棋力分和下一局难度。继续吗？`)) return false;
+  if (!confirm(`使用${what}后，本局转为辅助练习，不再改变棋力分。继续吗？`)) return false;
   assistWarned = gameId;
   return true;
 }
@@ -1628,6 +1654,7 @@ async function runLive() {
   if (early) void reviewHuman();
   await liveSearch();
   if (!early) void reviewHuman();
+  maiaComparison.update();
 }
 
 async function liveSearch() {
@@ -2586,7 +2613,7 @@ function renderPlayInfo() {
   else if (maiaThinking) box.textContent = 'Maia 思考中…';
   else if (node !== tip()) box.textContent = '正在查看历史局面';
   else box.textContent = turnOf(node.fen) === userColor ? (cg.state.premovable.current ? '轮到你走（已预走）' : '轮到你走') : '等待 Maia';
-  $('game-rating').textContent = imported ? '' : `我 ${gamePlayerElo ?? '?'} · Maia ${gameElo ?? '?'} · ${assistCount(assists) ? '辅助练习 · 不计分' : gameAutoElo ? '计分对局' : '不计分对局'}`;
+  $('game-rating').textContent = imported ? '' : `我 ${gamePlayerElo ?? '?'} · Maia ${gameElo ?? '?'} · ${assistCount(assists) ? '辅助练习 · 不计分' : ratingEnabled() ? '计分对局' : '不计分对局'}`;
 }
 
 function renderOpponentDialogue() {
@@ -2620,6 +2647,7 @@ function update() {
   renderLegend();
   renderAids();
   renderLines();
+  maiaComparison.update();
   checkResult();
 }
 
@@ -2646,7 +2674,7 @@ function renderRatingResult() {
     const d = eloAfter - before;
     box.innerHTML =
       `我的棋力 ${before} → <b class="${d > 0 ? 'win' : d < 0 ? 'loss' : ''}">${eloAfter}</b>（${d > 0 ? '+' : ''}${d}）` +
-      (rating ? `<small>${escapeHtml(ratingBreakdown(rating))} · 下局 Maia ${rating.opponentAfter}</small>` : '<small>旧版评级记录</small>');
+      (rating ? `<small>${escapeHtml(ratingBreakdown(rating))}</small>` : '<small>旧版评级记录</small>');
     box.hidden = false;
   } else if (result && !imported) {
     box.textContent = assistCount(assists) ? '辅助练习：使用了对局辅助、提示、悔棋或局中分析，不改变棋力与对手难度' : '本局不计分，不改变棋力与对手难度';
@@ -2803,6 +2831,7 @@ function openAvatar() {
 
 function openSettings() {
   const dlg = $<HTMLDialogElement>('dlg-settings');
+  samplingControls.refresh();
   const f = dlg.querySelector('form')!;
   const el = (n: string) => f.elements.namedItem(n) as HTMLInputElement;
   const themeSel = $<HTMLSelectElement>('sound-theme');
@@ -2823,8 +2852,6 @@ function openSettings() {
     else input.value = String(v);
   }
   const outs = () => {
-    const v = Number(el('elo').value);
-    (f.elements.namedItem('eloOut') as HTMLOutputElement).value = v < 600 ? `${v}（低于 600 为模型外推）` : String(v);
     (f.elements.namedItem('tempOut') as HTMLOutputElement).value = el('temperature').value;
     (f.elements.namedItem('bsPlayOut') as HTMLOutputElement).value = `${el('boardSizePlay').value}%`;
     (f.elements.namedItem('bsReviewOut') as HTMLOutputElement).value = `${el('boardSizeReview').value}%`;
@@ -2905,13 +2932,12 @@ function openSettings() {
     settings = {
       ...old,
       model: el('model').value as Settings['model'],
-      elo: num('elo'),
       playerElo: playerEdited ? Math.max(ELO_MIN, Math.min(ELO_MAX, Math.round(num('playerElo')))) : old.playerElo,
       ratingDeviation: playerEdited ? 350 : old.ratingDeviation,
       ratingStreak: playerEdited ? 0 : old.ratingStreak,
-      autoElo: el('autoElo').checked,
       color: el('color').value as Settings['color'],
       temperature: num('temperature'),
+      samplingCapture: el('samplingCapture').checked,
       backend: el('backend').value as Settings['backend'],
       useHistory: false,
       thinkDelay: el('thinkDelay').checked,
@@ -3318,12 +3344,13 @@ function setHomeTab(tab: HomeTab) {
 
 function renderHome() {
   const elo = $<HTMLInputElement>('home-elo');
-  elo.value = String(settings.elo);
-  $('home-elo-val').textContent = settings.autoElo ? `${settings.elo} · 自动` : String(settings.elo);
+  elo.value = String(MAIA_LEVELS.findIndex(level => level === settings.elo));
+  const levelLabel = `Maia ${settings.elo}${settings.elo < 600 ? ' · 入门（模型外推）' : ' · 固定'}`;
+  elo.setAttribute('aria-valuetext', levelLabel);
+  $('home-elo-val').textContent = `${settings.elo} · ${settings.elo < 600 ? '入门外推' : '固定'}`;
   $('home-rating').textContent = `我的棋力 ${settings.playerElo} · ${settings.ratingDeviation > 150 ? '定位中' : '已定位'} · ${settings.ratedGames} 局计分对局`;
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => b.classList.toggle('active', b.dataset.color === settings.color));
   $<HTMLSelectElement>('home-tc').value = settings.timeControl;
-  $('home-aids-desc').textContent = assistanceOn() ? '已开启辅助 · 对局不计分' : '纯净对局 · 辅助已关闭';
   const t = tip();
   const has = t !== tree.root;
   const canContinue = has && result === '' && !imported;
@@ -3516,14 +3543,15 @@ function bind() {
   };
   $('btn-menu-data').onclick = fromMenu(openData);
   bindTrainer(trainerCtx);
-  $<HTMLInputElement>('home-elo').oninput = (e) => {
-    $('home-elo-val').textContent = (e.target as HTMLInputElement).value;
-  };
-  $<HTMLInputElement>('home-elo').onchange = (e) => saveHomeSettings({ elo: Number((e.target as HTMLInputElement).value) });
+  const eloSlider = $<HTMLInputElement>('home-elo');
+  eloSlider.max = String(MAIA_LEVELS.length - 1);
+  for (const [index, level] of MAIA_LEVELS.entries()) {
+    $('maia-level-ticks').append(new Option(String(level), String(index)));
+  }
+  eloSlider.oninput = () => saveHomeSettings({ elo: MAIA_LEVELS[Number(eloSlider.value)] });
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => {
     b.onclick = () => saveHomeSettings({ color: b.dataset.color as Settings['color'] });
   });
-  $('btn-home-aids').onclick = openAidSettings;
   $('btn-aids').onclick = openAidSettings;
   $('coach-box').onclick = (e) => void onDemoClick(e);
   $('var-actions').onclick = (e) => {
@@ -3598,6 +3626,12 @@ function bind() {
   };
   $('btn-report').onclick = openReport;
   $('btn-report-start').onclick = startGuidedReview;
+  $('btn-report-free').onclick = () => {
+    closeReport(true);
+    goto(node);
+    $('maia-comparison').querySelector('details')!.open = true;
+    maiaComparison.update();
+  };
   $('review-moment').onclick = (e) => {
     const button = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-tour]');
     const action = button?.dataset.tour;

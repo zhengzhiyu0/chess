@@ -10,6 +10,7 @@
     "build": "npm run prepare-assets && tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "bench:human": "node scripts/human-bench.mjs",
     "build:native": "npm run build && node scripts/prepare-native.mjs && cap sync ios && node scripts/set-ios-deployment-target.mjs"
   },
   "dependencies": {

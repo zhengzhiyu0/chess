@@ -13,29 +13,50 @@ export function softmaxMoves(moves: { uci: string; logit: number }[]): ScoredMov
     .sort((a, b) => b.p - a.p);
 }
 
-/** Same semantics as maia3.uci.sample_from_logits (temperature + nucleus sampling). */
+/**
+ * Actual draw probabilities, not the model's raw policy. Keep the smallest
+ * probability-sorted prefix that reaches topP, including the crossing move.
+ */
+export function samplingDistribution(
+  moves: ScoredMove[],
+  temperature: number,
+  topP: number,
+): ScoredMove[] {
+  if (moves.length === 0) return [];
+  if (temperature <= 0) {
+    const best = moves.reduce((a, b) => (b.logit > a.logit ? b : a));
+    return [{ ...best, p: 1 }];
+  }
+  if (!Number.isFinite(temperature) || !Number.isFinite(topP)) {
+    throw new Error('Sampling temperature and topP must be finite');
+  }
+  const ordered = [...moves].sort((a, b) => b.logit - a.logit);
+  const max = ordered[0].logit;
+  // Subtract before dividing so small positive temperatures cannot overflow.
+  const weights = ordered.map((m) => Math.exp((m.logit - max) / temperature));
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  let keptTotal = 0;
+  let count = 0;
+  do {
+    keptTotal += weights[count++];
+  } while (count < ordered.length && (topP >= 1 || keptTotal / total < topP));
+  return ordered.slice(0, count).map((m, i) => ({ ...m, p: weights[i] / keptTotal }));
+}
+
+/** Returns the original move object: its p remains the raw model probability. */
 export function sampleMove(
   moves: ScoredMove[],
   temperature: number,
   topP: number,
   rng: () => number = Math.random,
 ): ScoredMove {
-  if (temperature <= 0) {
-    return moves.reduce((a, b) => (b.logit > a.logit ? b : a));
-  }
-  let pool = softmaxMoves(moves.map((m) => ({ uci: m.uci, logit: m.logit / temperature })));
-  if (topP < 1) {
-    let cum = 0;
-    pool = pool.filter((m, i) => {
-      cum += m.p;
-      return i === 0 || cum <= topP;
-    });
-  }
-  const total = pool.reduce((a, m) => a + m.p, 0);
-  let r = rng() * total;
+  const pool = samplingDistribution(moves, temperature, topP);
+  if (pool.length === 0) throw new Error('Cannot sample an empty move list');
+  if (pool.length === 1) return moves.find((m) => m.uci === pool[0].uci)!;
+  let r = rng();
   for (const m of pool) {
     r -= m.p;
-    if (r <= 0) return moves.find((x) => x.uci === m.uci)!;
+    if (r < 0) return moves.find((original) => original.uci === m.uci)!;
   }
-  return moves.find((x) => x.uci === pool[pool.length - 1].uci)!;
+  return moves.find((m) => m.uci === pool[pool.length - 1].uci)!;
 }

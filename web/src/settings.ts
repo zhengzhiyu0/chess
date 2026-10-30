@@ -17,12 +17,12 @@ export interface Settings {
   ratingDeviation: number;
   /** Consecutive wins (positive) or losses (negative). */
   ratingStreak: number;
-  /** Rate eligible games and automatically choose the next Maia opponent. */
-  autoElo: boolean;
   /** Number of games rated so far, retained when migrating older settings. */
   ratedGames: number;
   color: Color | 'random';
   temperature: number;
+  /** Opt-in, device-local capture of committed Maia sampling decisions. */
+  samplingCapture: boolean;
   /** Legacy backup field; real game history is disabled (official UCI default). */
   useHistory: boolean;
   backend: 'wasm' | 'webgpu';
@@ -105,10 +105,10 @@ export function defaultSettings(): Settings {
     playerElo: 1500,
     ratingDeviation: 350,
     ratingStreak: 0,
-    autoElo: true,
     ratedGames: 0,
     color: 'w',
     temperature: 1,
+    samplingCapture: false,
     useHistory: false,
     backend: 'wasm',
     thinkDelay: true,
@@ -188,6 +188,9 @@ export function loadSettings(): Settings {
 export const ELO_MIN = 0;
 export const ELO_MAX = 2600;
 
+/** Fixed Maia opponent presets; values below 600 extrapolate beyond the training range. */
+export const MAIA_LEVELS = [0, 300, 600, 800, 1000, 1200, 1400, 1500, 1600, 1800, 2000, 2200, 2400, 2600] as const;
+
 type Rule = { oneOf: readonly unknown[] } | { num: [number, number]; int?: boolean } | { bool: true } | { str: RegExp } | { optInt: true };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -198,10 +201,10 @@ const RULES: Record<keyof Settings, Rule> = {
   playerElo: { num: [ELO_MIN, ELO_MAX], int: true },
   ratingDeviation: { num: [60, 350] },
   ratingStreak: { num: [-8, 8], int: true },
-  autoElo: { bool: true },
   ratedGames: { num: [0, 1e9], int: true },
   color: { oneOf: ['w', 'b', 'random'] },
   temperature: { num: [0, 1.5] },
+  samplingCapture: { bool: true },
   useHistory: { oneOf: [false] },
   backend: { oneOf: ['wasm', 'webgpu'] },
   thinkDelay: { bool: true },
@@ -276,6 +279,8 @@ export function sanitizeSettings(raw: unknown): Settings {
     }
   }
   if (src.playerElo === undefined) out.playerElo = out.elo;
+  // Only the next-game setting is snapped; persisted games keep their original opponent.
+  out.elo = MAIA_LEVELS.reduce<number>((nearest, level) => Math.abs(level - (out.elo as number)) < Math.abs(nearest - (out.elo as number)) ? level : nearest, MAIA_LEVELS[0]);
   if (src.ratingDeviation === undefined) {
     const games = out.ratedGames as number;
     out.ratingDeviation = games === 0 ? 350 : games < 5 ? 250 : games < 15 ? 150 : 80;

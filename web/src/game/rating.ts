@@ -20,7 +20,6 @@ export interface RatingInfo {
   rdBefore: number;
   rdAfter: number;
   streak: number;
-  opponentAfter: number;
   abandoned?: boolean;
 }
 
@@ -50,11 +49,6 @@ export function computeRating(o: {
   const precision = 1 / rdBefore ** 2 + q ** 2 * expected * (1 - expected);
   const rdAfter = clamp(Math.sqrt(1 / precision), 60, 350);
   const playerAfter = clamp(o.playerElo + Math.round(q / precision * (result - expected)), 0, 2600);
-  const target = playerAfter + Math.sign(streak) * Math.min(60, Math.max(0, Math.abs(streak) - 1) * 20);
-  const step = rdBefore > 150 ? 160 : 80;
-  const candidate = clamp(o.opponentElo + clamp(target - o.opponentElo, -step, step), 0, 2600);
-  // A manually selected opponent can be far from the estimate: never raise difficulty after a loss or lower it after a win.
-  const opponentAfter = result === 0 ? Math.min(o.opponentElo, candidate) : result === 1 ? Math.max(o.opponentElo, candidate) : candidate;
   return {
     delta: playerAfter - o.playerElo,
     result,
@@ -65,7 +59,6 @@ export function computeRating(o: {
     rdBefore,
     rdAfter,
     streak,
-    opponentAfter,
     ...(o.abandoned ? { abandoned: true } : {}),
   };
 }

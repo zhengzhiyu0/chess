@@ -83,8 +83,8 @@ export function parseBackup(text: string): { data: BackupData; skipped: number }
 
 /**
  * Merge (default): games and mistakes are united by id (a mistake deleted on either side stays
- * deleted); the rating and settings come from the side that has played more rated games, so
- * restoring an old backup never resets progress.
+ * deleted); only player-rating progress comes from the side that has played more rated games,
+ * so restoring an old backup never resets progress or changes the selected opponent.
  */
 export function mergeBackup(cur: BackupData, inc: BackupData): BackupData {
   const games = new Map(cur.history.map((g) => [g.id, g]));
@@ -92,11 +92,9 @@ export function mergeBackup(cur: BackupData, inc: BackupData): BackupData {
   const settings = inc.settings.ratedGames > cur.settings.ratedGames ? {
     ...cur.settings,
     playerElo: inc.settings.playerElo,
-    elo: inc.settings.elo,
     ratingDeviation: inc.settings.ratingDeviation,
     ratingStreak: inc.settings.ratingStreak,
     ratedGames: inc.settings.ratedGames,
-    autoElo: inc.settings.autoElo,
   } : cur.settings;
   return normalizeBackup({
     settings,

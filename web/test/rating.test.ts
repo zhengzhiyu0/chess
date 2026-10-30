@@ -63,32 +63,11 @@ describe('独立棋力评级', () => {
     }
   });
 
-  it('对手难度独立移动且受定位速度限制', () => {
-    const stable = computeRating({ ...base, opponentElo: 1000, result: 1 });
-    const placing = computeRating({ ...base, opponentElo: 1000, deviation: 350, result: 1 });
-    expect(stable.opponentAfter).toBe(1080);
-    expect(placing.opponentAfter).toBe(1160);
-    const close = computeRating({ ...base, result: 0.5 });
-    expect(close.opponentAfter).toBe(close.playerAfter);
-    const streak = computeRating({ ...base, streak: 1, result: 1 });
-    expect(streak.opponentAfter).toBe(streak.playerAfter + 20);
-  });
-
-  it('手动选的对手偏离棋力时，不会输棋升难或赢棋降难', () => {
-    const loss = computeRating({ ...base, opponentElo: 1000, result: 0 });
-    expect(loss.playerAfter).toBeLessThan(base.playerElo);
-    expect(loss.opponentAfter).toBeLessThanOrEqual(1000);
-    const win = computeRating({ ...base, opponentElo: 2000, result: 1 });
-    expect(win.playerAfter).toBeGreaterThan(base.playerElo);
-    expect(win.opponentAfter).toBeGreaterThanOrEqual(2000);
-  });
-
   it('分数、不确定度和连胜负保持边界，delta是实际变化', () => {
     for (const [playerElo, result, streak] of [[2600, 1, 8], [0, 0, -8]]) {
       const r = computeRating({ playerElo, opponentElo: playerElo, deviation: 999, streak, result });
       expect(r.playerAfter).toBe(playerElo);
       expect(r.delta).toBe(0);
-      expect(r.opponentAfter).toBe(playerElo);
       expect(r.streak).toBe(streak);
       expect(r.rdBefore).toBe(350);
       expect(r.rdAfter).toBeLessThanOrEqual(350);

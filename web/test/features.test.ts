@@ -128,16 +128,19 @@ describe('puzzle recommendations', () => {
 
 describe('backup', () => {
   it('round-trips and merges without losing progress', () => {
-    const s = { ...defaultSettings(), elo: 1700, ratedGames: 30 };
+    const s = { ...defaultSettings(), elo: 1800, playerElo: 1700, ratedGames: 30 };
     const game = { id: 'x', date: 2, startFen: START_FEN, tree: {}, userColor: 'w' as const, result: '1-0' };
     const file = JSON.stringify(makeBackup({ settings: s, history: [game], mistakes: [mistake()], puzzles: sanitizeProgress({ games: 5, rating: 1400 }) }, 'test'));
     const { data, skipped } = parseBackup(file);
     expect(skipped).toBe(0);
-    expect(data.settings.elo).toBe(1700);
+    expect(data.settings.elo).toBe(1800);
+    expect(data.settings.playerElo).toBe(1700);
     const cur = { settings: { ...defaultSettings(), ratedGames: 2 }, history: [{ ...game, id: 'y' }], mistakes: [], puzzles: sanitizeProgress({}) };
     const m = mergeBackup(cur, data);
     expect(m.history.map((g) => g.id).sort()).toEqual(['x', 'y']);
-    expect(m.settings.elo).toBe(1700);
+    expect(m.settings.elo).toBe(cur.settings.elo);
+    expect(m.settings.playerElo).toBe(1700);
+    expect(m.settings.ratedGames).toBe(30);
     expect(m.puzzles.games).toBe(5);
     expect(() => parseBackup('{"format":"other"}')).toThrow();
     expect(() => parseBackup('nope')).toThrow();

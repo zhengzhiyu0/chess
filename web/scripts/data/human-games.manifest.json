@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "name": "lichess-2013-01-prefix-human-small",
+  "file": "human-games.pgn",
+  "sha256": "141d94ece0d161e480955b9abda54042a963e62944d307a5f18efca9f27dab4c",
+  "license": "CC0-1.0",
+  "licenseUrl": "https://database.lichess.org/",
+  "sourceUrl": "https://database.lichess.org/standard/lichess_db_standard_rated_2013-01.pgn.zst",
+  "retrievedAt": "2026-10-30",
+  "sourcePrefix": {
+    "bytes": 1048576,
+    "sha256": "88a76da9e86d1e23cf90e681fc40b580ee06896d1dcca84b3709b6c3d3e1975e"
+  },
+  "selection": "First 12 complete Rated Classical game or Rated Blitz game records with Termination Normal and numeric WhiteElo/BlackElo in the first 140000 decompressed bytes of the first 1048576 compressed bytes; BOT titles excluded. PGN records retained verbatim except LF separators.",
+  "humanProvenance": "Public rated player games from the standard Lichess database, not puzzles or model self-play. No independent anti-cheat or identity audit.",
+  "ratings": "Lichess Glicko2 values in original WhiteElo/BlackElo tags; not FIDE Elo or a calibration of Maia conditioning inputs.",
+  "limitations": [
+    "Tiny chronological convenience sample, not representative or rating balanced.",
+    "2013 data may overlap Maia training; this is not a held-out benchmark.",
+    "Within-game positions are correlated.",
+    "No universal Elo, human-likeness, or playing-strength claim."
+  ],
+  "games": [
+    {
+      "site": "https://lichess.org/j1dkb5dw",
+      "white": "BFG9k",
+      "black": "mamalak",
+      "whiteElo": 1639,
+      "blackElo": 1403,
+      "timeControl": "600+8",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/a9tcp02g",
+      "white": "Desmond_Wilson",
+      "black": "savinka59",
+      "whiteElo": 1654,
+      "blackElo": 1919,
+      "timeControl": "480+2",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/szom2tog",
+      "white": "Kozakmamay007",
+      "black": "VanillaShamanilla",
+      "whiteElo": 1643,
+      "blackElo": 1747,
+      "timeControl": "420+17",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/fl7asfa0",
+      "white": "tiggran",
+      "black": "arion_6",
+      "whiteElo": 1541,
+      "blackElo": 1500,
+      "timeControl": "300+0",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/7b44wxzu",
+      "white": "hostking",
+      "black": "troepianiz",
+      "whiteElo": 1765,
+      "blackElo": 1752,
+      "timeControl": "540+0",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/7rzcutsf",
+      "white": "manos68",
+      "black": "jtkjtkful",
+      "whiteElo": 1445,
+      "blackElo": 1169,
+      "timeControl": "900+0",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/9opx3qh7",
+      "white": "adamsrj",
+      "black": "hamiakaz",
+      "whiteElo": 1522,
+      "blackElo": 1428,
+      "timeControl": "180+5",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/1hi3aveq",
+      "white": "BFG9k",
+      "black": "Sagaz",
+      "whiteElo": 1644,
+      "blackElo": 1544,
+      "timeControl": "600+8",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/n5crd00d",
+      "white": "arion_6",
+      "black": "Naitero_Nagasaki",
+      "whiteElo": 1957,
+      "blackElo": 1755,
+      "timeControl": "300+8",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/iinnkv77",
+      "white": "Kozakmamay007",
+      "black": "vadi",
+      "whiteElo": 1656,
+      "blackElo": 1812,
+      "timeControl": "420+17",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/z2ncoii6",
+      "white": "Abd0",
+      "black": "Killi",
+      "whiteElo": 1436,
+      "blackElo": 1506,
+      "timeControl": "420+0",
+      "utcDate": "2012.12.31"
+    },
+    {
+      "site": "https://lichess.org/vb3w3rmn",
+      "white": "nichiren1967",
+      "black": "chinokoli",
+      "whiteElo": 1878,
+      "blackElo": 1940,
+      "timeControl": "300+0",
+      "utcDate": "2012.12.31"
+    }
+  ]
+}

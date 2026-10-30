@@ -1,0 +1,37 @@
+{
+  "source": "https://github.com/lichess-org/chess-openings",
+  "commit": "712a58be746c143f4ab935b68acc50f4bac813eb",
+  "license": "CC0-1.0",
+  "files": [
+    {
+      "file": "COPYING.txt",
+      "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+      "gitBlob": "0e259d42c996742e9e3cba14c677129b2c1b6311"
+    },
+    {
+      "file": "a.tsv",
+      "sha256": "3282e4c9155289a29224f9a85fba0decb46efa35c2fa5e39662d2ac48fb0f793",
+      "gitBlob": "561099854a15dfb523759aa87993a1fe480a6abc"
+    },
+    {
+      "file": "b.tsv",
+      "sha256": "4bf2269a8e7571a00a7b346bae4fa86a241a6e7e86beab01783c81acb1622b63",
+      "gitBlob": "ea15fb3d1745ab5281ac20ae48125d9f1f65098b"
+    },
+    {
+      "file": "c.tsv",
+      "sha256": "45e843c7b7e79a0d04d5bda879c9bd23f5a10974488bd8615e4f4c5d0749986f",
+      "gitBlob": "4b3d9c90c67864db6eb728d82b225b44d91fccbd"
+    },
+    {
+      "file": "d.tsv",
+      "sha256": "1cf4057a8aece94f27bb3f278ad410ee2844831a642364eeceaafa091dbcceda",
+      "gitBlob": "a829bac9d2f288b033d605e842f3b802379e3455"
+    },
+    {
+      "file": "e.tsv",
+      "sha256": "48c6f6645b031a5937c8386839debab0e2e48837251687ba1afb6369677f8546",
+      "gitBlob": "93a82e1f505e06256530736b45460738bd50e897"
+    }
+  ]
+}

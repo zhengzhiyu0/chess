@@ -34,12 +34,13 @@
             <div class="hero"><div class="hero-board"><div id="home-board" class="cg-wrap"></div></div></div>
 
             <div class="card setup">
-              <button class="aids-line" id="btn-home-aids"><span id="home-aids-desc"></span><span class="link">对局辅助 ›</span></button>
               <div class="setup-head">
-                <span>下一局 Maia 水平</span>
+                <span>下一局 Maia 固定难度</span>
                 <b id="home-elo-val"></b>
               </div>
-              <input type="range" id="home-elo" min="0" max="2600" step="1" aria-label="下一局 Maia 水平" />
+              <input type="range" id="home-elo" min="0" step="1" list="maia-level-ticks" aria-label="下一局 Maia 固定难度" />
+              <datalist id="maia-level-ticks"></datalist>
+              <div class="elo-scale" aria-hidden="true"><span>入门 · 0</span><span>2600</span></div>
               <small class="muted" id="home-rating"></small>
               <div class="seg" id="home-color" role="group" aria-label="选择执色">
                 <button data-color="w"><span class="color-dot color-dot-white" aria-hidden="true"></span>执白</button>
@@ -181,6 +182,7 @@
                 <div class="arrow-legend" id="arrow-legend"></div>
                 <div class="coach" id="coach-box"></div>
                 <div class="lines" id="sf-lines"></div>
+                <div id="maia-comparison" hidden></div>
               </div>
             </div>
 
@@ -206,6 +208,7 @@
           </div>
           <div class="report-foot">
             <button type="button" id="btn-report-start" class="primary big">开始回顾</button>
+            <button type="button" id="btn-report-free">自由复盘 · 水平对比</button>
           </div>
         </div>
       </section>
@@ -285,15 +288,11 @@
             <option value="79m">Maia-3 79M（312MB，最准）</option>
           </select>
         </label>
-        <label>下一局 Maia 水平 <output name="eloOut"></output>
-          <input type="range" name="elo" min="0" max="2600" step="1" />
-        </label>
         <label>我的棋力起点（修改后重新定位）
           <input type="number" name="playerElo" min="0" max="2600" step="1" required />
         </label>
-        <small class="muted">有未完成对局也可修改；当前棋局保留原参数，旧局结束不会覆盖新起点。</small>
-        <label class="check"><input type="checkbox" name="autoElo" /> 无辅助正式对局计分，并在赛后自动匹配 Maia 水平</label>
-        <p class="muted">棋力、对手水平、计分开关、Maia 模型与随机性变更从新局生效。评级只看结果与对手分；开启对局辅助、提示、悔棋或局中分析后不计分。低于 600 的 Maia 水平为模型外推，不等同于正式赛事等级分。</p>
+        <small class="muted">这是你的自估起点，默认 1500；纯净标准对局结束后会自动估计棋力，不改变所选对手难度。有未完成对局也可修改；当前棋局保留原参数，旧局结束不会覆盖新起点。</small>
+        <p class="muted">对手固定难度、Maia 模型与随机性变更从新局生效。评级只看结果与对手分；开启对局辅助、提示、悔棋或局中分析后不计分，导入棋局和非标准起始局面也不计分。低于 600 的 Maia 水平为模型外推，不等同于正式赛事等级分。</p>
         <label>我执
           <select name="color">
             <option value="w">白棋</option>
@@ -304,6 +303,7 @@
         <label>Maia 随机性 temperature <output name="tempOut"></output>
           <input type="range" name="temperature" min="0" max="1.5" step="0.05" />
         </label>
+        <div id="sampling-controls"></div>
         <label class="web-only">Maia 推理后端
           <select name="backend">
             <option value="wasm">WASM（CPU，最稳）</option>

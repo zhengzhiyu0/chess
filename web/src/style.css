@@ -1305,28 +1305,6 @@ html:not(.native) .native-only {
 #game[data-mode='review'] .game-main {
   --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 190px - var(--eval-space))) * var(--bs-review, 1));
 }
-.aids-line {
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0;
-  background: none;
-  box-shadow: none;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--muted);
-  text-align: left;
-}
-.aids-line:hover {
-  background: none;
-}
-.aids-line:active {
-  transform: none;
-}
-.aids-line .link {
-  color: var(--green);
-  font-weight: 700;
-  white-space: nowrap;
-}
 .play-aids {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -2026,8 +2004,21 @@ dialog input[type='color'] {
   #game[data-mode='review'] .game-main {
     grid-template-rows: auto minmax(0, 1fr);
   }
+  html.web #game[data-mode='review'] .game-main {
+    /* Review hides the toolbar; its former rail must not truncate the analysis scroller. */
+    padding-bottom: 0;
+  }
   #game[data-mode='review'] .board-col {
     align-self: start;
+  }
+  /* The board itself stays centered; the left evaluation rail needs a matching right gutter. */
+  html.web #game[data-mode='review'] .board-wrap {
+    grid-template-columns: 18px minmax(0, 1fr) 18px;
+  }
+  /* Chessground rounds its container to whole device-pixel squares, below the CSS box width. */
+  html.web #game[data-mode='review'] #board cg-container {
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   #game .side {
@@ -2241,9 +2232,8 @@ dialog input[type='color'] {
   color: var(--text2);
   font-weight: 600;
 }
-.setup-tc select {
-  flex: 1;
-  max-width: 220px;
+.setup-tc select,
+.comparison-selects select {
   background: var(--bg-dark);
   color: var(--text);
   border: 1px solid var(--panel3);
@@ -2252,6 +2242,10 @@ dialog input[type='color'] {
   font: inherit;
   font-size: 14px;
 }
+.setup-tc select { flex: 1; max-width: 220px; }
+#home-elo { width: 100%; margin: 10px 0 4px; accent-color: var(--green); cursor: pointer; }
+.elo-scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
 .home-actions {
   flex-wrap: wrap;
 }
@@ -2418,6 +2412,8 @@ dialog input[type='color'] {
   max-width: 520px;
   margin: 0 auto;
   padding: 10px 16px calc(12px + var(--safe-b));
+  display: grid;
+  gap: 6px;
 }
 .summary {
   white-space: normal;
@@ -3047,3 +3043,25 @@ html[data-theme='light'] .review-ctrl .rc-btn:hover {
     outline-offset: -3px !important;
   }
 }
+
+.maia-comparison {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.maia-comparison[hidden] { display: none; }
+.maia-comparison summary, .probability-help summary { cursor: pointer; color: var(--green); }
+.maia-comparison p { margin: 8px 0; }
+.comparison-selects { display: flex; gap: 12px; }
+.comparison-selects label { display: flex; flex-direction: column; align-items: stretch; gap: 4px; flex: 1; min-width: 0; }
+.comparison-selects select { min-width: 0; width: 100%; }
+.maia-comparison table { width: 100%; border-collapse: collapse; margin: 8px 0; font-variant-numeric: tabular-nums; }
+.maia-comparison th, .maia-comparison td { padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--line); }
+.maia-comparison th:first-child, .maia-comparison td:first-child { text-align: left; }
+.maia-comparison small { display: block; }
+.probability-help { margin: 10px 0; font-size: 13px; }
+.probability-help p { margin: 8px 0; }
+.sampling-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+#sampling-status { display: block; }
+

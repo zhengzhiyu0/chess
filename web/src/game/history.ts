@@ -18,13 +18,12 @@ export interface StoredGame {
   /** coach portrait used for this game; -1 is only valid in settings, games store the resolved index */
   coachAvatar?: number;
   elo?: number;
-  /** Player rating and adaptive-opponent state locked when the game starts. */
+  /** Player rating state locked when the game starts. */
   playerElo?: number;
   ratingDeviation?: number;
   ratingStreak?: number;
-  autoElo?: boolean;
   temperature?: number;
-  /** Player's rating after this game when automatic rating adjustment was on. */
+  /** Player's rating after this eligible game was settled. */
   eloAfter?: number;
   model?: string;
   /** time control id, see TIME_CONTROLS */
@@ -37,7 +36,7 @@ export interface StoredGame {
   imported?: boolean;
   /** help used by the player during the game */
   assists?: Assists;
-  /** how the rating change was computed (auto-rated games only) */
+  /** How the player's rating change was computed. */
   rating?: RatingInfo;
   /** left unfinished by starting another game (counted as a resignation) */
   abandoned?: boolean;
@@ -175,7 +174,6 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
   if (elo(r.playerElo)) g.playerElo = r.playerElo;
   if (deviation(r.ratingDeviation)) g.ratingDeviation = r.ratingDeviation;
   if (streak(r.ratingStreak)) g.ratingStreak = r.ratingStreak;
-  if (typeof r.autoElo === 'boolean') g.autoElo = r.autoElo;
   if (inRange(r.temperature, 0, 1.5)) g.temperature = r.temperature;
   if (elo(r.eloAfter)) g.eloAfter = r.eloAfter;
   if (str(r.model, 16)) g.model = r.model as string;
@@ -200,7 +198,7 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
     const x = r.rating;
     if (inRange(x.delta, -2600, 2600, true) && (x.result === 0 || x.result === 0.5 || x.result === 1)
       && inRange(x.expected, 0, 1) && elo(x.playerBefore) && elo(x.playerAfter) && elo(x.opponent)
-      && deviation(x.rdBefore) && deviation(x.rdAfter) && streak(x.streak) && elo(x.opponentAfter)) {
+      && deviation(x.rdBefore) && deviation(x.rdAfter) && streak(x.streak)) {
       g.rating = {
         delta: x.delta,
         result: x.result,
@@ -211,7 +209,6 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
         rdBefore: x.rdBefore,
         rdAfter: x.rdAfter,
         streak: x.streak,
-        opponentAfter: x.opponentAfter,
         ...(x.abandoned === true ? { abandoned: true } : {}),
       };
     }

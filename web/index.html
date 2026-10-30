@@ -38,8 +38,9 @@
                 <span>Maia</span>
                 <b id="home-elo-val"></b>
               </div>
-              <input type="range" id="home-elo" min="0" step="1" list="maia-level-ticks" aria-label="Maia 难度" />
-              <datalist id="maia-level-ticks"></datalist>
+              <input type="range" id="home-elo" min="0" step="1" list="maia-level-options" aria-label="Maia 难度" />
+              <datalist id="maia-level-options"></datalist>
+              <div class="elo-ticks" id="maia-level-ticks" aria-hidden="true"></div>
               <div class="elo-scale" aria-hidden="true"><span>600</span><span>2600</span></div>
               <small class="muted" id="home-rating"></small>
               <div class="seg" id="home-color" role="group" aria-label="选择执色">

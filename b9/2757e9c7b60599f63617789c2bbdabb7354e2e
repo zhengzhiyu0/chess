@@ -1,0 +1,19 @@
+.github/workflows/ios.yml
+  s_3ce749e80efed9::t_92bd968d639996 89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b92757e9c7b60599f63617789c2bbdabb7354e2e",
+  "prompts": {},
+  "sessions": {
+    "s_3ce749e80efed9": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "a7329e4d-57d0-49ce-8685-412b0d3b4f70",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

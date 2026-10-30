@@ -3546,13 +3546,7 @@ function bind() {
   const eloSlider = $<HTMLInputElement>('home-elo');
   eloSlider.max = String(MAIA_LEVELS.length - 1);
   const options = $('maia-level-options');
-  const ticks = $('maia-level-ticks');
-  for (const [index, level] of MAIA_LEVELS.entries()) {
-    options.append(new Option(String(level), String(index)));
-    const tick = document.createElement('i');
-    tick.title = `Maia ${level}`;
-    ticks.append(tick);
-  }
+  for (const [index, level] of MAIA_LEVELS.entries()) options.append(new Option(String(level), String(index)));
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => {
     b.onclick = () => saveHomeSettings({ color: b.dataset.color as Settings['color'] });
   });

@@ -86,6 +86,7 @@ jobs:
 
       - name: Xcode build (no signing)
         run: |
+          set -o pipefail
           sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
           xcodebuild -version
           xcodebuild \

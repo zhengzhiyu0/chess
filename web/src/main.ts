@@ -40,7 +40,7 @@ import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './app/avatar';
 import { findNode, movesHtml } from './app/moves-ui';
 import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
-import { coachArrow } from './app/coach-arrow';
+import { coachArrow, outlinedArrow } from './app/coach-arrow';
 import { BoardFx, moveFxOf, type MoveFx } from './app/fx';
 import { DodgeFx } from './app/dodge';
 import { openHistory } from './app/history-ui';
@@ -129,7 +129,7 @@ let maiaThinking = false;
 let maiaFailed = false;
 /** most user moves the current game ever had, so taking moves back can't dodge "leaving counts as a loss" */
 let peakUserMoves = 0;
-let hintShapes: DrawShape[] = [];
+let hintShapes: { uci: string; brush: 'green' | 'blue' }[] = [];
 let liveOn = false;
 let liveCtrl: AbortController | null = null;
 let liveLines: SfLine[] = [];
@@ -142,7 +142,7 @@ let analysisStatus: AnalysisStatus = 'idle';
 let analysisError = '';
 let analysisDone = 0;
 let analysisTotal = 0;
-let screen: 'home' | 'game' | 'train' | 'appearance' = 'home';
+let screen: 'home' | 'game' | 'train' | 'appearance' | 'settings' | 'downloads' = 'home';
 type HomeTab = 'play' | 'train' | 'data';
 let homeTab: HomeTab = 'play';
 function pickCoachAvatar(selection: number): number {
@@ -234,6 +234,7 @@ const enginesCtx: EnginesCtx = {
     saveSettings(settings);
   },
   warmup: () => engines.warmup().catch(() => {}),
+  openDownloads: () => showScreen('downloads'),
 };
 
 // ---------- game helpers ----------
@@ -258,6 +259,15 @@ const currentLine = () => tree.lineThrough(node);
 /** the recorded game line through the current position, ignoring explorations (graph, summary, batch analysis) */
 const gameLine = () => tree.lineThrough(realOf(node));
 const arrow = (u: string, brush: string): DrawShape => ({ orig: u.slice(0, 2) as Key, dest: u.slice(2, 4) as Key, brush });
+const boardOrientation = (): 'white' | 'black' => (userColor === 'w') !== flipped ? 'white' : 'black';
+const arrowWithOutline = (u: string, brush: keyof typeof BRUSHES | 'green' | 'blue' | 'red' | 'yellow'): DrawShape => {
+  if (!settings.aidArrowOutline) return arrow(u, brush);
+  const b = brush === 'green' ? { color: '#5fa83f', opacity: 0.85, lineWidth: 7 } :
+    brush === 'blue' ? { color: '#3b82d6', opacity: 0.8, lineWidth: 5 } :
+    brush === 'red' ? { color: '#e8402f', opacity: 0.75, lineWidth: 10 } :
+    brush === 'yellow' ? { color: '#d9a43a', opacity: 0.75, lineWidth: 6 } : BRUSHES[brush];
+  return outlinedArrow(u, boardOrientation(), b.color, b.opacity, brush, b.lineWidth);
+};
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function clearAnn(...keys: (keyof Ann)[]) {
@@ -447,9 +457,9 @@ function reviewArrows(): ReviewArrow[] {
 }
 
 function arrows(): DrawShape[] {
-  const shapes: DrawShape[] = [...hintShapes, ...aidShapes()];
+  const shapes: DrawShape[] = [...hintShapes.map(({ uci, brush }) => arrowWithOutline(uci, brush)), ...aidShapes()];
   if (mode === 'review') {
-    for (const a of reviewArrows()) shapes.push(arrow(a.uci, a.kind));
+    for (const a of reviewArrows()) shapes.push(arrowWithOutline(a.uci, a.kind));
     const r = node.uci && showMove(node) ? reviewOf(node) : null;
     if (r && node.uci) shapes.push({ orig: node.uci.slice(2, 4) as Key, customSvg: { html: judgeBoardSvg(r.judgement) } });
   }
@@ -485,7 +495,7 @@ function renderBoard() {
       movable: { color: undefined, dests: new Map() },
       premovable: { enabled: false },
     });
-    cg.setAutoShapes(next ? [arrow(next, 'demo')] : []);
+    cg.setAutoShapes(next ? [arrowWithOutline(next, 'demo')] : []);
     return;
   }
   const c = chessOf(node);
@@ -1315,13 +1325,13 @@ async function hint() {
     const r = await s.analyse(tree.root.fen, { moves: movesTo(t), movetime: settings.sfMovetime, depth: depthCap('hint'), multipv: 1 });
     if (stale()) return;
     const best = r.bestmove;
-    hintShapes = best ? [arrow(best, 'green')] : [];
+    hintShapes = best ? [{ uci: best, brush: 'green' }] : [];
     let text = best ? `Stockfish 推荐：${sanOf(t.fen, best)}（${r.lines[0] ? evalText(r.lines[0], turnOf(t.fen)) : ''}）` : '';
     if (!settings.lowMemory) {
       const h = await maiaEval(t);
       if (stale()) return;
       const top = h.moves[0];
-      if (top.uci !== best) hintShapes.push(arrow(top.uci, 'blue'));
+      if (top.uci !== best) hintShapes.push({ uci: top.uci, brush: 'blue' });
       text += `\n${humanElo(t)} 分棋手最常走：` + h.moves.slice(0, 3).map((x) => `${sanOf(t.fen, x.uci)} ${(x.p * 100).toFixed(0)}%`).join('，');
     }
     box.textContent = text;
@@ -2409,9 +2419,9 @@ function recordAssistance() {
 function aidShapes(): DrawShape[] {
   const t = tip();
   if (mode !== 'play' || node !== t || result || turnOf(t.fen) !== userColor) return [];
-  const orientation = (userColor === 'w') !== flipped ? 'white' : 'black';
+  const orientation = boardOrientation();
   const hint = (uci: string, kind: 'threat' | 'best') =>
-    coachArrow(uci, chessOf(t).get(uci.slice(0, 2) as Square)?.type === 'n', orientation, kind);
+    coachArrow(uci, chessOf(t).get(uci.slice(0, 2) as Square)?.type === 'n', orientation, kind, settings.aidArrowOutline);
   const out: DrawShape[] = [];
   if (settings.aidThreats && t.a.threat) out.push(hint(t.a.threat.uci, 'threat'));
   if (settings.aidBest && t.a.eval?.best) out.push(hint(t.a.eval.best, 'best'));
@@ -2770,7 +2780,7 @@ function renderAppearance() {
   $('appearance-haptics').onchange = (event) => saveAppearance({ haptics: (event.target as HTMLInputElement).checked });
 }
 
-function showScreen(s: 'home' | 'game' | 'train' | 'appearance', push = true) {
+function showScreen(s: 'home' | 'game' | 'train' | 'appearance' | 'settings' | 'downloads', push = true) {
   const prev = screen;
   screen = s;
   const hash = s === 'home' ? '' : `#${s}`;
@@ -2783,7 +2793,10 @@ function showScreen(s: 'home' | 'game' | 'train' | 'appearance', push = true) {
   $('game').classList.toggle('active', s === 'game');
   $('train').classList.toggle('active', s === 'train');
   $('appearance').classList.toggle('active', s === 'appearance');
+  $('settings').classList.toggle('active', s === 'settings');
+  $('downloads').classList.toggle('active', s === 'downloads');
   if (s === 'appearance') renderAppearance();
+  if (s === 'downloads') openEngines(enginesCtx);
   if (s === 'train') {
     requestAnimationFrame(trainerRedraw);
     if (prev !== 'game') return;
@@ -2920,9 +2933,9 @@ function openAvatar() {
 // ---------- settings dialog ----------
 
 function openSettings() {
-  const dlg = $<HTMLDialogElement>('dlg-settings');
+  showScreen('settings');
   samplingControls.refresh();
-  const f = dlg.querySelector('form')!;
+  const f = $<HTMLFormElement>('settings-form');
   const el = (n: string) => f.elements.namedItem(n) as HTMLInputElement;
   for (const [k, v] of Object.entries(settings)) {
     const input = el(k);
@@ -2939,10 +2952,7 @@ function openSettings() {
     const on = el('boardFx').checked;
     for (const name of ['boardFxBadge', 'boardFxCapture', 'boardFxCheck', 'boardFxMate', 'boardFxShake']) el(name).disabled = !on;
   };
-  f.oninput = () => {
-    outs();
-    syncFxDetailControls();
-  };
+  f.oninput = () => { outs(); syncFxDetailControls(); };
   outs();
   syncFxDetailControls();
   $('set-avatar').innerHTML = avatarHtml(settings.avatar);
@@ -2975,10 +2985,8 @@ function openSettings() {
     `视口：${innerWidth}×${innerHeight}　屏幕：${window.screen.width}×${window.screen.height}${document.documentElement.classList.contains('letterbox') ? '（底部已补偿）' : ''}<br>` +
     `${layoutDiag()}<br>` +
     `版本：${__APP_VERSION__}`;
-  dlg.returnValue = '';
   const openPlayerElo = settings.playerElo;
-  dlg.onclose = () => {
-    if (dlg.returnValue !== 'ok') return;
+  const save = () => {
     const old = settings;
     const num = (n: string) => Number(el(n).value);
     const playerEdited = num('playerElo') !== openPlayerElo;
@@ -3001,6 +3009,7 @@ function openSettings() {
       ecoAnalysis: el('ecoAnalysis').checked,
       lowMemory: el('lowMemory').checked,
       premove: el('premove').checked,
+      aidArrowOutline: el('aidArrowOutline').checked,
       boardFx: el('boardFx').checked,
       boardFxBadge: el('boardFxBadge').checked,
       boardFxCapture: el('boardFxCapture').checked,
@@ -3013,8 +3022,13 @@ function openSettings() {
       opponentTalk: el('opponentTalk').checked,
     };
     applySettings(old);
+    showScreen('home');
+    setStatus('设置已保存');
   };
-  dlg.showModal();
+  f.onsubmit = (event) => {
+    event.preventDefault();
+    save();
+  };
 }
 
 function applyBoardSize() {
@@ -3672,11 +3686,10 @@ function bind() {
   $('btn-appearance').onclick = () => showScreen('appearance');
   $('btn-appearance-back').onclick = () => showScreen('home');
   $('btn-appearance-settings').onclick = openSettings;
-  $('btn-open-appearance').onclick = () => {
-    $<HTMLDialogElement>('dlg-settings').close();
-    showScreen('appearance');
-  };
-  $('btn-engines').onclick = () => openEngines(enginesCtx);
+  $('btn-open-appearance').onclick = () => showScreen('appearance');
+  $('btn-settings-back').onclick = () => showScreen('home');
+  $('btn-downloads-back').onclick = () => showScreen('home');
+  $('btn-engines').onclick = () => showScreen('downloads');
   $('btn-result-review').onclick = () => {
     $<HTMLDialogElement>('dlg-result').close();
     node = tree.root;
@@ -4177,7 +4190,7 @@ function init() {
   setInterval(tickClock, 100);
   // 系统返回键/手势回到主页
   window.addEventListener('popstate', () => {
-    const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : location.hash === '#appearance' ? 'appearance' : 'home';
+    const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : location.hash === '#appearance' ? 'appearance' : location.hash === '#settings' ? 'settings' : location.hash === '#downloads' ? 'downloads' : 'home';
     if (want !== 'game' && backToReport()) {
       history_.pushState(null, '', '#game');
       return;
@@ -4186,6 +4199,8 @@ function init() {
   });
   if (location.hash === '#game') showScreen('game', false);
   else if (location.hash === '#appearance') showScreen('appearance', false);
+  else if (location.hash === '#settings') showScreen('settings', false);
+  else if (location.hash === '#downloads') showScreen('downloads', false);
   else if (location.hash === '#train') history_.replaceState(null, '', location.pathname + location.search);
   onStorageFull(() => {
     alert('本机存储空间已满，部分数据可能没能保存。请到「数据与备份」导出备份，然后清理一些历史对局。');

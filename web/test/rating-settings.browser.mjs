@@ -35,7 +35,13 @@ try {
     const input = page.locator('[name="playerElo"]');
     assert.equal(await input.isEnabled(), true, 'An unfinished game must not disable the starting-rating input');
     await input.fill('900');
-    await page.locator('#dlg-settings button[value="ok"]').click();
+    if (mobile) {
+      const viewport = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth, scale: visualViewport?.scale ?? 1 }));
+      assert.ok(viewport.documentWidth <= viewport.width, `Settings must not shift horizontally after focusing player rating: ${JSON.stringify(viewport)}`);
+      assert.ok(viewport.scale <= 1.01, `iOS must not auto-zoom the focused rating field: ${JSON.stringify(viewport)}`);
+    }
+    await page.locator('#settings .appbar #btn-settings-save').waitFor({ state: 'visible' });
+    await page.locator('#settings .appbar #btn-settings-save').click();
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('maia-coach.settings')).playerElo === 900);
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('maia-coach.settings')));
     assert.deepEqual(
@@ -45,10 +51,11 @@ try {
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('maia-coach.game'))), game, 'Editing the next starting rating must preserve the live game snapshot');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('#btn-settings').click();
-    assert.equal(await input.inputValue(), '900', 'The saved starting rating must survive a reload');
-    await input.fill('1000');
-    await input.press('Escape');
-    await page.locator('#dlg-settings').waitFor({ state: 'hidden' });
+    const reloadInput = page.locator('[name="playerElo"]');
+    assert.equal(await reloadInput.inputValue(), '900', 'The saved starting rating must survive a reload');
+    await reloadInput.fill('1000');
+    await page.locator('#btn-settings-cancel').click();
+    await page.locator('#settings').waitFor({ state: 'hidden' });
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('maia-coach.settings')).playerElo), 900, 'Cancelling must not save an edit');
     await page.locator('#btn-continue').click();
     await page.locator('#btn-menu-top:visible, #btn-menu:visible').first().click();

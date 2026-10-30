@@ -93,6 +93,16 @@ describe('board effect settings', () => {
   });
 });
 
+describe('arrow outline setting', () => {
+  beforeEach(() => mem.clear());
+
+  it('is off by default and accepts explicit opt-in', () => {
+    expect(defaultSettings().aidArrowOutline).toBe(false);
+    expect(sanitizeSettings({}).aidArrowOutline).toBe(false);
+    expect(sanitizeSettings({ aidArrowOutline: true }).aidArrowOutline).toBe(true);
+  });
+});
+
 describe('independent assistance migration', () => {
   const disabled = { aidWinPct: false, aidEval: false, aidThreats: false, aidHanging: false, aidBest: false };
   const legacyAids = { coachEval: true, coachThreats: true, coachHanging: true, coachBest: true };

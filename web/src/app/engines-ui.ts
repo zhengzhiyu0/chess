@@ -19,6 +19,7 @@ export interface EnginesCtx {
   settings(): Settings;
   patchSettings(patch: Partial<Settings>): void;
   warmup(): Promise<void>;
+  openDownloads(): void;
 }
 
 const downloads = new Map<PackageId, { ctrl: AbortController; done: Promise<boolean> }>();
@@ -105,10 +106,9 @@ async function runDownload(ctx: EnginesCtx, p: Package, ctrl: AbortController, o
     return false;
   } finally {
     downloads.delete(p.id);
-    if ($<HTMLDialogElement>('dlg-engines').open) await renderPackages(ctx);
+    if (document.querySelector('#downloads.active')) await renderPackages(ctx);
   }
 }
-
 async function downloadRecommended(ctx: EnginesCtx) {
   const pkgs = await listPackages(ctx.settings().sfLite);
   const want: PackageId[] = ['core', 'stockfish', 'puzzles', `maia-${ctx.settings().model}`];
@@ -136,7 +136,7 @@ export async function autoOffline(ctx: EnginesCtx): Promise<boolean> {
   const bar = $('offline-bar');
   const text = bar.querySelector('span')!;
   const fill = bar.querySelector<HTMLElement>('.progress > div')!;
-  bar.onclick = () => openEngines(ctx);
+  bar.onclick = () => ctx.openDownloads();
   bar.classList.remove('hidden');
   let done = 0;
   let ok = true;
@@ -156,7 +156,6 @@ export async function autoOffline(ctx: EnginesCtx): Promise<boolean> {
 }
 
 export function openEngines(ctx: EnginesCtx) {
-  const dlg = $<HTMLDialogElement>('dlg-engines');
   const auto = $<HTMLInputElement>('chk-auto-offline');
   auto.checked = ctx.settings().autoOffline;
   auto.onchange = () => ctx.patchSettings({ autoOffline: auto.checked });
@@ -164,5 +163,4 @@ export function openEngines(ctx: EnginesCtx) {
   $('btn-warm').onclick = () => void ctx.warmup();
   void loadPrecache().then((ok) => (ok ? pruneStale() : 0));
   void renderPackages(ctx);
-  dlg.showModal();
 }

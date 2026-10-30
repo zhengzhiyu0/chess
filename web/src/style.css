@@ -1953,9 +1953,26 @@ dialog input[type='color'] {
   height: 32px;
   padding: 0;
   border: 1px solid var(--panel3);
+
   border-radius: 6px;
   background: none;
 }
+
+/* ---------- 设置与下载独立页面 ---------- */
+.settings-main, .downloads-main { flex: 1; min-width: 0; overflow-x: clip; overflow-y: auto; padding: 20px max(16px, env(safe-area-inset-right)) calc(28px + var(--safe-b)) max(16px, env(safe-area-inset-left)); }
+.settings-main > form, .downloads-main { box-sizing: border-box; width: min(100%, 720px); min-width: 0; margin: 0 auto; }
+.settings-main form { display: flex; min-width: 0; flex-direction: column; gap: 12px; }
+.settings-main input:not([type='checkbox']):not([type='range']), .settings-main select, .settings-main textarea { max-width: 100%; font-size: 16px; }
+.settings-main label { display: flex; flex-direction: column; gap: 6px; color: var(--text2); font-size: 13px; }
+.settings-main label.check { flex-direction: row; align-items: center; gap: 10px; min-height: 36px; touch-action: manipulation; }
+.settings-main label.check input { flex: none; width: 20px; height: 20px; margin: 0; }
+.settings-main select, .settings-main input[type='number'], .settings-main textarea { background: var(--bg-dark); color: var(--text); border: 1px solid var(--panel3); border-radius: 8px; padding: 9px 10px; outline: none; -webkit-user-select: text; user-select: text; }
+.settings-main select:focus, .settings-main input:focus, .settings-main textarea:focus { border-color: var(--green); }
+.settings-main h3, .downloads-main h2 { margin: 0 0 4px; font-size: 24px; }
+.downloads-main .pkg-list { margin: 18px 0; }
+.settings-save { flex: none; min-height: 38px; padding: 6px 14px; border-radius: 9px; font-size: 14px; }
+.settings-save:active { transform: scale(0.97); }
+.settings-main .row, .downloads-main .row { display: flex; flex-wrap: wrap; gap: 10px; }
 
 /* ---------- 宽屏：棋盘左、面板右 ---------- */
 @media (min-aspect-ratio: 1/1) and (min-width: 720px) {

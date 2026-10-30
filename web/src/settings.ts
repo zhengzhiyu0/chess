@@ -43,6 +43,8 @@ export interface Settings {
   aidWinPct: boolean;
   /** show the engine evaluation during play */
   aidEval: boolean;
+  /** arrow outline for hints, threats, best moves and review arrows */
+  aidArrowOutline: boolean;
   /** arrow for what the opponent threatens if you ignore it */
   aidThreats: boolean;
   /** circle your attacked, under-defended pieces */
@@ -125,6 +127,7 @@ export function defaultSettings(): Settings {
     autoOffline: true,
     aidWinPct: false,
     aidEval: false,
+    aidArrowOutline: false,
     aidThreats: false,
     aidHanging: false,
     aidBest: false,
@@ -221,6 +224,7 @@ const RULES: Record<keyof Settings, Rule> = {
   autoOffline: { bool: true },
   aidWinPct: { bool: true },
   aidEval: { bool: true },
+  aidArrowOutline: { bool: true },
   aidThreats: { bool: true },
   aidHanging: { bool: true },
   aidBest: { bool: true },

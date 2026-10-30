@@ -305,10 +305,17 @@
       </div>
     </dialog>
 
-        <dialog id="dlg-settings">
-      <form method="dialog">
-        <button type="button" class="settings-appearance-link" id="btn-open-appearance">棋盘、棋子与音效 <span>打开独立页面 ›</span></button>
-        <h3 tabindex="-1" autofocus>设置</h3>
+      <section id="settings" class="screen" data-kind="settings">
+        <header class="appbar">
+          <button id="btn-settings-back" class="icon" type="button" title="返回" aria-label="返回"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg></button>
+          <div class="brand"><span>设置</span></div>
+          <button class="icon theme-toggle" type="button" title="切换浅色模式" aria-label="切换浅色模式"></button>
+          <button type="submit" form="settings-form" id="btn-settings-save" class="settings-save primary">保存</button>
+        </header>
+        <main class="settings-main">
+          <form id="settings-form">
+            <button type="button" class="settings-appearance-link" id="btn-open-appearance">棋盘、棋子与音效 <span>打开独立页面 ›</span></button>
+            <h3 tabindex="-1" autofocus>设置</h3>
         <button type="button" class="avatar-row" id="btn-set-avatar"><span id="set-avatar"></span><span>我的头像</span><span class="link">更换 ›</span></button>
         <button type="button" class="avatar-row coach-fixed" id="set-coach-row" disabled><span id="set-coach"></span><span>教练头像</span><span class="muted">莉亚</span></button>
         <label>Maia 模型
@@ -342,6 +349,8 @@
         </label>
         <label class="check"><input type="checkbox" name="thinkDelay" /> 模拟人类思考时间</label>
         <label class="check"><input type="checkbox" name="premove" /> 允许预走（对手思考时先排好下一步）</label>
+        <label class="check"><input type="checkbox" name="aidArrowOutline" /> 箭头描黑边</label>
+        <small class="muted">作用于提示、威胁、最佳着法和复盘箭头；开启后箭头完全不透明，仅改变外观，不开启对局辅助。</small>
         <label class="check"><input type="checkbox" name="boardFx" /> 棋盘动效</label>
         <div class="settings-subgroup" aria-label="棋盘动效详细设置">
           <label class="check"><input type="checkbox" name="boardFxBadge" /> 徽标弹出与优秀着法闪光</label>
@@ -384,29 +393,33 @@
           <button type="button" id="btn-export-launch-logs" class="native-only">导出本次启动日志</button>
         </div>
         <div class="row">
-          <button value="cancel">取消</button>
-          <button value="ok" class="primary">保存</button>
+          <button type="button" id="btn-settings-cancel">取消</button>
         </div>
       </form>
-    </dialog>
+        </main>
+      </section>
 
 
 
-        <dialog id="dlg-engines">
-      <form method="dialog">
-        <h3>引擎管理</h3>
-        <p class="muted web-only">把引擎和模型下载到本机，之后完全离线、秒开。</p>
-        <div id="pkg-list" class="pkg-list"></div>
-        <div class="env web-only" id="storage-info"></div>
-        <label class="check web-only"><input type="checkbox" id="chk-auto-offline" /> 启动时自动下载离线包（应用本体 + Stockfish + 当前模型）</label>
-        <p class="muted">应用启动时会自动在后台加载当前设置的引擎。</p>
-        <div class="row">
-          <button type="button" id="btn-dl-rec" class="primary web-only">下载推荐组合</button>
-          <button type="button" id="btn-warm">立即预加载</button>
-          <button value="close">关闭</button>
-        </div>
-      </form>
-    </dialog>
+      <section id="downloads" class="screen" data-kind="downloads">
+        <header class="appbar">
+          <button id="btn-downloads-back" class="icon" type="button" title="返回" aria-label="返回"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></svg></button>
+          <div class="brand"><span>下载管理</span></div>
+          <button class="icon theme-toggle" type="button" title="切换浅色模式" aria-label="切换浅色模式"></button>
+        </header>
+        <main class="downloads-main">
+          <h2>引擎与模型</h2>
+          <p class="muted web-only">把引擎和模型下载到本机，之后完全离线、秒开。</p>
+          <div id="pkg-list" class="pkg-list"></div>
+          <div class="env web-only" id="storage-info"></div>
+          <label class="check web-only"><input type="checkbox" id="chk-auto-offline" /> 启动时自动下载离线包（应用本体 + Stockfish + 当前模型）</label>
+          <p class="muted">应用启动时会自动在后台加载当前设置的引擎。</p>
+          <div class="row">
+            <button type="button" id="btn-dl-rec" class="primary web-only">下载推荐组合</button>
+            <button type="button" id="btn-warm">立即预加载</button>
+          </div>
+        </main>
+      </section>
 
     <dialog id="dlg-avatar">
       <form method="dialog">

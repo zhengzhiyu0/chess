@@ -115,6 +115,20 @@ export function computeStats(history: StoredGame[]): Stats {
   };
 }
 
+export interface RatingPoint {
+  date: number;
+  rating: number;
+}
+
+/** Settled local rated games, ordered from oldest to newest for profile charts. */
+export function ratingHistory(history: StoredGame[]): RatingPoint[] {
+  return history
+    .filter((g) => !g.imported && Boolean(outcomeOf(g)) && (g.rating?.playerAfter !== undefined || g.eloAfter !== undefined))
+    .map((g) => ({ date: g.date, rating: g.rating?.playerAfter ?? g.eloAfter! }))
+    .filter((p) => Number.isFinite(p.rating))
+    .sort((a, b) => a.date - b.date);
+}
+
 /** Insert or replace by id, newest first, capped. */
 export function upsert(history: StoredGame[], g: StoredGame, cap = 300): StoredGame[] {
   const rest = history.filter((x) => x.id !== g.id);

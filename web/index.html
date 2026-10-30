@@ -38,9 +38,8 @@
                 <span>Maia</span>
                 <b id="home-elo-val"></b>
               </div>
-              <input type="range" id="home-elo" min="0" step="1" list="maia-level-options" aria-label="Maia 难度" />
-              <datalist id="maia-level-options"></datalist>
-              <small class="muted" id="home-rating"></small>
+              <input type="range" id="home-elo" min="0" step="1" aria-label="Maia 难度" />
+              <div id="home-elo-ticks" class="elo-ticks" aria-hidden="true"></div>
               <div class="seg" id="home-color" role="group" aria-label="选择执色">
                 <button data-color="w"><span class="color-dot color-dot-white" aria-hidden="true"></span>执白</button>
                 <button data-color="random"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m17 3 4 4-4 4M3 17h3c5 0 7-10 12-10h3M17 13l4 4-4 4M3 7h3c2 0 3 1 4 3m4 4c1 2 2 3 4 3h3" /></svg>随机</button>
@@ -86,6 +85,10 @@
               <span class="home-panel-mark">本机</span>
             </div>
             <div class="home-actions home-actions-stack">
+              <button id="btn-profile-rating" class="tile">
+                <svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6" /></svg>
+                <span><b>我的分数</b><small>当前分数与历史走势</small></span><span class="tile-arrow">›</span>
+              </button>
               <button id="btn-history" class="tile">
                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
                 <span><b>历史与统计</b><small id="history-sub"></small></span><span class="tile-arrow">›</span>
@@ -156,7 +159,6 @@
             <div class="panel">
               <div class="tab" id="tab-play">
                 <div class="info" id="play-info"></div>
-                <small class="muted" id="game-rating"></small>
                 <div class="opponent-dialogue" id="opponent-dialogue" aria-live="polite"></div>
                 <div class="play-aids" id="play-aids" aria-live="polite"></div>
                 <div class="hint" id="hint-box"></div>
@@ -322,6 +324,7 @@
           <label class="check"><input type="checkbox" name="boardFxCapture" /> 吃子粒子</label>
           <label class="check"><input type="checkbox" name="boardFxCheck" /> 将军脉冲</label>
           <label class="check"><input type="checkbox" name="boardFxMate" /> 将杀彩带</label>
+          <label class="check"><input type="checkbox" name="boardFxShake" /> 失误时棋盘抖动</label>
         </div>
         <label>棋盘
           <select name="boardTheme" id="board-theme"></select>
@@ -436,6 +439,16 @@
         <div class="history-body" id="history-body"></div>
         <div class="row">
           <button type="button" id="btn-history-clear">清空</button>
+          <button value="close" class="primary">关闭</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-profile-rating">
+      <form method="dialog">
+        <h3>我的分数</h3>
+        <div class="profile-rating" id="profile-rating" aria-live="polite"></div>
+        <div class="row">
           <button value="close" class="primary">关闭</button>
         </div>
       </form>

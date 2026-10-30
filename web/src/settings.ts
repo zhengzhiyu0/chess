@@ -70,6 +70,8 @@ export interface Settings {
   boardFxCapture: boolean;
   boardFxCheck: boolean;
   boardFxMate: boolean;
+  /** shake the board after a blunder */
+  boardFxShake: boolean;
   /** board size in % of the largest size that fits (play / review layouts) */
   boardSizePlay: number;
   boardSizeReview: number;
@@ -140,6 +142,7 @@ export function defaultSettings(): Settings {
     boardFxCapture: motion,
     boardFxCheck: motion,
     boardFxMate: motion,
+    boardFxShake: false,
     boardSizePlay: 100,
     boardSizeReview: 100,
     reviewOpponent: false,
@@ -235,6 +238,7 @@ const RULES: Record<keyof Settings, Rule> = {
   boardFxCapture: { bool: true },
   boardFxCheck: { bool: true },
   boardFxMate: { bool: true },
+  boardFxShake: { bool: true },
   boardSizePlay: { num: [60, 100] },
   boardSizeReview: { num: [60, 100] },
   reviewOpponent: { bool: true },

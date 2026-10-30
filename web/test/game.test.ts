@@ -3,7 +3,7 @@ import { GameTree } from '../src/game/tree';
 import { exportPgn, fmtClock, parseClock, parsePgn } from '../src/game/pgn';
 import { START_FEN, canMate, isThreefold, pvToSan, sanOf, terminalOf, timeoutResult } from '../src/game/rules';
 import { ChessClock, fmtClockShort, pgnTimeControl, thinkBudget, timeControlOf } from '../src/game/clock';
-import { computeStats, mainlineLength, outcomeOf, upsert, type StoredGame } from '../src/game/history';
+import { computeStats, mainlineLength, outcomeOf, ratingHistory, upsert, type StoredGame } from '../src/game/history';
 
 const lineOf = (tree: GameTree, ...ucis: string[]) => {
   let n = tree.root;
@@ -254,6 +254,20 @@ describe('history', () => {
     expect(s.byElo.map((b) => b.elo)).toEqual([1400, 1600]);
     expect(s.recent).toEqual(['win', 'win', 'loss', 'win']);
     expect(s.streak).toEqual({ kind: 'win', n: 2 });
+  });
+
+  it('builds a chronological rating history from settled local games only', () => {
+    const rated = (id: string, date: number, after: number): StoredGame => ({
+      ...g(id, date, 'w', '1-0'),
+      rating: {
+        delta: after - 1500, result: 1, expected: 0.5, playerBefore: 1500, playerAfter: after,
+        opponent: 1500, rdBefore: 350, rdAfter: 250, streak: 1,
+      },
+    });
+    const legacy = { ...g('legacy', 2, 'w', '1-0'), eloAfter: 1510 };
+    expect(ratingHistory([rated('new', 3, 1600), rated('old', 1, 1550), legacy, { ...rated('imported', 4, 1700), imported: true }, g('unfinished', 5, 'w', '')])).toEqual([
+      { date: 1, rating: 1550 }, { date: 2, rating: 1510 }, { date: 3, rating: 1600 },
+    ]);
   });
 
   it('upserts newest first with a cap', () => {

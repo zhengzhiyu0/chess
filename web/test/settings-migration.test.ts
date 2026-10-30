@@ -83,6 +83,16 @@ describe('settings whitelist', () => {
   });
 });
 
+describe('board effect settings', () => {
+  beforeEach(() => mem.clear());
+
+  it('keeps shake off by default but accepts explicit opt-in', () => {
+    expect(defaultSettings().boardFxShake).toBe(false);
+    expect(sanitizeSettings({}).boardFxShake).toBe(false);
+    expect(sanitizeSettings({ boardFxShake: true }).boardFxShake).toBe(true);
+  });
+});
+
 describe('independent assistance migration', () => {
   const disabled = { aidWinPct: false, aidEval: false, aidThreats: false, aidHanging: false, aidBest: false };
   const legacyAids = { coachEval: true, coachThreats: true, coachHanging: true, coachBest: true };

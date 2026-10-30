@@ -85,6 +85,7 @@ export class BoardFx {
   captureEnabled = true;
   checkEnabled = true;
   mateEnabled = true;
+  shakeEnabled = false;
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private ps: Particle[] = [];
@@ -162,7 +163,7 @@ export class BoardFx {
           this.ring(x, y, '#7ff0e8', 1, 0.12);
         }
       }
-      if (j === 'blunder') this.shake();
+      if (j === 'blunder' && this.shakeEnabled) this.shake();
       if (m.checkSq && this.checkEnabled) {
         const [kx, ky] = this.center(m.checkSq);
         this.ring(kx, ky, '#ff3b30', 0.8, 0.12);

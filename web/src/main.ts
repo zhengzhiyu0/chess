@@ -17,7 +17,7 @@ import { classify, evalText, JUDGEMENTS, JUDGEMENT_INFO, moveAccuracy, SEVERITY,
 import { bookReady, inBook, loadBook } from './coach/book';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, isSacrifice, plainEval, type MoveInsight, type Sides } from './coach/explain';
 import { ELO_MAX, ELO_MIN, MAIA_LEVELS, isIOS, loadSettings, saveSettings, type Settings } from './settings';
-import { assistCount, computeRating, emptyAssists, ratingBreakdown, type Assists, type RatingInfo } from './game/rating';
+import { assistCount, computeRating, emptyAssists, type Assists, type RatingInfo } from './game/rating';
 import { onStorageFull, readJson, safeSet } from './storage';
 import { addMistakes, loadMistakes, mistakeStats, setDeletedMistakes, setMistakes, type Mistake } from './training/mistakes';
 import { loadProgress, setProgress, THEME_LABEL } from './training/puzzles';
@@ -30,7 +30,7 @@ import { GameTree, mainChild, type GNode } from './game/tree';
 import { END_REASON_TEXT, START_FEN, moveNumberOf, pvToSan, sanOf, terminalOf, timeoutResult, toMove, turnOf, type Color, type EndReason } from './game/rules';
 import { exportPgn as treeToPgn, parsePgn, splitPgn, type Annotation } from './game/pgn';
 import { ChessClock, TIME_CONTROLS, fmtClockShort, pgnTimeControl, thinkBudget, timeControlOf } from './game/clock';
-import { computeStats, loadHistory, newGameId, sanitizeGame, saveHistory, upsert, type StoredGame } from './game/history';
+import { computeStats, loadHistory, newGameId, ratingHistory, sanitizeGame, saveHistory, upsert, type StoredGame } from './game/history';
 import { dragHaptics, installTapHaptics } from './audio/haptics';
 import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio, type EndKind } from './audio/sound';
 import { $, escapeHtml, setStatus } from './app/dom';
@@ -522,6 +522,7 @@ function applyFx() {
   fx.captureEnabled = settings.boardFxCapture;
   fx.checkEnabled = settings.boardFxCheck;
   fx.mateEnabled = settings.boardFxMate;
+  fx.shakeEnabled = settings.boardFxShake;
   dodge.enabled = settings.boardFx;
   const wrap = $('board').parentElement!;
   wrap.classList.toggle('fx-on', settings.boardFx);
@@ -2578,7 +2579,8 @@ function renderPlayers() {
     const clockHtml = clock || node.clock
       ? `<div class="clock${v.active ? ' active' : ''}${v.low ? ' low' : ''} timed" data-clock="${color}">${v.text}</div>`
       : '';
-    return `<div class="caps ${color === 'w' ? 'by-w' : 'by-b'}"><div class="caps-track">${m.html}</div>${m.diff > 0 ? `<span class="adv">+${m.diff}</span>` : ''}${thinking}</div>${clockHtml}`;
+    const maiaScore = who === 'maia' && gameElo !== undefined ? `Maia ${gameElo}` : '';
+    return `<div class="player-name">${maiaScore}</div><div class="player-line"><div class="caps ${color === 'w' ? 'by-w' : 'by-b'}"><div class="caps-track">${m.html}</div>${m.diff > 0 ? `<span class="adv">+${m.diff}</span>` : ''}${thinking}</div>${clockHtml}</div>`;
   };
   $('player-top').innerHTML = card(flipped ? 'me' : 'maia');
   $('player-bottom').innerHTML = card(flipped ? 'maia' : 'me');
@@ -2613,7 +2615,6 @@ function renderPlayInfo() {
   else if (maiaThinking) box.textContent = 'Maia 思考中…';
   else if (node !== tip()) box.textContent = '正在查看历史局面';
   else box.textContent = turnOf(node.fen) === userColor ? (cg.state.premovable.current ? '轮到你走（已预走）' : '轮到你走') : '等待 Maia';
-  $('game-rating').textContent = imported ? '' : `我 ${gamePlayerElo ?? '?'} · Maia ${gameElo ?? '?'} · ${assistCount(assists) ? '辅助练习 · 不计分' : ratingEnabled() ? '计分对局' : '不计分对局'}`;
 }
 
 function renderOpponentDialogue() {
@@ -2669,15 +2670,8 @@ function checkResult() {
 
 function renderRatingResult() {
   const box = $('result-elo');
-  const before = gamePlayerElo ?? gameElo;
-  if (eloAfter !== undefined && before !== undefined) {
-    const d = eloAfter - before;
-    box.innerHTML =
-      `我的棋力 ${before} → <b class="${d > 0 ? 'win' : d < 0 ? 'loss' : ''}">${eloAfter}</b>（${d > 0 ? '+' : ''}${d}）` +
-      (rating ? `<small>${escapeHtml(ratingBreakdown(rating))}</small>` : '<small>旧版评级记录</small>');
-    box.hidden = false;
-  } else if (result && !imported) {
-    box.textContent = assistCount(assists) ? '辅助练习：使用了对局辅助、提示、悔棋或局中分析，不改变棋力与对手难度' : '本局不计分，不改变棋力与对手难度';
+  if (result && !imported) {
+    box.textContent = assistCount(assists) ? '辅助练习：本局不计分' : ratingEnabled() && eloAfter !== undefined ? '本局评级已更新，可在资料中查看走势' : '本局不计分';
     box.hidden = false;
   } else box.hidden = true;
 }
@@ -2858,7 +2852,7 @@ function openSettings() {
   };
   const syncFxDetailControls = () => {
     const on = el('boardFx').checked;
-    for (const name of ['boardFxBadge', 'boardFxCapture', 'boardFxCheck', 'boardFxMate']) el(name).disabled = !on;
+    for (const name of ['boardFxBadge', 'boardFxCapture', 'boardFxCheck', 'boardFxMate', 'boardFxShake']) el(name).disabled = !on;
   };
   let prevBoard = settings.boardTheme;
   boardSel.onchange = () => {
@@ -2960,6 +2954,7 @@ function openSettings() {
       boardFxCapture: el('boardFxCapture').checked,
       boardFxCheck: el('boardFxCheck').checked,
       boardFxMate: el('boardFxMate').checked,
+      boardFxShake: el('boardFxShake').checked,
       boardSizePlay: num('boardSizePlay'),
       boardSizeReview: num('boardSizeReview'),
       reviewOpponent: el('reviewOpponent').checked,
@@ -3342,13 +3337,36 @@ function setHomeTab(tab: HomeTab) {
   });
 }
 
+function renderProfileRating() {
+  const points = ratingHistory(history);
+  const current = settings.playerElo;
+  const box = $('profile-rating');
+  const values = points.map((p) => p.rating);
+  const min = Math.min(current, ...values);
+  const max = Math.max(current, ...values);
+  const range = Math.max(1, max - min);
+  const width = 320;
+  const height = 92;
+  const padX = 8;
+  const padY = 12;
+  const plotted = points.map((p, i) => {
+    const x = points.length === 1 ? width / 2 : padX + (i / (points.length - 1)) * (width - padX * 2);
+    const y = height - padY - ((p.rating - min) / range) * (height - padY * 2);
+    return { x, y, rating: p.rating };
+  });
+  const line = plotted.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const chart = points.length
+    ? `<svg class="rating-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="我的分数历史走势"><polyline points="${line}" /><g>${plotted.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="3" /><text x="${p.x}" y="${Math.max(10, p.y - 7)}" text-anchor="middle">${p.rating}</text>`).join('')}</g></svg>`
+    : '<p class="muted">完成计分对局后，这里会显示历史走势。</p>';
+  box.innerHTML = `<div class="profile-rating-head"><span><b>我的分数</b><small>${points.length ? `已记录 ${points.length} 局计分对局` : '尚无计分对局'}</small></span><strong>${current}</strong></div>${chart}`;
+}
+
 function renderHome() {
   const elo = $<HTMLInputElement>('home-elo');
   elo.value = String(Math.max(0, MAIA_LEVELS.findIndex(level => level === settings.elo)));
   const levelLabel = `Maia ${settings.elo}`;
   elo.setAttribute('aria-valuetext', levelLabel);
   $('home-elo-val').textContent = String(settings.elo);
-  $('home-rating').textContent = `我的棋力 ${settings.playerElo} · ${settings.ratingDeviation > 150 ? '定位中' : '已定位'} · ${settings.ratedGames} 局计分对局`;
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => b.classList.toggle('active', b.dataset.color === settings.color));
   $<HTMLSelectElement>('home-tc').value = settings.timeControl;
   const t = tip();
@@ -3537,6 +3555,10 @@ function bind() {
     setHomeTab('train');
     openNotebook(trainerCtx);
   };
+  $('btn-profile-rating').onclick = () => {
+    renderProfileRating();
+    $<HTMLDialogElement>('dlg-profile-rating').showModal();
+  };
   $('btn-data').onclick = () => {
     setHomeTab('data');
     openData();
@@ -3545,8 +3567,12 @@ function bind() {
   bindTrainer(trainerCtx);
   const eloSlider = $<HTMLInputElement>('home-elo');
   eloSlider.max = String(MAIA_LEVELS.length - 1);
-  const options = $('maia-level-options');
-  for (const [index, level] of MAIA_LEVELS.entries()) options.append(new Option(String(level), String(index)));
+  eloSlider.oninput = () => {
+    const level = MAIA_LEVELS[Number(eloSlider.value)];
+    if (level !== undefined) saveHomeSettings({ elo: level });
+  };
+  const ticks = $('home-elo-ticks');
+  ticks.replaceChildren(...MAIA_LEVELS.map(() => document.createElement('span')));
   document.querySelectorAll<HTMLButtonElement>('#home-color button').forEach((b) => {
     b.onclick = () => saveHomeSettings({ color: b.dataset.color as Settings['color'] });
   });

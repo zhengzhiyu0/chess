@@ -40,7 +40,7 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
         guard data.count == Self.tokenBytes else {
             throw NSError(domain: "maia", code: 1, userInfo: [NSLocalizedDescriptionKey: "bad tokens"])
         }
-        let array = try MLMultiArray(shape: [1, 64, Self.feat], dataType: .float32)
+        let array = try MLMultiArray(shape: [1, 64, NSNumber(value: Self.feat)], dataType: .float32)
         data.withUnsafeBytes { bytes in
             if let base = bytes.baseAddress {
                 array.dataPointer.copyMemory(from: base, byteCount: bytes.count)
@@ -75,7 +75,7 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
                 result[linear] = array.dataPointer.load(fromByteOffset: offset * MemoryLayout<Float>.size, as: Float.self)
             case .float16:
                 let bits = array.dataPointer.load(fromByteOffset: offset * MemoryLayout<UInt16>.size, as: UInt16.self)
-                result[linear] = Float(Float16(bitPattern: bits))
+                result[linear] = Float(Swift.Float16(bitPattern: bits))
             default:
                 throw NSError(domain: "maia", code: 2, userInfo: [NSLocalizedDescriptionKey: "输出 \(name) 类型不支持"])
             }

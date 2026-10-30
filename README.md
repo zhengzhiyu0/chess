@@ -98,7 +98,7 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 - 免费 Apple ID 签名的 App **7 天后过期**，需要重新签名（棋局和设置保留）。AltStore 可以在同一 Wi-Fi 下自动续签。
 - App 内的引擎**全部原生实现，不使用 WebAssembly**（[native-plugins/maia-native](web/native-plugins/maia-native)）：
   - **Stockfish 19**：C++ 源码直接编进 App（-O3 + ThinLTO），原生多线程 + ARM NEON/dotprod。**满血版**（完整 NNUE）和**轻量版**（小网络）都已预装，在「设置 → Stockfish 版本」中切换。默认 2 线程（性能核数量），避免发热。切换版本时旧实例的 Hash 缩至 1MB，重新启用时恢复设定值；进入后台由原生通知兜底停止搜索。
-  - **Maia-3 5M / 23M / 79M**：CoreML 原生推理，预装 INT8 权重量化、fp16 计算的 `.mlmodelc`。CI 从固定 batch 1 的 native ONNX 转换模型：将 Constant 提为 initializer、把 GAB 的 Einsum 等价展开为矩阵乘法，并统一 MIL 编写精度以避免 LayerNorm 类型冲突。编译后的实际模型须通过 7 个现有棋局样本的 ONNX 对照（合法走法概率和胜和负概率最大误差均不超过 0.02），通过后才进入 App bundle；iOS 不再依赖 ONNX Runtime，也不再生成或清理 ORT 模型缓存。
+  - **Maia-3 5M / 23M / 79M**：CoreML 原生推理，预装 fp16 计算的 `.mlmodelc`；主干矩阵使用 INT8 权重量化，GAB 注意力偏置生成器保留 fp16，避免误差跨层累积。CI 从固定 batch 1 的 native ONNX 转换模型：将 Constant 提为 initializer、把 GAB 的 Einsum 等价展开为矩阵乘法，并统一 MIL 编写精度以避免 LayerNorm 类型冲突。三种编译模型各须通过 7 个现有棋局样本的 ONNX 对照（合法走法概率和胜和负概率最大误差均不超过 0.02），通过后才进入 App bundle；iOS 不再依赖 ONNX Runtime，也不再生成或清理 ORT 模型缓存。构建失败时保留 CoreML/Xcode 日志 artifact 和错误摘要。
   - **关键事件文字提示**：普通对弈中由莉亚头像显示简短的战术和棋力反馈；其他教练头像资源保留在项目内，当前不参与选择或运行时逻辑。
   - 全部预装，无需下载，完全离线可用；App 内没有下载按钮和离线包管理。「设置 → 环境信息」显示当前引擎的实际运行方式。
 - App 的对弈界面与手机网页版一致：菜单在顶部，提示/悔棋/教练在“我”的信息栏里。点自己的头像（或「设置 → 我的头像」）可换成预设头像或相册照片。iOS 音效由 AVAudioPlayer 直接播放内置 MP3，通过应用内音效开关控制，使用媒体音量，允许与其他应用音频混音；每次播放重新激活音频会话，进入后台或被电话中断时停止旧声音，回来后只播放新事件。70 毫秒内的重复落子音效会被过滤。

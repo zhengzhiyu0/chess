@@ -61,12 +61,13 @@ jobs:
       - name: Publish CoreML failure detail
         if: failure()
         run: |
-          while IFS= read -r line; do
-            line=${line//'%'/'%25'}
-            line=${line//$'\r'/'%0D'}
-            line=${line//$'\n'/'%0A'}
-            echo "::error file=web/scripts/compile-coreml.py,line=1::$line"
-          done < coreml-build.log
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('coreml-build.log').read_text(errors='replace')
+          detail = '\n'.join(text.splitlines()[-80:])
+          detail = detail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+          print(f'::error title=CoreML conversion failed::{detail}')
+          PY
       - name: Verify bundled native model layout
         run: |
           test -d ios/App/App/public/native/maia3-5m.mlmodelc

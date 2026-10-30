@@ -30,7 +30,7 @@ describe('iOS 原生 MP3 播放', () => {
       configureSound(true, false, theme);
       unlockAudio();
       play('move');
-      expect(native.play).toHaveBeenLastCalledWith({ clips: [{ theme, file: 'Move', delay: 0 }] });
+      expect(native.play).toHaveBeenLastCalledWith({ clips: [{ theme, file: theme === 'standard' ? 'move' : 'Move', delay: 0 }] });
       vi.advanceTimersByTime(70);
     }
     expect(AudioContext).not.toHaveBeenCalled();
@@ -38,7 +38,7 @@ describe('iOS 原生 MP3 播放', () => {
   });
 
   it('普通落子、吃子、将军与胜负和使用正确录音', async () => {
-    const { play } = await import('../src/audio/sound');
+    const { configureSound, play } = await import('../src/audio/sound');
     const events = [
       ['move', undefined, 'Move'], ['capture', undefined, 'Capture'], ['check', undefined, 'Check'],
       ['castle', undefined, 'Move'], ['promote', undefined, 'Move'], ['illegal', undefined, 'LowTime'],
@@ -49,15 +49,21 @@ describe('iOS 原生 MP3 播放', () => {
       expect(native.play).toHaveBeenLastCalledWith({ clips: [{ theme: 'board', file, delay: 0 }] });
       vi.advanceTimersByTime(70);
     }
-    expect(native.play).toHaveBeenCalledTimes(events.length);
+    configureSound(true, false, 'standard');
+    for (const [kind, end, file] of [['move', undefined, 'move'], ['capture', undefined, 'capture'], ['illegal', undefined, 'error'], ['start', undefined, 'dong']] as const) {
+      play(kind, end);
+      expect(native.play).toHaveBeenLastCalledWith({ clips: [{ theme: 'standard', file, delay: 0 }] });
+      vi.advanceTimersByTime(70);
+    }
   });
 
-  it('does not play victory, defeat, or draw sounds', async () => {
-    const { play } = await import('../src/audio/sound');
+  it('Standard 播放 dong 作为结束音，其他主题保持静音', async () => {
+    const { configureSound, play } = await import('../src/audio/sound');
     play('end', 'win');
-    play('end', 'loss');
-    play('end', 'draw');
     expect(native.play).not.toHaveBeenCalled();
+    configureSound(true, false, 'standard');
+    play('end', 'win');
+    expect(native.play).toHaveBeenLastCalledWith({ clips: [{ theme: 'standard', file: 'dong', delay: 0 }] });
   });
 
   it('关闭音效后仍可试听，试听使用同一原生批次排程', async () => {

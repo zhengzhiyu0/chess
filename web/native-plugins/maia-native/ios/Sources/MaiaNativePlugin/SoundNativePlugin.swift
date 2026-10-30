@@ -40,8 +40,8 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         CAPPluginMethod(name: "getLogs", returnType: CAPPluginReturnPromise),
     ]
 
-    private static let themes: Set<String> = ["board", "wood", "felt", "glass", "sfx", "piano", "nes", "futuristic"]
-    private static let files: Set<String> = ["Move", "Capture", "Check", "GenericNotify", "Victory", "Defeat", "Draw", "LowTime"]
+    private static let themes: Set<String> = ["board", "wood", "felt", "glass", "sfx", "piano", "nes", "futuristic", "standard"]
+    private static let files: Set<String> = ["Move", "Capture", "Check", "GenericNotify", "Victory", "Defeat", "Draw", "LowTime", "move", "capture", "error", "dong"]
     private var players: [AVAudioPlayer] = []
     private var recordings: [URL: Data] = [:]
     private var observers: [NSObjectProtocol] = []

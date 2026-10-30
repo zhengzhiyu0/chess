@@ -13,6 +13,11 @@ export type SoundKind = 'move' | 'capture' | 'check' | 'castle' | 'promote' | 'i
 const SAMPLE_FILES = ['Move', 'Capture', 'Check', 'GenericNotify', 'Victory', 'Defeat', 'Draw', 'LowTime'] as const;
 type SampleFile = (typeof SAMPLE_FILES)[number];
 
+const STANDARD_FILE_BY_SAMPLE: Record<SampleFile, 'move' | 'capture' | 'error' | 'dong'> = {
+  Move: 'move', Capture: 'capture', Check: 'move', GenericNotify: 'dong',
+  Victory: 'dong', Defeat: 'dong', Draw: 'dong', LowTime: 'error',
+};
+
 export const SAMPLE_THEMES = {
   board: '实木棋盘',
   wood: '轻柔木质',
@@ -22,6 +27,7 @@ export const SAMPLE_THEMES = {
   piano: 'Lichess 钢琴',
   nes: 'Lichess 8 位',
   futuristic: 'Lichess 未来',
+  standard: 'Lichess Standard',
 } as const;
 type SampleThemeId = keyof typeof SAMPLE_THEMES;
 
@@ -105,8 +111,9 @@ function loadSamples(a: AudioContext, id: SampleThemeId) {
       SAMPLE_FILES.map((f) => [f, (async () => {
         try {
           const borrow = SAMPLE_BORROW[id];
-          const dir = borrow?.files.includes(f) ? borrow.from : id;
-          const res = await fetch(new URL(`sounds/${dir}/${f}.mp3`, document.baseURI).href);
+          const dir = id === 'standard' ? 'standard' : borrow?.files.includes(f) ? borrow.from : id;
+          const file = id === 'standard' ? STANDARD_FILE_BY_SAMPLE[f] : f;
+          const res = await fetch(new URL(`sounds/${dir}/${file}.mp3`, document.baseURI).href);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return await a.decodeAudioData(await res.arrayBuffer());
         } catch (err) {
@@ -214,11 +221,16 @@ function sampleFor(kind: SoundKind, end?: EndKind): SampleFile {
   }
 }
 
+function nativeFile(theme: SampleThemeId, file: SampleFile): string {
+  if (theme === 'standard') return STANDARD_FILE_BY_SAMPLE[file];
+  return file;
+}
+
 function playNative(kind: SoundKind, id: string, end?: EndKind, preview = false) {
   const theme = soundThemeOf(id);
   const clips = preview
-    ? [{ theme, file: 'Move', delay: 0 }, { theme, file: 'Capture', delay: 0.45 }]
-    : [{ theme, file: sampleFor(kind, end), delay: 0 }];
+    ? [{ theme, file: nativeFile(theme, 'Move'), delay: 0 }, { theme, file: nativeFile(theme, 'Capture'), delay: 0.45 }]
+    : [{ theme, file: nativeFile(theme, sampleFor(kind, end)), delay: 0 }];
   void SoundNative.play({ clips }).catch((err) => console.warn('原生音效播放失败', err));
 }
 
@@ -239,9 +251,8 @@ async function render(a: AudioContext, kind: SoundKind, id: string, delay = 0, e
 export function play(kind: SoundKind, end?: EndKind) {
   if (document.hidden) return;
   haptic(kind);
-  // End-of-game banners already communicate the result; keep the audio quiet
-  // until the result sound is redesigned for iOS.
-  if (kind === 'end') return;
+  // Existing themes keep their quiet end-of-game behavior; Standard provides the upstream dong clip.
+  if (kind === 'end' && themeId !== 'standard') return;
   if (!enabled) return;
   const now = performance.now();
   if (kind === 'move' || kind === 'capture' || kind === 'castle' || kind === 'check' || kind === 'promote') {

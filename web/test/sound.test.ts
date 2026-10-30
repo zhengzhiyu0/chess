@@ -53,7 +53,7 @@ afterEach(() => {
 });
 
 describe('音效生命周期', () => {
-  for (const theme of ['board', 'wood', 'felt', 'glass', 'sfx', 'piano', 'nes', 'futuristic']) {
+  for (const theme of ['board', 'wood', 'felt', 'glass', 'sfx', 'piano', 'nes', 'futuristic', 'standard']) {
     it(`${theme} 使用成品 MP3，落子与吃子各自播放`, async () => {
       const { configureSound, play } = await import('../src/audio/sound');
       configureSound(true, false, theme);
@@ -61,8 +61,11 @@ describe('音效生命周期', () => {
       vi.advanceTimersByTime(70);
       play('capture');
       await flush();
-      expect(fetch).toHaveBeenCalledWith(`http://localhost/sounds/${theme}/Move.mp3`);
-      expect(fetch).toHaveBeenCalledWith(`http://localhost/sounds/${theme}/Capture.mp3`);
+      const dir = theme === 'standard' ? 'standard' : theme;
+      const move = theme === 'standard' ? 'move' : 'Move';
+      const capture = theme === 'standard' ? 'capture' : 'Capture';
+      expect(fetch).toHaveBeenCalledWith(`http://localhost/sounds/${dir}/${move}.mp3`);
+      expect(fetch).toHaveBeenCalledWith(`http://localhost/sounds/${dir}/${capture}.mp3`);
       expect(played()).toHaveLength(2);
     });
   }

@@ -33,3 +33,16 @@ ffmpeg -i INPUT.ogg -af 'silenceremove=start_periods=1:start_duration=0:start_th
 Their notification events reuse `sfx/`. All selectable themes now use bundled MP3 files;
 no oscillators or generated noise are used for playback or fallback. Missing samples fall back to
 the corresponding Lichess `sfx/` recording. Invalid moves use the `LowTime` warning clip.
+
+## `standard` / Lichess Mobile Standard
+
+`standard/` contains the four unmodified MP3 files copied from [`Dash1971/maia-chess-android`](https://github.com/Dash1971/maia-chess-android), source path `assets/sounds/standard/`, from the repository's current `main` revision. The upstream notice identifies the original Lichess Mobile source revision as `56eddc238fe485eb49beb6f3c4b483afd3624b93` and licenses these files under GNU GPL v3 or later.
+
+| File | Event mapping |
+| --- | --- |
+| `move.mp3` | Normal move, check, castling and promotion |
+| `capture.mp3` | Capture |
+| `error.mp3` | Illegal move |
+| `dong.mp3` | Game start and game completion |
+
+The files are kept byte-for-byte from the upstream repository. See `web/public/licenses/lichess-mobile-sounds.md` for the source and hash record.

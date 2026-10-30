@@ -4,11 +4,12 @@ import AVFoundation
 import Foundation
 
 let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
-let themes = ["board", "wood", "felt", "glass", "sfx", "piano", "nes", "futuristic"]
+let themes = ["board", "wood", "felt", "glass", "sfx", "piano", "nes", "futuristic", "standard"]
 let files = ["Move", "Capture", "Check", "GenericNotify", "Victory", "Defeat", "Draw", "LowTime"]
 var decoded = Set<URL>()
 for theme in themes {
-    for name in files {
+    let themeFiles = theme == "standard" ? ["move", "capture", "error", "dong"] : files
+    for name in themeFiles {
         var url = root.appendingPathComponent("sounds/\(theme)/\(name).mp3")
         if !FileManager.default.fileExists(atPath: url.path) {
             precondition(["board", "wood", "felt", "glass"].contains(theme) && !["Move", "Capture"].contains(name), "Missing sound: \(url.path)")

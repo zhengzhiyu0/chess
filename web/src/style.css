@@ -1592,9 +1592,9 @@ html:not(.native) .native-only {
 /* ---------- 棋盘（绿白） ---------- */
 cg-board {
   background-color: var(--light-sq);
-  /* 2x2 格为一个图块：左上浅、右上深、左下深、右下浅（a1 为深色格） */
-  background-image: conic-gradient(var(--dark-sq) 0 25%, var(--light-sq) 0 50%, var(--dark-sq) 0 75%, var(--light-sq) 0);
-  background-size: 25% 25%;
+  /* 纹理棋盘覆盖底色；纯色主题继续使用 2x2 格渐变。 */
+  background-image: var(--board-image, conic-gradient(var(--dark-sq) 0 25%, var(--light-sq) 0 50%, var(--dark-sq) 0 75%, var(--light-sq) 0));
+  background-size: var(--board-image-size, 100% 100%);
 }
 cg-board square.last-move {
   background-color: rgba(255, 255, 51, 0.5);
@@ -1908,6 +1908,34 @@ dialog.sheet[open] {
 .look-preview span:nth-child(n + 7):nth-child(odd) {
   background-color: var(--dark-sq);
 }
+
+/* ---------- 外观与音效页 ---------- */
+.appearance-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px max(16px, env(safe-area-inset-right)) calc(28px + var(--safe-b)) max(16px, env(safe-area-inset-left));
+}
+.appearance-section { width: min(100%, 980px); margin: 0 auto 30px; }
+.appearance-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+.appearance-heading h2 { margin: 2px 0 4px; font-size: 24px; }
+.appearance-heading p { margin: 0; color: var(--muted); font-size: 13px; }
+.appearance-current { flex: none; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; }
+.appearance-grid { display: grid; gap: 10px; }
+.board-choice-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+.piece-choice-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.sound-choice-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.appearance-card { display: flex; min-width: 0; flex-direction: column; align-items: stretch; gap: 8px; padding: 9px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); text-align: left; }
+.appearance-card:hover, .appearance-card[aria-pressed='true'] { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+.appearance-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.board-choice-preview { display: block; aspect-ratio: 1; border-radius: 7px; background-position: center; background-repeat: repeat; }
+.piece-choice-preview { display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; min-height: 64px; padding: 4px; border-radius: 7px; background: linear-gradient(135deg, #e7e3dc 50%, #8b8a87 50%); }
+.piece-choice-preview img { width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
+.sound-options { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; }
+.sound-choice { min-height: 92px; justify-content: center; }
+.sound-choice-icon { font-size: 28px; line-height: 1; color: var(--green-hover); }
+.sound-choice small { color: var(--muted); }
+.settings-appearance-link { display: flex; width: 100%; justify-content: space-between; margin-bottom: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); color: var(--text); font-weight: 700; text-align: left; }
+.settings-appearance-link span { color: var(--muted); font-weight: 500; }
 .look-custom {
   display: flex;
   gap: 16px;

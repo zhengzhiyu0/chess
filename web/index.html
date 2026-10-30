@@ -26,6 +26,9 @@
           <button id="btn-settings" class="icon" title="设置" aria-label="设置">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
           </button>
+          <button id="btn-appearance" class="icon" title="棋盘、棋子与音效" aria-label="棋盘、棋子与音效">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M10 4v16" /><circle cx="17" cy="17" r="2" /></svg>
+          </button>
           <button class="icon theme-toggle" type="button" title="切换浅色模式" aria-label="切换浅色模式"></button>
         </header>
 
@@ -236,6 +239,31 @@
         </div>
       </section>
 
+      <!-- ========== 外观与音效页 ========== -->
+      <section id="appearance" class="screen" data-kind="appearance">
+        <header class="appbar">
+          <button id="btn-appearance-back" class="icon" title="返回主页" aria-label="返回主页"><svg viewBox="0 0 24 24"><path d="M15 6l-9 6 9 6" /></svg></button>
+          <div class="brand"><span>外观与音效</span></div>
+          <button id="btn-appearance-settings" class="icon" title="功能设置" aria-label="功能设置"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0 .3-1.8V9a2 2 0 1 1 1.5-3.4l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg></button>
+          <button class="icon theme-toggle" type="button" title="切换浅色模式" aria-label="切换浅色模式"></button>
+        </header>
+        <main class="appearance-main">
+          <section class="appearance-section">
+            <div class="appearance-heading"><div><span class="home-kicker">棋盘</span><h2>选择棋盘</h2><p>每一项都可以直接预览，点击后立即应用。</p></div><span class="appearance-current" id="appearance-board-current"></span></div>
+            <div class="appearance-grid board-choice-grid" id="appearance-boards"></div>
+          </section>
+          <section class="appearance-section">
+            <div class="appearance-heading"><div><span class="home-kicker">棋子</span><h2>选择棋子</h2><p>每一套都展示完整棋子预览。</p></div><span class="appearance-current" id="appearance-piece-current"></span></div>
+            <div class="appearance-grid piece-choice-grid" id="appearance-pieces"></div>
+          </section>
+          <section class="appearance-section">
+            <div class="appearance-heading"><div><span class="home-kicker">声音</span><h2>音效</h2><p>点击试听；选择会立即保存。</p></div><span class="appearance-current" id="appearance-sound-current"></span></div>
+            <div class="sound-options"><label class="check"><input type="checkbox" id="appearance-sound-enabled" /> 启用走棋音效</label><label class="check"><input type="checkbox" id="appearance-haptics" /> 震动反馈</label></div>
+            <div class="appearance-grid sound-choice-grid" id="appearance-sounds"></div>
+          </section>
+        </main>
+      </section>
+
       <div id="status" class="toast" role="status" aria-live="polite"></div>
       <button id="offline-bar" class="offline-bar hidden" type="button"><span></span><div class="progress"><div></div></div></button>
     </div>
@@ -279,6 +307,7 @@
 
         <dialog id="dlg-settings">
       <form method="dialog">
+        <button type="button" class="settings-appearance-link" id="btn-open-appearance">棋盘、棋子与音效 <span>打开独立页面 ›</span></button>
         <h3 tabindex="-1" autofocus>设置</h3>
         <button type="button" class="avatar-row" id="btn-set-avatar"><span id="set-avatar"></span><span>我的头像</span><span class="link">更换 ›</span></button>
         <button type="button" class="avatar-row coach-fixed" id="set-coach-row" disabled><span id="set-coach"></span><span>教练头像</span><span class="muted">莉亚</span></button>
@@ -313,11 +342,6 @@
         </label>
         <label class="check"><input type="checkbox" name="thinkDelay" /> 模拟人类思考时间</label>
         <label class="check"><input type="checkbox" name="premove" /> 允许预走（对手思考时先排好下一步）</label>
-        <label class="check"><input type="checkbox" name="sound" /> 音效</label>
-        <label>走棋音效（选择即可试听）
-          <select name="soundTheme" id="sound-theme"></select>
-        </label>
-        <label class="check"><input type="checkbox" name="haptics" /> 震动反馈</label>
         <label class="check"><input type="checkbox" name="boardFx" /> 棋盘动效</label>
         <div class="settings-subgroup" aria-label="棋盘动效详细设置">
           <label class="check"><input type="checkbox" name="boardFxBadge" /> 徽标弹出与优秀着法闪光</label>
@@ -326,17 +350,6 @@
           <label class="check"><input type="checkbox" name="boardFxMate" /> 将杀彩带</label>
           <label class="check"><input type="checkbox" name="boardFxShake" /> 失误时棋盘抖动</label>
         </div>
-        <label>棋盘
-          <select name="boardTheme" id="board-theme"></select>
-        </label>
-        <div class="look-custom" id="look-custom">
-          <label>浅色格 <input type="color" name="customLight" /></label>
-          <label>深色格 <input type="color" name="customDark" /></label>
-        </div>
-        <label>棋子
-          <select name="pieceSet" id="piece-set"></select>
-        </label>
-        <div class="look-preview" id="look-preview"></div>
         <label>对局棋盘大小 <output name="bsPlayOut"></output>
           <input type="range" name="boardSizePlay" min="60" max="100" step="5" />
         </label>

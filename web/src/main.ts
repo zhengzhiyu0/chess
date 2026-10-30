@@ -34,7 +34,7 @@ import { computeStats, loadHistory, newGameId, ratingHistory, sanitizeGame, save
 import { dragHaptics, installTapHaptics } from './audio/haptics';
 import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio, type EndKind } from './audio/sound';
 import { $, escapeHtml, setStatus } from './app/dom';
-import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, pieceUrl } from './app/appearance';
+import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardColors, boardImage, pieceUrl } from './app/appearance';
 import { Engines } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './app/avatar';
@@ -142,7 +142,7 @@ let analysisStatus: AnalysisStatus = 'idle';
 let analysisError = '';
 let analysisDone = 0;
 let analysisTotal = 0;
-let screen: 'home' | 'game' | 'train' = 'home';
+let screen: 'home' | 'game' | 'train' | 'appearance' = 'home';
 type HomeTab = 'play' | 'train' | 'data';
 let homeTab: HomeTab = 'play';
 function pickCoachAvatar(selection: number): number {
@@ -2676,7 +2676,101 @@ function renderRatingResult() {
   } else box.hidden = true;
 }
 
-function showScreen(s: 'home' | 'game' | 'train', push = true) {
+function saveAppearance(patch: Partial<Settings>) {
+  const old = settings;
+  settings = { ...settings, ...patch };
+  applySettings(old);
+  if (screen === 'appearance') renderAppearance();
+}
+
+function renderAppearance() {
+  const boards = $('appearance-boards');
+  const pieces = $('appearance-pieces');
+  const sounds = $('appearance-sounds');
+  boards.replaceChildren();
+  pieces.replaceChildren();
+  sounds.replaceChildren();
+  for (const [id, theme] of Object.entries(BOARD_THEMES)) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'appearance-card board-choice';
+    card.dataset.board = id;
+    const swatch = document.createElement('span');
+    swatch.className = 'board-choice-preview';
+    const colors = boardColors(id, settings.customLight, settings.customDark);
+    swatch.style.backgroundImage = theme.image
+      ? boardImage(id)
+      : `conic-gradient(${colors.dark} 0 25%, ${colors.light} 0 50%, ${colors.dark} 0 75%, ${colors.light} 0)`;
+    swatch.style.backgroundSize = theme.image ? '100% 100%' : '25% 25%';
+    const label = document.createElement('strong');
+    label.textContent = theme.label;
+    card.append(swatch, label);
+    card.setAttribute('aria-pressed', String(settings.boardTheme === id));
+    boards.append(card);
+  }
+  const pieceRoles = ['k', 'q', 'r', 'b', 'n', 'p'];
+  for (const [id, labelText] of Object.entries(PIECE_SETS)) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'appearance-card piece-choice';
+    card.dataset.piece = id;
+    const preview = document.createElement('span');
+    preview.className = 'piece-choice-preview';
+    for (const role of pieceRoles) {
+      const image = document.createElement('img');
+      image.src = pieceUrl(id, 'w', role);
+      image.alt = '';
+      image.draggable = false;
+      preview.append(image);
+    }
+    const label = document.createElement('strong');
+    label.textContent = labelText;
+    card.append(preview, label);
+    card.setAttribute('aria-pressed', String(settings.pieceSet === id));
+    pieces.append(card);
+  }
+  for (const [id, theme] of Object.entries(SOUND_THEMES)) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'appearance-card sound-choice';
+    card.dataset.sound = id;
+    card.setAttribute('aria-pressed', String(settings.soundTheme === id));
+    const icon = document.createElement('span');
+    icon.className = 'sound-choice-icon';
+    icon.textContent = '♪';
+    const label = document.createElement('strong');
+    label.textContent = theme.label;
+    const action = document.createElement('small');
+    action.textContent = '点击试听并选择';
+    card.append(icon, label, action);
+    sounds.append(card);
+  }
+  $('appearance-board-current').textContent = BOARD_THEMES[settings.boardTheme]?.label ?? '自定义';
+  $('appearance-piece-current').textContent = PIECE_SETS[settings.pieceSet] ?? settings.pieceSet;
+  $('appearance-sound-current').textContent = SOUND_THEMES[settings.soundTheme]?.label ?? settings.soundTheme;
+  $<HTMLInputElement>('appearance-sound-enabled').checked = settings.sound;
+  $<HTMLInputElement>('appearance-haptics').checked = settings.haptics;
+  boards.onclick = (event) => {
+    const id = (event.target as HTMLElement).closest<HTMLElement>('[data-board]')?.dataset.board;
+    if (id) saveAppearance({ boardTheme: id });
+  };
+  pieces.onclick = (event) => {
+    const id = (event.target as HTMLElement).closest<HTMLElement>('[data-piece]')?.dataset.piece;
+    if (id) saveAppearance({ pieceSet: id });
+  };
+  sounds.onclick = (event) => {
+    const id = (event.target as HTMLElement).closest<HTMLElement>('[data-sound]')?.dataset.sound;
+    if (id) {
+      saveAppearance({ soundTheme: id });
+      unlockAudio();
+      previewTheme(id);
+    }
+  };
+  $('appearance-sound-enabled').onchange = (event) => saveAppearance({ sound: (event.target as HTMLInputElement).checked });
+  $('appearance-haptics').onchange = (event) => saveAppearance({ haptics: (event.target as HTMLInputElement).checked });
+}
+
+function showScreen(s: 'home' | 'game' | 'train' | 'appearance', push = true) {
   const prev = screen;
   screen = s;
   const hash = s === 'home' ? '' : `#${s}`;
@@ -2688,6 +2782,8 @@ function showScreen(s: 'home' | 'game' | 'train', push = true) {
   $('home').classList.toggle('active', s === 'home');
   $('game').classList.toggle('active', s === 'game');
   $('train').classList.toggle('active', s === 'train');
+  $('appearance').classList.toggle('active', s === 'appearance');
+  if (s === 'appearance') renderAppearance();
   if (s === 'train') {
     requestAnimationFrame(trainerRedraw);
     if (prev !== 'game') return;
@@ -2828,17 +2924,6 @@ function openSettings() {
   samplingControls.refresh();
   const f = dlg.querySelector('form')!;
   const el = (n: string) => f.elements.namedItem(n) as HTMLInputElement;
-  const themeSel = $<HTMLSelectElement>('sound-theme');
-  if (!themeSel.options.length)
-    for (const [id, th] of Object.entries(SOUND_THEMES)) themeSel.add(new Option(th.label, id));
-  themeSel.onchange = () => previewTheme(themeSel.value);
-  const boardSel = $<HTMLSelectElement>('board-theme');
-  const pieceSel = $<HTMLSelectElement>('piece-set');
-  if (!boardSel.options.length) {
-    for (const [id, th] of Object.entries(BOARD_THEMES)) boardSel.add(new Option(th.label, id));
-    boardSel.add(new Option('自定义颜色…', 'custom'));
-    for (const [id, label] of Object.entries(PIECE_SETS)) pieceSel.add(new Option(label, id));
-  }
   for (const [k, v] of Object.entries(settings)) {
     const input = el(k);
     if (!input) continue;
@@ -2854,37 +2939,11 @@ function openSettings() {
     const on = el('boardFx').checked;
     for (const name of ['boardFxBadge', 'boardFxCapture', 'boardFxCheck', 'boardFxMate', 'boardFxShake']) el(name).disabled = !on;
   };
-  let prevBoard = settings.boardTheme;
-  boardSel.onchange = () => {
-    // 切到自定义时，以刚才选中的预设颜色为起点
-    if (boardSel.value === 'custom' && prevBoard !== 'custom') {
-      const c = boardColors(prevBoard, '', '');
-      el('customLight').value = c.light;
-      el('customDark').value = c.dark;
-    }
-    prevBoard = boardSel.value;
-    look();
-  };
-  let shownSet = '';
-  const look = () => {
-    $('look-custom').hidden = boardSel.value !== 'custom';
-    const c = boardColors(boardSel.value, el('customLight').value, el('customDark').value);
-    const pv = $('look-preview');
-    pv.style.setProperty('--light-sq', c.light);
-    pv.style.setProperty('--dark-sq', c.dark);
-    // 只在棋子样式变化时重建预览，避免拖动滑块时反复重绘 SVG
-    if (shownSet === pieceSel.value) return;
-    shownSet = pieceSel.value;
-    const pieces: [Color, string][] = [['b', 'r'], ['b', 'n'], ['b', 'b'], ['b', 'q'], ['b', 'k'], ['b', 'p'], ['w', 'p'], ['w', 'k'], ['w', 'q'], ['w', 'b'], ['w', 'n'], ['w', 'r']];
-    pv.innerHTML = pieces.map(([col, r]) => `<span style="background-image:url('${pieceUrl(pieceSel.value, col, r)}')"></span>`).join('');
-  };
   f.oninput = () => {
     outs();
-    look();
     syncFxDetailControls();
   };
   outs();
-  look();
   syncFxDetailControls();
   $('set-avatar').innerHTML = avatarHtml(settings.avatar);
   $('btn-set-avatar').onclick = openAvatar;
@@ -2941,13 +3000,6 @@ function openSettings() {
       sfLite: el('sfLite').value === 'true',
       ecoAnalysis: el('ecoAnalysis').checked,
       lowMemory: el('lowMemory').checked,
-      sound: el('sound').checked,
-      soundTheme: el('soundTheme').value,
-      haptics: el('haptics').checked,
-      boardTheme: el('boardTheme').value,
-      customLight: el('customLight').value,
-      customDark: el('customDark').value,
-      pieceSet: el('pieceSet').value,
       premove: el('premove').checked,
       boardFx: el('boardFx').checked,
       boardFxBadge: el('boardFxBadge').checked,
@@ -3617,6 +3669,13 @@ function bind() {
       if ((e.target as HTMLElement).closest('.avatar.pick')) openAvatar();
     });
   $('btn-settings').onclick = openSettings;
+  $('btn-appearance').onclick = () => showScreen('appearance');
+  $('btn-appearance-back').onclick = () => showScreen('home');
+  $('btn-appearance-settings').onclick = openSettings;
+  $('btn-open-appearance').onclick = () => {
+    $<HTMLDialogElement>('dlg-settings').close();
+    showScreen('appearance');
+  };
   $('btn-engines').onclick = () => openEngines(enginesCtx);
   $('btn-result-review').onclick = () => {
     $<HTMLDialogElement>('dlg-result').close();
@@ -4118,7 +4177,7 @@ function init() {
   setInterval(tickClock, 100);
   // 系统返回键/手势回到主页
   window.addEventListener('popstate', () => {
-    const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : 'home';
+    const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : location.hash === '#appearance' ? 'appearance' : 'home';
     if (want !== 'game' && backToReport()) {
       history_.pushState(null, '', '#game');
       return;
@@ -4126,6 +4185,7 @@ function init() {
     if (want !== screen) showScreen(want, false);
   });
   if (location.hash === '#game') showScreen('game', false);
+  else if (location.hash === '#appearance') showScreen('appearance', false);
   else if (location.hash === '#train') history_.replaceState(null, '', location.pathname + location.search);
   onStorageFull(() => {
     alert('本机存储空间已满，部分数据可能没能保存。请到「数据与备份」导出备份，然后清理一些历史对局。');

@@ -1,0 +1,59 @@
+README.md
+  s_7ff17073cdf55d::t_fcaa38583a8a50 6,15,23
+web/index.html
+  s_7ff17073cdf55d::t_72e18cb631dfe9 52,55,126-135
+web/src/app/engines.ts
+  s_bfea8d0a5a3f64::t_2e8f5a83feade3 72-73,75,86-87,97-98,107,113,117,136-142,146-147,152,158,162
+web/src/engine/stockfish.ts
+  s_7ff17073cdf55d::t_dca798ae9d5c9b 108-111,113-131,136,140,207,213-217,219,231-232,234-246,248-251,253-254,259
+web/src/maia/maia.ts
+  s_7ff17073cdf55d::t_6e17b58231b6c5 47,60-88,224-225,237,239
+web/src/style.css
+  s_7ff17073cdf55d::t_03c52cffd41140 264-265,268-274,277-281,523-529,531-534,1275-1277,1279-1299
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_c654c8d68bc267::t_77beed4d2ace67 5-6,10-17,59,124
+web/src/main.ts
+  s_bfea8d0a5a3f64::t_3766e745efdced 158,374,409-415,542,545,551-552,554,557-561,581,586,588-593,595,597,600-609,630-631,634-636,638,648,657-663,668-684,704,717,725,737,740,744-750,759,761-766,774-776,778,789,792,795-797,803-805,820,825,828-830,838,844,1242,1270,1453,1463,1543,1624,1636,1902-1904,2313-2319,2321,2350,2581-2582,2714,2887,3599-3601,3603-3607,3609-3612,3667,3737-3740,3743-3744
+web/src/runtime-logs.ts
+  s_f6f83aa0622ac8::t_af3977ea89c13b 34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "457f1be8ac6917aa9e951f2784d0dcb98a83adb0",
+  "prompts": {},
+  "sessions": {
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_bfea8d0a5a3f64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "407a32d9-e969-4573-a751-79d345b44a9b",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_c654c8d68bc267": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17704-6509-7201-938b-699b4050b4f6",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_f6f83aa0622ac8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17a8e-4301-7153-9332-de892c75838c",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

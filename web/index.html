@@ -167,16 +167,15 @@
               </div>
               <div class="tab hidden" id="tab-review">
                 <div class="review-ctrl">
-                  <button type="button" class="rc-btn" data-review-nav="prev" aria-label="上一个问题" title="上一个问题（[）"><svg viewBox="0 0 24 24"><path d="M18 6l-6 6 6 6M11 6l-6 6 6 6" /></svg></button>
-                  <span class="rc-issues" id="review-issues"></span>
-                  <button type="button" class="rc-btn" data-review-nav="next" aria-label="下一个问题" title="下一个问题（]）"><svg viewBox="0 0 24 24"><path d="M6 6l6 6-6 6M13 6l6 6-6 6" /></svg></button>
+                  <select id="review-nav-type" class="rc-type" aria-label="复盘查看类型">
+                    <option value="issues">我方关键点</option>
+                    <option value="opp">对方关键点</option>
+                    <option value="moves">全部着法</option>
+                  </select>
+                  <button type="button" class="rc-btn" data-review-nav="prev" aria-label="上一个关键点" title="上一个关键点（[）"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg></button>
+                  <span class="rc-issues" id="review-issues" aria-live="polite"></span>
+                  <button type="button" class="rc-btn" data-review-nav="next" aria-label="下一个关键点" title="下一个关键点（]）"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></button>
                   <button type="button" class="rc-btn rc-retry" id="btn-review-retry" aria-label="重走：退回上一步自由走棋" title="重走：退回上一步自由走棋">重走</button>
-                  <span class="rc-opp hidden" id="review-opp-nav">
-                    <span class="rc-sep"></span>
-                    <button type="button" class="rc-btn" data-review-nav="prev" data-review-side="opp" aria-label="对手上一个问题" title="对手上一个问题（{）"><svg viewBox="0 0 24 24"><path d="M18 6l-6 6 6 6M11 6l-6 6 6 6" /></svg></button>
-                    <span class="rc-issues" id="review-issues-opp"></span>
-                    <button type="button" class="rc-btn" data-review-nav="next" data-review-side="opp" aria-label="对手下一个问题" title="对手下一个问题（}）"><svg viewBox="0 0 24 24"><path d="M6 6l6 6-6 6M13 6l6 6-6 6" /></svg></button>
-                  </span>
                   <button type="button" class="rc-btn" id="btn-report" aria-label="复盘报告" title="复盘报告"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7" /></svg></button>
                 </div>
                 <div class="var-actions" id="var-actions"></div>

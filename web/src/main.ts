@@ -1672,9 +1672,12 @@ function renderReportHint() {
 }
 
 type IssueSide = 'all' | 'me' | 'opp';
+type ReviewNavType = 'issues' | 'opp' | 'moves';
 
-/** With opponent review on, the main issue nav only visits the user's own moves and the opponent's get a separate one. */
-const splitIssueNav = () => settings.reviewOpponent && !imported;
+function reviewNavType(): ReviewNavType {
+  const value = $<HTMLSelectElement>('review-nav-type').value as ReviewNavType;
+  return value === 'opp' || value === 'moves' ? value : 'issues';
+}
 
 function reviewIssues(side: IssueSide = 'all'): Node[] {
   return gameLine().filter((n) => {
@@ -1684,17 +1687,34 @@ function reviewIssues(side: IssueSide = 'all'): Node[] {
   });
 }
 
-function jumpReviewIssue(direction: -1 | 1, side: IssueSide = splitIssueNav() ? 'me' : 'all') {
-  const issues = reviewIssues(side);
-  if (!issues.length) {
-    setStatus(side === 'opp' ? '对手没有可跳转的问题着法' : '还没有可跳转的问题着法');
+function reviewNavNodes(type = reviewNavType()): Node[] {
+  if (type === 'moves') return gameLine();
+  return reviewIssues(type === 'opp' ? 'opp' : imported ? 'all' : 'me');
+}
+
+function navigateReview(direction: -1 | 1) {
+  const type = reviewNavType();
+  const targets = reviewNavNodes(type);
+  const current = realOf(node);
+  if (type === 'moves') {
+    goto(targets[targets.indexOf(current) + direction]);
+    return;
+  }
+  if (!targets.length) {
+    setStatus(type === 'opp' ? '对手没有可跳转的问题着法' : '还没有可跳转的问题着法');
     return;
   }
   let target: Node | undefined;
-  if (direction > 0) target = issues.find((n) => n.ply > realOf(node).ply);
-  else target = [...issues].reverse().find((n) => n.ply < realOf(node).ply);
-  target ??= direction > 0 ? issues[0] : issues[issues.length - 1];
-  goto(target);
+  if (direction > 0) target = targets.find((n) => n.ply > current.ply);
+  else {
+    for (let i = targets.length - 1; i >= 0; i--) {
+      if (targets[i].ply < current.ply) {
+        target = targets[i];
+        break;
+      }
+    }
+  }
+  goto(target ?? (direction > 0 ? targets[0] : targets[targets.length - 1]));
 }
 
 /** Position before the shown problem move: the user can retry it as a new branch. */
@@ -1713,23 +1733,31 @@ function retryReviewMove() {
 }
 
 function renderReviewNav() {
-  const split = splitIssueNav();
-  const counts: Record<'me' | 'opp', Node[]> = { me: reviewIssues(split ? 'me' : 'all'), opp: split ? reviewIssues('opp') : [] };
-  const label = (issues: Node[]) => {
-    const cur = issues.indexOf(realOf(node));
-    return issues.length ? `${cur >= 0 ? `${cur + 1}/` : ''}${issues.length}` : '0';
-  };
-  $('review-issues').textContent = label(counts.me);
-  $('review-issues').title = split ? '我的问题着法（不精确/错误/漏着）' : '问题着法（不精确/错误/漏着）';
-  $('review-issues-opp').textContent = label(counts.opp);
-  $('review-issues-opp').title = '对手的问题着法（不精确/错误/漏着）';
+  const select = $<HTMLSelectElement>('review-nav-type');
+  select.options[0].textContent = imported ? '双方关键点' : '我方关键点';
+  const opponent = select.options[1];
+  opponent.hidden = imported;
+  opponent.disabled = imported || !settings.reviewOpponent;
+  opponent.title = settings.reviewOpponent ? '' : '在设置中开启“复盘时也分析对手的着法”后可用';
+  if (select.value === 'opp' && opponent.disabled) select.value = 'issues';
+  const type = reviewNavType();
+  const nodes = reviewNavNodes(type);
+  const current = nodes.indexOf(realOf(node));
+  const count = $('review-issues');
+  count.textContent = type === 'moves'
+    ? `${current}/${nodes.length - 1}`
+    : nodes.length ? `${current >= 0 ? `${current + 1}/` : ''}${nodes.length}` : '0';
+  count.title = type === 'moves' ? '当前着法 / 全部着法（0 为起始局面）'
+    : `${select.selectedOptions[0].textContent}（不精确/错误/漏着）`;
   $<HTMLButtonElement>('btn-review-retry').disabled = !reviewRetryTarget();
-  $('review-opp-nav').classList.toggle('hidden', !split);
   document.querySelectorAll<HTMLButtonElement>('[data-review-nav]').forEach((button) => {
-    const opp = button.dataset.reviewSide === 'opp';
-    const side: IssueSide = opp ? 'opp' : split ? 'me' : 'all';
-    button.disabled = counts[opp ? 'opp' : 'me'].length === 0;
-    button.onclick = () => jumpReviewIssue(button.dataset.reviewNav === 'next' ? 1 : -1, side);
+    const next = button.dataset.reviewNav === 'next';
+    const direction = next ? 1 : -1;
+    const label = type === 'moves' ? (next ? '下一步' : '上一步') : (next ? '下一个关键点' : '上一个关键点');
+    button.disabled = type === 'moves' ? !nodes[current + direction] : nodes.length === 0;
+    button.setAttribute('aria-label', label);
+    button.title = `${label}（${next ? ']' : '['}）`;
+    button.onclick = () => navigateReview(direction);
   });
 }
 
@@ -3439,6 +3467,7 @@ function bind() {
     goto(l[Math.round(((e.clientX - rect.left) / rect.width) * (l.length - 1))]);
   };
   $('btn-report').onclick = openReport;
+  $<HTMLSelectElement>('review-nav-type').onchange = renderReviewNav;
   $('btn-review-retry').onclick = retryReviewMove;
   $('btn-report-free').onclick = () => {
     closeReport(true);
@@ -3518,10 +3547,8 @@ function bind() {
     else if (e.key === 'ArrowRight') goto(mainChild(node));
     else if (e.key === 'Home') goto(tree.root);
     else if (e.key === 'End') goto(lastOfLine());
-    else if (mode === 'review' && e.key === '[') jumpReviewIssue(-1);
-    else if (mode === 'review' && e.key === ']') jumpReviewIssue(1);
-    else if (mode === 'review' && e.key === '{' && splitIssueNav()) jumpReviewIssue(-1, 'opp');
-    else if (mode === 'review' && e.key === '}' && splitIssueNav()) jumpReviewIssue(1, 'opp');
+    else if (mode === 'review' && e.key === '[') navigateReview(-1);
+    else if (mode === 'review' && e.key === ']') navigateReview(1);
   });
   // 对话框里点击包着下拉框/滑块的标签文字时不要激活控件（iOS 会直接弹出选择器）
   document.addEventListener('click', (e) => {

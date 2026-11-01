@@ -2546,11 +2546,15 @@ dialog input[type='color'] {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.rc-sep {
-  width: 1px;
-  height: 18px;
-  margin: 0 4px;
-  background: var(--line);
+.review-ctrl .rc-type {
+  width: auto;
+  min-width: 0;
+  height: 32px;
+  margin-right: auto;
+  padding: 0 6px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text2);
 }
 .rc-issues {
   min-width: 28px;
@@ -2559,19 +2563,8 @@ dialog input[type='color'] {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-.rc-opp {
-  display: inline-flex;
-  align-items: center;
-}
-.rc-opp.hidden {
-  display: none;
-}
-.rc-opp .rc-btn,
-.rc-opp .rc-issues {
-  color: var(--muted);
-}
 #btn-report {
-  margin-left: auto;
+  margin-left: 0;
 }
 .cg-wrap .cg-custom-svgs {
   z-index: 12;

@@ -122,6 +122,41 @@ try {
       await page.locator('#report:not(.hidden)').waitFor();
       assert.equal(await page.locator('#game.active').count(), 1);
     }
+    // Review navigation exposes one shared pair of controls and switches between own issues, opponent issues, and every move.
+    await page.locator('#btn-report-free').click();
+    const reviewType = page.locator('#review-nav-type');
+    assert.deepEqual(await reviewType.locator('option').allTextContents(), ['我方关键点', '对方关键点', '全部着法']);
+    assert.equal(await page.locator('[data-review-nav="prev"]').count(), 1);
+    assert.equal(await page.locator('[data-review-nav="next"]').count(), 1);
+    const controlBox = await page.locator('.review-ctrl').boundingBox();
+    const previousBox = await page.locator('[data-review-nav="prev"]').boundingBox();
+    const nextBox = await page.locator('[data-review-nav="next"]').boundingBox();
+    assert.ok(controlBox && previousBox && nextBox);
+    assert.ok(previousBox.x > controlBox.x + controlBox.width / 2, 'Previous navigation should be on the right half of the control bar');
+    assert.ok(nextBox.x > previousBox.x, 'Next navigation should follow previous navigation');
+    await reviewType.selectOption('moves');
+    await page.keyboard.press('Home');
+    const moveIds = await page.locator('#moves .mv').evaluateAll(rows => rows.map(row => row.dataset.id));
+    assert.equal(await page.locator('#review-issues').textContent(), `0/${moveIds.length}`);
+    assert.equal(await page.locator('[data-review-nav="prev"]').isDisabled(), true);
+    for (const id of moveIds) {
+      await page.locator('[data-review-nav="next"]').click();
+      assert.equal(await page.locator('#moves .cur').getAttribute('data-id'), id);
+    }
+    assert.equal(await page.locator('#review-issues').textContent(), `${moveIds.length}/${moveIds.length}`);
+    assert.equal(await page.locator('[data-review-nav="next"]').isDisabled(), true);
+    await page.keyboard.press(']');
+    assert.equal(await page.locator('#moves .cur').getAttribute('data-id'), moveIds.at(-1));
+    for (const id of [...moveIds].reverse()) {
+      await page.locator('[data-review-nav="prev"]').click();
+      const previous = moveIds[moveIds.indexOf(id) - 1];
+      if (previous) assert.equal(await page.locator('#moves .cur').getAttribute('data-id'), previous);
+      else assert.equal(await page.locator('#moves .cur').count(), 0);
+    }
+    assert.equal(await page.locator('[data-review-nav="prev"]').isDisabled(), true);
+    await reviewType.selectOption('issues');
+    assert.equal(await reviewType.locator('option').nth(1).isDisabled(), true);
+    assert.match(await page.locator('#review-issues').textContent(), /^(?:0|1)$/);
 
     // Opening another record must not replace the suspended game either.
     await openMenu();
@@ -208,7 +243,7 @@ try {
     await context.close();
   }
 } catch (err) {
-  console.error(await activePage?.evaluate(() => ({ summary:document.querySelector('#learning-report-summary')?.outerHTML, hint:document.querySelector('#report-hint')?.textContent, status:document.querySelector('#status')?.textContent })));
+  console.error(err);
   throw err;
 } finally {
   await browser.close();

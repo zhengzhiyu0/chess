@@ -1,0 +1,55 @@
+README.md
+  s_7ff17073cdf55d::t_b96732b5dce090 14
+web/index.html
+  s_7ff17073cdf55d::t_669bf420af5562 308-318,352-353,396,399-400,404-422
+web/src/settings.ts
+  s_7ff17073cdf55d::t_aca78a1882f5f0 46-47,130,227
+web/src/style.css
+  s_7ff17073cdf55d::t_2df95edccf1f4d 1956,1961-1976
+web/src/app/engines-ui.ts
+  s_4831d73f5b41b0::t_01943faf5ab8fb 22,109,139
+web/src/main.ts
+  s_bfea8d0a5a3f64::t_c16ee0a34f1c81 43,132,145,237,262-270,460,462,498,1328,1334,2422,2424,2783,2796-2797,2799,2936,2938,2955,2989,3012,3025-3030,3689-3692,4193,4202-4203
+web/test/settings-migration.test.ts
+  s_606fa452a148a0::t_f18fbb44b42fa4 96-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "41a026db96b3debe5084847ed21613a202cf72a7",
+  "prompts": {},
+  "sessions": {
+    "s_4831d73f5b41b0": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "95740e41-ea0c-478b-a199-54ce9a1df550",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_606fa452a148a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-ac9fda059a758dc27",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_bfea8d0a5a3f64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "407a32d9-e969-4573-a751-79d345b44a9b",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -1337,6 +1337,11 @@ html:not(.native) .native-only {
 #game[data-mode='play'] .menu-top {
   display: none;
 }
+/* 提示气泡应自然延伸到工具栏边缘，由工具栏负责最后的遮挡。 */
+#game[data-mode='play'] .side,
+#game[data-mode='play'] .panel {
+  overflow: visible;
+}
 #game .side {
   padding-bottom: var(--safe-b);
 }
@@ -1969,6 +1974,8 @@ dialog input[type='color'] {
     flex: none;
     width: 360px;
     border-radius: 10px;
+  }
+  #game[data-mode='review'] .side {
     overflow: hidden;
   }
   .panel {

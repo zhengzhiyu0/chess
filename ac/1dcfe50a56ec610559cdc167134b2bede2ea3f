@@ -1,0 +1,23 @@
+README.md
+  s_7ff17073cdf55d::t_5066b033f6cd8a 7-9,12,20
+web/index.html
+  s_7ff17073cdf55d::t_c8135854cb3bf1 44-47,52-55,59,61,149
+web/src/style.css
+  s_7ff17073cdf55d::t_225b2bb17f0815 117,125,460-465,467-477,479-481,483-512,555-556,558-606,608-614,1012-1047,1338-1347,1375-1378,1390,2023,2999-3049
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ac1dcfe50a56ec610559cdc167134b2bede2ea3f",
+  "prompts": {},
+  "sessions": {
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -1,0 +1,65 @@
+web/index.html
+  s_7ff17073cdf55d::t_9aed434548bce7 29-31,242-266,310
+web/src/style.css
+  s_7ff17073cdf55d::t_bddf04493e7722 1595-1597,1911-1938
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_c654c8d68bc267::t_bcaacf75c4d172 43-44
+web/src/audio/sound.ts
+  s_4831d73f5b41b0::t_3bf3ccba655bdf 16-20,30,114-116,224-228,232-233,254-255
+web/src/main.ts
+  s_bfea8d0a5a3f64::t_c7e17cbd3b34ae 37,145,2679-2773,2785-2786,3672-3678,4180,4188
+web/test/native-sound.test.ts
+  s_c654c8d68bc267::t_a04eb6018091f3 33,41,52-57,60-61,64-66
+web/test/sound-assets.native.swift
+  s_c654c8d68bc267::t_01512c8751ac0a 7,11-12
+web/test/sound.test.ts
+  s_0aa240bd3a0f30::t_99511e4d746b65 56,64-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4fe28bb9a9d1b85d3d042b78c7bf8518ac3dbb3a",
+  "prompts": {},
+  "sessions": {
+    "s_0aa240bd3a0f30": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "887b7a89-b29b-49f0-a22f-49ea0bd8d9df",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_4831d73f5b41b0": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "95740e41-ea0c-478b-a199-54ce9a1df550",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_bfea8d0a5a3f64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "407a32d9-e969-4573-a751-79d345b44a9b",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_c654c8d68bc267": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17704-6509-7201-938b-699b4050b4f6",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

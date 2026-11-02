@@ -324,8 +324,9 @@
         <label>我的棋力起点（修改后重新定位）
           <input type="number" name="playerElo" min="0" max="2600" step="1" required />
         </label>
-        <small class="muted">这是你的自估起点，默认 1500；纯净标准对局结束后会自动估计棋力，不改变所选对手难度。有未完成对局也可修改；当前棋局保留原参数，旧局结束不会覆盖新起点。</small>
-        <p class="muted">对手固定难度、Maia 模型与随机性变更从新局生效。评级只看结果与对手分；开启对局辅助、提示、悔棋或局中分析后不计分，导入棋局和非标准起始局面也不计分。低于 600 的 Maia 水平为模型外推，不等同于正式赛事等级分。</p>
+        <small class="muted">这是你的自估起点，默认 1500；标准对局结算后会自动更新棋力估计，不改变所选对手难度。有未完成对局也可修改；当前棋局保留原参数，旧局结束不会覆盖新起点。</small>
+        <p class="muted">对手固定难度、Maia 模型与随机性变更从新局生效。评级结合胜负、对手强弱和双方有效着法的准确率；辅助对局同样计分，按实际展示与采纳的提示、局势信息及分析记录调整加分和定位置信度。首次悔棋容错，后续悔棋逐步减少加分，扣分不减免。导入棋局和非标准起始局面不参与棋力定位。低于 600 的 Maia 水平为模型外推，不等同于正式赛事等级分。</p>
+        <button type="button" id="btn-rating-reset">重置棋力分</button>
         <label>我执
           <select name="color">
             <option value="w">白棋</option>
@@ -444,7 +445,7 @@
         <label class="check"><input type="checkbox" name="aidThreats" /> 对手威胁（红色箭头）</label>
         <label class="check"><input type="checkbox" name="aidHanging" /> 保护不足的棋子（红圈）</label>
         <label class="check"><input type="checkbox" name="aidBest" /> 最佳着法（绿色箭头）</label>
-        <p class="muted">开启任何辅助后，本局作为练习，不改变棋力分。关闭辅助不会恢复本局计分。</p>
+        <p class="muted">辅助对局也会计分。仅开启开关不算使用；实际看到的局势信息、推荐着法，以及落子是否采纳推荐，会用于估计独立表现。关闭开关会保留此前已展示的记录，无法据此判断你是否理解了建议。</p>
         <div class="row">
           <button value="cancel">取消</button>
           <button value="ok" class="primary">保存</button>

@@ -1,7 +1,8 @@
 import { Chess } from 'chess.js';
 import { toMove } from './rules';
+import type { MoveEvidence } from './rating';
 
-/** Serialized node: uci, children, comment, NAGs, clock snapshot [white ms, black ms], exploration flag. */
+/** Serialized node: uci, children, comment, NAGs, clock snapshot, exploration flag, and rating evidence. */
 export interface SNode {
   u?: string;
   c?: SNode[];
@@ -9,6 +10,7 @@ export interface SNode {
   n?: number[];
   k?: [number, number];
   x?: 1;
+  e?: MoveEvidence;
 }
 
 export interface GNode<A extends object = object> {
@@ -27,8 +29,24 @@ export interface GNode<A extends object = object> {
   clock?: [number, number];
   /** added while exploring in analysis: never part of the game record */
   x?: boolean;
+  evidence?: MoveEvidence;
   /** analysis cache, never serialized */
   a: Partial<A>;
+}
+
+export function sanitizeMoveEvidence(value: unknown): MoveEvidence | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const raw = value as Record<string, unknown>;
+  const evidence: MoveEvidence = {};
+  for (const key of ['hints', 'best'] as const) {
+    const values = raw[key];
+    if (Array.isArray(values)) {
+      const valid = [...new Set(values.filter((x): x is string => typeof x === 'string' && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(x)))].slice(0, 64);
+      if (valid.length) evidence[key] = valid;
+    }
+  }
+  for (const key of ['info', 'analysis', 'reconsidered'] as const) if (raw[key] === true) evidence[key] = true;
+  return Object.keys(evidence).length ? evidence : undefined;
 }
 
 /** Main continuation of `n`; a real position never continues into an exploration. */
@@ -138,6 +156,7 @@ export class GameTree<A extends object = object> {
     if (node.nags?.length) s.n = node.nags;
     if (node.clock) s.k = node.clock;
     if (node.x) s.x = 1;
+    if (node.evidence) s.e = node.evidence;
     return s;
   }
 
@@ -149,6 +168,8 @@ export class GameTree<A extends object = object> {
       if (typeof sn.t === 'string' && sn.t) node.comment = sn.t;
       if (Array.isArray(sn.n) && sn.n.length && sn.n.every((x) => Number.isInteger(x))) node.nags = sn.n;
       if (Array.isArray(sn.k) && sn.k.length === 2 && sn.k.every((x) => Number.isFinite(x))) node.clock = [sn.k[0], sn.k[1]];
+      const evidence = sanitizeMoveEvidence(sn.e);
+      if (evidence) node.evidence = evidence;
       for (const c of Array.isArray(sn.c) ? sn.c : []) {
         const child = c && typeof c.u === 'string' ? tree.add(node, c.u, Boolean(c.x)) : null;
         if (!child) throw new Error(`非法着法：${c.u}`);

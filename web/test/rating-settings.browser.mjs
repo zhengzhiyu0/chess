@@ -34,6 +34,8 @@ try {
     await page.locator('#btn-settings').click();
     const input = page.locator('[name="playerElo"]');
     assert.equal(await input.isEnabled(), true, 'An unfinished game must not disable the starting-rating input');
+    await page.locator('#btn-rating-reset').click();
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('maia-coach.settings')).playerElo), 1500, 'Reset must not alter rating while a standard game is active');
     await input.fill('900');
     if (mobile) {
       const viewport = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth, scale: visualViewport?.scale ?? 1 }));
@@ -48,13 +50,18 @@ try {
       { player: saved.playerElo, opponent: saved.elo, deviation: saved.ratingDeviation, streak: saved.ratingStreak, games: saved.ratedGames },
       { player: 900, opponent: 2600, deviation: 350, streak: 0, games: 20 },
     );
-    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('maia-coach.game'))), game, 'Editing the next starting rating must preserve the live game snapshot');
+    const liveSnapshot = await page.evaluate(() => JSON.parse(localStorage.getItem('maia-coach.game')));
+    assert.deepEqual(
+      { id: liveSnapshot.id, tree: liveSnapshot.tree, result: liveSnapshot.result, elo: liveSnapshot.elo, playerElo: liveSnapshot.playerElo, ratingDeviation: liveSnapshot.ratingDeviation, ratingStreak: liveSnapshot.ratingStreak },
+      { id: game.id, tree: game.tree, result: game.result, elo: game.elo, playerElo: game.playerElo, ratingDeviation: game.ratingDeviation, ratingStreak: game.ratingStreak },
+      'Editing the next starting rating must preserve the live game snapshot',
+    );
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('#btn-settings').click();
     const reloadInput = page.locator('[name="playerElo"]');
     assert.equal(await reloadInput.inputValue(), '900', 'The saved starting rating must survive a reload');
     await reloadInput.fill('1000');
-    await page.locator('#btn-settings-cancel').click();
+    await page.locator('#btn-settings-back').click();
     await page.locator('#settings').waitFor({ state: 'hidden' });
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('maia-coach.settings')).playerElo), 900, 'Cancelling must not save an edit');
     await page.locator('#btn-continue').click();
@@ -68,6 +75,27 @@ try {
     assert.equal(unchanged.ratedGames, 20);
     assert.deepEqual(errors, []);
     console.log(`PASS: ${mobile ? 'iPhone' : 'desktop'} starting-rating edit, persistence, cancellation and live snapshot`);
+    await context.close();
+  }
+  {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const seedSettings = { ...settings, elo: 1900, playerElo: 1765, ratingDeviation: 92, ratingStreak: -2, ratedGames: 23 };
+    await context.addInitScript(settings => localStorage.setItem('maia-coach.settings', JSON.stringify(settings)), seedSettings);
+    const page = await context.newPage();
+    page.on('dialog', dialog => dialog.accept());
+    await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
+    await page.locator('#btn-settings').click();
+    await page.locator('#btn-rating-reset').click();
+    await page.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('maia-coach.settings'));
+      return s.playerElo === 1500 && s.ratingDeviation === 350 && s.ratingStreak === 0 && s.ratedGames === 0;
+    });
+    const reset = await page.evaluate(() => JSON.parse(localStorage.getItem('maia-coach.settings')));
+    assert.equal(reset.elo, 1900, 'Reset must preserve the Maia opponent level');
+    assert.equal(await page.locator('[name="playerElo"]').inputValue(), '1500', 'The settings form must reflect the persisted reset');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('#btn-settings').click();
+    assert.equal(await page.locator('[name="playerElo"]').inputValue(), '1500', 'The reset rating must persist across reloads');
     await context.close();
   }
   for (const scenario of ['legacy-disabled', 'legacy-no-player-snapshot', 'assisted', 'nonstandard', 'imported']) {
@@ -131,11 +159,12 @@ try {
     await page.locator('#btn-resign').click();
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('maia-coach.game')).result === '0-1');
     const settled = await page.evaluate(() => ({ settings: JSON.parse(localStorage.getItem('maia-coach.settings')), game: JSON.parse(localStorage.getItem('maia-coach.game')) }));
-    const rated = scenario === 'legacy-disabled' || scenario === 'legacy-no-player-snapshot';
+    const rated = scenario === 'legacy-disabled' || scenario === 'legacy-no-player-snapshot' || scenario === 'assisted';
     assert.equal(settled.settings.elo, 1500, `${scenario}: the fixed opponent must never move after a result`);
     assert.equal(settled.settings.ratedGames, rated ? 21 : 20);
     assert.equal(Boolean(settled.game.rating), rated);
-    if (rated) assert.ok(settled.settings.playerElo < 1500, `${scenario}: a formerly disabled pure game must update the player estimate`);
+    if (rated) assert.ok(settled.settings.playerElo < 1500, `${scenario}: an eligible game must update the player estimate`);
+    if (scenario === 'assisted') assert.ok(settled.game.rating?.calculation?.evidence, 'Assisted games still settle with observable assistance evidence');
     else assert.equal(settled.settings.playerElo, 1500, `${scenario}: assisted/nonstandard games must not rate`);
     console.log(`PASS: ${scenario} rating eligibility and fixed opponent`);
     await context.close();

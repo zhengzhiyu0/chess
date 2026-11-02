@@ -1,7 +1,9 @@
+import { Chess } from 'chess.js';
 import type { SNode } from './tree';
+import { sanitizeMoveEvidence } from './tree';
 import { END_REASON_TEXT, type Color, type EndReason } from './rules';
 import { isObj, readJson, safeSet } from '../storage';
-import type { Assists, RatingInfo } from './rating';
+import type { Assists, MoveEvidence, RatingEvidence, RatingInfo } from './rating';
 
 export type { Assists, RatingInfo } from './rating';
 
@@ -38,6 +40,8 @@ export interface StoredGame {
   assists?: Assists;
   /** How the player's rating change was computed. */
   rating?: RatingInfo;
+  /** rating settlement is pending */
+  ratingPending?: boolean;
   /** left unfinished by starting another game (counted as a resignation) */
   abandoned?: boolean;
 }
@@ -165,6 +169,54 @@ const deviation = (v: unknown): v is number => inRange(v, 60, 350);
 const streak = (v: unknown): v is number => inRange(v, -8, 8, true);
 const assist = (v: unknown): number => num(v) && Number.isInteger(v) && (v as number) >= 0 ? v as number : 0;
 
+function validPositionKey(key: string): boolean {
+  if (!str(key, 200)) return false;
+  const fields = key.split(' ');
+  if (fields.length !== 4 || fields.some((field) => !field)) return false;
+  try {
+    return new Chess(`${key} 0 1`).fen().split(' ').slice(0, 4).join(' ') === key;
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeCalculation(v: unknown): RatingInfo['calculation'] {
+  if (!isObj(v)) return undefined;
+  const c = v;
+  if (!inRange(c.score, 0, 1) || !inRange(c.weight, 0, 0.4)
+    || !inRange(c.undo, 0, Number.MAX_SAFE_INTEGER, true) || !inRange(c.undoFactor, 0, 1)
+    || !inRange(c.baseDelta, -2600, 2600, true)) return undefined;
+  let performance: NonNullable<RatingInfo['calculation']>['performance'] = undefined;
+  if (c.performance !== undefined) {
+    if (!isObj(c.performance)) return undefined;
+    const p = c.performance;
+    if (!inRange(p.playerAccuracy, 0, 100) || !inRange(p.opponentAccuracy, 0, 100)
+      || !inRange(p.playerMoves, 1, Number.MAX_SAFE_INTEGER, true) || !inRange(p.opponentMoves, 1, Number.MAX_SAFE_INTEGER, true)
+      || !inRange(p.mistakes, 0, Number.MAX_SAFE_INTEGER, true) || !inRange(p.blunders, 0, Number.MAX_SAFE_INTEGER, true)) return undefined;
+    performance = { playerAccuracy: p.playerAccuracy, opponentAccuracy: p.opponentAccuracy, playerMoves: p.playerMoves, opponentMoves: p.opponentMoves, mistakes: p.mistakes, blunders: p.blunders };
+  }
+  let evidence: RatingEvidence | undefined;
+  if (c.evidence !== undefined) {
+    if (!isObj(c.evidence)) return undefined;
+    const e = c.evidence;
+    const fields = ['moves', 'independent', 'informed', 'suggested', 'followed', 'hints', 'hintFollowed', 'analysis'] as const;
+    if (!fields.every((key) => inRange(e[key], 0, Number.MAX_SAFE_INTEGER, true)) || !inRange(e.dependence, 0, 1)) return undefined;
+    evidence = {
+      moves: e.moves as number, independent: e.independent as number, informed: e.informed as number,
+      suggested: e.suggested as number, followed: e.followed as number, hints: e.hints as number,
+      hintFollowed: e.hintFollowed as number, analysis: e.analysis as number, dependence: e.dependence as number,
+    };
+  }
+  if (c.confidence !== undefined && !inRange(c.confidence, 0, 1)) return undefined;
+  return {
+    score: c.score, weight: c.weight,
+    ...(performance ? { performance: performance as NonNullable<RatingInfo['calculation']>['performance'] } : {}),
+    undo: c.undo, undoFactor: c.undoFactor, baseDelta: c.baseDelta,
+    ...(evidence ? { evidence } : {}),
+    ...(c.confidence !== undefined ? { confidence: c.confidence } : {}),
+  };
+}
+
 /**
  * Structural check of a stored / imported game (cheap; the move tree itself is verified by
  * GameTree.deserialize when the game is opened). Unknown or malformed optional fields are dropped.
@@ -199,13 +251,24 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
     g.headers = h;
   }
   if (r.imported === true) g.imported = true;
+  if (r.ratingPending === true) g.ratingPending = true;
   if (isObj(r.assists) || r.coach === true) {
     const a: Record<string, unknown> = isObj(r.assists) ? r.assists : {};
+    const positions: Record<string, MoveEvidence> = {};
+    if (isObj(a.positions)) {
+      for (const [key, value] of Object.entries(a.positions)) {
+        if (Object.keys(positions).length >= 512) break;
+        if (!validPositionKey(key)) continue;
+        const evidence = sanitizeMoveEvidence(value);
+        if (evidence) positions[key] = evidence;
+      }
+    }
     g.assists = {
       undo: assist(a.undo) + assist(a.retry),
       hint: assist(a.hint),
       ...(a.aids === true || r.coach === true ? { aids: true } : {}),
       ...(a.best === true ? { best: true } : {}),
+      ...(Object.keys(positions).length ? { positions } : {}),
     };
   }
   if (isObj(r.rating)) {
@@ -213,6 +276,7 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
     if (inRange(x.delta, -2600, 2600, true) && (x.result === 0 || x.result === 0.5 || x.result === 1)
       && inRange(x.expected, 0, 1) && elo(x.playerBefore) && elo(x.playerAfter) && elo(x.opponent)
       && deviation(x.rdBefore) && deviation(x.rdAfter) && streak(x.streak)) {
+      const calculation = sanitizeCalculation(x.calculation);
       g.rating = {
         delta: x.delta,
         result: x.result,
@@ -224,6 +288,7 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
         rdAfter: x.rdAfter,
         streak: x.streak,
         ...(x.abandoned === true ? { abandoned: true } : {}),
+        ...(calculation ? { calculation } : {}),
       };
     }
   }

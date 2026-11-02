@@ -6,6 +6,16 @@ import Foundation
 let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 let themes = ["board", "wood", "felt", "glass", "standard"]
 let files = ["Move", "Capture", "Check", "GenericNotify", "Victory", "Defeat", "Draw", "LowTime"]
+let standardFileBySample = [
+    "Move": "move",
+    "Capture": "capture",
+    "Check": "move",
+    "GenericNotify": "dong",
+    "Victory": "dong",
+    "Defeat": "dong",
+    "Draw": "dong",
+    "LowTime": "error",
+]
 var decoded = Set<URL>()
 for theme in themes {
     let themeFiles = theme == "standard" ? ["move", "capture", "error", "dong"] : files
@@ -13,7 +23,8 @@ for theme in themes {
         var url = root.appendingPathComponent("sounds/\(theme)/\(name).mp3")
         if !FileManager.default.fileExists(atPath: url.path) {
             precondition(["board", "wood", "felt", "glass"].contains(theme) && !["Move", "Capture"].contains(name), "Missing sound: \(url.path)")
-            url = root.appendingPathComponent("sounds/standard/\(name).mp3")
+            let standardName = standardFileBySample[name] ?? name
+            url = root.appendingPathComponent("sounds/standard/\(standardName).mp3")
         }
         guard decoded.insert(url).inserted else { continue }
         let file = try AVAudioFile(forReading: url)

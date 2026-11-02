@@ -1,0 +1,19 @@
+web/test/sound-assets.native.swift
+  s_0fc18741c898e5::t_5ecf82a83fca72 9-18,26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "565877420d7e6872a17a22b1326ac4c42098a7a4",
+  "prompts": {},
+  "sessions": {
+    "s_0fc18741c898e5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19eaf-d882-7940-a986-9c03fea4e3ad",
+        "model": "ufosaga/gpt-5.6-luna"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

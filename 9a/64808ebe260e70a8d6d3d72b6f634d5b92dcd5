@@ -1,0 +1,72 @@
+.github/workflows/ios.yml
+  s_7f57946f292cd3::t_6e1f098686aba1 61-62,69
+  s_7f57946f292cd3::t_ab88df8483b430 6-14,24-25,55-57,89-91,93-98,104,145-157,165-175,178
+web/src/settings.ts
+  s_3b205b8df72f3e::t_9e3330a953874c 101,183
+  s_7f57946f292cd3::t_9ea5bac223c843 112-113,115,122,138,315-318
+  s_7f57946f292cd3::t_6e1f098686aba1 114
+web/native-plugins/maia-native/Package.swift
+  s_7f57946f292cd3::t_6e1f098686aba1 28-33,66
+  s_7f57946f292cd3::t_ff86a5265f17a0 4-6,26-27,34,67
+web/src/main.ts
+  s_7f57946f292cd3::t_6e1f098686aba1 374
+  s_7f57946f292cd3::t_9ea5bac223c843 20,2923,2936
+  s_7f57946f292cd3::t_ff86a5265f17a0 4088
+web/index.html
+  s_7f57946f292cd3::t_9ea5bac223c843 317,379
+web/scripts/prepare-native.mjs
+  s_7f57946f292cd3::t_9ea5bac223c843 5,31-33,39
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/SoundNativePlugin.swift
+  s_3b205b8df72f3e::t_efe75c6b2d22b0 43
+  s_3b205b8df72f3e::t_9e3330a953874c 45-55,92,94
+web/src/audio/sound.ts
+  s_3b205b8df72f3e::t_f629935fc75f2b 53
+  s_3b205b8df72f3e::t_480c69d0ac9d27 10-11,33-36,52,56,100,112,239
+web/test/sound.test.ts
+  s_3b205b8df72f3e::t_efe75c6b2d22b0 56,73,80,88
+web/src/style.css
+  s_7f57946f292cd3::t_9ea5bac223c843 880-882
+web/public/sounds/README.md
+  s_3b205b8df72f3e::t_2ae44face55b2e 3-5,10-11,30,32
+web/scripts/compile-coreml.py
+  s_7f57946f292cd3::t_9ea5bac223c843 17,197,221-223,227,244
+web/test/settings-migration.test.ts
+  s_3b205b8df72f3e::t_efe75c6b2d22b0 63
+web/native-plugins/maia-native/stockfish/test/build_smoke.sh
+  s_7f57946f292cd3::t_6d73f1836208e6 2,32-34
+web/test/sound-assets.native.swift
+  s_3b205b8df72f3e::t_efe75c6b2d22b0 7,16
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/StockfishNativePlugin.swift
+  s_7f57946f292cd3::t_ff86a5265f17a0 6,8,10,22-28,97-103,114,116,154-160,170-178
+web/test/native-sound.test.ts
+  s_3b205b8df72f3e::t_e80249a0b33e78 102
+  s_3b205b8df72f3e::t_86a6982830a152 88
+  s_3b205b8df72f3e::t_efe75c6b2d22b0 74,76-77,100
+README.md
+  s_3b205b8df72f3e::t_efe75c6b2d22b0 20,128
+  s_7f57946f292cd3::t_6d73f1836208e6 108-109,127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9a64808ebe260e70a8d6d3d72b6f634d5b92dcd5",
+  "prompts": {},
+  "sessions": {
+    "s_3b205b8df72f3e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19e8d-4dc4-7ad3-ab13-d94870ea3840",
+        "model": "ufosaga/gpt-5.6-luna"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_7f57946f292cd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19e93-eb6c-7d02-a5a5-54f5390cd20b",
+        "model": "ufosaga/gpt-5.6-luna"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

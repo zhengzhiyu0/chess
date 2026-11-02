@@ -118,7 +118,7 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
   - **Maia-3 5M / 23M / 79M**：CoreML 原生推理，预装 fp16 计算的 `.mlmodelc`；主干矩阵使用 INT8 权重量化，GAB 注意力偏置生成器保留 fp16，避免误差跨层累积。CI 从固定 batch 1 的 native ONNX 转换模型：将 Constant 提为 initializer、把 GAB 的 Einsum 等价展开为矩阵乘法，并统一 MIL 编写精度以避免 LayerNorm 类型冲突。三种编译模型各须通过 7 个现有棋局样本的 ONNX 对照（合法走法概率和胜和负概率最大误差均不超过 0.02），通过后才进入 App bundle；iOS 不再依赖 ONNX Runtime，也不再生成或清理 ORT 模型缓存。构建失败时保留 CoreML/Xcode 日志 artifact 和错误摘要。
   - **关键事件文字提示**：普通对弈中由莉亚头像显示简短的战术和棋力反馈；其他教练头像资源保留在项目内，当前不参与选择或运行时逻辑。
   - 全部预装，无需下载，完全离线可用；App 内没有下载按钮和离线包管理。「设置 → 环境信息」显示当前引擎的实际运行方式。
-- App 的对弈界面与手机网页版一致：菜单在顶部，提示/悔棋/教练在“我”的信息栏里。点自己的头像（或「设置 → 我的头像」）可换成预设头像或相册照片。iOS 音效由 AVAudioPlayer 直接播放内置 MP3，通过应用内音效开关控制，使用媒体音量，允许与其他应用音频混音；每次播放重新激活音频会话，进入后台或被电话中断时停止旧声音，回来后只播放新事件。70 毫秒内的重复落子音效会被过滤。
+- App 的对弈界面与手机网页版一致：菜单在顶部，提示/悔棋/教练在“我”的信息栏里。点自己的头像（或「设置 → 我的头像」）可换成预设头像（不再读取相册，避免申请照片权限）。iOS 音效由 AVAudioPlayer 直接播放内置 MP3，通过应用内音效开关控制，使用媒体音量，允许与其他应用音频混音；每次播放重新激活音频会话，进入后台或被电话中断时停止旧声音，回来后只播放新事件。70 毫秒内的重复落子音效会被过滤。
 - 本地准备 iOS 工程：`cd web && npm run build:native`，依次执行构建、生成 `dist-native/`（[prepare-native.mjs](web/scripts/prepare-native.mjs)：去掉所有 wasm，下载并校验 NNUE 网络，拼接 `native-models/` 中的 ONNX 中间文件）、`cap sync ios`；随后在 macOS 按 [ios.yml](.github/workflows/ios.yml) 安装 Python 转换依赖，执行 `python scripts/compile-coreml.py`，完成模型转换、量化、编译和数值对照，再用 Xcode 构建。编译产物按源 ONNX 内容缓存，最终 bundle 不保留 Maia ONNX。Xcode 工程位于 `web/ios/`。
 - 原生 Stockfish 可以脱离 Xcode 单独测试：`sh web/native-plugins/maia-native/stockfish/test/build_smoke.sh web/.cache/nnue`（CI 也会在 arm64 macOS 上跑这一步）。
 - Stockfish 以 GPL-3.0 发布，源码见 [stockfish/](web/native-plugins/maia-native/stockfish)。

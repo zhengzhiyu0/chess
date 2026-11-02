@@ -225,7 +225,9 @@ export class Stockfish {
           if (!this.failed || this.dead) return;
           if (!document.hidden) left -= 1000;
           if (left <= 0) reject(new Error('Stockfish 启动超时'));
-          else setTimeout(tick, 1000);
+          // background tabs are throttled anyway; a slower wakeup keeps the timeout meaningful
+          // without a per-second timer while the app is away
+          else setTimeout(tick, document.hidden ? 5000 : 1000);
         };
         setTimeout(tick, 1000);
         // The first uciok includes startup/initialization (and may include NNUE loading),

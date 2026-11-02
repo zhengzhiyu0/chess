@@ -698,7 +698,7 @@ button.home-game-action:focus-visible {
 #game.has-eval { --eval-space: 24px; }
 
 .game-main {
-  --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 2 * 24px - 190px - var(--eval-space))) * var(--bs-play, 1));
+  --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 2 * 24px - 190px - 22px - var(--eval-space))) * var(--bs-play, 1));
   flex: 1;
   min-height: 0;
   padding-bottom: calc(58px + var(--safe-b));
@@ -1106,6 +1106,17 @@ html:not(.native) .native-only {
   transform: none;
   background: rgba(255, 255, 255, 0.1);
 }
+.opening-info {
+  flex: none;
+  min-height: 22px;
+  padding: 2px 8px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .moves {
   flex: 1;
   min-width: 0;
@@ -1274,8 +1285,8 @@ html:not(.native) .native-only {
   align-items: center;
   min-height: 58px;
   padding: 4px 8px calc(4px + var(--safe-b));
-  background: #000;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg);
+  border-top: 1px solid var(--line);
 }
 .toolbar [data-nav='prev'] { grid-column: 2; }
 .toolbar #btn-hint { grid-column: 3; }
@@ -1330,7 +1341,7 @@ html:not(.native) .native-only {
   padding-bottom: var(--safe-b);
 }
 #game[data-mode='review'] .game-main {
-  --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 190px - var(--eval-space))) * var(--bs-review, 1));
+  --board-size: calc(min(100vw, calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 190px - 22px - var(--eval-space))) * var(--bs-review, 1));
   /* The toolbar is hidden in review, including native iOS. */
   padding-bottom: 0;
 }
@@ -1794,7 +1805,8 @@ dialog.sheet[open] {
 
 /* 升变 */
 #dlg-promo {
-  width: auto;
+  width: fit-content;
+  max-width: 92vw;
   padding: 12px;
 }
 .promo {
@@ -1805,7 +1817,16 @@ dialog.sheet[open] {
   width: 64px;
   height: 64px;
   padding: 0;
-  background: var(--light-sq) center / 88% no-repeat;
+}
+/* 升变棋子用 <img>：全局 button 规则会用 !important 重绘背景，background-image 放棋子会被盖掉 */
+.promo button img {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 6%;
+  border-radius: inherit;
+  background: var(--light-sq);
+  object-fit: contain;
 }
 
 /* 外观预览 */
@@ -1902,11 +1923,11 @@ dialog input[type='color'] {
   .board-col {
     grid-row: auto;
     align-self: center;
-    width: calc(min(calc(100vw - 32px - 16px - 360px), calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 24px - 2 * 20px - var(--eval-space))) * var(--bs-play, 1));
+    width: calc(min(calc(100vw - 32px - 16px - 360px), calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 24px - 2 * 20px - 22px - var(--eval-space))) * var(--bs-play, 1));
   }
 
   #game[data-mode='review'] .board-col {
-    width: calc(min(calc(100vw - 32px - 16px - 360px), calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 24px - 2 * 20px - var(--eval-space))) * var(--bs-review, 1));
+    width: calc(min(calc(100vw - 32px - 16px - 360px), calc(var(--app-h) - var(--safe-t) - var(--safe-b) - 52px - 24px - 2 * 20px - 22px - var(--eval-space))) * var(--bs-review, 1));
   }
   #game[data-mode='review'] .player {
     display: flex;

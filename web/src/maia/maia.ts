@@ -201,9 +201,14 @@ export class Maia {
   private watch(reqId: number, timeout: number) {
     const check = () => {
       if (!this.pending.has(reqId)) return;
-      // the page may be suspended in the background; only count visible time
-      if (document.hidden) setTimeout(check, timeout);
-      else this.fail('Maia 无响应', true);
+      // The page may be suspended in the background: do not keep a recursive timer alive there,
+      // but do not drop the check either — resume it on the next visible frame, or a request
+      // that never answers would stay pending forever after the app comes back.
+      if (document.hidden) {
+        document.addEventListener('visibilitychange', check, { once: true });
+        return;
+      }
+      this.fail('Maia 无响应', true);
     };
     setTimeout(check, timeout);
   }

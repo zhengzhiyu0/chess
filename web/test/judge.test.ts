@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { Chess } from 'chess.js';
 import { classify, type MoveContext } from '../src/coach/coach';
-import { inBook, loadBook } from '../src/coach/book';
+import { identifyOpening, inBook, loadBook, openingOf } from '../src/coach/book';
+import { openingZh } from '../src/coach/opening-zh';
 import { isSacrifice } from '../src/coach/explain';
 import { moveFxOf } from '../src/app/fx';
 
@@ -34,10 +36,48 @@ describe('classify', () => {
 });
 
 describe('opening book', () => {
-  it('knows the Ruy Lopez but not a random position', async () => {
+  it('identifies the deepest named opening along a move path', async () => {
     await loadBook();
+    const c = new Chess();
+    const fens = [c.fen()];
+    for (const san of ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5']) {
+      c.move(san);
+      fens.push(c.fen());
+    }
     expect(inBook('r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3')).toBe(true);
-    expect(inBook('8/8/8/4k3/8/8/4K3/8 w - - 0 1')).toBe(false);
+    expect(openingOf(fens.at(-1)!)).toEqual({ eco: 'C60', name: 'Ruy Lopez' });
+    expect(identifyOpening(fens)).toEqual({ eco: 'C60', name: 'Ruy Lopez' });
+  });
+
+  it('keeps the last named opening after leaving the book', async () => {
+    await loadBook();
+    const c = new Chess();
+    const fens = [c.fen()];
+    for (const san of ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5']) {
+      c.move(san);
+      fens.push(c.fen());
+    }
+    // 末局面不在开局库里：识别应回退到路径上最近一次命中，而不是报“未识别”。
+    fens.push('8/8/8/4k3/8/8/4K3/8 w - - 0 1');
+    expect(identifyOpening(fens)).toEqual({ eco: 'C60', name: 'Ruy Lopez' });
+  });
+
+  it('does not name an unrelated position', async () => {
+    await loadBook();
+    expect(identifyOpening(['8/8/8/4k3/8/8/4K3/8 w - - 0 1'])).toBeNull();
+  });
+
+  it('shows a Chinese family name and falls back to English', () => {
+    expect(openingZh('Ruy Lopez: Berlin Defense')).toBe('西班牙开局');
+    expect(openingZh('Sicilian Defense: Najdorf Variation')).toBe('西西里防御');
+    expect(openingZh('French Defense, Classical, 4. Bg5')).toBe('法兰西防御');
+    expect(openingZh('Totally Unknown Opening')).toBeNull();
+  });
+
+  it('translates every opening family in the book', async () => {
+    const raw = (await import('../src/coach/book-data')).default;
+    const families = new Set(raw.names.map((value) => value.slice(value.indexOf('\t') + 1).split(':')[0].trim()));
+    expect([...families].filter((family) => !openingZh(family))).toEqual([]);
   });
 });
 

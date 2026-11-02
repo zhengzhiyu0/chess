@@ -5,7 +5,7 @@ import { escapeHtml } from './dom';
  * Player avatar, stored in settings as one of:
  * - '' (default silhouette)
  * - '<glyph>|<#rrggbb>' (preset: emoji/symbol on a coloured tile)
- * - 'data:image/jpeg;base64,…' (photo, already cropped/resized by {@link avatarFromFile})
+ * - 'data:image/jpeg;base64,…' (photo; only from older backups, no longer produced)
  */
 export const AVATAR_PRESETS: string[] = [
   '',
@@ -47,24 +47,4 @@ export function avatarHtml(value: string, extraCls = ''): string {
 
 export function coachAvatarHtml(index: number, extraCls = ''): string {
   return `<div class="avatar coach ${extraCls}" style="background:${coachBg(index)}">${coachSvg(index)}</div>`;
-}
-
-/** Centre-crops and downsizes a picked photo to a small JPEG data URL (~10KB) so it fits in localStorage. */
-export async function avatarFromFile(file: File, size = 160): Promise<string> {
-  const url = URL.createObjectURL(file);
-  try {
-    const img = new Image();
-    img.src = url;
-    await img.decode();
-    const s = Math.min(img.naturalWidth, img.naturalHeight);
-    if (!s) throw new Error('无法读取图片');
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = size;
-    const g = canvas.getContext('2d')!;
-    g.imageSmoothingQuality = 'high';
-    g.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
-    return canvas.toDataURL('image/jpeg', 0.85);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
 }

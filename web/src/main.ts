@@ -14,7 +14,8 @@ import { mountSamplingControls } from './app/sampling-ui';
 import type { Stockfish, SfLine } from './engine/stockfish';
 import { flushEvals, getEval, putEval } from './engine/eval-cache';
 import { classify, evalText, JUDGEMENTS, JUDGEMENT_INFO, moveAccuracy, SEVERITY, whiteWinPct, winPct, type Judgement } from './coach/coach';
-import { bookReady, inBook, loadBook } from './coach/book';
+import { bookReady, inBook, loadBook, openingOf, type Opening } from './coach/book';
+import { openingZh } from './coach/opening-zh';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, isSacrifice, plainEval, type MoveInsight, type Sides } from './coach/explain';
 import { ELO_MAX, ELO_MIN, MAIA_LEVELS, isIOS, loadSettings, saveSettings, type Settings } from './settings';
 import { assistCount, computeRating, emptyAssists, type Assists, type RatingInfo } from './game/rating';
@@ -37,7 +38,7 @@ import { $, escapeHtml, setStatus } from './app/dom';
 import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardImageSize, boardPreview, pieceUrl } from './app/appearance';
 import { Engines } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
-import { AVATAR_PRESETS, avatarFromFile, avatarHtml, coachAvatarHtml } from './app/avatar';
+import { AVATAR_PRESETS, avatarHtml, coachAvatarHtml } from './app/avatar';
 import { findNode, movesHtml } from './app/moves-ui';
 import { HANGING_BADGE, HANGING_GLOW, judgeBoardSvg, judgeColor, judgeIcon } from './app/judge-icon';
 import { coachArrow, outlinedArrow } from './app/coach-arrow';
@@ -588,7 +589,12 @@ function askPromotion(color: Color): Promise<string> {
     box.innerHTML = '';
     for (const p of 'qrbn') {
       const b = document.createElement('button');
-      b.style.backgroundImage = `url('${pieceUrl(settings.pieceSet, color, p)}')`;
+      // an <img> rather than a background image: the global button contract repaints backgrounds with !important
+      const img = document.createElement('img');
+      img.src = pieceUrl(settings.pieceSet, color, p);
+      img.alt = '';
+      img.draggable = false;
+      b.appendChild(img);
       b.setAttribute('aria-label', p);
       b.onclick = () => {
         dlg.close();
@@ -761,6 +767,7 @@ function endGame(res: string, why: EndReason) {
   gameToken++;
   maiaThinking = false;
   clock?.stop(performance.now());
+  syncClockTimer();
   cg.cancelPremove();
   resetAids();
   // imported/review games have no "me": treat any decisive end as neutral
@@ -1013,6 +1020,16 @@ async function hint() {
   const token = gameToken;
   const stale = () => token !== gameToken || t !== tip() || mode !== 'play' || screen !== 'game';
   const box = $('hint-box');
+  const ctrl = new AbortController();
+  hintCtrl?.abort();
+  hintCtrl = ctrl;
+  // superseded: a newer hint started, the board moved, or the screen/app changed
+  const superseded = () => hintCtrl !== ctrl || stale();
+  const abandon = () => {
+    hintShapes = [];
+    if (box.textContent === '思考中…') box.textContent = '';
+    refreshShapes();
+  };
   box.textContent = '思考中…';
   // counted once per position, however often the button is pressed
   if (hintedAt !== t) {
@@ -1023,14 +1040,20 @@ async function hint() {
   }
   try {
     const s = await getSf();
-    const r = await s.analyse(tree.root.fen, { moves: movesTo(t), movetime: settings.sfMovetime, depth: depthCap('hint'), multipv: 1 });
-    if (stale()) return;
+    const r = await s.analyse(tree.root.fen, { moves: movesTo(t), movetime: settings.sfMovetime, depth: depthCap('hint'), multipv: 1, signal: ctrl.signal });
+    if (superseded()) {
+      if (hintCtrl === ctrl) abandon();
+      return;
+    }
     const best = r.bestmove;
     hintShapes = best ? [{ uci: best, brush: 'green' }] : [];
     let text = best ? `Stockfish 推荐：${sanOf(t.fen, best)}（${r.lines[0] ? evalText(r.lines[0], turnOf(t.fen)) : ''}）` : '';
     if (!settings.lowMemory) {
       const h = await maiaEval(t);
-      if (stale()) return;
+      if (superseded()) {
+        if (hintCtrl === ctrl) abandon();
+        return;
+      }
       const top = h.moves[0];
       if (top.uci !== best) hintShapes.push({ uci: top.uci, brush: 'blue' });
       text += `\n${humanElo(t)} 分棋手最常走：` + h.moves.slice(0, 3).map((x) => `${sanOf(t.fen, x.uci)} ${(x.p * 100).toFixed(0)}%`).join('，');
@@ -1038,7 +1061,10 @@ async function hint() {
     box.textContent = text;
     refreshShapes();
   } catch (err) {
-    if (!stale()) box.textContent = '提示失败：' + (err as Error).message;
+    if (!superseded()) box.textContent = '提示失败：' + (err as Error).message;
+    else if (hintCtrl === ctrl) abandon();
+  } finally {
+    if (hintCtrl === ctrl) hintCtrl = null;
   }
 }
 
@@ -1093,12 +1119,27 @@ function clockShouldRun(): Color | null {
   return turnOf(t.fen);
 }
 
+let clockTimer: ReturnType<typeof setInterval> | null = null;
+
+function syncClockTimer() {
+  const need = !document.hidden && Boolean(clock?.active);
+  if (need && clockTimer === null) clockTimer = setInterval(tickClock, 100);
+  else if (!need && clockTimer !== null) {
+    clearInterval(clockTimer);
+    clockTimer = null;
+  }
+}
+
 function syncClock() {
-  if (!clock) return;
+  if (!clock) {
+    syncClockTimer();
+    return;
+  }
   const now = performance.now();
   const want = clockShouldRun();
   if (want) clock.run(want, now);
   else clock.stop(now);
+  syncClockTimer();
 }
 
 function clockView(color: Color): { text: string; active: boolean; low: boolean } {
@@ -2007,11 +2048,19 @@ function onDemoClick(e: Event): boolean {
 
 let prepCtrl: AbortController | null = null;
 let prep: { node: Node; p: Promise<void> } | null = null;
+/** the Stockfish search behind the last hint, so leaving the board or the app cancels it */
+let hintCtrl: AbortController | null = null;
 
 function resetAids() {
   prepCtrl?.abort();
   prepCtrl = null;
   prep = null;
+  if (hintCtrl) {
+    hintCtrl.abort();
+    hintCtrl = null;
+    // the hint belongs to the position that just changed; do not leave "思考中…" behind
+    $('hint-box').textContent = '';
+  }
 }
 
 /** Same position with the opponent to move: its best move is what they threaten. */
@@ -2372,6 +2421,28 @@ function renderEvalBar() {
   bar.setAttribute('aria-valuenow', String(Math.round(white)));
 }
 
+/** 沿当前路径向上找最近一次命中的开局；通常几步就命中，不必为整条路径建数组。 */
+function openingAt(n: Node): Opening | null {
+  if (!bookReady()) return null;
+  for (let p: Node | null = n; p; p = p.parent) {
+    const opening = openingOf(p.fen);
+    if (opening) return opening;
+  }
+  return null;
+}
+
+function renderOpening() {
+  const box = $('opening-info');
+  const opening = openingAt(node);
+  const zh = opening ? openingZh(opening.name) : null;
+  const text = opening ? `开局：${zh ?? opening.name}（${opening.eco}）` : '';
+  // aria-live：只在内容真的变化时写入，避免每次刷新都触发播报。
+  // 这一行始终占位（CSS min-height），否则识别出开局时会突然多出 22px 把玩家栏顶上移。
+  if (box.textContent !== text) box.textContent = text;
+  // 中文名旁边的英文原名与具体变例放在 title 里，移动端也能长按看到。
+  box.title = opening ? `${opening.name}（${opening.eco}）` : '';
+}
+
 function renderPlayInfo() {
   const box = $('play-info');
   if (gameLoading) box.textContent = gameLoadingFailed ? '引擎暂不可用，可重试或返回首页' : '正在准备引擎，棋盘已就绪…';
@@ -2397,6 +2468,7 @@ function update() {
   syncClock();
   renderBoard();
   renderMoves();
+  renderOpening();
   renderPlayers();
   renderPlayInfo();
   renderOpponentDialogue();
@@ -2647,19 +2719,6 @@ function openAvatar() {
     if (i === undefined) return;
     pick = AVATAR_PRESETS[Number(i)];
     draw();
-  };
-  const file = $<HTMLInputElement>('avatar-file');
-  $('btn-avatar-photo').onclick = () => file.click();
-  file.onchange = async () => {
-    const f = file.files?.[0];
-    file.value = '';
-    if (!f) return;
-    try {
-      pick = await avatarFromFile(f);
-      draw();
-    } catch (err) {
-      setStatus(`图片读取失败：${(err as Error).message}`);
-    }
   };
   draw();
   dlg.returnValue = '';
@@ -3279,6 +3338,59 @@ function restoreSuspendedGame() {
 
 // ---------- init ----------
 
+/**
+ * A short trip to the background should not pay for a full Maia reload, so the native engine is
+ * released only after the app has actually stayed away. Everything that would keep burning
+ * battery (native threads, open-ended searches, pending Maia work) is stopped immediately.
+ */
+let bgUnloadTimer: ReturnType<typeof setTimeout> | null = null;
+
+function enterBackground() {
+  dialogueCtrl?.abort();
+  saveGame();
+  flushEvals();
+  // Invalidate pending Maia work before the engine goes away, so its rejection is not reported
+  // as a crash and a reply cannot be played while the app is hidden.
+  gameToken++;
+  maiaThinking = false;
+  resetAids();
+  // native engine threads keep running while the app is in the background; don't let the
+  // open-ended live search or the whole-game analysis burn battery there (aborted searches
+  // aren't cached, and analyseGame skips positions already evaluated when it resumes)
+  pausedBatch = Boolean(batchCtrl && !batchCtrl.signal.aborted);
+  batchCtrl?.abort();
+  liveCtrl?.abort();
+  if (bgUnloadTimer === null) {
+    bgUnloadTimer = setTimeout(() => {
+      bgUnloadTimer = null;
+      engines.unloadMaia();
+    }, 10_000);
+  }
+}
+
+function leaveBackground() {
+  if (bgUnloadTimer !== null) {
+    clearTimeout(bgUnloadTimer);
+    bgUnloadTimer = null;
+  }
+  // A load interrupted by the background ends in a failed state; retry it here instead of
+  // leaving the user with a "engine not ready" dialog. This also pauses the clock while the
+  // engine reloads, so returning to the app cannot eat Maia's time.
+  if (screen === 'game' && (gameLoading || !engines.readyForGame(mode === 'review', analysisForPlay()))) {
+    void resumeGame();
+    return;
+  }
+  if (pausedBatch && mode === 'review' && screen === 'game') {
+    pausedBatch = false;
+    void analyseGame();
+  } else if (liveOn) void runLive();
+  if (mode === 'play' && screen === 'game') void prepareAids();
+  if (!gameLoading && screen === 'game') {
+    if (mode === 'play' && !maiaThinking && !maiaFailed) void maiaTurn();
+    else if (mode === 'review' && analysisStatus === 'idle') startReview();
+  }
+}
+
 function bind() {
   document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach((button) => {
     button.onclick = toggleTheme;
@@ -3564,29 +3676,14 @@ function bind() {
   document.addEventListener('visibilitychange', () => {
     syncClock();
     renderClocks();
-    if (document.hidden) { dialogueCtrl?.abort(); saveGame(); }
-    if (document.hidden) flushEvals();
-    // native engine threads keep running while the app is in the background; don't let the
-    // open-ended live search or the whole-game analysis burn battery there (aborted searches
-    // aren't cached, and analyseGame skips positions already evaluated when it resumes)
-    if (document.hidden) {
-      resetAids();
-      pausedBatch = Boolean(batchCtrl && !batchCtrl.signal.aborted);
-      batchCtrl?.abort();
-      liveCtrl?.abort();
-    } else if (pausedBatch && mode === 'review' && screen === 'game') {
-      pausedBatch = false;
-      void analyseGame();
-    } else if (liveOn) void runLive();
-    if (!document.hidden && mode === 'play' && screen === 'game') void prepareAids();
-    if (!document.hidden && !gameLoading && screen === 'game') {
-      if (mode === 'play' && !maiaThinking && !maiaFailed) void maiaTurn();
-      else if (mode === 'review' && analysisStatus === 'idle') startReview();
-    }
+    if (document.hidden) enterBackground();
+    else leaveBackground();
   });
-  window.addEventListener('pagehide', () => {
-    saveGame();
-    flushEvals();
+  // Capacitor's WKWebView does not always deliver a quick app switch as `visibilitychange`;
+  // pagehide/pageshow are a cheap second signal (pageshow only for bfcache restores).
+  window.addEventListener('pagehide', enterBackground);
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted && !document.hidden) leaveBackground();
   });
 }
 
@@ -3873,6 +3970,7 @@ function init() {
   applyFx();
   void loadBook().then(() => {
     renderMoves();
+    renderOpening();
     renderSummary();
     renderGraph();
     renderCoach();
@@ -3895,7 +3993,9 @@ function init() {
   if (!ok) userColor = settings.color === 'b' ? 'b' : 'w';
   setMode(result === '' && !imported ? 'play' : 'review');
   renderHome();
-  setInterval(tickClock, 100);
+  // The 100 ms clock ticker is created and torn down by syncClock/syncClockTimer on the
+  // visibilitychange path in bind(); this initial call only reconciles a restored game.
+  syncClockTimer();
   // 系统返回键/手势回到主页
   window.addEventListener('popstate', () => {
     const want = location.hash === '#game' ? 'game' : location.hash === '#train' ? 'train' : location.hash === '#appearance' ? 'appearance' : location.hash === '#settings' ? 'settings' : location.hash === '#downloads' ? 'downloads' : 'home';

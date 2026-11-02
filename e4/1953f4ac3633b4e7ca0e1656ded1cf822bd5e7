@@ -1,0 +1,47 @@
+README.md
+  s_7ff17073cdf55d::t_5d5045db0441f5 3,10,12,24-25,30,33,35,37-48,127
+web/index.html
+  s_7ff17073cdf55d::t_d067354c076ef7 38,41-43,185,211,294-295,306
+web/package.json
+  s_77a5c4f1b9cb30::t_6c26c894ea3c96 13
+web/src/game/history.ts
+  s_bfea8d0a5a3f64::t_52dd3e2f94bbde 21,26,39,201
+web/src/maia/sample.ts
+  s_7ff17073cdf55d::t_8681f31f1c4f68 16-20,24-25,27-28,30-31,33-56,59,61
+web/src/settings.ts
+  s_7ff17073cdf55d::t_111bc2decad281 24-25,111,191-193,207,282-283
+web/src/style.css
+  s_7ff17073cdf55d::t_3b547da6fd8697 2007-2010,2014-2022,2235-2236,2245-2248,2415-2416,3046-3067
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e41953f4ac3633b4e7ca0e1656ded1cf822bd5e7",
+  "prompts": {},
+  "sessions": {
+    "s_77a5c4f1b9cb30": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "e06f3c0b-cd78-48e0-9d97-687543c887d8",
+        "model": "customendpoint/ufosaga/claude-opus-5.5"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_bfea8d0a5a3f64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "407a32d9-e969-4573-a751-79d345b44a9b",
+        "model": "anthropic.claude-opus-5-5:1m"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

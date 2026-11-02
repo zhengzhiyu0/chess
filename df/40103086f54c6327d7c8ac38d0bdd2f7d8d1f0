@@ -1,0 +1,19 @@
+web/index.html
+  s_7ff17073cdf55d::t_5a7a2130a29efc 38,41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "df40103086f54c6327d7c8ac38d0bdd2f7d8d1f0",
+  "prompts": {},
+  "sessions": {
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -98,7 +98,7 @@ export interface Settings {
   opponentTalk: boolean;
   /** iOS app: 2 once engine settings were migrated to the native-engine defaults */
   engineGen?: number;
-  /** sound theme default migration: 1 = Lichess sfx, 2 = wooden board set */
+  /** sound theme default migration: 1 = old default, 2 = wooden board set */
   soundGen?: number;
   /** coach selection default migration */
   coachGen?: number;
@@ -109,13 +109,17 @@ const KEY = 'maia-coach.settings';
 export const isIOS =
   /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
+/** Native release profile selected by the iOS build workflow. Web builds keep all choices. */
+export const NATIVE_PROFILE = import.meta.env.VITE_NATIVE_PROFILE === '79m-full' ? '79m-full' : 'all';
+export const FIXED_NATIVE_ENGINES = isNative && NATIVE_PROFILE === '79m-full';
+
 export function defaultSettings(): Settings {
   // the iOS app runs native engines with real threads and no WebView memory cap
   const cores = navigator.hardwareConcurrency || 2;
   const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   return {
     theme: 'dark',
-    model: isNative ? '23m' : isIOS ? '5m' : '23m',
+    model: FIXED_NATIVE_ENGINES ? '79m' : isNative ? '23m' : isIOS ? '5m' : '23m',
     elo: 1500,
     playerElo: 1500,
     ratingDeviation: 350,
@@ -131,7 +135,7 @@ export function defaultSettings(): Settings {
     // iPhones have 2 performance cores; spilling the search onto the efficiency cores mostly adds heat
     sfThreads: isNative ? 2 : Math.max(1, Math.min(4, cores - 1)),
     sfHash: isNative ? 128 : isIOS ? 32 : 128,
-    sfLite: isNative ? false : isIOS,
+    sfLite: FIXED_NATIVE_ENGINES ? false : isNative ? false : isIOS,
     ecoAnalysis: true,
     lowMemory: isIOS && !isNative,
     warmup: true,
@@ -176,7 +180,7 @@ export function loadSettings(): Settings {
     // AI coach was removed; discard any API key left by older builds.
     localStorage.removeItem('maia-coach.ai-key');
     const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
-    // gen 1 moved the old synthesized default to Lichess sfx; gen 2 moves default users to the wooden board set
+    // gen 1 moved the old synthesized default to a recording; gen 2 moves default users to the wooden board set
     if ((saved.soundGen ?? 0) < 2) {
       if (saved.soundTheme === undefined || saved.soundTheme === 'wood' || saved.soundTheme === 'sfx') saved.soundTheme = 'board';
       saved.soundGen = 2;
@@ -308,6 +312,10 @@ export function sanitizeSettings(raw: unknown): Settings {
     }
   }
   if (src.playerElo === undefined) out.playerElo = out.elo;
+  if (FIXED_NATIVE_ENGINES) {
+    out.model = '79m';
+    out.sfLite = false;
+  }
   // Only the next-game setting is snapped; persisted games keep their original opponent.
   out.elo = MAIA_LEVELS.reduce<number>((nearest, level) => Math.abs(level - (out.elo as number)) < Math.abs(nearest - (out.elo as number)) ? level : nearest, MAIA_LEVELS[0]);
   if (src.ratingDeviation === undefined) {

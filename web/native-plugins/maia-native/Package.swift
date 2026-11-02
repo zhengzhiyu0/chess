@@ -1,7 +1,9 @@
 // swift-tools-version: 5.9
 import PackageDescription
 
-// Native engines for the iOS app: Stockfish 19 (full + lite NNUE, C++ with pthreads/NEON) and
+import Foundation
+
+// Native engines for the iOS app: Stockfish 19 (full and optionally lite NNUE, C++ with pthreads/NEON) and
 // Maia-3 via pre-compiled CoreML ML Programs. Engine data files are not part of this package;
 // the native build scripts put them in the app's public/native/ resources.
 
@@ -20,6 +22,15 @@ let sfCommon: [CXXSetting] = [
     // performs the LTO step itself for the bitcode objects when the app links.
     .unsafeFlags(["-O3", "-mcpu=apple-a13", "-flto=thin", "-fno-exceptions", "-w"]),
 ]
+
+let nativeProfile = ProcessInfo.processInfo.environment["NATIVE_PROFILE"] ?? "all"
+let fullOnly = nativeProfile == "79m-full"
+var pluginDependencies: [Target.Dependency] = [
+    .product(name: "Capacitor", package: "capacitor-swift-pm"),
+    .product(name: "Cordova", package: "capacitor-swift-pm"),
+    "StockfishFull",
+]
+if !fullOnly { pluginDependencies.append("StockfishLite") }
 
 let package = Package(
     name: "MaiaNative",
@@ -52,12 +63,8 @@ let package = Package(
         ),
         .target(
             name: "MaiaNativePlugin",
-            dependencies: [
-                .product(name: "Capacitor", package: "capacitor-swift-pm"),
-                .product(name: "Cordova", package: "capacitor-swift-pm"),
-                "StockfishFull",
-                "StockfishLite",
-            ],
+            dependencies: pluginDependencies,
+            swiftSettings: fullOnly ? [.define("MAIA_STOCKFISH_FULL_ONLY")] : [],
             path: "ios/Sources/MaiaNativePlugin"
         ),
     ],

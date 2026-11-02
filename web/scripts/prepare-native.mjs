@@ -2,7 +2,7 @@
 // The app uses native engines, so every WebAssembly engine and chunked web model is left out;
 // dist-native/native/ gets Stockfish networks and ONNX build intermediates. CI converts the
 // assembled Maia ONNX files to pre-compiled .mlmodelc bundles before xcodebuild.
-//   nn-*.nnue   Stockfish networks (full + lite), downloaded once into .cache/ and verified by hash
+//   nn-*.nnue   selected Stockfish networks, downloaded once into .cache/ and verified by hash
 //   maia3-*.onnx Maia models, reassembled from native-models/ parts for CoreML conversion
 import { createHash } from 'node:crypto';
 import { cpSync, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -28,13 +28,15 @@ const EXCLUDE = [
 ];
 
 // must match EvalFileDefaultName / EvalFileLiteName in native-plugins/maia-native/stockfish/src/evaluate.h
-const NETS = ['nn-1a298aa575a0.nnue', 'nn-61e7af4bb97d.nnue'];
+const profile = process.env.NATIVE_PROFILE ?? 'all';
+if (!['all', '79m-full'].includes(profile)) throw new Error(`Unknown NATIVE_PROFILE: ${profile}`);
+const NETS = profile === '79m-full' ? ['nn-1a298aa575a0.nnue'] : ['nn-1a298aa575a0.nnue', 'nn-61e7af4bb97d.nnue'];
 const NET_URLS = (n) => [
   `https://data.stockfishchess.org/nn/${n}`,
   `https://github.com/official-stockfish/networks/raw/master/${n}`,
   `https://tests.stockfishchess.org/api/nn/${n}`,
 ];
-const MODELS = ['5m', '23m', '79m'];
+const MODELS = profile === '79m-full' ? ['79m'] : ['5m', '23m', '79m'];
 
 const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
 

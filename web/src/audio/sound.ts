@@ -7,8 +7,8 @@ import { SoundNative } from 'maia-native';
 export type SoundKind = 'move' | 'capture' | 'check' | 'castle' | 'promote' | 'illegal' | 'start' | 'end' | 'lowtime';
 
 /**
- * Recorded sound sets (public/sounds/<id>/): Lichess sets are AGPLv3+ by Enigmahack;
- * `board` is Kenney's CC0 wooden impacts for Move / Capture and borrows the rest from `sfx`.
+ * Recorded sound sets (public/sounds/<id>/): `board` is Kenney's CC0 wooden impacts for
+ * Move / Capture and borrows the remaining events from the Lichess Mobile Standard set.
  */
 const SAMPLE_FILES = ['Move', 'Capture', 'Check', 'GenericNotify', 'Victory', 'Defeat', 'Draw', 'LowTime'] as const;
 type SampleFile = (typeof SAMPLE_FILES)[number];
@@ -23,10 +23,6 @@ export const SAMPLE_THEMES = {
   wood: '轻柔木质',
   felt: '柔和落子',
   glass: '清脆玻璃',
-  sfx: 'Lichess 音效',
-  piano: 'Lichess 钢琴',
-  nes: 'Lichess 8 位',
-  futuristic: 'Lichess 未来',
   standard: 'Lichess Standard',
 } as const;
 type SampleThemeId = keyof typeof SAMPLE_THEMES;
@@ -34,10 +30,10 @@ type SampleThemeId = keyof typeof SAMPLE_THEMES;
 /** Files a theme takes from another set instead of shipping its own. */
 const BOARD_NOTIFICATIONS: readonly SampleFile[] = ['Check', 'GenericNotify', 'Victory', 'Defeat', 'Draw', 'LowTime'];
 const SAMPLE_BORROW: Partial<Record<SampleThemeId, { from: SampleThemeId; files: readonly SampleFile[] }>> = {
-  board: { from: 'sfx', files: BOARD_NOTIFICATIONS },
-  wood: { from: 'sfx', files: BOARD_NOTIFICATIONS },
-  felt: { from: 'sfx', files: BOARD_NOTIFICATIONS },
-  glass: { from: 'sfx', files: BOARD_NOTIFICATIONS },
+  board: { from: 'standard', files: BOARD_NOTIFICATIONS },
+  wood: { from: 'standard', files: BOARD_NOTIFICATIONS },
+  felt: { from: 'standard', files: BOARD_NOTIFICATIONS },
+  glass: { from: 'standard', files: BOARD_NOTIFICATIONS },
 };
 
 const isSampleTheme = (id: string): id is SampleThemeId => Object.hasOwn(SAMPLE_THEMES, id);
@@ -53,10 +49,11 @@ export const SOUND_THEMES: Record<string, { label: string }> = Object.fromEntrie
 export const DEFAULT_SOUND_THEME: SampleThemeId = 'board';
 
 const LEGACY_SOUND_THEMES: Record<string, SampleThemeId> = {
-  plastic: 'glass', marble: 'glass', pop: 'felt', retro: 'nes',
+  plastic: 'glass', marble: 'glass', pop: 'felt', retro: 'board',
+  sfx: 'board', piano: 'board', nes: 'board', futuristic: 'board',
 };
 
-/** Migrate removed synth themes, including settings imported from an old backup. */
+/** Migrate removed themes, including settings imported from an old backup. */
 export function soundThemeOf(id: unknown): SampleThemeId {
   if (typeof id !== 'string') return DEFAULT_SOUND_THEME;
   if (isSampleTheme(id)) return id;
@@ -100,7 +97,7 @@ let lastMoveAt = -Infinity;
 let enabled = true;
 let themeId: string = DEFAULT_SOUND_THEME;
 
-// Decoded samples per theme; a failed load falls back to the Lichess recording.
+// Decoded samples per theme; a failed load falls back to the Standard recording.
 const samples = new Map<SampleThemeId, Record<SampleFile, Promise<AudioBuffer | undefined>>>();
 
 function loadSamples(a: AudioContext, id: SampleThemeId) {
@@ -112,7 +109,7 @@ function loadSamples(a: AudioContext, id: SampleThemeId) {
         try {
           const borrow = SAMPLE_BORROW[id];
           const dir = id === 'standard' ? 'standard' : borrow?.files.includes(f) ? borrow.from : id;
-          const file = id === 'standard' ? STANDARD_FILE_BY_SAMPLE[f] : f;
+          const file = dir === 'standard' ? STANDARD_FILE_BY_SAMPLE[f] : f;
           const res = await fetch(new URL(`sounds/${dir}/${file}.mp3`, document.baseURI).href);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return await a.decodeAudioData(await res.arrayBuffer());
@@ -239,7 +236,7 @@ async function render(a: AudioContext, kind: SoundKind, id: string, delay = 0, e
   const file = sampleFor(kind, end);
   const epoch = soundEpoch;
   const buf = await loadSamples(a, theme)[file]
-    ?? (theme !== 'sfx' ? await loadSamples(a, 'sfx')[file] : undefined);
+    ?? (theme !== 'standard' ? await loadSamples(a, 'standard')[file] : undefined);
   if (epoch !== soundEpoch || document.hidden || a.state !== 'running' || performance.now() - requestedAt >= 500) return;
   if (!buf) return;
   const src = trackSource(a.createBufferSource());

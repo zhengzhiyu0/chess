@@ -17,7 +17,7 @@ import { classify, evalText, JUDGEMENTS, JUDGEMENT_INFO, moveAccuracy, SEVERITY,
 import { bookReady, inBook, loadBook, openingOf, type Opening } from './coach/book';
 import { openingZh } from './coach/opening-zh';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, isSacrifice, plainEval, type MoveInsight, type Sides } from './coach/explain';
-import { ELO_MAX, ELO_MIN, MAIA_LEVELS, isIOS, loadSettings, saveSettings, type Settings } from './settings';
+import { ELO_MAX, ELO_MIN, FIXED_NATIVE_ENGINES, MAIA_LEVELS, isIOS, loadSettings, saveSettings, type Settings } from './settings';
 import { assistCount, computeRating, emptyAssists, moveDependence, ratingBreakdown, ratingEvidence, ratingPerformance, type Assists, type MoveEvidence, type PerformanceSample, type RatingInfo } from './game/rating';
 import { onStorageFull, readJson, safeSet } from './storage';
 import { addMistakes, loadMistakes, mistakeStats, setDeletedMistakes, setMistakes, type Mistake } from './training/mistakes';
@@ -371,7 +371,7 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     gameStreak = g.ratingStreak ?? settings.ratingStreak;
     gameTemperature = g.temperature ?? settings.temperature;
     eloAfter = g.eloAfter;
-    gameModel = g.model === '5m' || g.model === '79m' ? g.model : g.model === '23m' ? g.model : settings.model;
+    gameModel = FIXED_NATIVE_ENGINES ? '79m' : g.model === '5m' || g.model === '79m' ? g.model : g.model === '23m' ? g.model : settings.model;
     assists = g.assists ? { ...g.assists } : emptyAssists();
     rating = g.rating;
     ratingPending = Boolean(g.ratingPending && !rating && g.eloAfter === undefined);
@@ -2920,7 +2920,7 @@ function openSettings() {
     const playerEdited = num('playerElo') !== openPlayerElo;
     settings = {
       ...old,
-      model: el('model').value as Settings['model'],
+      model: FIXED_NATIVE_ENGINES ? '79m' : el('model').value as Settings['model'],
       playerElo: playerEdited ? Math.max(ELO_MIN, Math.min(ELO_MAX, Math.round(num('playerElo')))) : old.playerElo,
       ratingDeviation: playerEdited ? 350 : old.ratingDeviation,
       ratingStreak: playerEdited ? 0 : old.ratingStreak,
@@ -2933,7 +2933,7 @@ function openSettings() {
       sfMovetime: Math.max(100, num('sfMovetime') || 1000),
       sfThreads: Math.max(1, num('sfThreads') || 1),
       sfHash: Math.max(16, num('sfHash') || 64),
-      sfLite: el('sfLite').value === 'true',
+      sfLite: FIXED_NATIVE_ENGINES ? false : el('sfLite').value === 'true',
       ecoAnalysis: el('ecoAnalysis').checked,
       lowMemory: el('lowMemory').checked,
       premove: el('premove').checked,
@@ -4085,6 +4085,7 @@ function installIOSBackGesture() {
 
 function init() {
   document.documentElement.classList.add(isNative ? 'native' : 'web');
+  if (FIXED_NATIVE_ENGINES) document.documentElement.classList.add('fixed-engines');
   applyTheme(settings.theme);
   fitStandalone();
   configureSound(settings.sound, settings.haptics, settings.soundTheme);

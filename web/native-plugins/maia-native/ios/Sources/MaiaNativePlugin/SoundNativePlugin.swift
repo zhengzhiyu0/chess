@@ -40,8 +40,19 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
         CAPPluginMethod(name: "getLogs", returnType: CAPPluginReturnPromise),
     ]
 
-    private static let themes: Set<String> = ["board", "wood", "felt", "glass", "sfx", "piano", "nes", "futuristic", "standard"]
+    private static let themes: Set<String> = ["board", "wood", "felt", "glass", "standard"]
     private static let files: Set<String> = ["Move", "Capture", "Check", "GenericNotify", "Victory", "Defeat", "Draw", "LowTime", "move", "capture", "error", "dong"]
+
+    private static func standardFile(for file: String) -> String {
+        switch file {
+        case "Move": return "move"
+        case "Capture": return "capture"
+        case "Check": return "move"
+        case "GenericNotify", "Victory", "Defeat", "Draw": return "dong"
+        case "LowTime": return "error"
+        default: return file
+        }
+    }
     private var players: [AVAudioPlayer] = []
     private var recordings: [URL: Data] = [:]
     private var observers: [NSObjectProtocol] = []
@@ -78,9 +89,9 @@ public class SoundNativePlugin: CAPPlugin, CAPBridgedPlugin, AVAudioPlayerDelega
     }
 
     private func recording(theme: String, file: String) throws -> Data {
-        // Compact themes only override Move / Capture; other events use the Lichess set.
+        // Compact themes only override Move / Capture; other events use Standard.
         let url = Bundle.main.url(forResource: file, withExtension: "mp3", subdirectory: "public/sounds/\(theme)")
-            ?? Bundle.main.url(forResource: file, withExtension: "mp3", subdirectory: "public/sounds/sfx")
+            ?? Bundle.main.url(forResource: Self.standardFile(for: file), withExtension: "mp3", subdirectory: "public/sounds/standard")
         guard let url else {
             throw NSError(domain: "SoundNative", code: 1, userInfo: [NSLocalizedDescriptionKey: "音效 \(theme)/\(file).mp3 未打包"])
         }

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds the embedded Stockfish (full + lite linked into one binary) with the same flags as
+# Builds the embedded Stockfish (selected flavour(s), linked into one binary) with the same flags as
 # Package.swift (-O3, ThinLTO) and runs sf_smoke.cpp against it. Works with clang or `zig c++`.
 #   sh build_smoke.sh <dir with nn-*.nnue>   (CXX / OUT / ARCH_FLAGS / LTO_FLAGS may be overridden;
 #   LTO_FLAGS= disables LTO, e.g. for g++ without the gold/lld plugin)
@@ -29,7 +29,9 @@ build() {
   done
 }
 build full "-DStockfish=StockfishFull -DSF_C_PREFIX=sf_full"
-build lite "-DStockfish=StockfishLite -DSF_C_PREFIX=sf_lite -DUSE_LITE_NET"
+if [ "${NATIVE_PROFILE:-all}" != "79m-full" ]; then
+  build lite "-DStockfish=StockfishLite -DSF_C_PREFIX=sf_lite -DUSE_LITE_NET"
+fi
 wait
 for o in $objs; do [ -s "$o" ] || { echo "compile failed: $o" >&2; exit 1; }; done
 $CXX -std=c++17 -O2 -c "$here/sf_smoke.cpp" -o "$out/smoke.o"

@@ -314,7 +314,7 @@
             <h3 tabindex="-1" autofocus>设置</h3>
         <button type="button" class="avatar-row" id="btn-set-avatar"><span id="set-avatar"></span><span>我的头像</span><span class="link">更换 ›</span></button>
         <button type="button" class="avatar-row coach-fixed" id="set-coach-row" disabled><span id="set-coach"></span><span>教练头像</span><span class="muted">莉亚</span></button>
-        <label>Maia 模型
+        <label class="engine-choice">Maia 模型
           <select name="model">
             <option value="5m">Maia-3 5M（21MB，最快）</option>
             <option value="23m">Maia-3 23M（91MB，推荐）</option>
@@ -376,7 +376,7 @@
         <label>Stockfish Hash（MB）
           <input type="number" name="sfHash" min="16" max="1024" step="16" />
         </label>
-        <label>Stockfish 版本
+        <label class="engine-choice">Stockfish 版本
           <select name="sfLite">
             <option value="false">满血版（完整 NNUE 网络，棋力最强）</option>
             <option value="true">轻量版（小网络，秒开、省内存，棋力略低）</option>

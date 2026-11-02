@@ -17,7 +17,7 @@
   - 战术识别准确率：`web/test/puzzle-bench.test.ts` 用 3061 道 Lichess 谜题（CC0，`node scripts/build-puzzles.mjs` 生成）统计每类的精确率和召回率，并设置下限防止退化。Lichess 的标签是程序打的、并不完备，所以精确率只是下限。
   - 棋钟：不限时或 3+2 / 5+3 / 10+5 / 15+10 / 30+20，含加秒、超时判负（对方子力不足以将杀时判和）、低时间提醒；Maia 会按剩余时间分配思考时间。
   - 规则：将死、逼和、三次重复、子力不足、50 回合，认输、提和（Maia 依据胜和负概率决定是否接受）。
-  - 预走、走子 / 吃子 / 将军 / 易位 / 升变音效与震动反馈（可在设置中关闭）。全部使用成品 MP3：默认“实木棋盘”，另有“轻柔木质 / 柔和落子 / 清脆玻璃”（走子 / 吃子为 [Kenney](https://kenney.nl/assets/impact-sounds) 的 CC0 碰撞录音，其余沿用 Lichess 音效），以及 Lichess 的音效 / 钢琴 / 8 位 / 未来四套（[Enigmahack](https://github.com/Enigmahack) 制作，AGPLv3+，见 [web/public/sounds](web/public/sounds/README.md)）。设置中选择即可试听，旧合成主题自动迁移到对应的录音；对局结束按胜/负/和播放不同音效。
+  - 预走、走子 / 吃子 / 将军 / 易位 / 升变音效与震动反馈（可在设置中关闭）。全部使用成品 MP3：默认“实木棋盘”，另有“轻柔木质 / 柔和落子 / 清脆玻璃”（走子 / 吃子为 [Kenney](https://kenney.nl/assets/impact-sounds) 的 CC0 碰撞录音，其余事件使用 Lichess Standard 音效，见 [web/public/sounds](web/public/sounds/README.md)）。设置中选择即可试听，旧主题自动迁移到对应的录音；对局结束按胜/负/和播放不同音效。
   - **复盘**：赛后分析整局，总复盘保留胜率曲线、准确率、错误标注和学习总结。点击开始复盘进入自由复盘，可在右侧选择「我方关键点」「对方关键点」或「全部着法」，用上一个 / 下一个统一导航；关键点仍指不精确、错误和漏着。问题着法可点「重走」退回上一步重新走；棋盘显示双方引擎最佳、人类常走和上一步应走箭头，可演示引擎变化，也可在任意局面自由试走，试走不会修改实战记录。
   - **复盘布局**：复盘评估条位于棋盘左侧、与棋盘等高，以白方视角显示白色下段和深灰上段；普通对局仍使用原横向评估条。复盘隐藏底部菜单和左右箭头工具栏，查看类型、上一个 / 下一个、重走与回到总复盘保留在右侧控制条中。
   - PGN：导入 / 导出完整变着树、注释、NAG、`[%clk]` 用时和 `[%eval]` 评估；可从任意 PGN / FEN 局面或当前复盘局面开始与 Maia 对弈。
@@ -105,8 +105,8 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 
 不需要 Mac 和付费开发者账号：由 GitHub Actions 的 macOS runner 编译未签名 IPA，再在 Windows 上签名安装。
 
-1. 在 GitHub 仓库的 Actions 页面运行 **Build iOS (unsigned IPA)**（[ios.yml](.github/workflows/ios.yml)），也可以推送 `ios-v*` 标签触发。
-2. 运行完成后下载 artifact `MaiaCoach-ipa`，解压得到 `MaiaCoach.ipa`。
+1. 在 GitHub 仓库的 Actions 页面运行 **Build iOS (unsigned IPA)**（[ios.yml](.github/workflows/ios.yml)），也可以推送 `ios-v*` 标签触发。手动运行时可选择 `all`（全部引擎）或 `79m-full`（仅 Maia 79M + Stockfish 满血版）。
+2. 运行完成后下载对应的 `MaiaCoach-ipa-*` artifact，解压得到 `MaiaCoach.ipa`。
 3. 用 [Sideloadly](https://sideloadly.io/)（或 AltStore）连接 iPhone，使用自己的 Apple ID 签名并安装。
 4. iPhone 上打开「设置 → 通用 → VPN 与设备管理」，信任该开发者；iOS 17 及以上还需开启「设置 → 隐私与安全性 → 开发者模式」。
 
@@ -123,6 +123,8 @@ PWA 和 Service Worker 要求 **HTTPS**（localhost 除外），手机访问电�
 - 原生 Stockfish 可以脱离 Xcode 单独测试：`sh web/native-plugins/maia-native/stockfish/test/build_smoke.sh web/.cache/nnue`（CI 也会在 arm64 macOS 上跑这一步）。
 - Stockfish 以 GPL-3.0 发布，源码见 [stockfish/](web/native-plugins/maia-native/stockfish)。
 - 私有仓库使用 macOS runner 会按 10 倍分钟数计费，公开仓库免费。
+
+`79m-full` 是固定引擎构建：设置页不显示 Maia 模型和 Stockfish 版本切换；旧设置、备份和未完成对局中的引擎选择也会归一化为 Maia 79M / Stockfish 满血版。该 profile 的 App bundle 不包含 5M、23M 或 Stockfish lite 的原生资源。
 
 ## 许可证
 

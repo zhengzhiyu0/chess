@@ -877,6 +877,9 @@ html.native .web-only,
 html:not(.native) .native-only {
   display: none;
 }
+html.native.fixed-engines .engine-choice {
+  display: none;
+}
 .pinfo {
   flex: 1;
   min-width: 0;

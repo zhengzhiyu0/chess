@@ -53,7 +53,7 @@ afterEach(() => {
 });
 
 describe('音效生命周期', () => {
-  for (const theme of ['board', 'wood', 'felt', 'glass', 'sfx', 'piano', 'nes', 'futuristic', 'standard']) {
+  for (const theme of ['board', 'wood', 'felt', 'glass', 'standard']) {
     it(`${theme} 使用成品 MP3，落子与吃子各自播放`, async () => {
       const { configureSound, play } = await import('../src/audio/sound');
       configureSound(true, false, theme);
@@ -70,14 +70,14 @@ describe('音效生命周期', () => {
     });
   }
 
-  it('选中录音失败时回退到 Lichess 成品音效', async () => {
+  it('选中录音失败时回退到 Standard 成品音效', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => url.includes('/glass/')
       ? new Response(null, { status: 404 }) : new Response(new Uint8Array([1]))));
     const { configureSound, play } = await import('../src/audio/sound');
     configureSound(true, false, 'glass');
     play('move');
     await flush();
-    expect(fetch).toHaveBeenCalledWith('http://localhost/sounds/sfx/Move.mp3');
+    expect(fetch).toHaveBeenCalledWith('http://localhost/sounds/standard/move.mp3');
     expect(played()).toHaveLength(1);
   });
 
@@ -85,7 +85,7 @@ describe('音效生命周期', () => {
     const { play } = await import('../src/audio/sound');
     play('illegal');
     await flush();
-    expect(fetch).toHaveBeenCalledWith('http://localhost/sounds/sfx/LowTime.mp3');
+    expect(fetch).toHaveBeenCalledWith('http://localhost/sounds/standard/error.mp3');
     expect(played()).toHaveLength(1);
   });
 

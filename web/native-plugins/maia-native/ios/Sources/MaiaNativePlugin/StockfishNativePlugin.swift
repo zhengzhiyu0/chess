@@ -3,9 +3,11 @@ import os
 import Capacitor
 import UIKit
 import StockfishFull
+#if !MAIA_STOCKFISH_FULL_ONLY
 import StockfishLite
+#endif
 
-/// Native Stockfish 19 (full and lite NNUE), compiled into the app with real pthreads and NEON.
+/// Native Stockfish 19, compiled into the app with real pthreads and NEON.
 /// JS sends UCI commands with `send`; engine output arrives as batched `lines` events.
 @objc(StockfishNativePlugin)
 public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
@@ -17,7 +19,13 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "info", returnType: CAPPluginReturnPromise),
     ]
 
-    private static let nets = ["full": "nn-1a298aa575a0", "lite": "nn-61e7af4bb97d"]
+    private static let nets: [String: String] = {
+#if MAIA_STOCKFISH_FULL_ONLY
+        return ["full": "nn-1a298aa575a0"]
+#else
+        return ["full": "nn-1a298aa575a0", "lite": "nn-61e7af4bb97d"]
+#endif
+    }()
 
     /// Engine output is coalesced and flushed at most every 150ms so a deep search's info stream
     /// doesn't flood the JS bridge; terminal lines (bestmove/readyok/uciok) flush immediately.
@@ -86,7 +94,13 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     // the C engines keep raw pointers to these for the life of the process
-    private static let outboxes = ["full": Outbox(flavour: "full"), "lite": Outbox(flavour: "lite")]
+    private static let outboxes: [String: Outbox] = {
+#if MAIA_STOCKFISH_FULL_ONLY
+        return ["full": Outbox(flavour: "full")]
+#else
+        return ["full": Outbox(flavour: "full"), "lite": Outbox(flavour: "lite")]
+#endif
+    }()
     private var started = Set<String>()
     private var backgroundObserver: NSObjectProtocol?
 
@@ -97,7 +111,9 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
             // 不依赖 WebView 在被挂起前及时发送 visibilitychange。
             "stop".withCString { cmd in
                 sf_full_send(cmd)
+#if !MAIA_STOCKFISH_FULL_ONLY
                 sf_lite_send(cmd)
+#endif
             }
         }
     }
@@ -135,7 +151,13 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
         let reused = box.beginStartup()
         let dispatchStart = NativeRuntimeLog.now()
         net.withCString { path in
-            if f == "full" { sf_full_start(path, Self.onLine, ctx) } else { sf_lite_start(path, Self.onLine, ctx) }
+            if f == "full" {
+                sf_full_start(path, Self.onLine, ctx)
+#if !MAIA_STOCKFISH_FULL_ONLY
+            } else {
+                sf_lite_start(path, Self.onLine, ctx)
+#endif
+            }
         }
         started.insert(f)
         NativeRuntimeLog.record("start dispatched \(context) reused=\(reused) dispatch_ms=\(NativeRuntimeLog.elapsed(dispatchStart)) total_ms=\(NativeRuntimeLog.elapsed(requested)) ready=pending_uci_handshake", subsystem: "Stockfish")
@@ -145,7 +167,15 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func send(_ call: CAPPluginCall) {
         guard let f = flavour(call), started.contains(f) else { return call.reject("engine not started") }
         guard let cmd = call.getString("cmd") else { return call.reject("missing cmd") }
-        cmd.withCString { if f == "full" { sf_full_send($0) } else { sf_lite_send($0) } }
+        cmd.withCString {
+            if f == "full" {
+                sf_full_send($0)
+#if !MAIA_STOCKFISH_FULL_ONLY
+            } else {
+                sf_lite_send($0)
+#endif
+            }
+        }
         call.resolve()
     }
 

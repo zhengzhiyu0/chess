@@ -3,6 +3,15 @@ name: Build iOS (unsigned IPA)
 # Produces an unsigned .ipa; sign & install it with Sideloadly / AltStore using a free Apple ID.
 on:
   workflow_dispatch:
+    inputs:
+      native_profile:
+        description: 原生引擎配置
+        required: true
+        type: choice
+        options:
+          - all
+          - 79m-full
+        default: all
   push:
     tags: ['ios-v*']
 
@@ -12,6 +21,8 @@ permissions:
 jobs:
   ios:
     runs-on: macos-26
+    env:
+      NATIVE_PROFILE: ${{ inputs.native_profile || 'all' }}
     defaults:
       run:
         working-directory: web
@@ -41,16 +52,21 @@ jobs:
       - name: Audio regression tests
         run: npm test -- test/sound.test.ts test/native-sound.test.ts test/coach-voice.test.ts
       - run: npm run build:native
+        env:
+          NATIVE_PROFILE: ${{ env.NATIVE_PROFILE }}
+          VITE_NATIVE_PROFILE: ${{ env.NATIVE_PROFILE }}
       - name: Compile bundled Maia CoreML models
         run: |
           set -o pipefail
+          models='5m,23m,79m'
+          if [ "$NATIVE_PROFILE" = '79m-full' ]; then models='79m'; fi
           if [ ! -x .cache/coreml-venv/bin/python ]; then
             python3 -m venv .cache/coreml-venv
           fi
           . .cache/coreml-venv/bin/activate
           python -m pip install --upgrade pip
           python -m pip install 'onnx2coreml==1.1.0' 'coremltools==8.3.0' 'onnx==1.17.0' 'numpy==1.26.4' 'onnxruntime==1.20.1'
-          PYTHONFAULTHANDLER=1 PYTHONUNBUFFERED=1 python scripts/compile-coreml.py 2>&1 | tee coreml-build.log
+          PYTHONFAULTHANDLER=1 PYTHONUNBUFFERED=1 python scripts/compile-coreml.py --models "$models" 2>&1 | tee coreml-build.log
       - name: Upload CoreML build log
         if: always()
         uses: actions/upload-artifact@v4
@@ -70,17 +86,22 @@ jobs:
           PY
       - name: Verify bundled native model layout
         run: |
-          test -d ios/App/App/public/native/maia3-5m.mlmodelc
-          test -d ios/App/App/public/native/maia3-23m.mlmodelc
-          test -d ios/App/App/public/native/maia3-79m.mlmodelc
+          models='5m 23m 79m'
+          if [ "$NATIVE_PROFILE" = '79m-full' ]; then models='79m'; fi
+          for model in $models; do test -d "ios/App/App/public/native/maia3-$model.mlmodelc"; done
           test -f ios/App/App/public/native/nn-1a298aa575a0.nnue
-          test -f ios/App/App/public/native/nn-61e7af4bb97d.nnue
+          if [ "$NATIVE_PROFILE" != '79m-full' ]; then test -f ios/App/App/public/native/nn-61e7af4bb97d.nnue; fi
+          if [ "$NATIVE_PROFILE" = '79m-full' ]; then
+            test ! -e ios/App/App/public/native/nn-61e7af4bb97d.nnue
+            test ! -e ios/App/App/public/native/maia3-5m.mlmodelc
+            test ! -e ios/App/App/public/native/maia3-23m.mlmodelc
+          fi
           ! find ios/App/App/public/native -maxdepth 1 -name 'maia3-*.onnx' -print -quit | grep -q .
 
       - name: Native audio assets and plugin smoke test
         run: swift test/sound-assets.native.swift ios/App/App/public
 
-      # the native Stockfish (full + lite in one binary, NEON) must answer UCI, search and stop
+      # the native Stockfish (selected flavour(s), NEON) must answer UCI, search and stop
       - name: Native Stockfish smoke test (arm64 macOS)
         run: sh native-plugins/maia-native/stockfish/test/build_smoke.sh .cache/nnue
 
@@ -121,6 +142,19 @@ jobs:
               print(f'::error title=Xcode build failed::{detail}')
           PY
 
+      - name: Verify CoreML resources in App bundle
+        run: |
+          app=build/Build/Products/Release-iphoneos/App.app
+          models='5m 23m 79m'
+          if [ "$NATIVE_PROFILE" = '79m-full' ]; then models='79m'; fi
+          for model in $models; do
+            bundle="$app/public/native/maia3-$model.mlmodelc"
+            test -d "$bundle" && test -n "$(find "$bundle" -type f -print -quit)" || {
+              echo "Missing or empty CoreML resource in App.app: maia3-$model.mlmodelc" >&2
+              exit 1
+            }
+          done
+
       - name: Package IPA
         run: |
           mkdir -p Payload
@@ -128,9 +162,20 @@ jobs:
           zip -qry MaiaCoach.ipa Payload
           ls -lh MaiaCoach.ipa
 
+      - name: Verify CoreML resources in IPA
+        run: |
+          models='5m 23m 79m'
+          if [ "$NATIVE_PROFILE" = '79m-full' ]; then models='79m'; fi
+          for model in $models; do
+            unzip -Z1 MaiaCoach.ipa | grep -Eq "^Payload/App\\.app/public/native/maia3-$model\\.mlmodelc/.+" || {
+              echo "Missing or empty CoreML resource in MaiaCoach.ipa: maia3-$model.mlmodelc" >&2
+              exit 1
+            }
+          done
+
       - uses: actions/upload-artifact@v4
         with:
-          name: MaiaCoach-ipa
+          name: MaiaCoach-ipa-${{ env.NATIVE_PROFILE }}
           path: web/MaiaCoach.ipa
           compression-level: 0
           retention-days: 14

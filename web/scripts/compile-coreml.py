@@ -14,7 +14,7 @@ from pathlib import Path
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
-MODELS = ("5m", "23m", "79m")
+ALL_MODELS = ("5m", "23m", "79m")
 TOKEN_SHAPE = (1, 64, 96)
 MOVE_COUNT = 4352
 VALUE_COUNT = 3
@@ -194,6 +194,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--native-public-dir", type=Path, default=Path("ios/App/App/public/native"))
     parser.add_argument("--dist-native-dir", type=Path, default=Path("dist-native/native"))
     parser.add_argument("--cache-dir", type=Path, default=Path(".cache/coreml-build"))
+    parser.add_argument("--models", default=','.join(ALL_MODELS), help="comma-separated Maia models")
     return parser.parse_args()
 
 
@@ -217,10 +218,13 @@ def main() -> None:
     native_public_dir = args.native_public_dir
     dist_native_dir = args.dist_native_dir
     cache_dir = args.cache_dir
+    models = tuple(dict.fromkeys(args.models.split(',')))
+    if not models or any(model not in ALL_MODELS for model in models):
+        raise SystemExit(f"--models must contain only: {','.join(ALL_MODELS)}")
     cache_dir.mkdir(parents=True, exist_ok=True)
     work_dir = cache_dir / "work"
     work_dir.mkdir(parents=True, exist_ok=True)
-    for size in MODELS:
+    for size in models:
         name = f"maia3-{size}"
         source = native_public_dir / f"{name}.onnx"
         if not source.is_file():
@@ -237,7 +241,7 @@ def main() -> None:
             shutil.rmtree(destination, ignore_errors=True)
             shutil.copytree(cached, destination)
         remove_onnx(native_public_dir, dist_native_dir, name)
-    metadata = {"models": list(MODELS), "format": "mlmodelc", "quantization": "linear_symmetric_int8"}
+    metadata = {"models": list(models), "format": "mlmodelc", "quantization": "linear_symmetric_int8"}
     (native_public_dir / "maia-models.json").write_text(json.dumps(metadata, indent=2) + "\n")
     print("CoreML compilation complete; raw native ONNX files removed", flush=True)
 

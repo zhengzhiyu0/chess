@@ -60,7 +60,7 @@ describe('settings engine migration (iOS app)', () => {
 
 describe('settings whitelist', () => {
   it('replaces removed synth themes with recordings, including imported settings', () => {
-    const themes = { wood: 'wood', felt: 'felt', plastic: 'glass', marble: 'glass', pop: 'felt', retro: 'nes' };
+    const themes = { wood: 'wood', felt: 'felt', plastic: 'glass', marble: 'glass', pop: 'felt', sfx: 'board', piano: 'board', nes: 'board', futuristic: 'board', retro: 'board' };
     for (const [before, after] of Object.entries(themes)) {
       expect(sanitizeSettings({ soundTheme: before }).soundTheme).toBe(after);
       mem.set(KEY, JSON.stringify({ soundTheme: before, soundGen: 2 }));

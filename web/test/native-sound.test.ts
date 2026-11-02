@@ -71,10 +71,10 @@ describe('iOS 原生 MP3 播放', () => {
     configureSound(false, false);
     play('move');
     expect(native.play).not.toHaveBeenCalled();
-    previewTheme('piano');
+    previewTheme('glass');
     expect(native.play).toHaveBeenCalledWith({ clips: [
-      { theme: 'piano', file: 'Move', delay: 0 },
-      { theme: 'piano', file: 'Capture', delay: 0.45 },
+      { theme: 'glass', file: 'Move', delay: 0 },
+      { theme: 'glass', file: 'Capture', delay: 0.45 },
     ] });
   });
 
@@ -85,7 +85,7 @@ describe('iOS 原生 MP3 播放', () => {
     doc.dispatchEvent(new Event('visibilitychange'));
     expect(native.stop).toHaveBeenCalledOnce();
     play('end', 'win');
-    previewTheme('sfx');
+    previewTheme('glass');
     expect(native.play).toHaveBeenCalledOnce();
     doc.hidden = false;
     doc.dispatchEvent(new Event('visibilitychange'));
@@ -97,9 +97,9 @@ describe('iOS 原生 MP3 播放', () => {
   it('关闭音效和更换主题立即停止原生声音', async () => {
     const { configureSound, play } = await import('../src/audio/sound');
     play('start');
-    configureSound(true, false, 'nes');
+    configureSound(true, false, 'glass');
     expect(native.stop).toHaveBeenCalledOnce();
-    configureSound(false, false, 'nes');
+    configureSound(false, false, 'glass');
     expect(native.stop).toHaveBeenCalledTimes(2);
   });
 

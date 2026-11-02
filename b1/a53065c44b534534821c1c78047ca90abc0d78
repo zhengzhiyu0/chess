@@ -1,0 +1,63 @@
+README.md
+  s_7ff17073cdf55d::t_8b0005e997918a 121
+web/index.html
+  s_7ff17073cdf55d::t_49aadd0c379143 151
+web/scripts/build-book.mjs
+  s_b7f87d2d7cddd3::t_94b19fb88bb1df 2-4,6,12-17,31,34,36,38-39,42-43,45,47,49,51-62,66-78,81-84
+web/src/coach/book-data.ts
+  s_b7f87d2d7cddd3::t_b217d56d3236c2 2
+web/src/engine/stockfish.ts
+  s_7ff17073cdf55d::t_188aed8e5768c7 228-230
+web/src/maia/maia.ts
+  s_7ff17073cdf55d::t_756cc022e370fb 204-211
+web/src/native.ts
+  s_ba34b489eab2d1::t_6b2441af40c54e 9-24,26-39,42-44,47-49,51-58,60-62
+web/src/style.css
+  s_7ff17073cdf55d::t_f735c9e3ee9547 701,1109-1119,1288-1289,1344,1808-1809,1820-1829,1926,1930
+web/src/coach/book.ts
+  s_b7f87d2d7cddd3::t_9f4ae3fa3e2936 1-16,18,35-48,59-72
+web/src/main.ts
+  s_bfea8d0a5a3f64::t_3e5c3416ffa119 17-18,41,592-597,770,1023-1032,1043-1047,1053-1056,1064-1067,1122-1132,1134-1137,1142,2051-2052,2058-2063,2424-2445,2471,3341-3393,3679-3680,3682-3686,3973,3996-3998
+web/test/judge.test.ts
+  s_bfea8d0a5a3f64::t_6360a3e5196503 2,4-5,39,41-46,48-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b1a53065c44b534534821c1c78047ca90abc0d78",
+  "prompts": {},
+  "sessions": {
+    "s_7ff17073cdf55d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "6983de35-e697-47c2-b6ca-ae4fa1b053ac",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_b7f87d2d7cddd3": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "2d5ef69f-047e-4ff4-a214-323f763ee3ea",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_ba34b489eab2d1": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "b606c38b-3596-4f61-8cf6-46a612f354c2",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_bfea8d0a5a3f64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "407a32d9-e969-4573-a751-79d345b44a9b",
+        "model": "unknown"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

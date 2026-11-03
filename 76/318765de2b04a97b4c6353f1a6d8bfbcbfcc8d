@@ -1,0 +1,19 @@
+web/native-plugins/maia-native/Package.swift
+  s_0fc18741c898e5::t_b215c0e52218ea 67-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "76318765de2b04a97b4c6353f1a6d8bfbcbfcc8d",
+  "prompts": {},
+  "sessions": {
+    "s_0fc18741c898e5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19eaf-d882-7940-a986-9c03fea4e3ad",
+        "model": "ufosaga/gpt-5.6-luna"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

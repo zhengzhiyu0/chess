@@ -1,0 +1,19 @@
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/StockfishNativePlugin.swift
+  s_7d99a2dcf4ef85::t_757bf635729fbd 154-156,162,173-175,181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6d18c2d83de4df9d203bce4edd7e900dbd0e4e50",
+  "prompts": {},
+  "sessions": {
+    "s_7d99a2dcf4ef85": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19ec3-a590-7703-8df4-133dc815b3ce",
+        "model": "sixoner/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -64,8 +64,8 @@ let package = Package(
         .target(
             name: "MaiaNativePlugin",
             dependencies: pluginDependencies,
-            swiftSettings: fullOnly ? [.define("MAIA_STOCKFISH_FULL_ONLY")] : [],
-            path: "ios/Sources/MaiaNativePlugin"
+            path: "ios/Sources/MaiaNativePlugin",
+            swiftSettings: fullOnly ? [.define("MAIA_STOCKFISH_FULL_ONLY")] : []
         ),
     ],
     cxxLanguageStandard: .cxx17

@@ -1,6 +1,6 @@
 // Host-side smoke test for the embedded Stockfish bridge (not shipped in the app).
-// Links the full and lite engines into one binary, as the iOS app does, and checks that both
-// answer UCI, load their bundled networks, search, and honour "stop".
+// The full profile checks both engines; the 79m-full profile checks only full, matching the
+// native package's selected dependencies.
 // Usage: sf_smoke <dir containing nn-*.nnue>
 #include <atomic>
 #include <chrono>
@@ -13,7 +13,9 @@
 #include <thread>
 
 #include "../full/include/sf_full.h"
+#if !defined(MAIA_STOCKFISH_FULL_ONLY)
 #include "../lite/include/sf_lite.h"
+#endif
 
 struct Sink {
     const char*             tag;
@@ -66,15 +68,25 @@ int main(int argc, char** argv) {
     }
     std::string dir  = argv[1];
     std::string full = dir + "/nn-1a298aa575a0.nnue";
+#if !defined(MAIA_STOCKFISH_FULL_ONLY)
     std::string lite = dir + "/nn-61e7af4bb97d.nnue";
+#endif
 
-    Sink f{"full"}, l{"lite"};
+    Sink f{"full"};
     sf_full_start(full.c_str(), on_line, &f);
+#if !defined(MAIA_STOCKFISH_FULL_ONLY)
+    Sink l{"lite"};
     sf_lite_start(lite.c_str(), on_line, &l);
 
     bool okL = exercise(l, sf_lite_send);
+#else
+    bool okL = true;
+#endif
     bool okF = exercise(f, sf_full_send);
-    printf("lite: %s\nfull: %s\n", okL ? "OK" : "FAIL", okF ? "OK" : "FAIL");
+#if !defined(MAIA_STOCKFISH_FULL_ONLY)
+    printf("lite: %s\n", okL ? "OK" : "FAIL");
+#endif
+    printf("full: %s\n", okF ? "OK" : "FAIL");
     fflush(stdout);
     // engine threads are detached and run forever; skip static destructors
     std::_Exit(okL && okF ? 0 : 1);

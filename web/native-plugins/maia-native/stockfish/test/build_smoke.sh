@@ -29,11 +29,14 @@ build() {
   done
 }
 build full "-DStockfish=StockfishFull -DSF_C_PREFIX=sf_full"
+smoke_flags=""
 if [ "${NATIVE_PROFILE:-all}" != "79m-full" ]; then
   build lite "-DStockfish=StockfishLite -DSF_C_PREFIX=sf_lite -DUSE_LITE_NET"
+else
+  smoke_flags="-DMAIA_STOCKFISH_FULL_ONLY"
 fi
 wait
 for o in $objs; do [ -s "$o" ] || { echo "compile failed: $o" >&2; exit 1; }; done
-$CXX -std=c++17 -O2 -c "$here/sf_smoke.cpp" -o "$out/smoke.o"
+$CXX -std=c++17 -O2 $smoke_flags -c "$here/sf_smoke.cpp" -o "$out/smoke.o"
 $CXX ${LTO_FLAGS--flto=thin} $objs "$out/smoke.o" -lpthread -o "$out/sf_smoke"
 "$out/sf_smoke" "$nets"

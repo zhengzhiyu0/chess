@@ -151,13 +151,15 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
         let reused = box.beginStartup()
         let dispatchStart = NativeRuntimeLog.now()
         net.withCString { path in
+#if MAIA_STOCKFISH_FULL_ONLY
+            sf_full_start(path, Self.onLine, ctx)
+#else
             if f == "full" {
                 sf_full_start(path, Self.onLine, ctx)
-#if !MAIA_STOCKFISH_FULL_ONLY
             } else {
                 sf_lite_start(path, Self.onLine, ctx)
-#endif
             }
+#endif
         }
         started.insert(f)
         NativeRuntimeLog.record("start dispatched \(context) reused=\(reused) dispatch_ms=\(NativeRuntimeLog.elapsed(dispatchStart)) total_ms=\(NativeRuntimeLog.elapsed(requested)) ready=pending_uci_handshake", subsystem: "Stockfish")
@@ -168,13 +170,15 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
         guard let f = flavour(call), started.contains(f) else { return call.reject("engine not started") }
         guard let cmd = call.getString("cmd") else { return call.reject("missing cmd") }
         cmd.withCString {
+#if MAIA_STOCKFISH_FULL_ONLY
+            sf_full_send($0)
+#else
             if f == "full" {
                 sf_full_send($0)
-#if !MAIA_STOCKFISH_FULL_ONLY
             } else {
                 sf_lite_send($0)
-#endif
             }
+#endif
         }
         call.resolve()
     }

@@ -4124,6 +4124,10 @@ function installIOSBackGesture() {
       activeDialog = null;
       samples = [];
       reportPreview = false;
+      // Resolve the final active/hidden styles while transitions are still disabled.
+      // Without this flush, removing cleanup in rAF can merge both style changes and
+      // animate the departed page from its offscreen position back into the viewport.
+      el.getBoundingClientRect();
       requestAnimationFrame(() => {
         el.classList.remove('edge-swipe-cleanup');
         underlay?.classList.remove('edge-swipe-cleanup');

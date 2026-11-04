@@ -71,8 +71,38 @@ for (const browserType of [chromium, webkit]) {
     const swipe = async (y, points) => {
       await touch('touchstart', 6, y);
       for (const [x, dt = 20] of points) await touch('touchmove', x, y, dt);
+      const departed = await page.locator('.screen.active').getAttribute('id');
+      // Do not force style/layout during cleanup: that would hide the one-frame flash.
+      await page.evaluate((id) => {
+        const el = document.getElementById(id);
+        window.__backFrames = [];
+        window.__backFrameDone = new Promise((resolve) => {
+          let remaining = 24;
+          const sample = () => {
+            if (el.classList.contains('active') || el.classList.contains('edge-swipe-cleanup')) {
+              if (--remaining > 0) requestAnimationFrame(sample);
+              else resolve();
+              return;
+            }
+            const style = getComputedStyle(el);
+            const home = getComputedStyle(document.getElementById('home'));
+            window.__backFrames.push({ visibility: style.visibility, opacity: style.opacity, homeOpacity: home.opacity, homeTransform: home.transform });
+            if (--remaining > 0) requestAnimationFrame(sample);
+            else resolve();
+          };
+          requestAnimationFrame(sample);
+        });
+      }, departed);
       await touch('touchend', points.at(-1)[0], y);
       await settle();
+      await page.evaluate(() => window.__backFrameDone);
+      const frames = await page.evaluate(() => window.__backFrames);
+      for (const f of frames) {
+        assert.equal(f.visibility, 'hidden', `departed page flashed after return: ${JSON.stringify(f)}`);
+        assert.equal(f.opacity, '0');
+        assert.equal(f.homeOpacity, '1');
+        assert.ok(f.homeTransform === 'none' || f.homeTransform === 'matrix(1, 0, 0, 1, 0, 0)');
+      }
     };
 
     // Missed grabs on empty edge squares, pieces, and just outside the board.

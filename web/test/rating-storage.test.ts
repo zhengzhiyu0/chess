@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { bootstrapStorage, installStorageAdapter } from '../src/storage';
 import { makeBackup, mergeBackup, parseBackup, type BackupData } from '../src/backup';
-import { loadHistory, sanitizeGame, saveHistory, type StoredGame } from '../src/game/history';
+import { loadHistory, ratingHistory, sanitizeGame, saveHistory, type StoredGame } from '../src/game/history';
 import { defaultSettings, type Settings } from '../src/settings';
 import { assistCount, computeRating } from '../src/game/rating';
 import { defaultProgress } from '../src/training/puzzles';
@@ -32,6 +32,13 @@ const backupData = (settings: Partial<Settings>, history: StoredGame[] = []): Ba
 beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
 
 describe('persisted rating snapshots', () => {
+  it('keeps old-baseline settlements and skipped games out of the profile rating trend', () => {
+    const separate = sanitizeGame({ ...game, ratingApplied: false })!;
+    const skipped = sanitizeGame({ ...game, ratingSkipped: true })!;
+    expect(separate.ratingApplied).toBe(false);
+    expect(skipped.ratingSkipped).toBe(true);
+    expect(ratingHistory([separate, skipped, game])).toEqual([{ date: game.date, rating: rating.playerAfter }]);
+  });
   it('validates and round-trips the current cursor and board orientation', () => {
     const restored = sanitizeGame({ ...game, result: '', flipped: true, cursor: [1, 0, 2], mode: 'review' });
     expect(restored).toMatchObject({ flipped: true, cursor: [1, 0, 2], mode: 'review' });

@@ -4,6 +4,7 @@ import { sanitizeMoveEvidence } from './tree';
 import { END_REASON_TEXT, type Color, type EndReason } from './rules';
 import { isObj, readJson, safeSet } from '../storage';
 import type { Assists, MoveEvidence, RatingEvidence, RatingInfo } from './rating';
+import { sanitizeAnalysis, type SavedAnalysis } from './analysis-state';
 
 export type { Assists, RatingInfo } from './rating';
 
@@ -48,6 +49,10 @@ export interface StoredGame {
   rating?: RatingInfo;
   /** rating settlement is pending */
   ratingPending?: boolean;
+  /** False when the user changed their profile baseline before this game's settlement. */
+  ratingApplied?: boolean;
+  ratingSkipped?: boolean;
+  analysis?: SavedAnalysis;
   /** left unfinished by starting another game (counted as a resignation) */
   abandoned?: boolean;
 }
@@ -133,7 +138,7 @@ export interface RatingPoint {
 /** Settled local rated games, ordered from oldest to newest for profile charts. */
 export function ratingHistory(history: StoredGame[]): RatingPoint[] {
   return history
-    .filter((g) => !g.imported && Boolean(outcomeOf(g)) && (g.rating?.playerAfter !== undefined || g.eloAfter !== undefined))
+    .filter((g) => !g.imported && g.ratingApplied !== false && !g.ratingSkipped && Boolean(outcomeOf(g)) && (g.rating?.playerAfter !== undefined || g.eloAfter !== undefined))
     .map((g) => ({ date: g.date, rating: g.rating?.playerAfter ?? g.eloAfter! }))
     .filter((p) => Number.isFinite(p.rating))
     .sort((a, b) => a.date - b.date);
@@ -261,6 +266,10 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
   }
   if (r.imported === true) g.imported = true;
   if (r.ratingPending === true) g.ratingPending = true;
+  if (r.ratingApplied === false) g.ratingApplied = false;
+  if (r.ratingSkipped === true) g.ratingSkipped = true;
+  const analysis = sanitizeAnalysis(r.analysis);
+  if (analysis) g.analysis = analysis;
   if (isObj(r.assists) || r.coach === true) {
     const a: Record<string, unknown> = isObj(r.assists) ? r.assists : {};
     const positions: Record<string, MoveEvidence> = {};

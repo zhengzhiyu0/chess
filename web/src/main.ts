@@ -21,6 +21,7 @@ import { ELO_MAX, ELO_MIN, FIXED_NATIVE_ENGINES, MAIA_LEVELS, defaultSettings, i
 import { assistCount, computeRating, emptyAssists, moveDependence, ratingBreakdown, ratingEvidence, ratingPerformance, type Assists, type MoveEvidence, type PerformanceSample, type RatingInfo } from './game/rating';
 import { flushStorage, onStorageFull, readJson, safeSet, storageFull, storageValue } from './storage';
 import { initializeAppStorage, startupFailureMessage } from './app/startup';
+import { captureAnalysis, restoreAnalysis } from './game/analysis-state';
 import { addMistakes, loadMistakes, mistakeStats, resetMistakeCache, type Mistake } from './training/mistakes';
 import { loadProgress, resetProgressCache, THEME_LABEL } from './training/puzzles';
 import { themesForTag } from './training/recommend';
@@ -173,7 +174,11 @@ let rating: RatingInfo | undefined;
 let ratingPending = false;
 let ratingCtrl: AbortController | null = null;
 let ratingError = '';
-const ratingEvals = new WeakMap<Node, PosEval>();
+let ratingApplied = true;
+let ratingSkipped = false;
+let ratingDone = 0;
+let ratingTotal = 0;
+let ratingEvals = new WeakMap<Node, PosEval>();
 let abandoned = false;
 /** The live game stays in its persistent slot while a historical game is open. */
 let suspendedGame: {
@@ -314,6 +319,9 @@ function stored(): StoredGame {
     assists: assistCount(assists) ? assists : undefined,
     rating,
     ratingPending: ratingPending || undefined,
+    ratingApplied: ratingApplied ? undefined : false,
+    ratingSkipped: ratingSkipped || undefined,
+    analysis: captureAnalysis(tree, evalSig()),
     abandoned: abandoned || undefined,
   };
 }
@@ -362,6 +370,9 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     ratingCtrl?.abort();
     ratingCtrl = null;
     tree = GameTree.deserialize<Ann>(normalized.startFen, normalized.tree);
+    restoreAnalysis(tree, normalized.analysis, evalSig(), (n, lines, best) => {
+      if (lines.length || chessOf(n).isGameOver()) n.a.eval = posEvalFrom(n, lines, best);
+    });
     node = tree.root;
     for (const index of normalized.cursor ?? []) {
       const child = node.children[index];
@@ -392,8 +403,10 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
     gameModel = FIXED_NATIVE_ENGINES ? '79m' : normalized.model === '5m' || normalized.model === '79m' ? normalized.model : normalized.model === '23m' ? normalized.model : settings.model;
     assists = normalized.assists ? { ...normalized.assists } : emptyAssists();
     rating = normalized.rating;
-    ratingPending = Boolean(normalized.ratingPending && !rating && normalized.eloAfter === undefined);
+    ratingPending = Boolean(normalized.ratingPending && !normalized.ratingSkipped && !rating && normalized.eloAfter === undefined);
     ratingError = '';
+    ratingApplied = normalized.ratingApplied !== false;
+    ratingSkipped = normalized.ratingSkipped === true;
     abandoned = Boolean(normalized.abandoned);
     const peak = (raw as { peak?: unknown }).peak;
     peakUserMoves = Math.max(typeof peak === 'number' ? peak : 0, userMovesOf().length);
@@ -866,16 +879,13 @@ function rateable(): boolean {
 /** Settle once with a fixed scan. Later, deeper review never changes the score. */
 function startRating() {
   if (!ratingPending || rating || eloAfter !== undefined || !result || !rateable() || document.hidden || ratingCtrl) return;
-  if (settings.playerElo !== gamePlayerElo || settings.ratingDeviation !== gameDeviation || settings.ratingStreak !== gameStreak) {
-    ratingError = '棋力基准已被修改，本局尚未结算，避免覆盖新的资料';
-    renderRatingResult();
-    return;
-  }
   const id = gameId;
   const positions: Node[] = [tree.root];
   for (let n = mainChild(tree.root); n; n = mainChild(n)) positions.push(n);
   const ctrl = new AbortController();
   ratingCtrl = ctrl;
+  ratingDone = 0;
+  ratingTotal = positions.length;
   ratingError = '';
   batchCtrl?.abort();
   liveCtrl?.abort();
@@ -883,22 +893,28 @@ function startRating() {
   renderRatingResult();
   void (async () => {
     try {
-      const s = await getSf();
+      let s: Stockfish | null = null;
       for (const n of positions) {
         if (ctrl.signal.aborted || id !== gameId) return;
         if (!ratingEvals.has(n)) {
-          if (chessOf(n).isGameOver()) ratingEvals.set(n, posEvalFrom(n, [], null));
+          if (n.a.eval) ratingEvals.set(n, n.a.eval);
+          else if (chessOf(n).isGameOver()) ratingEvals.set(n, posEvalFrom(n, [], null));
           else {
+            s ??= await getSf();
+            if (ctrl.signal.aborted || id !== gameId) return;
             const r = await s.analyse(tree.root.fen, { moves: movesTo(n), movetime: 180, depth: 12, multipv: 1, signal: ctrl.signal });
             if (ctrl.signal.aborted || id !== gameId) return;
             if (!r.bestmove || !r.lines.length) throw new Error('引擎未返回完整评估');
             ratingEvals.set(n, posEvalFrom(n, r.lines, r.bestmove));
           }
         }
+        n.a.eval ??= ratingEvals.get(n)!;
+        ratingDone++;
+        if (ratingDone % 4 === 0) scheduleCheckpoint();
+        renderRatingResult();
+        renderReportHint();
       }
       if (ctrl.signal.aborted || id !== gameId) return;
-      if (settings.playerElo !== gamePlayerElo || settings.ratingDeviation !== gameDeviation || settings.ratingStreak !== gameStreak)
-        throw new Error('棋力基准已被修改，请保留当前对局后重试');
       const samples: Record<Color, PerformanceSample[]> = { w: [], b: [] };
       const ownMoves: { uci: string; evidence?: MoveEvidence }[] = [];
       for (const n of positions) {
@@ -917,9 +933,10 @@ function startRating() {
         abandoned, undo: assists.undo, evidence: ratingEvidence(ownMoves, assists.hint),
         performance: ratingPerformance(samples[userColor], samples[userColor === 'w' ? 'b' : 'w']) });
       eloAfter = rating.playerAfter;
-      settings = { ...settings, playerElo: eloAfter, ratingDeviation: rating.rdAfter, ratingStreak: rating.streak, ratedGames: settings.ratedGames + 1 };
+      ratingApplied = settings.playerElo === gamePlayerElo && settings.ratingDeviation === gameDeviation && settings.ratingStreak === gameStreak;
+      if (ratingApplied) settings = { ...settings, playerElo: eloAfter, ratingDeviation: rating.rdAfter, ratingStreak: rating.streak, ratedGames: settings.ratedGames + 1 };
       ratingPending = false;
-      saveSettings(settings);
+      if (ratingApplied) saveSettings(settings);
       saveGame();
       renderHome();
     } catch (err) {
@@ -928,10 +945,25 @@ function startRating() {
       if (ratingCtrl === ctrl) {
         ratingCtrl = null;
         renderRatingResult();
-        if (!ratingPending && screen === 'game' && mode === 'review') startReview();
+        if (screen === 'game' && mode === 'review') startReview();
       }
     }
   })();
+}
+
+/** Engine failures must not trap the user in a finished game. Preserve its result and analysis. */
+function skipRating() {
+  if (!ratingPending || !confirm('保留本局棋谱和分析，但本局不计入棋力分。当前资料中的棋力基准保持不变。确定吗？')) return;
+  ratingCtrl?.abort();
+  ratingCtrl = null;
+  ratingPending = false;
+  ratingSkipped = true;
+  ratingError = '';
+  saveGame();
+  renderRatingResult();
+  renderReportHint();
+  if (screen === 'game' && mode === 'review') startReview();
+  setStatus('本局已保留，不计入棋力分；可以开始新局');
 }
 
 /**
@@ -942,7 +974,11 @@ function leaveGame(): boolean {
   restoreSuspendedGame();
   if (ratingPending) {
     startRating();
+    if (!ratingPending) return true;
     setStatus(ratingError || '正在结算上一局的表现，请稍候再开始新局');
+    renderRatingResult();
+    const dlg = $<HTMLDialogElement>('dlg-result');
+    if (!dlg.open) dlg.showModal();
     return false;
   }
   if (result || imported || (tip() === tree.root && !peakUserMoves)) return true;
@@ -1046,6 +1082,8 @@ function newGame(fen = START_FEN, color?: Color): boolean {
   rating = undefined;
   ratingPending = false;
   ratingError = '';
+  ratingApplied = true;
+  ratingSkipped = false;
   abandoned = false;
   peakUserMoves = 0;
   maiaFailed = false;
@@ -1308,15 +1346,20 @@ async function evalNode(s: Stockfish, n: Node, signal: AbortSignal, effort: 'sca
   // no bestmove on a live position means the engine died mid-search; don't cache a fake "½"
   if (!r.bestmove && !chessOf(n).isGameOver()) return;
   n.a.eval = posEvalFrom(n, r.lines, r.bestmove);
+  scheduleCheckpoint();
   // a search shortened by overheating isn't representative
   if (thermalState < 2) putEval(key, { line: r.lines[0] ?? null, best: r.bestmove });
 }
 
 /** Review mode quickly scans the game, deepens its three main issues, then starts live analysis. */
 function startReview() {
-  if (ratingPending) { startRating(); return; }
+  if (ratingCtrl) return;
   if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden) return;
   liveOn = true;
+  if (analysisStatus === 'idle' && gameLine().every(n => Boolean(n.a.eval))) {
+    analysisStatus = 'complete';
+    update();
+  }
   if (analysisStatus === 'complete') {
     void runLive();
     return;
@@ -1325,7 +1368,7 @@ function startReview() {
 }
 
 async function analyseGame() {
-  if (ratingPending) { startRating(); return; }
+  if (ratingCtrl) { renderRatingResult(); renderReportHint(); return; }
   if (gameLoading || mode !== 'review' || screen !== 'game' || document.hidden) return;
   batchCtrl?.abort();
   const ctrl = new AbortController();
@@ -1393,6 +1436,7 @@ async function analyseGame() {
     if (batchCtrl === ctrl) {
       if (ctrl.signal.aborted && analysisStatus === 'running') analysisStatus = 'interrupted';
       batchCtrl = null;
+      saveGame();
       bars.forEach((b) => b.classList.add('hidden'));
       void runLive();
     }
@@ -1489,7 +1533,7 @@ function setLive(on: boolean) {
 const singleEngine = () => !isNative && settings.lowMemory && !settings.sfLite;
 
 async function runLive() {
-  if (ratingPending) return;
+  if (ratingCtrl) return;
   if (gameLoading || screen !== 'game' || document.hidden) return;
   // with a single resident engine, Maia must wait until the live search is done
   const early = !singleEngine();
@@ -1550,6 +1594,8 @@ async function liveSearch() {
     if (timer) clearTimeout(timer);
     if (!ctrl.signal.aborted && r.bestmove && r.lines.length) {
       n.a.live = r.lines;
+      n.a.eval ??= posEvalFrom(n, r.lines, r.bestmove);
+      scheduleCheckpoint();
     }
     flush();
   } catch (err) {
@@ -1787,7 +1833,10 @@ function renderReportHint() {
   const analysing = Boolean(batchCtrl && !batchCtrl.signal.aborted);
   const empty = $('summary').dataset.empty === 'true';
   const hint = $('report-hint');
-  if (analysing || analysisStatus === 'running') {
+  renderRatingResult();
+  if (ratingCtrl) {
+    hint.textContent = `正在结算并复用对局分析… ${ratingDone}/${ratingTotal}`;
+  } else if (analysing || analysisStatus === 'running') {
     hint.textContent = analysisTotal
       ? `快速检查整局并深入分析重点问题… ${analysisDone}/${analysisTotal}`
       : '正在准备复盘…';
@@ -2267,7 +2316,7 @@ function resumeGame() {
 }
 
 function runGame() {
-  if (ratingPending) { startRating(); return; }
+  if (ratingPending) { startRating(); if (ratingCtrl) return; }
   if (gameLoading || screen !== 'game' || document.hidden) return;
   if (mode === 'review') return startReview();
   recordAssistance();
@@ -2612,7 +2661,10 @@ function checkResult() {
 }
 
 function renderRatingResult() {
-  const box = $('result-elo');
+  for (const id of ['result-elo', 'report-rating']) renderRatingInto($(id));
+}
+
+function renderRatingInto(box: HTMLElement) {
   box.replaceChildren();
   if (!result || imported) { box.hidden = true; return; }
   box.hidden = false;
@@ -2622,8 +2674,13 @@ function renderRatingResult() {
     const detail = document.createElement('small');
     detail.textContent = ratingBreakdown(rating);
     box.append(title, document.createElement('br'), detail);
+    if (!ratingApplied) {
+      const note = document.createElement('p');
+      note.textContent = '本局按开局时的棋力基准结算，仅保存在本局记录；你修改后的资料棋力保持不变。';
+      box.append(note);
+    }
   } else if (ratingPending) {
-    box.append(ratingError || '正在分析双方走子表现，完成后自动结算…');
+    box.append(ratingError || `正在分析双方走子表现，完成后自动结算… ${ratingDone}/${ratingTotal}`);
     if (!ratingCtrl) {
       const retry = document.createElement('button');
       retry.type = 'button';
@@ -2631,7 +2688,13 @@ function renderRatingResult() {
       retry.onclick = startRating;
       box.append(document.createElement('br'), retry);
     }
-  } else box.textContent = ratingEnabled() && eloAfter !== undefined ? '本局评级已更新，可在资料中查看走势' : '非标准起始局面或旧版未评级记录，本局无棋力变动';
+    const skip = document.createElement('button');
+    skip.type = 'button';
+    skip.textContent = '保留本局，不计分';
+    skip.onclick = skipRating;
+    box.append(document.createElement('br'), skip);
+  } else box.textContent = ratingSkipped ? '本局已保留，不计入棋力分'
+    : ratingEnabled() && eloAfter !== undefined ? '本局评级已更新，可在资料中查看走势' : '非标准起始局面或旧版未评级记录，本局无棋力变动';
 }
 
 function saveAppearance(patch: Partial<Settings>) {
@@ -3006,6 +3069,8 @@ function applySettings(old: Settings, persist = true) {
   const humanChanged = old.elo !== settings.elo || old.model !== settings.model || old.useHistory !== settings.useHistory;
   // searches started under the old settings would write stale results into the cleared annotations
   if (sfChanged || evalChanged) {
+    ratingCtrl?.abort();
+    ratingCtrl = null;
     batchCtrl?.abort();
     liveCtrl?.abort();
     dialogueCtrl?.abort();
@@ -3015,7 +3080,7 @@ function applySettings(old: Settings, persist = true) {
   if (sfChanged) engines.unloadSf();
   if (old.model !== settings.model || old.backend !== settings.backend) engines.unloadMaia();
   if (humanChanged) clearAnn('human');
-  if (evalChanged) clearAnn('eval', 'threat', 'live');
+  if (evalChanged) { clearAnn('eval', 'threat', 'live'); ratingEvals = new WeakMap(); }
   if (!settings.premove) cg.cancelPremove();
   applyFx();
   const inReview = mode === 'review' && screen === 'game';
@@ -3151,6 +3216,8 @@ function loadImported(p: Parsed) {
   rating = undefined;
   ratingPending = false;
   ratingError = '';
+  ratingApplied = true;
+  ratingSkipped = false;
   abandoned = false;
   peakUserMoves = 0;
   maiaFailed = false;

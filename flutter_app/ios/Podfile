@@ -1,0 +1,53 @@
+platform :ios, '17.0'
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  raise "#{path} must exist; run flutter pub get first" unless File.exist?(path)
+  File.foreach(path) do |line|
+    match = line.match(/FLUTTER_ROOT\=(.*)/)
+    return match[1].strip if match
+  end
+  raise "FLUTTER_ROOT missing in #{path}"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+require_relative '../packages/maia_native/ios/native_profile'
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  use_frameworks! :linkage => :static
+
+  # These are separate local pods, so their Stockfish namespace, C ABI and NNUE
+  # architecture macros stay isolated. Never replace them with root subspecs.
+  native_path = '../packages/maia_native/ios'
+  pod 'StockfishFull', :path => native_path
+  pod 'StockfishLite', :path => native_path if MaiaNativeBuild.profile != '79m-full'
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+post_install do |installer|
+  # Fail immediately if CocoaPods ever coalesces full/lite build definitions.
+  # Checking the resolved targets catches integration drift beyond the podspec text.
+  engine_targets = installer.pods_project.targets.select { |target| %w[StockfishFull StockfishLite].include?(target.name) }
+  expected_engines = MaiaNativeBuild.profile == '79m-full' ? %w[StockfishFull] : %w[StockfishFull StockfishLite]
+  unless engine_targets.map(&:name).sort == expected_engines.sort
+    raise 'Stockfish full/lite must resolve to independent CocoaPods targets'
+  end
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
+    end
+  end
+end

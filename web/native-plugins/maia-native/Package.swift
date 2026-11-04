@@ -65,7 +65,8 @@ let package = Package(
             name: "MaiaNativePlugin",
             dependencies: pluginDependencies,
             path: "ios/Sources/MaiaNativePlugin",
-            swiftSettings: fullOnly ? [.define("MAIA_STOCKFISH_FULL_ONLY")] : []
+            swiftSettings: fullOnly ? [.define("MAIA_STOCKFISH_FULL_ONLY")] : [],
+            linkerSettings: [.linkedLibrary("sqlite3")]
         ),
     ],
     cxxLanguageStandard: .cxx17

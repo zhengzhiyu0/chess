@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { bootstrapStorage, installStorageAdapter } from '../src/storage';
 import { makeBackup, mergeBackup, parseBackup, type BackupData } from '../src/backup';
 import { loadHistory, sanitizeGame, saveHistory, type StoredGame } from '../src/game/history';
 import { defaultSettings, type Settings } from '../src/settings';
@@ -7,14 +8,14 @@ import { defaultProgress } from '../src/training/puzzles';
 import { START_FEN } from '../src/game/rules';
 
 const mem = new Map<string, string>();
-Object.assign(globalThis, {
-  matchMedia: () => ({ matches: false }),
-  localStorage: {
-    getItem: (key: string) => mem.get(key) ?? null,
-    setItem: (key: string, value: string) => void mem.set(key, String(value)),
-    removeItem: (key: string) => void mem.delete(key),
-  },
-});
+Object.assign(globalThis, { matchMedia: () => ({ matches: false }) });
+const adapter = {
+  bootstrap: async () => Object.fromEntries(mem),
+  get: (key: string) => mem.get(key),
+  set: async (key: string, value: string) => { mem.set(key, value); },
+  remove: async (key: string) => { mem.delete(key); },
+};
+installStorageAdapter(adapter);
 
 const rating = computeRating({ result: 1, playerElo: 1420, opponentElo: 1600, deviation: 150, streak: 1 });
 const game: StoredGame = {
@@ -28,9 +29,17 @@ const backupData = (settings: Partial<Settings>, history: StoredGame[] = []): Ba
   settings: { ...defaultSettings(), ...settings }, history, mistakes: [], puzzles: defaultProgress(), deletedMistakes: [],
 });
 
-beforeEach(() => mem.clear());
+beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
 
 describe('persisted rating snapshots', () => {
+  it('validates and round-trips the current cursor and board orientation', () => {
+    const restored = sanitizeGame({ ...game, result: '', flipped: true, cursor: [1, 0, 2], mode: 'review' });
+    expect(restored).toMatchObject({ flipped: true, cursor: [1, 0, 2], mode: 'review' });
+    expect(sanitizeGame({ ...game, mode: 'invalid' })).not.toHaveProperty('mode');
+    expect(sanitizeGame({ ...game, cursor: [-1] })).not.toHaveProperty('cursor');
+    expect(sanitizeGame({ ...game, flipped: 'yes' })).not.toHaveProperty('flipped');
+  });
+
   it('round-trips independent player, opponent and assistance snapshots through local history', () => {
     const manual = { ...game, id: 'manual-game', assists: { undo: 1, hint: 0 }, temperature: 0 };
     expect(saveHistory([game, manual])).toBe(true);

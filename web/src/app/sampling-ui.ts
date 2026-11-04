@@ -41,9 +41,9 @@ export function mountSamplingControls(host: HTMLElement): { refresh(): void } {
       }
     };
   }
-  host.querySelector<HTMLButtonElement>('[data-sampling-clear]')!.onclick = () => {
+  host.querySelector<HTMLButtonElement>('[data-sampling-clear]')!.onclick = async () => {
     if (!confirm('清除本机全部 Maia 采样诊断？不会删除棋谱或已导出的文件。')) return;
-    const outcome = clearSamplingCapture();
+    const outcome = await clearSamplingCapture();
     if (outcome.ok) refresh();
     else status.textContent = `清除失败：${outcome.error}`;
   };

@@ -1,0 +1,154 @@
+name: Build Flutter iOS (unsigned IPA)
+
+on:
+  workflow_dispatch:
+    inputs:
+      native_profile:
+        description: 原生引擎配置
+        required: true
+        type: choice
+        options: [all, 79m-full]
+        default: all
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      NATIVE_PROFILE: ${{ inputs.native_profile || 'all' }}
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/cache@v4
+        with:
+          path: flutter_app/packages/maia_native/.cache/nnue
+          key: flutter-nnue-${{ hashFiles('web/native-plugins/maia-native/stockfish/src/evaluate.h', 'flutter_app/scripts/prepare-ios.mjs') }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            flutter_app/packages/maia_native/.cache/coreml-build
+            flutter_app/packages/maia_native/.cache/coreml-venv
+          key: flutter-coreml-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('web/native-models/maia3-*/manifest.json', 'web/scripts/compile-coreml.py', 'web/test/golden.json', '.github/workflows/flutter-ios.yml') }}
+
+      - name: Configure Flutter CocoaPods integration
+        run: |
+          flutter config --no-enable-swift-package-manager
+          flutter --version
+          xcodebuild -version
+          pod --version
+      - name: Prepare licensed content and isolated native sources
+        run: |
+          node scripts/prepare-assets.mjs
+          node scripts/prepare-ios.mjs
+          node --test packages/maia_native/test/*.test.mjs
+          # The plugin owns this channel; AppDelegate must not overwrite it
+          # after GeneratedPluginRegistrant has registered native plugins.
+          node -e "const s=require('node:fs').readFileSync('ios/Runner/AppDelegate.swift','utf8'); if(s.includes('maia_coach/migration') || s.includes('class LegacyWebStorageReader')) throw Error('Remove duplicate legacy migration reader/channel from AppDelegate; maia_native provides legacy.read')"
+      - name: Flutter dependencies and Dart checks
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Compile and validate bundled CoreML models
+        run: |
+          set -o pipefail
+          models='5m,23m,79m'
+          if [ "$NATIVE_PROFILE" = '79m-full' ]; then models='79m'; fi
+          if [ ! -x packages/maia_native/.cache/coreml-venv/bin/python ]; then
+            python3 -m venv packages/maia_native/.cache/coreml-venv
+          fi
+          . packages/maia_native/.cache/coreml-venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install 'onnx2coreml==1.1.0' 'coremltools==8.3.0' 'onnx==1.17.0' 'numpy==1.26.4' 'onnxruntime==1.20.1'
+          PYTHONFAULTHANDLER=1 PYTHONUNBUFFERED=1 python ../web/scripts/compile-coreml.py \
+            --models "$models" \
+            --native-public-dir assets/native \
+            --dist-native-dir assets/native \
+            --cache-dir packages/maia_native/.cache/coreml-build 2>&1 | tee coreml-build.log
+          node scripts/prepare-ios.mjs --bundle-only
+      - name: Validate local podspecs and resolved engine targets
+        run: |
+          set -o pipefail
+          for spec in maia_native StockfishFull; do
+            pod ipc spec "packages/maia_native/ios/$spec.podspec" > /dev/null
+          done
+          if [ "$NATIVE_PROFILE" != '79m-full' ]; then
+            pod ipc spec packages/maia_native/ios/StockfishLite.podspec > /dev/null
+          fi
+          flutter build ios --config-only --release --no-codesign --dart-define=NATIVE_PROFILE="$NATIVE_PROFILE"
+          # Flutter 3.47 retains the generated package reference but rewrites it
+          # empty when SPM is disabled. Assert its metadata before pod install.
+          node -e "const p=JSON.parse(require('node:fs').readFileSync('.flutter-plugins-dependencies','utf8')); if(p.swift_package_manager_enabled.ios) throw Error('SPM unexpectedly enabled')"
+          cd ios
+          pod install 2>&1 | tee ../pod-install.log
+          grep -q 'StockfishFull' Podfile.lock
+          if [ "$NATIVE_PROFILE" = '79m-full' ]; then
+            ! grep -q 'StockfishLite' Podfile.lock
+          else
+            grep -q 'StockfishLite' Podfile.lock
+          fi
+          ! grep -Eiq 'Capacitor|Cordova' Podfile.lock
+          ruby -rxcodeproj -e '
+            project = Xcodeproj::Project.open("Pods/Pods.xcodeproj")
+            project.targets.select { |target| %w[StockfishFull StockfishLite].include?(target.name) }.each do |target|
+              project.build_configurations.each do |configuration|
+                settings = target.build_configurations.find { |item| item.name == configuration.name }
+                raise "Missing configuration for #{target.name}" unless settings
+              end
+              puts "Independent native target: #{target.name}"
+            end
+          '
+      - name: Compile and exercise both generated native engines on macOS
+        run: node packages/maia_native/test/stockfish-smoke.mjs
+      - name: Flutter iOS release build without signing
+        run: |
+          set -o pipefail
+          flutter build ios --release --no-codesign \
+            --dart-define=NATIVE_PROFILE="$NATIVE_PROFILE" 2>&1 | tee flutter-ios-build.log
+      - name: Compile iOS simulator without signing
+        run: |
+          set -o pipefail
+          flutter build ios --simulator --debug --no-codesign \
+            --dart-define=NATIVE_PROFILE="$NATIVE_PROFILE" 2>&1 | tee flutter-simulator-build.log
+      - name: Verify final app resources and package unsigned IPA
+        run: |
+          node packages/maia_native/test/verify-app.mjs build/ios/iphoneos/Runner.app
+          mkdir -p build/unsigned/Payload
+          ditto build/ios/iphoneos/Runner.app build/unsigned/Payload/Runner.app
+          cd build/unsigned
+          zip -qry MaiaCoachFlutter.ipa Payload
+          unzip -Z1 MaiaCoachFlutter.ipa | grep -Eq '^Payload/Runner\.app/MaiaNativeAssets\.bundle/native/maia3-79m\.mlmodelc/.+'
+      - name: Upload native build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-native-logs-${{ env.NATIVE_PROFILE }}
+          path: |
+            flutter_app/coreml-build.log
+            flutter_app/pod-install.log
+            flutter_app/flutter-ios-build.log
+            flutter_app/flutter-simulator-build.log
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MaiaCoachFlutter-unsigned-${{ env.NATIVE_PROFILE }}
+          path: flutter_app/build/unsigned/MaiaCoachFlutter.ipa
+          compression-level: 0
+          retention-days: 14

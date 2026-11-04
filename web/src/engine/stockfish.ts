@@ -97,10 +97,11 @@ class WorkerTransport implements Transport {
  */
 class NativeTransport implements Transport {
   private static subs: Record<SfFlavour, Set<(l: string) => void>> = { full: new Set(), lite: new Set() };
+  private static generation: Record<SfFlavour, number> = { full: -1, lite: -1 };
   private static hooked: Promise<unknown> | null = null;
   private onLine: (l: string) => void;
 
-  private constructor(private flavour: SfFlavour, onLine: (l: string) => void, private plugin: StockfishNativePlugin) {
+  private constructor(private flavour: SfFlavour, onLine: (l: string) => void, private plugin: StockfishNativePlugin, private generation: number) {
     this.onLine = onLine;
   }
 
@@ -116,6 +117,7 @@ class NativeTransport implements Transport {
       stage = 'output_listener';
       stageStart = performance.now();
       NativeTransport.hooked ??= StockfishNative.addListener('lines', (e) => {
+        if (e.generation !== NativeTransport.generation[e.engine]) return;
         for (const h of [...NativeTransport.subs[e.engine]]) for (const l of e.lines) h(l);
       }).catch((err) => {
         NativeTransport.hooked = null;
@@ -125,13 +127,15 @@ class NativeTransport implements Transport {
       console.info('[engine/Stockfish] output listener ready', { engine: flavour, listener_ms: (performance.now() - stageStart).toFixed(1) });
       // a previous instance may have been dropped mid-search; it must not see this one's output
       NativeTransport.subs[flavour].clear();
-      const t = new NativeTransport(flavour, onLine, StockfishNative);
+      NativeTransport.generation[flavour] = -1;
       NativeTransport.subs[flavour].add(onLine);
       stage = 'native_start';
       stageStart = performance.now();
-      await StockfishNative.start({ engine: flavour });
+      const started = await StockfishNative.start({ engine: flavour });
       if (!NativeTransport.subs[flavour].has(onLine)) throw new Error('Stockfish 已卸载');
-      t.post('stop');
+      if (!Number.isInteger(started.generation) || started.generation < 1) throw new Error('Stockfish 会话无效');
+      NativeTransport.generation[flavour] = started.generation;
+      const t = new NativeTransport(flavour, onLine, StockfishNative, started.generation);
       t.post('ucinewgame');
       console.info('[engine/Stockfish] native start dispatched', { engine: flavour, bridge_start_ms: (performance.now() - stageStart).toFixed(1), total_ms: (performance.now() - requested).toFixed(1), ready: 'pending_uci_handshake' });
       return t;
@@ -143,7 +147,8 @@ class NativeTransport implements Transport {
   }
 
   post(cmd: string) {
-    void this.plugin.send({ engine: this.flavour, cmd }).catch((e) => console.error('Stockfish native', e));
+    if (NativeTransport.generation[this.flavour] !== this.generation) return;
+    void this.plugin.send({ engine: this.flavour, cmd, generation: this.generation }).catch((e) => console.error('Stockfish native', e));
   }
 
   close() {
@@ -152,6 +157,7 @@ class NativeTransport implements Transport {
       this.post('stop');
       this.post('setoption name Hash value 1');
       this.post('ucinewgame');
+      NativeTransport.generation[this.flavour] = -1;
     }
   }
 }

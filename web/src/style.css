@@ -232,7 +232,7 @@ button svg {
   z-index: 2;
   background: var(--bg);
   box-shadow: -12px 0 32px rgba(0, 0, 0, 0.16);
-  will-change: transform, opacity;
+  will-change: transform;
 }
 .screen.edge-swipe,
 .screen.edge-swipe-preview {
@@ -243,13 +243,23 @@ button svg {
   visibility: visible;
   pointer-events: none;
   background: var(--bg);
-  will-change: transform, opacity;
+  will-change: transform;
+}
+.screen.edge-swipe-preview::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: #000;
+  opacity: var(--edge-swipe-shade, 0);
 }
 .screen.edge-swipe-settling {
   pointer-events: none;
-  transition:
-    transform 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
-    opacity 0.26s ease !important;
+  transition: transform var(--edge-swipe-duration, 260ms) cubic-bezier(0.2, 0.7, 0.3, 1) !important;
+}
+.screen.edge-swipe-preview.edge-swipe-settling::after {
+  transition: opacity var(--edge-swipe-duration, 260ms) ease;
 }
 .screen.edge-swipe-cleanup {
   transition: none !important;

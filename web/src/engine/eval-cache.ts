@@ -1,4 +1,6 @@
 import type { SfLine } from './stockfish';
+import { readJson, safeSet } from '../storage';
+import { isNative } from '../native';
 
 /** A finished single-PV evaluation of one position. */
 export interface CachedEval {
@@ -17,7 +19,7 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 function load(): Map<string, CachedEval> {
   if (map) return map;
   try {
-    const v = JSON.parse(localStorage.getItem(KEY) || '[]');
+    const v = isNative ? undefined : readJson(KEY);
     map = new Map(Array.isArray(v) ? v : []);
   } catch {
     map = new Map();
@@ -43,21 +45,21 @@ export function putEval(key: string, v: CachedEval) {
     if (m.size <= CAP) break;
     m.delete(k);
   }
-  timer ??= setTimeout(flushEvals, 3000);
+  if (!isNative) timer ??= setTimeout(flushEvals, 3000);
 }
 
 export function flushEvals() {
   if (timer) clearTimeout(timer);
   timer = null;
-  if (!map) return;
+  if (!map || isNative) return;
   try {
-    localStorage.setItem(KEY, JSON.stringify([...map]));
+    safeSet(KEY, JSON.stringify([...map]));
   } catch (err) {
     console.warn('保存分析缓存失败', err);
     // quota: keep the newest half
     map = new Map([...map].slice(Math.floor(map.size / 2)));
     try {
-      localStorage.setItem(KEY, JSON.stringify([...map]));
+      safeSet(KEY, JSON.stringify([...map]));
     } catch {
       /* give up */
     }

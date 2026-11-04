@@ -15,6 +15,12 @@ export interface StoredGame {
   startFen: string;
   tree: SNode;
   userColor: Color;
+  /** current board orientation override for restoring an interrupted game */
+  flipped?: boolean;
+  /** child indexes from the root to the position shown when a native checkpoint was saved */
+  cursor?: number[];
+  /** Mode of the current-game checkpoint; finished history entries may omit it. */
+  mode?: 'play' | 'review';
   result: string;
   reason?: EndReason;
   /** coach portrait used for this game; -1 is only valid in settings, games store the resolved index */
@@ -234,6 +240,9 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
     userColor: r.userColor,
     result: typeof r.result === 'string' && RESULT_SET.has(r.result) ? (r.result === '*' ? '' : r.result) : '',
   };
+  if (r.flipped === true) g.flipped = true;
+  if (r.mode === 'play' || r.mode === 'review') g.mode = r.mode;
+  if (Array.isArray(r.cursor) && r.cursor.length <= 512 && r.cursor.every((i) => Number.isInteger(i) && i >= 0 && i < 256)) g.cursor = r.cursor;
   if (typeof r.reason === 'string' && REASONS.has(r.reason)) g.reason = r.reason as EndReason;
   if (num(r.coachAvatar) && Number.isInteger(r.coachAvatar as number) && (r.coachAvatar as number) >= 0 && (r.coachAvatar as number) <= 999) g.coachAvatar = r.coachAvatar as number;
   if (elo(r.elo)) g.elo = r.elo;

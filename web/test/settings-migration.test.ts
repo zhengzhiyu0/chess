@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { bootstrapStorage, installStorageAdapter } from '../src/storage';
 
 // the engine migration only runs in the iOS app
 vi.mock('../src/native', () => ({ isNative: true, thermalState: 0 }));
@@ -6,19 +7,21 @@ vi.mock('../src/native', () => ({ isNative: true, thermalState: 0 }));
 const mem = new Map<string, string>();
 Object.assign(globalThis, {
   matchMedia: () => ({ matches: false }),
-  localStorage: {
-    getItem: (k: string) => mem.get(k) ?? null,
-    setItem: (k: string, v: string) => void mem.set(k, String(v)),
-    removeItem: (k: string) => void mem.delete(k),
-  },
 });
+const adapter = {
+  bootstrap: async () => Object.fromEntries(mem),
+  get: (key: string) => mem.get(key),
+  set: async (key: string, value: string) => { mem.set(key, value); },
+  remove: async (key: string) => { mem.delete(key); },
+};
+installStorageAdapter(adapter);
 
 // Load after browser globals are installed: settings reads navigator/matchMedia during initialization.
 const { loadSettings, saveSettings, sanitizeSettings, defaultSettings, MAIA_LEVELS } = await import('../src/settings');
 const KEY = 'maia-coach.settings';
 
 describe('settings engine migration (iOS app)', () => {
-  beforeEach(() => mem.clear());
+  beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
 
   it('moves WebView-era settings to the native defaults once', () => {
     mem.set(KEY, JSON.stringify({ sfThreads: 1, sfHash: 16, lowMemory: true, warmup: false }));
@@ -44,9 +47,10 @@ describe('settings engine migration (iOS app)', () => {
     expect(loadSettings()).toMatchObject({ sfThreads: 2, sfHash: 256, warmup: false, engineGen: 3 });
   });
 
-  it('clears an API key left by the removed AI coach', () => {
+  it('clears an API key left by the removed AI coach', async () => {
     mem.set('maia-coach.ai-key', 'legacy-secret');
     loadSettings();
+    await (await import('../src/storage')).flushStorage();
     expect(mem.has('maia-coach.ai-key')).toBe(false);
   });
 
@@ -59,6 +63,7 @@ describe('settings engine migration (iOS app)', () => {
 });
 
 describe('settings whitelist', () => {
+  beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
   it('replaces removed synth themes with recordings, including imported settings', () => {
     const themes = { wood: 'wood', felt: 'felt', plastic: 'glass', marble: 'glass', pop: 'felt', sfx: 'board', piano: 'board', nes: 'board', futuristic: 'board', retro: 'board' };
     for (const [before, after] of Object.entries(themes)) {
@@ -84,7 +89,7 @@ describe('settings whitelist', () => {
 });
 
 describe('board effect settings', () => {
-  beforeEach(() => mem.clear());
+  beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
 
   const fxKeys = ['boardFxRing', 'boardFxSparkle', 'boardFxBadge', 'boardFxHang', 'boardFxCapture', 'boardFxCheck', 'boardFxMate', 'boardFxCastle', 'boardFxDodge'] as const;
 
@@ -107,7 +112,7 @@ describe('board effect settings', () => {
 });
 
 describe('arrow outline setting', () => {
-  beforeEach(() => mem.clear());
+  beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
 
   it('is off by default and accepts explicit opt-in', () => {
     expect(defaultSettings().aidArrowOutline).toBe(false);
@@ -120,7 +125,7 @@ describe('independent assistance migration', () => {
   const disabled = { aidWinPct: false, aidEval: false, aidThreats: false, aidHanging: false, aidBest: false };
   const legacyAids = { coachEval: true, coachThreats: true, coachHanging: true, coachBest: true };
 
-  beforeEach(() => mem.clear());
+  beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
 
   it.each(['normal', undefined, 'unknown'])('does not enable stale coach aids for gameType %s', (gameType) => {
     const legacy = { gameType, ...legacyAids };
@@ -157,7 +162,7 @@ describe('independent assistance migration', () => {
 });
 
 describe('separate player rating migration', () => {
-  beforeEach(() => mem.clear());
+  beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
 
   it.each([[0, 350], [1, 250], [4, 250], [5, 150], [14, 150], [15, 80], [90, 80]])(
     'retains %i rated games and assigns legacy uncertainty %i',

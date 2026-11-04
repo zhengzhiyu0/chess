@@ -89,6 +89,7 @@ export function sanitizeProgress(raw: unknown): PuzzleProgress {
 }
 
 let progress: PuzzleProgress | null = null;
+export function resetProgressCache() { progress = null; }
 
 export function loadProgress(): PuzzleProgress {
   progress ??= sanitizeProgress(readJson(KEY));

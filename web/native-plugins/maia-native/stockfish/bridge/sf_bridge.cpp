@@ -103,6 +103,14 @@ void* run(void*) {
         std::string cmd = std::move(queue.front());
         queue.pop_front();
         lk.unlock();
+        if (cmd.rfind("__host_session ", 0) == 0)
+        {
+            uci->stop();
+            uci->wait_for_search_finished();
+            // No search callback from the previous owner can follow this marker.
+            Stockfish::sf_out() << Stockfish::IO_LOCK << cmd << std::endl << Stockfish::IO_UNLOCK;
+            continue;
+        }
         uci->process_command(cmd);
     }
     return nullptr;

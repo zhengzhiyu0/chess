@@ -18,6 +18,8 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
     ]
 
     private static let feat = 96
+    private static let history = 8
+    private static let planes = 12
     private static let numMoves = 64 * 64 + 8 * 8 * 4
     private static let tokenBytes = 64 * feat * MemoryLayout<Float>.size
 
@@ -64,6 +66,45 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
         active.remove(id)
         cancelled.remove(id)
         cancellationLock.unlock()
+    }
+
+    /// Mirrors web/src/maia/encode.ts tokenizeFen/buildTokens exactly, but constructs
+    /// the model input inside Swift so FEN history crosses Capacitor instead of 24KB tensors.
+    private func makeTokens(fens: [String]) -> Data? {
+        guard let first = fens.first, !fens.isEmpty else { return nil }
+        let recent = Array(fens.suffix(Self.history))
+        let sequence = Array(repeating: recent[0], count: Self.history - recent.count) + recent
+        var values = [Float](repeating: 0, count: 64 * Self.feat)
+        let pieces = Array("pnbrqk")
+        for (j, fen) in sequence.enumerated() {
+            let fields = fen.split(separator: " ")
+            guard fields.count >= 2 else { return nil }
+            let flip = fields[1] == "b"
+            let rows = fields[0].split(separator: "/")
+            guard rows.count == 8 else { return nil }
+            for (r, row) in rows.enumerated() {
+                let rank = 7 - r
+                var file = 0
+                for ch in row {
+                    if let empty = ch.wholeNumberValue, (1...8).contains(empty) { file += empty; continue }
+                    let lower = Character(String(ch).lowercased())
+                    guard let type = pieces.firstIndex(of: lower), file < 8 else { return nil }
+                    let white = ch != lower
+                    let square = flip ? (7 - rank) * 8 + file : rank * 8 + file
+                    let blackPlane = flip ? white : !white
+                    let plane = type + (blackPlane ? 6 : 0)
+                    values[square * Self.feat + j * Self.planes + plane] = 1
+                    file += 1
+                }
+                guard file == 8 else { return nil }
+            }
+        }
+        return values.withUnsafeBytes { Data($0) }
+    }
+
+    private func tokenInput(_ call: CAPPluginCall, fenKey: String = "fens", legacyKey: String = "tokens") -> Data? {
+        if let fens = call.getArray(fenKey, String.self) { return makeTokens(fens: fens) }
+        return call.getString(legacyKey).flatMap { Data(base64Encoded: $0) }
     }
 
     private func cancelActiveRequests() {
@@ -195,7 +236,7 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
         beginRequest(id)
         NativeRuntimeLog.record("load requested \(context)", subsystem: "Maia")
         // Start-position probe from JS: reject a corrupt or incompatible compiled model early.
-        let probe = call.getString("probeTokens").flatMap { Data(base64Encoded: $0) }
+        let probe = tokenInput(call, fenKey: "probeFens", legacyKey: "probeTokens")
         let probeLegal = call.getArray("probeLegal", Int.self) ?? []
         let probeTop = Set(call.getArray("probeTop", Int.self) ?? [])
         NativeRuntimeLog.record("request decoded \(context) request_ms=\(NativeRuntimeLog.elapsed(requested))", subsystem: "Maia")
@@ -269,7 +310,7 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func eval(_ call: CAPPluginCall) {
-        guard let b64 = call.getString("tokens"), let tokens = Data(base64Encoded: b64),
+        guard let tokens = tokenInput(call),
               tokens.count == Self.tokenBytes else { return call.reject("bad tokens") }
         let indices = call.getArray("indices", Int.self) ?? []
         let selfElo = Float(call.getDouble("selfElo") ?? 1500)
@@ -296,7 +337,11 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
         var jobs: [(Data, [Int], Float, Float)] = []
         func num(_ value: Any?) -> Double? { (value as? NSNumber)?.doubleValue ?? (value as? Double) ?? (value as? Int).map(Double.init) }
         for item in items {
-            guard let b64 = item["tokens"] as? String, let tokens = Data(base64Encoded: b64),
+            let tokens: Data?
+            if let fens = item["fens"] as? [String] { tokens = makeTokens(fens: fens) }
+            else if let b64 = item["tokens"] as? String { tokens = Data(base64Encoded: b64) }
+            else { tokens = nil }
+            guard let tokens,
                   tokens.count == Self.tokenBytes else { return call.reject("bad tokens") }
             let indices = ((item["indices"] as? [Any]) ?? []).compactMap { num($0).map { Int($0) } }
             jobs.append((tokens, indices, Float(num(item["selfElo"]) ?? 1500), Float(num(item["oppoElo"]) ?? 1500)))

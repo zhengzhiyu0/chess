@@ -61,6 +61,8 @@ class UCIEngine {
     void process_command(const std::string& cmd) { (void) process_cmd(cmd); }
     // Safe to call from any thread while a command is being processed (sets an atomic flag).
     void stop() { engine.stop(); }
+    // Host session handoff: stop alone is asynchronous; join before accepting a new owner.
+    void wait_for_search_finished() { engine.wait_for_search_finished(); }
   #endif
 #endif
 

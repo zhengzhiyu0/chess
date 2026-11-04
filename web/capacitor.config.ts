@@ -11,6 +11,8 @@ const config: CapacitorConfig = {
     contentInset: 'never',
     scrollEnabled: false,
     allowsLinkPreview: false,
+    // The app is fully bundled and offline; do not expose the WebView to remote inspection.
+    webContentsDebuggingEnabled: false,
   },
   plugins: {
     // DARK = light text, matching the dark app background

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { bootstrapStorage, installStorageAdapter } from '../src/storage';
 import { makeBackup, parseBackup } from '../src/backup';
 import { Chess } from 'chess.js';
 import { defaultSettings } from '../src/settings';
@@ -8,14 +9,14 @@ import { START_FEN } from '../src/game/rules';
 import { defaultProgress } from '../src/training/puzzles';
 
 const storage = new Map<string, string>();
-Object.assign(globalThis, {
-  matchMedia: () => ({ matches: false }),
-  localStorage: {
-    getItem: (key: string) => storage.get(key) ?? null,
-    setItem: (key: string, value: string) => void storage.set(key, String(value)),
-    removeItem: (key: string) => void storage.delete(key),
-  },
-});
+Object.assign(globalThis, { matchMedia: () => ({ matches: false }) });
+const adapter = {
+  bootstrap: async () => Object.fromEntries(storage),
+  get: (key: string) => storage.get(key),
+  set: async (key: string, value: string) => { storage.set(key, value); },
+  remove: async (key: string) => { storage.delete(key); },
+};
+installStorageAdapter(adapter);
 
 const calculation = {
   score: 0.65, weight: 0.3,
@@ -29,7 +30,7 @@ const game: StoredGame = {
   id: 'evidence-game', date: 100, startFen: START_FEN, tree: {}, userColor: 'w', result: '1-0', rating, ratingPending: true,
 };
 
-beforeEach(() => storage.clear());
+beforeEach(async () => { storage.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
 
 describe('rating evidence persistence', () => {
   it('round-trips per-position evidence and strictly filters UCI, duplicates, and flags', () => {

@@ -17,13 +17,13 @@ import { classify, evalText, JUDGEMENTS, JUDGEMENT_INFO, moveAccuracy, SEVERITY,
 import { bookReady, inBook, loadBook, openingOf, type Opening } from './coach/book';
 import { openingZh } from './coach/opening-zh';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, isSacrifice, plainEval, type MoveInsight, type Sides } from './coach/explain';
-import { ELO_MAX, ELO_MIN, FIXED_NATIVE_ENGINES, MAIA_LEVELS, isIOS, loadSettings, saveSettings, type Settings } from './settings';
+import { ELO_MAX, ELO_MIN, FIXED_NATIVE_ENGINES, MAIA_LEVELS, defaultSettings, isIOS, loadSettings, saveSettings, type Settings } from './settings';
 import { assistCount, computeRating, emptyAssists, moveDependence, ratingBreakdown, ratingEvidence, ratingPerformance, type Assists, type MoveEvidence, type PerformanceSample, type RatingInfo } from './game/rating';
-import { onStorageFull, readJson, safeSet } from './storage';
-import { addMistakes, loadMistakes, mistakeStats, setDeletedMistakes, setMistakes, type Mistake } from './training/mistakes';
-import { loadProgress, setProgress, THEME_LABEL } from './training/puzzles';
+import { bootstrapStorage, cacheStored, flushStorage, onStorageFull, readJson, safeSet, storageFull, storageValue } from './storage';
+import { addMistakes, loadMistakes, mistakeStats, resetMistakeCache, type Mistake } from './training/mistakes';
+import { loadProgress, resetProgressCache, THEME_LABEL } from './training/puzzles';
 import { themesForTag } from './training/recommend';
-import { backupFileName, makeBackup, mergeBackup, parseBackup, pickFile, shareFile, type BackupData } from './backup';
+import { backupFileName, makeBackup, mergeBackup, parseBackup, persistBackup, pickFile, shareFile, type BackupData } from './backup';
 import { bindTrainer, notebookSummary, openMistake, openNotebook, openPuzzles, openPuzzlesForTheme, puzzleSummary, trainerRedraw, type TrainerCtx } from './app/trainer-ui';
 import { mistakeTag } from './coach/explain';
 import { isNative, thermalState } from './native';
@@ -101,7 +101,8 @@ function isLegacy(v: unknown): v is LegacyGame {
   return Boolean(v) && typeof v === 'object' && !('tree' in g) && typeof g.startFen === 'string' && Array.isArray(g.moves) && g.moves.every((m) => typeof m === 'string') && (g.userColor === 'w' || g.userColor === 'b');
 }
 
-let settings: Settings = loadSettings();
+// Storage is bootstrapped before init(); defaults keep module-level helpers safe during setup.
+let settings: Settings = defaultSettings();
 let tree = new GameTree<Ann>(START_FEN);
 let node: Node = tree.root;
 let gameId = newGameId();
@@ -163,7 +164,7 @@ let gameLoadingFailed = false;
 /** Invalidates a pending entry when leaving, changing modes, or starting another game. */
 let gameEntry = 0;
 let shownResult = '';
-let history: StoredGame[] = loadHistory();
+let history: StoredGame[] = [];
 /** help used in the current game */
 let assists: Assists = emptyAssists();
 /** how the rating change of the current (finished) game was computed */
@@ -292,6 +293,9 @@ function stored(): StoredGame {
     startFen: tree.root.fen,
     tree: tree.serialize(),
     userColor,
+    flipped: flipped || undefined,
+    cursor: tree.pathTo(node).slice(1).map((n) => n.parent!.children.indexOf(n)),
+    mode,
     result,
     reason,
     coachAvatar: gameCoachAvatar,
@@ -316,7 +320,9 @@ function stored(): StoredGame {
 function saveGame() {
   const g = stored();
   peakUserMoves = Math.max(peakUserMoves, userMovesOf().length);
-  if (!suspendedGame) safeSet(GAME_KEY, JSON.stringify({ ...g, peak: peakUserMoves }));
+  if (!suspendedGame) {
+    scheduleCheckpoint();
+  }
   if (result && !imported) {
     history = upsert(history, g);
     saveHistory(history);
@@ -350,40 +356,50 @@ function loadGame(raw: StoredGame | LegacyGame): boolean {
             result: raw.result,
             assists: raw.coach ? { ...emptyAssists(), aids: true } : undefined,
           };
+    const normalized = sanitizeGame(g);
+    if (!normalized) throw new Error('对局快照格式无效');
     ratingCtrl?.abort();
     ratingCtrl = null;
-    tree = GameTree.deserialize<Ann>(g.startFen, g.tree);
-    node = tip();
-    gameId = g.id;
-    gameDate = g.date;
-    userColor = g.userColor;
-    result = g.result || '';
-    reason = g.reason;
+    tree = GameTree.deserialize<Ann>(normalized.startFen, normalized.tree);
+    node = tree.root;
+    for (const index of normalized.cursor ?? []) {
+      const child = node.children[index];
+      if (!child) break;
+      node = child;
+    }
+    if (!normalized.cursor) node = tip();
+    gameId = normalized.id;
+    gameDate = normalized.date;
+    userColor = normalized.userColor;
+    flipped = normalized.flipped === true;
+    result = normalized.result || '';
+    reason = normalized.reason;
     if (!result) {
-      const end = terminalOf(fensTo(node));
+      // The shown cursor may be a review variation; only the actual game line determines its result.
+      const end = terminalOf(fensTo(tip()));
       if (end) ({ result, reason } = end);
     }
-    imported = Boolean(g.imported);
-    headers = g.headers;
-    gameCoachAvatar = typeof g.coachAvatar === 'number' ? pickCoachAvatar(g.coachAvatar) : pickCoachAvatar(settings.coachAvatar);
-    gameElo = g.elo ?? (imported ? undefined : settings.elo);
-    gamePlayerElo = g.playerElo ?? (imported ? undefined : g.elo ?? settings.playerElo);
-    gameDeviation = g.ratingDeviation ?? settings.ratingDeviation;
-    gameStreak = g.ratingStreak ?? settings.ratingStreak;
-    gameTemperature = g.temperature ?? settings.temperature;
-    eloAfter = g.eloAfter;
-    gameModel = FIXED_NATIVE_ENGINES ? '79m' : g.model === '5m' || g.model === '79m' ? g.model : g.model === '23m' ? g.model : settings.model;
-    assists = g.assists ? { ...g.assists } : emptyAssists();
-    rating = g.rating;
-    ratingPending = Boolean(g.ratingPending && !rating && g.eloAfter === undefined);
+    imported = Boolean(normalized.imported);
+    headers = normalized.headers;
+    gameCoachAvatar = typeof normalized.coachAvatar === 'number' ? pickCoachAvatar(normalized.coachAvatar) : pickCoachAvatar(settings.coachAvatar);
+    gameElo = normalized.elo ?? (imported ? undefined : settings.elo);
+    gamePlayerElo = normalized.playerElo ?? (imported ? undefined : normalized.elo ?? settings.playerElo);
+    gameDeviation = normalized.ratingDeviation ?? settings.ratingDeviation;
+    gameStreak = normalized.ratingStreak ?? settings.ratingStreak;
+    gameTemperature = normalized.temperature ?? settings.temperature;
+    eloAfter = normalized.eloAfter;
+    gameModel = FIXED_NATIVE_ENGINES ? '79m' : normalized.model === '5m' || normalized.model === '79m' ? normalized.model : normalized.model === '23m' ? normalized.model : settings.model;
+    assists = normalized.assists ? { ...normalized.assists } : emptyAssists();
+    rating = normalized.rating;
+    ratingPending = Boolean(normalized.ratingPending && !rating && normalized.eloAfter === undefined);
     ratingError = '';
-    abandoned = Boolean(g.abandoned);
+    abandoned = Boolean(normalized.abandoned);
     const peak = (raw as { peak?: unknown }).peak;
     peakUserMoves = Math.max(typeof peak === 'number' ? peak : 0, userMovesOf().length);
     maiaFailed = false;
-    tcId = g.tc ?? 'none';
+    tcId = normalized.tc ?? 'none';
     const tc = timeControlOf(tcId);
-    clock = tc ? new ChessClock(tc, g.clock ?? node.clock) : null;
+    clock = tc ? new ChessClock(tc, normalized.clock ?? node.clock) : null;
     resetAnalysisStatus();
     resetTransient();
     return true;
@@ -972,7 +988,7 @@ async function maiaTurn(attempt = 0) {
     const played = playMove(pick.uci);
     if (played) {
       if (settings.samplingCapture) {
-        const captured = recordSamplingDecision({
+        const captured = await recordSamplingDecision({
           committed: true, gameId, model: gameModel,
           selfElo: humanElo(t), oppoElo: gamePlayerElo ?? settings.playerElo,
           fen: t.fen, temperature: gameTemperature, topP: 1,
@@ -2760,6 +2776,7 @@ function goto(n: Node | null | undefined) {
   }
   clearOpponentLine();
   node = n;
+  scheduleCheckpoint();
   hintShapes = [];
   // the previous position's PV is not legal here
   liveCtrl?.abort();
@@ -2806,6 +2823,7 @@ function setMode(m: 'play' | 'review') {
   }
   resumeGame();
   update();
+  scheduleCheckpoint();
 }
 
 // ---------- avatar ----------
@@ -2975,8 +2993,8 @@ function applyBoardSize() {
   if (cg) requestAnimationFrame(() => cg.redrawAll());
 }
 
-function applySettings(old: Settings) {
-  saveSettings(settings);
+function applySettings(old: Settings, persist = true) {
+  if (persist) saveSettings(settings);
   if (!settings.opponentTalk) clearOpponentLine();
   applyTheme(settings.theme);
   configureSound(settings.sound, settings.haptics, settings.soundTheme);
@@ -3239,17 +3257,18 @@ async function importBackup() {
   );
   if (replace && !confirm('用备份完全覆盖当前的设置、历史、错题本和谜题进度？此操作不可撤销。')) return;
   const d = replace ? inc : mergeBackup(currentData(), inc);
+  try { await persistBackup(d); }
+  catch (error) {
+    console.warn('备份导入事务失败', error);
+    alert('导入未保存：本地数据库不可用或空间不足。原有数据已保留，请释放空间后重试。');
+    return;
+  }
   const old = settings;
   settings = d.settings;
   history = d.history;
-  // every store is written even if one fails, so as much as fits is kept
-  const saved = [saveHistory(history), setMistakes(d.mistakes), setDeletedMistakes(d.deletedMistakes ?? []), setProgress(d.puzzles)];
-  applySettings(old);
-  if (saved.includes(false)) {
-    // a toast vanishes in seconds; losing data on the next reload deserves a dialog
-    alert('导入未完整保存：本机存储空间不足，刷新后部分数据会丢失。请清理一些历史对局后重新导入。');
-    return;
-  }
+  resetMistakeCache();
+  resetProgressCache();
+  applySettings(old, false);
   setStatus(`已${replace ? '覆盖' : '合并'}导入${parsed.skipped ? `（${parsed.skipped} 条损坏的记录已跳过）` : ''}`);
 }
 
@@ -3292,10 +3311,9 @@ async function exportAllPgn() {
 }
 
 const BACKUP_AT_KEY = 'maia-coach.backupAt';
-/** localStorage can throw (blocked site data, some WebView policies); the home screen must still render */
 const backupAt = () => {
   try {
-    return Number(localStorage.getItem(BACKUP_AT_KEY) || 0);
+    return Number(storageValue(BACKUP_AT_KEY) || 0);
   } catch {
     return 0;
   }
@@ -3429,7 +3447,6 @@ function showHistory(tab: 'list' | 'stats' = 'list') {
           setStatus('无法打开这局记录');
           return;
         }
-        flipped = false;
         node = tree.root;
         saveGame();
         setMode('review');
@@ -3480,12 +3497,31 @@ function restoreSuspendedGame() {
  */
 let bgUnloadTimer: ReturnType<typeof setTimeout> | null = null;
 let backgroundStartedAt: number | null = null;
+let checkpointTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleCheckpoint() {
+  if (suspendedGame) return;
+  if (checkpointTimer !== null) clearTimeout(checkpointTimer);
+  checkpointTimer = setTimeout(() => {
+    checkpointTimer = null;
+    if (!suspendedGame) void persistCheckpoint({ ...stored(), peak: peakUserMoves });
+  }, 300);
+}
+
+async function persistCheckpoint(game: StoredGame & { peak: number }) {
+  if (!isNative) { safeSet(GAME_KEY, JSON.stringify(game)); return; }
+  try { const { AppStoreNative } = await import('maia-native'); await AppStoreNative.saveCheckpoint({ game }); }
+  catch (error) { console.warn('保存原生对局快照失败', error); storageFull(GAME_KEY); }
+}
 
 function enterBackground() {
   ratingCtrl?.abort();
   dialogueCtrl?.abort();
   saveGame();
+  if (checkpointTimer !== null) { clearTimeout(checkpointTimer); checkpointTimer = null; }
+  if (!suspendedGame) void persistCheckpoint({ ...stored(), peak: peakUserMoves });
   flushEvals();
+  void flushStorage().catch(error => console.warn('后台保存失败', error));
   // Invalidate pending Maia work before the engine goes away, so its rejection is not reported
   // as a crash and a reply cannot be played while the app is hidden.
   gameToken++;
@@ -3656,6 +3692,7 @@ function bind() {
   $('btn-flip').onclick = () => {
     flipped = !flipped;
     update();
+    scheduleCheckpoint();
   };
   $('btn-menu').onclick = () => {
     const live = mode === 'play' && result === '' && !imported && tip() !== tree.root;
@@ -3955,6 +3992,10 @@ function installIOSBackGesture() {
   let startX = 0;
   let startY = 0;
   let lastX = 0;
+  let width = 0;
+  let frame = 0;
+  let samples: { x: number; time: number }[] = [];
+  let activeDialog: HTMLDialogElement | null = null;
   let current: HTMLElement | null = null;
   let preview: HTMLElement | null = null;
   let reportPreview = false;
@@ -3962,6 +4003,38 @@ function installIOSBackGesture() {
   let tracking = false;
   let horizontal = false;
   let settling = false;
+
+  // Reserve the whole board, including empty squares and a small margin for missed grabs.
+  const startsOnBoard = (x: number, y: number) => [...document.querySelectorAll<HTMLElement>('.cg-wrap')].some((board) => {
+    if (!board.closest('.screen.active')) return false;
+    const rect = board.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && getComputedStyle(board).visibility === 'visible'
+      && x >= rect.left - 16 && x <= rect.right + 16 && y >= rect.top - 16 && y <= rect.bottom + 16;
+  });
+  const record = (x: number) => {
+    const time = performance.now();
+    const previous = samples.at(-1);
+    const before = samples.at(-2);
+    // A reversal must cancel momentum from the earlier outward movement.
+    if (previous && before && (x - previous.x) * (previous.x - before.x) < 0) samples = [previous];
+    lastX = x;
+    samples.push({ x, time });
+    samples = samples.filter((sample) => time - sample.time <= 100);
+  };
+  const velocity = () => {
+    const time = performance.now();
+    const recent = samples.filter((sample) => time - sample.time <= 100);
+    const first = recent[0];
+    return first && time > first.time ? (lastX - first.x) / (time - first.time) : 0;
+  };
+  const render = () => {
+    frame = 0;
+    if (!current || !preview) return;
+    const progress = Math.max(0, Math.min(1, (lastX - startX) / width));
+    current.style.transform = `translate3d(${progress * 100}%, 0, 0)`;
+    preview.style.transform = `translate3d(${-25 * (1 - progress)}%, 0, 0)`;
+    preview.style.setProperty('--edge-swipe-shade', String(0.18 * (1 - progress)));
+  };
 
   const preparePreview = () => {
     reportPreview = screen === 'game' && mode === 'review' && returnToReport;
@@ -3983,8 +4056,9 @@ function installIOSBackGesture() {
     previewInert = preview.inert;
     preview.inert = true;
     preview.classList.add('edge-swipe-preview');
-    preview.style.transform = 'translateX(-12%)';
-    preview.style.opacity = '0.65';
+    preview.style.transform = 'translate3d(-25%, 0, 0)';
+    preview.style.opacity = '1';
+    preview.style.setProperty('--edge-swipe-shade', '0.18');
     current!.classList.add('edge-swipe');
   };
 
@@ -3993,22 +4067,39 @@ function installIOSBackGesture() {
     const el = current;
     const underlay = preview;
     const toReport = reportPreview;
+    const speed = velocity();
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    if (underlay) render();
     tracking = false;
     horizontal = false;
     settling = true;
     el.classList.remove('edge-swipe');
-    const duration = animate && underlay && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 260 : 0;
+    const distance = Math.max(0, Math.min(width, lastX - startX));
+    const remaining = commit ? width - distance : distance;
+    const alignedSpeed = Math.max(0, commit ? speed : -speed);
+    const duration = animate && underlay && remaining > 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? Math.round(Math.max(90, Math.min(300, remaining / (0.7 + alignedSpeed * 0.8)))) : 0;
     if (duration) {
+      el.style.setProperty('--edge-swipe-duration', `${duration}ms`);
+      underlay!.style.setProperty('--edge-swipe-duration', `${duration}ms`);
       el.classList.add('edge-swipe-settling');
       underlay!.classList.add('edge-swipe-settling');
+      // Commit the finger position before starting the completion/cancellation transition.
+      el.getBoundingClientRect();
     }
-    el.style.transform = commit ? 'translateX(100%)' : 'translateX(0)';
-    el.style.opacity = commit ? '0' : '1';
+    el.style.transform = commit ? 'translate3d(100%, 0, 0)' : 'translate3d(0, 0, 0)';
     if (underlay) {
-      underlay.style.transform = commit ? 'translateX(0)' : 'translateX(-12%)';
-      underlay.style.opacity = commit ? '1' : '0.65';
+      underlay.style.transform = commit ? 'translate3d(0, 0, 0)' : 'translate3d(-25%, 0, 0)';
+      underlay.style.setProperty('--edge-swipe-shade', commit ? '0' : '0.18');
     }
+    let finished = false;
+    let timer = 0;
     const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      el.removeEventListener('transitionend', onTransitionEnd);
       el.classList.add('edge-swipe-cleanup');
       underlay?.classList.add('edge-swipe-cleanup');
       // Keep both layers in place until the destination is active; no empty frame between pages.
@@ -4021,12 +4112,16 @@ function installIOSBackGesture() {
         layer.classList.remove('edge-swipe', 'edge-swipe-settling', 'edge-swipe-preview');
         layer.style.removeProperty('transform');
         layer.style.removeProperty('opacity');
+        layer.style.removeProperty('--edge-swipe-duration');
+        layer.style.removeProperty('--edge-swipe-shade');
       }
       if (underlay) {
         underlay.inert = previewInert;
         if (toReport) underlay.remove();
       }
       current = preview = null;
+      activeDialog = null;
+      samples = [];
       reportPreview = false;
       requestAnimationFrame(() => {
         el.classList.remove('edge-swipe-cleanup');
@@ -4034,14 +4129,24 @@ function installIOSBackGesture() {
         settling = false;
       });
     };
-    if (duration) window.setTimeout(finish, duration);
-    else finish();
+    const onTransitionEnd = (e: TransitionEvent) => {
+      if (e.target === el && e.propertyName === 'transform') finish();
+    };
+    if (duration) {
+      el.addEventListener('transitionend', onTransitionEnd);
+      timer = window.setTimeout(finish, duration + 50);
+    } else finish();
   };
 
   document.addEventListener(
     'touchstart',
     (e) => {
       if (settling || tracking || e.touches.length !== 1 || e.touches[0].clientX > 28) return;
+      const p = e.touches[0];
+      activeDialog = [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].pop() ?? null;
+      if (activeDialog?.id === 'dlg-update') return;
+      if (!activeDialog && startsOnBoard(p.clientX, p.clientY)) return;
+      if (e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
       current = document.querySelector<HTMLElement>('.screen.active');
       if (!current || current.id === 'home') {
         current = null;
@@ -4049,6 +4154,9 @@ function installIOSBackGesture() {
       }
       startX = lastX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
+      width = current.clientWidth;
+      samples = [];
+      record(startX);
       tracking = true;
       horizontal = false;
     },
@@ -4062,26 +4170,25 @@ function installIOSBackGesture() {
       const p = e.touches[0];
       const dx = p.clientX - startX;
       const dy = p.clientY - startY;
-      if (!horizontal && (Math.abs(dy) > 24 || (dx < 8 && Math.abs(dy) > Math.abs(dx) * 1.2))) return clear(false, false);
-      if (!horizontal && dx < 8) return;
-      if (!horizontal) preparePreview();
+      if (!horizontal && (dx < -8 || (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)))) return clear(false, false);
+      if (!horizontal && (dx < 8 || dx < Math.abs(dy) * 1.2)) return;
+      if (!horizontal && !activeDialog) preparePreview();
       horizontal = true;
-      lastX = p.clientX;
+      record(p.clientX);
       e.preventDefault();
-      const progress = Math.max(0, Math.min(1, dx / current.clientWidth));
-      current.style.transform = `translateX(${progress * 100}%)`;
-      current.style.opacity = String(1 - progress * 0.2);
-      preview!.style.transform = `translateX(${-12 * (1 - progress)}%)`;
-      preview!.style.opacity = String(0.65 + progress * 0.35);
+      if (!frame && !activeDialog) frame = requestAnimationFrame(render);
     },
     { capture: true, passive: false },
   );
-  const end = () => {
+  const end = (e: TouchEvent) => {
     if (!tracking || !current) return;
-    const commit = horizontal && lastX - startX >= Math.max(80, innerWidth * 0.22);
+    if (horizontal && e.changedTouches[0] && e.changedTouches[0].clientX !== lastX) record(e.changedTouches[0].clientX);
+    const distance = Math.max(0, lastX - startX);
+    const speed = velocity();
+    const commit = horizontal && speed > -0.2 && (distance >= width * 0.33 || (distance >= 20 && speed >= 0.45 && distance + speed * 180 >= width * 0.33));
     if (!commit) return clear(false);
-    const open = [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].filter((d) => d.id !== 'dlg-update').pop();
-    if (open) {
+    if (activeDialog) {
+      const open = activeDialog;
       clear(false, false);
       open.close();
       return;
@@ -4089,10 +4196,21 @@ function installIOSBackGesture() {
     clear(true);
   };
   document.addEventListener('touchend', end, { capture: true, passive: true });
-  document.addEventListener('touchcancel', () => clear(false), { capture: true, passive: true });
+  document.addEventListener('touchcancel', () => { if (tracking) clear(false); }, { capture: true, passive: true });
+  window.addEventListener('pagehide', () => { if (tracking) clear(false, false); });
+  window.addEventListener('resize', () => { if (tracking) clear(false, false); });
 }
 
 function init() {
+  settings = loadSettings();
+  history = loadHistory();
+  gameElo = settings.elo;
+  gamePlayerElo = settings.playerElo;
+  gameDeviation = settings.ratingDeviation;
+  gameStreak = settings.ratingStreak;
+  gameTemperature = settings.temperature;
+  gameModel = settings.model;
+  gameCoachAvatar = pickCoachAvatar(settings.coachAvatar);
   document.documentElement.classList.add(isNative ? 'native' : 'web');
   if (FIXED_NATIVE_ENGINES) document.documentElement.classList.add('fixed-engines');
   applyTheme(settings.theme);
@@ -4128,14 +4246,16 @@ function init() {
   bind();
   const saved = readJson(GAME_KEY);
   let ok = false;
+  let restoredMode: 'play' | 'review' | undefined;
   try {
     const g = isLegacy(saved) ? saved : sanitizeGame(saved);
     ok = Boolean(g) && loadGame(g!);
+    if (ok && g && 'tree' in g) restoredMode = g.mode;
   } catch {
     ok = false;
   }
   if (!ok) userColor = settings.color === 'b' ? 'b' : 'w';
-  setMode(result === '' && !imported ? 'play' : 'review');
+  setMode(restoredMode ?? (result === '' && !imported ? 'play' : 'review'));
   renderHome();
   startRating();
   // The 100 ms clock ticker is created and torn down by syncClock/syncClockTimer on the
@@ -4156,20 +4276,51 @@ function init() {
   else if (location.hash === '#downloads') showScreen('downloads', false);
   else if (location.hash === '#train') history_.replaceState(null, '', location.pathname + location.search);
   onStorageFull(() => {
-    alert('本机存储空间已满，部分数据可能没能保存。请到「数据与备份」导出备份，然后清理一些历史对局。');
+    alert('本机数据未能保存，可能是空间不足或数据库不可用。请到「数据与备份」导出备份，释放空间后重试。');
   });
   setStatus(isNative ? '就绪（原生引擎）' : self.crossOriginIsolated ? '就绪（多线程）' : '就绪（单线程模式）');
 
-  // Prioritise the selected engines over the much larger optional offline package.
-  // A direct #game entry has already started the engines needed by that game.
+  // Preloading bundled engines is local work. Keep it so the full native profile enters games
+  // quickly; only the PWA may download optional resources after those engines are ready.
   const ready = screen === 'home' ? engines.warmup() : Promise.resolve();
   void ready.then(() => {
-    if (settings.autoOffline && import.meta.env.PROD) void autoOffline(enginesCtx).catch(() => false);
+    if (!isNative && settings.autoOffline && import.meta.env.PROD) void autoOffline(enginesCtx).catch(() => false);
   });
   registerServiceWorker();
 }
 
-init();
+async function startApp() {
+  await bootstrapStorage();
+  if (isNative) {
+    try {
+      const { AppStoreNative } = await import('maia-native');
+      const checkpoint = await AppStoreNative.loadCheckpoint();
+      const game = sanitizeGame(checkpoint.game);
+      if (game) {
+        const peak = (checkpoint.game as { peak?: unknown }).peak;
+        cacheStored(GAME_KEY, JSON.stringify({ ...game, peak: typeof peak === 'number' && Number.isFinite(peak) ? peak : 0 }));
+      }
+    } catch (error) { console.warn('读取原生对局快照失败', error); throw error; }
+  }
+  init();
+}
+function showStorageError(error: unknown) {
+  console.error('本地数据库初始化失败', error);
+  const panel = document.createElement('div');
+  panel.setAttribute('role', 'alert');
+  panel.style.cssText = 'position:fixed;inset:0;z-index:99999;display:grid;place-content:center;gap:20px;padding:32px;background:var(--bg,#202020);color:var(--text,#fff)';
+  const message = document.createElement('p');
+  message.textContent = '本地数据库未能打开，现有数据尚未读取。请释放设备空间后重试。';
+  const retry = document.createElement('button');
+  retry.textContent = '重试打开数据库';
+  retry.onclick = () => {
+    retry.disabled = true;
+    void startApp().then(() => panel.remove()).catch(err => { console.error(err); retry.disabled = false; });
+  };
+  panel.append(message, retry);
+  document.body.append(panel);
+}
+void startApp().catch(showStorageError);
 
 // Unlock only the selected recording player, directly within a user gesture.
 for (const name of ['pointerdown', 'keydown']) document.addEventListener(name, () => {

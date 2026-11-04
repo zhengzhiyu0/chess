@@ -4,7 +4,7 @@ import { sanitizeSettings, type Settings } from './settings';
 import { sanitizeGame, type StoredGame } from './game/history';
 import { loadDeletedMistakes, mergeMistakes, sanitizeDeleted, sanitizeMistake, type Mistake } from './training/mistakes';
 import { mergeProgress, sanitizeProgress, type PuzzleProgress } from './training/puzzles';
-import { isObj } from './storage';
+import { isObj, setStoredBatch } from './storage';
 import { isNative } from './native';
 
 export const BACKUP_FORMAT = 'maia-coach-backup';
@@ -26,6 +26,17 @@ export interface Backup extends BackupData {
   version: number;
   exported: string;
   app: string;
+}
+
+/** Publish backup contents only after every document has committed in a single transaction. */
+export async function persistBackup(data: BackupData): Promise<void> {
+  await setStoredBatch({
+    'maia-coach.settings': JSON.stringify(data.settings),
+    'maia-coach.history': JSON.stringify(data.history),
+    'maia-coach.mistakes': JSON.stringify(data.mistakes),
+    'maia-coach.mistakes-deleted': JSON.stringify(data.deletedMistakes ?? []),
+    'maia-coach.puzzles': JSON.stringify(data.puzzles),
+  });
 }
 
 export function makeBackup(d: BackupData, app: string): Backup {

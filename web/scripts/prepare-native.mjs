@@ -69,6 +69,17 @@ cpSync(src, dst, {
     return !EXCLUDE.some((re) => re.test(rel));
   },
 });
+
+// Native builds are fully self-contained: unlike the PWA, they never download engines/models.
+// Strip the web build's optional HTTPS allowance from the packaged iOS page.
+const nativeIndex = join(dst, 'index.html');
+if (existsSync(nativeIndex)) {
+  const source = readFileSync(nativeIndex, 'utf8');
+  if (!/connect-src [^;]*https?:/i.test(source)) throw new Error('native CSP did not contain the expected remote connect-src allowance');
+  const html = source.replace(/connect-src ([^;]*);/i, "connect-src 'self' data: blob:;");
+  if (/connect-src [^;]*https?:/i.test(html)) throw new Error('native CSP still allows remote connections');
+  writeFileSync(nativeIndex, html);
+}
 mkdirSync(out, { recursive: true });
 
 for (const n of NETS) cpSync(await fetchNet(n), join(out, n));

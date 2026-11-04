@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 let emit: (line: string) => void;
 let commands: string[];
+let emitGeneration: (line: string, generation: number) => void;
 
 beforeEach(() => {
   vi.resetModules();
@@ -34,14 +35,21 @@ async function webEngine() {
 }
 
 async function nativeEngine(listenerFailure = false) {
+  let generation = 0;
   vi.doMock('../src/native', () => ({ isNative: true }));
-  const addListener = vi.fn(async (_event: string, listener: (event: { engine: string; lines: string[] }) => void) => {
+  const addListener = vi.fn(async (_event: string, listener: (event: { engine: string; generation: number; lines: string[] }) => void) => {
     if (listenerFailure) { listenerFailure = false; throw new Error('bridge failed'); }
-    emit = (line) => listener({ engine: 'full', lines: [line] });
+    emitGeneration = (line, generation) => listener({ engine: 'full', generation, lines: [line] });
+    emit = (line) => emitGeneration(line, generation);
     return { remove: async () => {} };
   });
   vi.doMock('maia-native', () => ({ StockfishNative: {
-    start: vi.fn(async () => {}),
+    start: vi.fn(async () => {
+      // Queued old search output can arrive during native handoff.
+      emit('info depth 50 score cp 900 pv a2a4');
+      emit('bestmove a2a4');
+      return { generation: ++generation };
+    }),
     addListener,
     send: vi.fn(async ({ cmd }: { cmd: string }) => {
       commands.push(cmd);
@@ -88,6 +96,24 @@ describe('UCI 边界评估', () => {
 });
 
 describe('原生 Stockfish 生命周期', () => {
+  it('忽略前代迟到的 info、bestmove 和 readyok，不污染新搜索', async () => {
+    const Stockfish = await nativeEngine();
+    const first = await Stockfish.create(2, 128);
+    first.terminate();
+    const next = await Stockfish.create(2, 64);
+    let done = false;
+    const search = next.analyse('startpos').then(result => { done = true; return result; });
+    await settle();
+    emitGeneration('info depth 99 score cp 999 pv a2a4', 1);
+    emitGeneration('readyok', 1);
+    emitGeneration('bestmove a2a4', 1);
+    await settle();
+    expect(done).toBe(false);
+    emit('info depth 10 score cp 20 pv e2e4');
+    emit('bestmove e2e4');
+    expect(await search).toMatchObject({ bestmove: 'e2e4', lines: [{ cp: 20 }] });
+    next.terminate();
+  });
   it('关闭当前实例后缩小 Hash，重新创建恢复设定值', async () => {
     const Stockfish = await nativeEngine();
     const sf = await Stockfish.create(2, 128);

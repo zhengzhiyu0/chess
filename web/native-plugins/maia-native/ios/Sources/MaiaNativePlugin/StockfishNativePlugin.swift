@@ -16,6 +16,7 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "send", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "resetSession", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "info", returnType: CAPPluginReturnPromise),
     ]
 
@@ -32,6 +33,7 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
     final class Outbox {
         let flavour: String
         weak var plugin: StockfishNativePlugin?
+        private var generation: Int = 0
         private var pending: [String] = []
         private let lock = NSLock()
         private var scheduled = false
@@ -48,10 +50,51 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
             return false
         }
 
+        private var accepting = false
+        private var handoff: ((Result<Int, Error>) -> Void)?
+
+        func beginSession(_ completion: @escaping (Result<Int, Error>) -> Void) -> Int {
+            lock.lock()
+            generation += 1
+            let next = generation
+            accepting = false
+            pending.removeAll()
+            let previous = handoff
+            handoff = completion
+            lock.unlock()
+            previous?(.failure(NSError(domain: "Stockfish", code: 1, userInfo: [NSLocalizedDescriptionKey: "session superseded"])))
+            return next
+        }
+
+        func failSession(_ expected: Int) {
+            lock.lock()
+            guard generation == expected, let completion = handoff else { lock.unlock(); return }
+            handoff = nil
+            accepting = false
+            lock.unlock()
+            completion(.failure(NSError(domain: "Stockfish", code: 2, userInfo: [NSLocalizedDescriptionKey: "session handoff timed out"])))
+        }
+
+        func owns(_ expected: Int) -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return accepting && generation == expected
+        }
+
         init(flavour: String) { self.flavour = flavour }
 
         func push(_ line: String) {
             lock.lock()
+            if line.hasPrefix("__host_session ") {
+                guard line == "__host_session \(generation)", let completion = handoff else { lock.unlock(); return }
+                handoff = nil
+                accepting = true
+                let current = generation
+                lock.unlock()
+                DispatchQueue.main.async { completion(.success(current)) }
+                return
+            }
+            guard accepting else { lock.unlock(); return }
             var startupMessage: String?
             if let startupStart {
                 if line == "uciok" {
@@ -89,7 +132,15 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
             scheduled = false
             guard !lines.isEmpty, let plugin else { return }
             let flavour = flavour
-            DispatchQueue.main.async { plugin.notifyListeners("lines", data: ["engine": flavour, "lines": lines]) }
+            let generation = generation
+            DispatchQueue.main.async { [weak self, weak plugin] in
+                guard let self, let plugin else { return }
+                self.lock.lock()
+                let current = self.generation
+                self.lock.unlock()
+                guard current == generation else { return }
+                plugin.notifyListeners("lines", data: ["engine": flavour, "generation": generation, "lines": lines])
+            }
         }
     }
 
@@ -147,6 +198,12 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
         }
         NativeRuntimeLog.record("NNUE resource found \(context) resource_ms=\(NativeRuntimeLog.elapsed(resourceStart))", subsystem: "Stockfish")
         box.plugin = self
+        let generation = box.beginSession { result in
+            switch result {
+            case .success(let generation): call.resolve(["generation": generation])
+            case .failure(let error): call.reject(error.localizedDescription)
+            }
+        }
         let ctx = Unmanaged.passUnretained(box).toOpaque()
         let reused = box.beginStartup()
         let dispatchStart = NativeRuntimeLog.now()
@@ -163,22 +220,40 @@ public class StockfishNativePlugin: CAPPlugin, CAPBridgedPlugin {
         }
         started.insert(f)
         NativeRuntimeLog.record("start dispatched \(context) reused=\(reused) dispatch_ms=\(NativeRuntimeLog.elapsed(dispatchStart)) total_ms=\(NativeRuntimeLog.elapsed(requested)) ready=pending_uci_handshake", subsystem: "Stockfish")
-        call.resolve()
+        // Plain isready does not join an ongoing search. The private command does so on the
+        // engine thread before activating this generation, without blocking the UI thread.
+        sendCommand(f, "__host_session \(generation)")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 90) { box.failSession(generation) }
     }
 
     @objc func send(_ call: CAPPluginCall) {
         guard let f = flavour(call), started.contains(f) else { return call.reject("engine not started") }
         guard let cmd = call.getString("cmd") else { return call.reject("missing cmd") }
-        cmd.withCString {
+        guard let generation = call.getInt("generation"), Self.outboxes[f]?.owns(generation) == true else {
+            return call.reject("stale engine session")
+        }
+        sendCommand(f, cmd)
+        call.resolve()
+    }
+
+    private func sendCommand(_ flavour: String, _ command: String) {
+        command.withCString {
 #if MAIA_STOCKFISH_FULL_ONLY
             sf_full_send($0)
 #else
-            if f == "full" {
+            if flavour == "full" {
                 sf_full_send($0)
             } else {
                 sf_lite_send($0)
             }
 #endif
+        }
+    }
+
+    @objc func resetSession(_ call: CAPPluginCall) {
+        for (flavour, box) in Self.outboxes {
+            _ = box.beginSession { _ in }
+            sendCommand(flavour, "stop")
         }
         call.resolve()
     }

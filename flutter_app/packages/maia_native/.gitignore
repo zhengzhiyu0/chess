@@ -1,0 +1,8 @@
+.dart_tool/
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+build/
+.cache/
+ios/EngineSources/
+ios/Resources/

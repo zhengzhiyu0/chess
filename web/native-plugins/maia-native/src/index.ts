@@ -13,14 +13,17 @@ export interface DeviceInfo {
 }
 
 export interface StockfishNativePlugin {
-  start(opts: { engine: SfFlavour }): Promise<void>;
-  send(opts: { engine: SfFlavour; cmd: string }): Promise<void>;
+  start(opts: { engine: SfFlavour }): Promise<{ generation: number }>;
+  send(opts: { engine: SfFlavour; cmd: string; generation: number }): Promise<void>;
+  resetSession(): Promise<void>;
   info(): Promise<DeviceInfo>;
-  addListener(event: 'lines', cb: (e: { engine: SfFlavour; lines: string[] }) => void): Promise<PluginListenerHandle>;
+  addListener(event: 'lines', cb: (e: { engine: SfFlavour; generation: number; lines: string[] }) => void): Promise<PluginListenerHandle>;
 }
 
 export interface MaiaEvalOpts {
-  tokens: string;
+  /** Compact position input; native code builds the model tensor locally. */
+  fens?: string[];
+  tokens?: string;
   indices: number[];
   selfElo: number;
   oppoElo: number;
@@ -34,7 +37,7 @@ export interface MaiaEvalResult {
 }
 
 export interface MaiaNativePlugin {
-  load(opts: { model: string; probeTokens?: string; probeLegal?: number[]; probeTop?: number[]; requestId?: number }): Promise<{ provider: string }>;
+  load(opts: { model: string; probeFens?: string[]; probeTokens?: string; probeLegal?: number[]; probeTop?: number[]; requestId?: number }): Promise<{ provider: string }>;
   eval(opts: MaiaEvalOpts): Promise<MaiaEvalResult>;
   /** several positions in one bridge call */
   evalBatch(opts: { items: MaiaEvalOpts[]; requestId?: number }): Promise<{ results: MaiaEvalResult[] }>;
@@ -53,3 +56,16 @@ export interface SoundNativePlugin {
 }
 
 export const SoundNative = registerPlugin<SoundNativePlugin>('SoundNative');
+
+/** Durable app data store. The iOS implementation is SQLite/WAL; the web fallback is IndexedDB. */
+export interface AppStoreNativePlugin {
+  bootstrap(): Promise<{ values: Record<string, string> }>;
+  set(opts: { key: string; value: string }): Promise<void>;
+  remove(opts: { key: string }): Promise<void>;
+  writeBatch(opts: { entries: Record<string, string | null> }): Promise<void>;
+  saveCheckpoint(opts: { game: unknown }): Promise<void>;
+  loadCheckpoint(): Promise<{ game?: unknown }>;
+  clear(): Promise<void>;
+}
+
+export const AppStoreNative = registerPlugin<AppStoreNativePlugin>('AppStoreNative');

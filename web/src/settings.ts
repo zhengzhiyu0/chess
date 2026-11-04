@@ -1,5 +1,5 @@
 import { isNative } from './native';
-import { safeSet } from './storage';
+import { readJson, removeStored, safeSet } from './storage';
 import { BOARD_THEMES, PIECE_SETS } from './app/appearance';
 import { SOUND_THEMES, soundThemeOf } from './audio/sound';
 import { TIME_CONTROLS } from './game/clock';
@@ -178,8 +178,8 @@ export function defaultSettings(): Settings {
 export function loadSettings(): Settings {
   try {
     // AI coach was removed; discard any API key left by older builds.
-    localStorage.removeItem('maia-coach.ai-key');
-    const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+    removeStored('maia-coach.ai-key');
+    const saved: Record<string, any> = (readJson(KEY) as Record<string, any> | undefined) ?? {};
     // gen 1 moved the old synthesized default to a recording; gen 2 moves default users to the wooden board set
     if ((saved.soundGen ?? 0) < 2) {
       if (saved.soundTheme === undefined || saved.soundTheme === 'wood' || saved.soundTheme === 'sfx') saved.soundTheme = 'board';

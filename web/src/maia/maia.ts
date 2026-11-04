@@ -1,5 +1,5 @@
 import type { Chess } from 'chess.js';
-import { buildTokens, legalMoveIndices, uciToIndex } from './encode';
+import { legalMoveIndices, uciToIndex } from './encode';
 import { softmaxMoves, type ScoredMove } from './sample';
 import type { WorkerIn, WorkerOut } from './worker';
 import { wdlFromValue } from './wdl';
@@ -37,18 +37,13 @@ const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const START_LEGAL = ['a2a3', 'a2a4', 'b2b3', 'b2b4', 'c2c3', 'c2c4', 'd2d3', 'd2d4', 'e2e3', 'e2e4', 'f2f3', 'f2f4', 'g2g3', 'g2g4', 'h2h3', 'h2h4', 'b1a3', 'b1c3', 'g1f3', 'g1h3'];
 const START_TOP = ['e2e4', 'd2d4', 'c2c4', 'g1f3'];
 
-function toBase64(f: Float32Array): string {
-  const bytes = new Uint8Array(f.buffer, f.byteOffset, f.byteLength);
-  let s = '';
-  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(s);
-}
-
 /** The app's native Maia uses bundled, pre-compiled CoreML models (see native-plugins/maia-native). */
 class NativeMaia {
   /** the plugin holds one process-wide session; only its newest owner may unload it */
   private static current: NativeMaia | null = null;
-  private static nextRequestId = 1;
+  // A new WebView gets a fresh request namespace so delayed native replies cannot collide
+  // with request ids reused after a WebContent process restart.
+  private static nextRequestId = crypto.getRandomValues(new Uint32Array(1))[0] & 0x3fffffff;
   private dead = false;
   private readonly inFlight = new Set<number>();
   provider = '';
@@ -96,7 +91,7 @@ class NativeMaia {
       stageStart = performance.now();
       const request = {
         model,
-        probeTokens: toBase64(buildTokens([START])),
+        probeFens: [START],
         probeLegal: START_LEGAL.map(uciToIndex),
         probeTop: START_TOP.map(uciToIndex),
       };
@@ -125,7 +120,7 @@ class NativeMaia {
     const out: MaiaResult[] = jobs.map(() => ({ moves: [], wdl: [0, 1, 0], ms: 0 }));
     if (!live.length) return out;
     const items = live.map((i) => ({
-      tokens: toBase64(buildTokens(jobs[i].fens)),
+      fens: jobs[i].fens.slice(-8).length ? jobs[i].fens.slice(-8) : [jobs[i].chess.fen()],
       indices: legal[i].map((l) => l.index),
       selfElo: jobs[i].selfElo,
       oppoElo: jobs[i].oppoElo,

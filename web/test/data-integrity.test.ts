@@ -1,21 +1,22 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { bootstrapStorage, installStorageAdapter } from '../src/storage';
 
 const mem = new Map<string, string>();
-/** bytes allowed in the stub storage (keys + values) */
-let quota = Infinity;
-const used = () => [...mem].reduce((n, [k, v]) => n + k.length + v.length, 0);
 Object.assign(globalThis, {
   matchMedia: () => ({ matches: false }),
-  localStorage: {
-    getItem: (k: string) => mem.get(k) ?? null,
-    setItem: (k: string, v: string) => {
-      const next = used() - (mem.has(k) ? k.length + mem.get(k)!.length : 0) + k.length + v.length;
-      if (next > quota) throw new DOMException('full', 'QuotaExceededError');
-      mem.set(k, v);
-    },
-    removeItem: (k: string) => void mem.delete(k),
-  },
 });
+let quota = Infinity;
+const quotaAdapter = {
+  bootstrap: async () => Object.fromEntries(mem),
+  get: (key: string) => mem.get(key),
+  set: async (key: string, value: string) => {
+    const next = [...mem].reduce((n, [k, v]) => n + (k === key ? 0 : k.length + v.length), 0) + key.length + value.length;
+    if (next > quota) throw new Error('quota exceeded');
+    mem.set(key, value);
+  },
+  remove: async (key: string) => { mem.delete(key); },
+};
+installStorageAdapter(quotaAdapter);
 
 const { safeSet } = await import('../src/storage');
 const mistakes = await import('../src/training/mistakes');
@@ -49,23 +50,29 @@ const mistake = (over: Partial<Mistake> = {}): Mistake => ({
   ...over,
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   mem.clear();
   quota = Infinity;
+  installStorageAdapter(quotaAdapter);
+  await bootstrapStorage();
   resetMistakeCache();
 });
 
 describe('safeSet', () => {
-  it('drops the analysis cache when storage is full, then retries', () => {
+  it('drops the analysis cache when storage is full, then retries', async () => {
     quota = 200;
     mem.set('maia-coach.evals', 'x'.repeat(150));
+    await bootstrapStorage();
     expect(safeSet('maia-coach.history', 'y'.repeat(60))).toBe(true);
+    await (await import('../src/storage')).flushStorage();
     expect(mem.has('maia-coach.evals')).toBe(false);
     expect(mem.get('maia-coach.history')).toHaveLength(60);
   });
-  it('still reports failure when nothing can make room', () => {
+  it('still reports failure when nothing can make room', async () => {
     quota = 50;
-    expect(safeSet('maia-coach.history', 'y'.repeat(100))).toBe(false);
+    expect(safeSet('maia-coach.history', 'y'.repeat(100))).toBe(true);
+    await expect((await import('../src/storage')).flushStorage()).rejects.toThrow('部分本机数据未能保存');
+    expect(mem.has('maia-coach.history')).toBe(false);
   });
 });
 

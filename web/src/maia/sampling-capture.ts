@@ -1,4 +1,5 @@
 import { samplingDistribution, type ScoredMove } from './sample';
+import { removeStoredAsync, setStored, storageRaw } from '../storage';
 
 const STORAGE_KEY = 'maia-coach.sampling-capture.v1';
 export const SAMPLING_CAPTURE_MAX_GAMES = 10;
@@ -80,7 +81,7 @@ function isDecision(value: unknown): value is SamplingDecision {
 }
 
 function readCapture(): { records: SamplingDecision[]; text: string } {
-  const text = localStorage.getItem(STORAGE_KEY) ?? '';
+  const text = storageRaw(STORAGE_KEY) ?? '';
   if (encoder.encode(text).byteLength > SAMPLING_CAPTURE_MAX_BYTES) throw new Error('诊断数据超过 8 MiB 上限');
   const records: SamplingDecision[] = text === '' ? [] : text.split('\n').map((line) => {
     const value: unknown = JSON.parse(line);
@@ -99,7 +100,7 @@ function readCapture(): { records: SamplingDecision[]; text: string } {
  * Retains up to ten most recently recorded games; the byte cap may retain only a
  * game's tail. These are captured decisions, never a claim of complete game coverage.
  */
-export function recordSamplingDecision(input: SamplingDecisionInput): SamplingCaptureResult {
+export async function recordSamplingDecision(input: SamplingDecisionInput): Promise<SamplingCaptureResult> {
   try {
     if (input.committed !== true) throw new Error('仅可记录已经成功落子的决策');
     const record: SamplingDecision = {
@@ -136,7 +137,7 @@ export function recordSamplingDecision(input: SamplingDecisionInput): SamplingCa
     let bytes = sizes.reduce((sum, size) => sum + size, 0) + lines.length - 1;
     let start = 0;
     while (bytes > SAMPLING_CAPTURE_MAX_BYTES) bytes -= sizes[start++] + 1;
-    localStorage.setItem(STORAGE_KEY, lines.slice(start).join('\n'));
+    await setStored(STORAGE_KEY, lines.slice(start).join('\n'));
     return { ok: true };
   } catch (error) {
     return { ok: false, error: errorText(error) };
@@ -154,9 +155,9 @@ export function samplingCaptureSummary(): SamplingCaptureSummary {
 }
 
 /** Removes only capture data; game history and all preferences are untouched. */
-export function clearSamplingCapture(): SamplingCaptureResult {
+export async function clearSamplingCapture(): Promise<SamplingCaptureResult> {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    await removeStoredAsync(STORAGE_KEY);
     return { ok: true };
   } catch (error) {
     return { ok: false, error: errorText(error) };

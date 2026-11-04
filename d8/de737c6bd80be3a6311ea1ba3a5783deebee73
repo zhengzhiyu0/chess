@@ -1,0 +1,21 @@
+web/src/main.ts
+  s_ca94da17c04252::t_f40f995cff9277 4127-4130
+web/scripts/back-gesture-browser-check.mjs
+  s_ca94da17c04252::t_02165c7052ee69 74-95,98-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d8de737c6bd80be3a6311ea1ba3a5783deebee73",
+  "prompts": {},
+  "sessions": {
+    "s_ca94da17c04252": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a46f-7706-77f3-a815-065bb31bc6d2",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

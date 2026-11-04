@@ -1,0 +1,39 @@
+web/src/main.ts
+  s_09429299a25a47::t_248c14f2707575 3482,3500,3516-3518
+  s_09429299a25a47::t_79e5b983b4f4a9 138,1399,1411-1412
+  s_09429299a25a47::t_8669d5920c556d 1397
+web/test/native-maia.test.ts
+  s_09429299a25a47::t_377ef6a17c57af 75,77
+  s_09429299a25a47::t_5f69f9bcfbc2eb 4,11,66-74,76,78-83
+web/native-plugins/maia-native/src/index.ts
+  s_09429299a25a47::t_7a4083c0eb7a38 27,37,41
+  s_09429299a25a47::t_79e5b983b4f4a9 40
+web/src/maia/maia.ts
+  s_09429299a25a47::t_caa22094a92958 158
+  s_09429299a25a47::t_21909e5b7cec5d 62
+  s_09429299a25a47::t_311a2f58f48a4d 51,53,57-61,63-69,71-77,106,136-138
+  s_09429299a25a47::t_e85aad25444a2d 70
+  s_09429299a25a47::t_c534c8255344ca 86,93,111
+web/native-plugins/maia-native/ios/Sources/MaiaNativePlugin/MaiaNativePlugin.swift
+  s_09429299a25a47::t_b9d3ffb09a19cb 50
+  s_09429299a25a47::t_21909e5b7cec5d 80
+  s_09429299a25a47::t_1a2ad5bf681a54 4,28,31-34,54-79,81-105,195,204,278,280,305,308
+  s_09429299a25a47::t_f082b271a9c896 16,26-27,35-36,38-49,51-53,194,205,213,228,235,277,281,285,304,311,314,324,326-328
+  s_09429299a25a47::t_16a9a1a07c2d92 37,325
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8c4cb6d30137cebcb6730a2044fa09914e818084",
+  "prompts": {},
+  "sessions": {
+    "s_09429299a25a47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a018-7718-7662-bf5f-ac557914acea",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

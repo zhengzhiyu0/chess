@@ -48,9 +48,32 @@ function toBase64(f: Float32Array): string {
 class NativeMaia {
   /** the plugin holds one process-wide session; only its newest owner may unload it */
   private static current: NativeMaia | null = null;
+  private static nextRequestId = 1;
   private dead = false;
+  private readonly inFlight = new Set<number>();
   provider = '';
   private constructor(readonly model: ModelId, private plugin: MaiaNativePlugin) {}
+
+  private request<T>(operation: (requestId: number) => Promise<T>, timeoutMs: number): Promise<T> {
+    const requestId = NativeMaia.nextRequestId++;
+    this.inFlight.add(requestId);
+    let timedOut = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const operationPromise = Promise.resolve().then(() => operation(requestId));
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        timedOut = true;
+        reject(new Error('Maia 原生请求超时'));
+      }, timeoutMs);
+    });
+    return Promise.race([operationPromise, timeout]).catch(async (err) => {
+      if (timedOut && this.plugin.cancel) void this.plugin.cancel({ requestId }).catch(() => {});
+      throw err;
+    }).finally(() => {
+      if (timer !== undefined) clearTimeout(timer);
+      this.inFlight.delete(requestId);
+    });
+  }
 
   get alive() {
     return !this.dead;
@@ -60,12 +83,14 @@ class NativeMaia {
     const requested = performance.now();
     let stage = 'plugin_import';
     let stageStart = requested;
+    let instance: NativeMaia | undefined;
     console.info('[engine/Maia] native load requested', { model, computeUnits: 'all' });
     try {
       // Platform-specific Capacitor bridge is unavailable in browser/worker runtimes.
       const { MaiaNative } = await import('maia-native');
       console.info('[engine/Maia] plugin imported', { model, import_ms: (performance.now() - stageStart).toFixed(1) });
       const m = new NativeMaia(model, MaiaNative);
+      instance = m;
       NativeMaia.current = m;
       stage = 'probe_prepare';
       stageStart = performance.now();
@@ -78,11 +103,12 @@ class NativeMaia {
       console.info('[engine/Maia] probe prepared', { model, prepare_ms: (performance.now() - stageStart).toFixed(1) });
       stage = 'native_load';
       stageStart = performance.now();
-      const res = await MaiaNative.load(request);
+      const res = await m.request((requestId) => MaiaNative.load({ ...request, requestId }), 30_000);
       m.provider = res.provider;
       console.info('[engine/Maia] native load success', { model, provider: res.provider, computeUnits: 'all', bridge_load_ms: (performance.now() - stageStart).toFixed(1), total_ms: (performance.now() - requested).toFixed(1) });
       return m;
     } catch (err) {
+      instance?.dispose();
       console.info('[engine/Maia] native load failed', { model, computeUnits: 'all', stage, stage_ms: (performance.now() - stageStart).toFixed(1), total_ms: (performance.now() - requested).toFixed(1), error: err instanceof Error ? err.message : String(err) });
       throw err;
     }
@@ -107,7 +133,9 @@ class NativeMaia {
     if (this.dead || NativeMaia.current !== this) throw new Error('Maia 已卸载');
     let results;
     try {
-      results = items.length === 1 ? [await this.plugin.eval(items[0])] : (await this.plugin.evalBatch({ items })).results;
+      results = items.length === 1
+        ? [await this.request((requestId) => this.plugin.eval({ ...items[0], requestId }), 30_000)]
+        : (await this.request((requestId) => this.plugin.evalBatch({ items, requestId }), 60_000)).results;
     } catch (err) {
       this.dispose();
       throw err;
@@ -127,6 +155,7 @@ class NativeMaia {
     // a stale instance (superseded while loading) must not unload its successor's session
     if (NativeMaia.current !== this) return;
     NativeMaia.current = null;
+    if (this.plugin.cancel) for (const requestId of this.inFlight) void this.plugin.cancel({ requestId }).catch(() => {});
     void this.plugin.unload().catch((err) => console.warn('Maia 卸载失败', err));
   }
 }

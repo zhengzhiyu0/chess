@@ -1,13 +1,14 @@
 import { Chess } from 'chess.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const native = vi.hoisted(() => ({ load: vi.fn(), eval: vi.fn(), evalBatch: vi.fn(), unload: vi.fn() }));
+const native = vi.hoisted(() => ({ load: vi.fn(), eval: vi.fn(), evalBatch: vi.fn(), cancel: vi.fn(), unload: vi.fn() }));
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   vi.doMock('../src/native', () => ({ isNative: true }));
   vi.doMock('maia-native', () => ({ MaiaNative: native }));
   native.load.mockResolvedValue({ provider: 'coreml' });
+  native.cancel.mockResolvedValue(undefined);
   native.unload.mockResolvedValue(undefined);
 });
 afterEach(() => {
@@ -61,5 +62,23 @@ describe('原生 Maia 所有权与恢复', () => {
     old.dispose();
     next.dispose();
     await settle();
+  });
+
+  it('原生请求超时后发送取消并失效当前会话', async () => {
+    vi.useFakeTimers();
+    try {
+      const { Maia } = await import('../src/maia/maia');
+      const maia = await Maia.create('5m', 'wasm');
+      native.eval.mockImplementationOnce(() => new Promise(() => {}));
+      const job = position();
+      const result = maia.evaluate(job.chess, job.fens, 1500, 1500);
+      const rejection = expect(result).rejects.toThrow('原生请求超时');
+      await vi.advanceTimersByTimeAsync(30_000);
+      await rejection;
+      expect(native.cancel).toHaveBeenCalledWith({ requestId: expect.any(Number) });
+      expect(maia.alive).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

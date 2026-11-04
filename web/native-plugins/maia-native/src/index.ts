@@ -24,6 +24,7 @@ export interface MaiaEvalOpts {
   indices: number[];
   selfElo: number;
   oppoElo: number;
+  requestId?: number;
 }
 
 export interface MaiaEvalResult {
@@ -33,10 +34,11 @@ export interface MaiaEvalResult {
 }
 
 export interface MaiaNativePlugin {
-  load(opts: { model: string; probeTokens?: string; probeLegal?: number[]; probeTop?: number[] }): Promise<{ provider: string }>;
+  load(opts: { model: string; probeTokens?: string; probeLegal?: number[]; probeTop?: number[]; requestId?: number }): Promise<{ provider: string }>;
   eval(opts: MaiaEvalOpts): Promise<MaiaEvalResult>;
   /** several positions in one bridge call */
-  evalBatch(opts: { items: MaiaEvalOpts[] }): Promise<{ results: MaiaEvalResult[] }>;
+  evalBatch(opts: { items: MaiaEvalOpts[]; requestId?: number }): Promise<{ results: MaiaEvalResult[] }>;
+  cancel?(opts: { requestId: number }): Promise<void>;
   unload(): Promise<void>;
 }
 

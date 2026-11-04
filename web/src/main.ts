@@ -135,6 +135,7 @@ let liveOn = false;
 let liveCtrl: AbortController | null = null;
 let liveLines: SfLine[] = [];
 let batchCtrl: AbortController | null = null;
+const humanReviewPending = new WeakSet<Node>();
 /** whole-game analysis interrupted by the app going to the background, resumed on return */
 let pausedBatch = false;
 type AnalysisStatus = 'idle' | 'running' | 'complete' | 'interrupted' | 'failed';
@@ -1393,8 +1394,9 @@ async function reviewHuman() {
   if (singleEngine() && busy) return;
   const n = node;
   const want = [n.parent && showMove(n) ? n.parent : null, showSide(n) && !chessOf(n).isGameOver() ? n : null];
-  const todo = want.filter((x): x is Node => Boolean(x) && !x!.a.human);
+  const todo = want.filter((x): x is Node => x !== null && !x.a.human && !humanReviewPending.has(x));
   if (!todo.length) return;
+  todo.forEach((x) => humanReviewPending.add(x));
   // Answers belong to this game's locked ratings and model, even if next-game settings change.
   const sig = () => `${gameId}|${gameElo}|${gamePlayerElo}|${gameModel}`;
   const asked = sig();
@@ -1406,6 +1408,8 @@ async function reviewHuman() {
   } catch (err) {
     console.error(err);
     return;
+  } finally {
+    todo.forEach((x) => humanReviewPending.delete(x));
   }
   if (n === node && mode === 'review') {
     renderCoach();
@@ -3475,6 +3479,7 @@ function restoreSuspendedGame() {
  * battery (native threads, open-ended searches, pending Maia work) is stopped immediately.
  */
 let bgUnloadTimer: ReturnType<typeof setTimeout> | null = null;
+let backgroundStartedAt: number | null = null;
 
 function enterBackground() {
   ratingCtrl?.abort();
@@ -3492,6 +3497,7 @@ function enterBackground() {
   pausedBatch = Boolean(batchCtrl && !batchCtrl.signal.aborted);
   batchCtrl?.abort();
   liveCtrl?.abort();
+  if (backgroundStartedAt === null) backgroundStartedAt = Date.now();
   if (bgUnloadTimer === null) {
     bgUnloadTimer = setTimeout(() => {
       bgUnloadTimer = null;
@@ -3507,6 +3513,9 @@ function leaveBackground() {
     clearTimeout(bgUnloadTimer);
     bgUnloadTimer = null;
   }
+  const stayedAway = backgroundStartedAt !== null && Date.now() - backgroundStartedAt >= 10_000;
+  backgroundStartedAt = null;
+  if (stayedAway) engines.unloadMaia();
   // A load interrupted by the background ends in a failed state; retry it here instead of
   // leaving the user with a "engine not ready" dialog. This also pauses the clock while the
   // engine reloads, so returning to the app cannot eat Maia's time.

@@ -1,6 +1,7 @@
 import Foundation
 import Capacitor
 import CoreML
+import UIKit
 
 /// Native Maia-3 inference with pre-compiled CoreML ML Programs bundled in the app.
 /// Model inputs and outputs remain Float32, preserving the Capacitor bridge contract.
@@ -12,6 +13,7 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "load", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "eval", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "evalBatch", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "cancel", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "unload", returnType: CAPPluginReturnPromise),
     ]
 
@@ -21,8 +23,86 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
 
     // One model at a time; all access is serialized to avoid concurrent predictions.
     private let queue = DispatchQueue(label: "maia.native", qos: .userInitiated)
+    private let cancellationLock = NSLock()
+    private var cancelled = Set<Int>()
+    private var active = Set<Int>()
     private var model: MLModel?
     private var loaded: String?
+    private var backgroundObserver: NSObjectProtocol?
+    private var foregroundObserver: NSObjectProtocol?
+    private var backgroundGeneration = 0
+    private var backgrounded = false
+
+    private func requestId(_ call: CAPPluginCall) -> Int {
+        call.getInt("requestId") ?? 0
+    }
+
+    private func isCancelled(_ id: Int) -> Bool {
+        guard id > 0 else { return false }
+        cancellationLock.lock()
+        defer { cancellationLock.unlock() }
+        return cancelled.contains(id)
+    }
+
+    private func markCancelled(_ id: Int) {
+        guard id > 0 else { return }
+        cancellationLock.lock()
+        if active.contains(id) { cancelled.insert(id) }
+        cancellationLock.unlock()
+    }
+
+    private func beginRequest(_ id: Int) {
+        guard id > 0 else { return }
+        cancellationLock.lock()
+        active.insert(id)
+        cancellationLock.unlock()
+    }
+
+    private func finishRequest(_ id: Int) {
+        guard id > 0 else { return }
+        cancellationLock.lock()
+        active.remove(id)
+        cancelled.remove(id)
+        cancellationLock.unlock()
+    }
+
+    private func cancelActiveRequests() {
+        cancellationLock.lock()
+        cancelled.formUnion(active)
+        cancellationLock.unlock()
+    }
+
+    override public func load() {
+        backgroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.cancelActiveRequests()
+            self.queue.async {
+                self.backgrounded = true
+                self.backgroundGeneration += 1
+                let generation = self.backgroundGeneration
+                self.queue.asyncAfter(deadline: .now() + 10) {
+                    guard self.backgrounded, self.backgroundGeneration == generation else { return }
+                    self.model = nil
+                    self.loaded = nil
+                }
+            }
+        }
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification, object: nil, queue: nil
+        ) { [weak self] _ in
+            self?.queue.async {
+                self?.backgrounded = false
+                self?.backgroundGeneration += 1
+            }
+        }
+    }
+
+    deinit {
+        if let backgroundObserver { NotificationCenter.default.removeObserver(backgroundObserver) }
+        if let foregroundObserver { NotificationCenter.default.removeObserver(foregroundObserver) }
+    }
 
     private func modelURL(_ name: String) -> URL? {
         Bundle.main.url(forResource: "maia3-\(name)", withExtension: "mlmodelc", subdirectory: "public/native")
@@ -111,6 +191,8 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
             return call.reject("missing model")
         }
         let context = "model=\(name) computeUnits=all"
+        let id = requestId(call)
+        beginRequest(id)
         NativeRuntimeLog.record("load requested \(context)", subsystem: "Maia")
         // Start-position probe from JS: reject a corrupt or incompatible compiled model early.
         let probe = call.getString("probeTokens").flatMap { Data(base64Encoded: $0) }
@@ -119,6 +201,8 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
         NativeRuntimeLog.record("request decoded \(context) request_ms=\(NativeRuntimeLog.elapsed(requested))", subsystem: "Maia")
         let enqueued = NativeRuntimeLog.now()
         queue.async { [self] in
+            defer { finishRequest(id) }
+            if isCancelled(id) { return call.reject("Maia 请求已取消") }
             NativeRuntimeLog.record("load dequeued \(context) queue_wait_ms=\(NativeRuntimeLog.elapsed(enqueued))", subsystem: "Maia")
             if loaded == name, model != nil {
                 NativeRuntimeLog.record("load success reused=true \(context) total_ms=\(NativeRuntimeLog.elapsed(requested))", subsystem: "Maia")
@@ -126,6 +210,7 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
             }
             model = nil
             loaded = nil
+            if isCancelled(id) { return call.reject("Maia 请求已取消") }
             var stage = "model_resource"
             var stageStart = NativeRuntimeLog.now()
             guard let url = modelURL(name) else {
@@ -140,12 +225,14 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
                 stageStart = NativeRuntimeLog.now()
                 NativeRuntimeLog.record("MLModel loading \(context)", subsystem: "Maia")
                 model = try MLModel(contentsOf: url, configuration: config)
+                if isCancelled(id) { model = nil; return call.reject("Maia 请求已取消") }
                 NativeRuntimeLog.record("MLModel success \(context) MLModel_ms=\(NativeRuntimeLog.elapsed(stageStart))", subsystem: "Maia")
                 if let probe, !probeLegal.isEmpty {
                     stage = "first_probe"
                     stageStart = NativeRuntimeLog.now()
                     NativeRuntimeLog.record("first probe predicting \(context)", subsystem: "Maia")
                     let (logits, _) = try run(probe, 1500, 1500)
+                    if isCancelled(id) { model = nil; return call.reject("Maia 请求已取消") }
                     guard plausible(logits, probeLegal, probeTop) else {
                         throw NSError(domain: "maia", code: 4, userInfo: [NSLocalizedDescriptionKey: "CoreML 推理结果异常"])
                     }
@@ -187,10 +274,15 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
         let indices = call.getArray("indices", Int.self) ?? []
         let selfElo = Float(call.getDouble("selfElo") ?? 1500)
         let oppoElo = Float(call.getDouble("oppoElo") ?? 1500)
+        let id = requestId(call)
+        beginRequest(id)
         queue.async { [self] in
+            defer { finishRequest(id) }
+            if isCancelled(id) { return call.reject("Maia 请求已取消") }
             do {
                 let t0 = NativeRuntimeLog.now()
                 let (all, v) = try run(tokens, selfElo, oppoElo)
+                if isCancelled(id) { return call.reject("Maia 请求已取消") }
                 call.resolve(pick(all, v, indices, Double(NativeRuntimeLog.now() - t0) / 1_000_000))
             } catch {
                 call.reject(error.localizedDescription)
@@ -209,12 +301,17 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
             let indices = ((item["indices"] as? [Any]) ?? []).compactMap { num($0).map { Int($0) } }
             jobs.append((tokens, indices, Float(num(item["selfElo"]) ?? 1500), Float(num(item["oppoElo"]) ?? 1500)))
         }
+        let id = requestId(call)
+        beginRequest(id)
         queue.async { [self] in
             do {
+                defer { finishRequest(id) }
                 var results: [[String: Any]] = []
                 for (tokens, indices, selfElo, oppoElo) in jobs {
+                    if isCancelled(id) { return call.reject("Maia 请求已取消") }
                     let t0 = NativeRuntimeLog.now()
                     let (all, v) = try run(tokens, selfElo, oppoElo)
+                    if isCancelled(id) { return call.reject("Maia 请求已取消") }
                     results.append(pick(all, v, indices, Double(NativeRuntimeLog.now() - t0) / 1_000_000))
                 }
                 call.resolve(["results": results])
@@ -222,6 +319,11 @@ public class MaiaNativePlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject(error.localizedDescription)
             }
         }
+    }
+
+    @objc func cancel(_ call: CAPPluginCall) {
+        markCancelled(call.getInt("requestId") ?? 0)
+        call.resolve()
     }
 
     @objc func unload(_ call: CAPPluginCall) {

@@ -995,12 +995,18 @@ html.native.fixed-engines .engine-choice {
 }
 
 .board-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: 0 minmax(0, 1fr);
+  column-gap: 0;
   margin-top: 10px;
 }
+.has-eval .board-wrap {
+  grid-template-columns: 18px minmax(0, 1fr);
+  column-gap: 6px;
+}
 .board-box {
+  grid-column: 2;
+  grid-row: 1;
   width: 100%;
   aspect-ratio: 1;
   position: relative;
@@ -1012,62 +1018,36 @@ html.native.fixed-engines .engine-choice {
   height: 100%;
 }
 .evalbar {
-  width: 100%;
-  height: 18px;
-  flex: none;
-  background: #454545;
-  position: relative;
-  border-radius: 4px;
-  overflow: hidden;
-  display: flex;
-  isolation: isolate;
-}
-.evalbar .fill {
-  width: 50%;
-  flex-shrink: 0;
-  height: 100%;
-  background: #fff;
-  transition: width 0.4s;
-}
-.evalbar span {
-  position: absolute;
-  inset: 0 auto 0 50%;
-  transform: translateX(-50%);
-  padding: 0 6px;
-  color: #fff;
-  mix-blend-mode: difference;
-  font-size: 11px;
-  line-height: 18px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-#game[data-mode='review'] .board-wrap {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  column-gap: 6px;
-}
-#game[data-mode='review'] .board-box {
-  grid-column: 2;
-  grid-row: 1;
-}
-#game[data-mode='review'] .evalbar {
   grid-column: 1;
   grid-row: 1;
   width: 18px;
   height: auto;
   align-self: stretch;
+  background: #454545;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
   flex-direction: column-reverse;
+  isolation: isolate;
 }
-#game[data-mode='review'] .evalbar .fill {
+.evalbar .fill {
   width: 100%;
+  flex-shrink: 0;
   height: var(--white-share, 50%);
+  background: #fff;
   transition: height 0.4s;
 }
-#game[data-mode='review'] .evalbar span {
+.evalbar span {
+  position: absolute;
   inset: 50% 0 auto;
   transform: translateY(-50%);
   padding: 3px 0;
+  color: #fff;
+  mix-blend-mode: difference;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   writing-mode: vertical-rl;
   text-align: center;
 }
@@ -2027,7 +2007,7 @@ dialog input[type='color'] {
     align-self: start;
   }
   /* The board itself stays centered; the left evaluation rail needs a matching right gutter. */
-  #game[data-mode='review'] .board-wrap {
+  #game.has-eval .board-wrap {
     grid-template-columns: 18px minmax(0, 1fr) 18px;
   }
   /* Chessground rounds its container to whole device-pixel squares, below the CSS box width. */

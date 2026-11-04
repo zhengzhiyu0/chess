@@ -2507,7 +2507,7 @@ function renderEvalBar() {
   const white = e?.white ?? 50;
   $('game').classList.toggle('has-eval', mode === 'review' || settings.aidEval);
   const fill = $('evalbar-fill');
-  fill.style.width = mode === 'review' ? '100%' : `${white}%`;
+  fill.style.width = '100%';
   fill.style.setProperty('--white-share', `${white}%`);
   $('evalbar-text').textContent = e?.text ?? '…';
   bar.setAttribute('aria-label', e ? `白方视角评估 ${e.text}` : '正在分析局面');

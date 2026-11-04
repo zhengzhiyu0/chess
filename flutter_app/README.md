@@ -1,5 +1,7 @@
 # maia_coach
 
+> **暂时废弃（2026-11-04）**：按用户决定，`codex/flutter-native` 分支和本目录停止维护、验证与功能同步。当前维护版本为仓库的 `web/`（Web/PWA 与 Capacitor iOS）。仅在用户明确要求恢复时继续 Flutter 迁移。
+
 A new Flutter project.
 
 ## Getting Started

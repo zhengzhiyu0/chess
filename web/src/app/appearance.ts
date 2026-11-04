@@ -54,6 +54,13 @@ export const PIECE_SETS: Record<string, string> = {
   firi: 'Firi',
   governor: 'Governor',
   'kiwen-suwi': 'Kiwen-suwi',
+  freak: '趣味人物（Freak）',
+  livius: 'Livius',
+  meridian: 'Meridian',
+  'meridian-shaded': 'Meridian 渐变',
+  eyes: '大眼睛（Eyes）',
+  papercut: '剪纸（Papercut）',
+  prmi: '猫咪（Prmi）',
 };
 
 const WEBP_PIECES: Record<string, true> = { pirouetti: true, kosal: true, firi: true, governor: true, 'kiwen-suwi': true };

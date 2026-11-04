@@ -1,5 +1,7 @@
 # chess 项目记忆
 
+- 2026-11-04：后续用户要求推送 Git 时，同时使用 `.github/workflows/ios.yml` 构建现有 Web/Capacitor iOS 的 `79m-full` 版本（`native_profile=79m-full`），跟踪 Actions 结果并返回构建链接；不使用 Flutter 工作流。
+- 2026-11-04：用户明确将 `codex/flutter-native` 分支和 `flutter_app/` 标记为暂时废弃。后续功能、修复、资源和验证只维护 `web/`（Web/PWA 与现有 Capacitor iOS），不再同步 Flutter；仅在用户明确要求恢复时继续 Flutter 工作。
 - 语言：中文思考、中文回答（继承 `~/.dsh/AGENTS.md`）。
 - 2026-11：修复兵升变选择框看不见棋子。原因：`web/src/style.css` 末尾 `@layer button-contract` 对所有 `button` 使用 `background: var(--panel2) !important`，覆盖了 `askPromotion()` 内联设置的 `background-image`，按钮只剩底色。改为在按钮内用 `<img>` 渲染棋子（`web/src/main.ts`），样式见 `.promo button img`；同时 `#dlg-promo` 宽度由 `auto` 改为 `fit-content`，避免弹窗被拉伸到整屏宽。
 - 本地验证：`node node_modules/vite/bin/vite.js` 起 dev server，Playwright 走「开始对局 → 菜单 → 导入 FEN `8/P7/8/8/8/8/8/k6K w - - 0 1` → a7-a8」确认四个升变选项图标可见、选后 `a8=Q+` 正常。

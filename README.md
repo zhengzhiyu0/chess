@@ -1,5 +1,9 @@
 # Maia Coach（iOS 原生国际象棋教练 / 离线 PWA）
 
+> 开发状态（2026-11-04）：Flutter 迁移分支 `codex/flutter-native` 与 `flutter_app/` 暂时废弃，停止维护与功能同步。当前维护版本为 `web/`（Web/PWA 与 Capacitor iOS）。
+
+> iOS 构建：推送后使用 GitHub Actions 的 `Build iOS (unsigned IPA)`（`.github/workflows/ios.yml`），配置为 `79m-full`。手动触发默认及 `ios-v*` 标签触发均采用此配置；产物为 `MaiaCoach-ipa-79m-full`。
+
 - **对手**：Maia-3（官方权重导出为 ONNX，可选 5M / 23M / 79M）。仅在首页用吸附固定档位的进度条选择对手，设置里不重复选择难度；输赢和玩家评级不会自动修改难度。产品档位为 600–2600；低于 600 或高于 2600 的模型输入外推不开放。iOS App 使用预编译 CoreML MLProgram 原生推理，网页版使用 `onnxruntime-web`。
 - **教练**：Stockfish 19 完整 NNUE 版，iOS App 使用 C++ 原生多线程，网页版使用 WASM（支持跨源隔离时多线程）；可在设置中切换为小网络的轻量版（秒开、省内存）。
 - **功能**：

@@ -11,7 +11,7 @@ on:
         options:
           - all
           - 79m-full
-        default: all
+        default: 79m-full
   push:
     tags: ['ios-v*']
 
@@ -22,7 +22,7 @@ jobs:
   ios:
     runs-on: macos-26
     env:
-      NATIVE_PROFILE: ${{ inputs.native_profile || 'all' }}
+      NATIVE_PROFILE: ${{ inputs.native_profile || '79m-full' }}
     defaults:
       run:
         working-directory: web

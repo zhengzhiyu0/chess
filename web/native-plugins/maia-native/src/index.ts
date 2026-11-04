@@ -64,7 +64,8 @@ export interface AppStoreNativePlugin {
   remove(opts: { key: string }): Promise<void>;
   writeBatch(opts: { entries: Record<string, string | null> }): Promise<void>;
   saveCheckpoint(opts: { game: unknown }): Promise<void>;
-  loadCheckpoint(): Promise<{ game?: unknown }>;
+  /** Older native builds resolve without data when no checkpoint exists. */
+  loadCheckpoint(): Promise<{ game?: unknown } | void>;
   clear(): Promise<void>;
 }
 

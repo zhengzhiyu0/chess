@@ -51,6 +51,8 @@ jobs:
       - run: npm ci
       - name: Audio regression tests
         run: npm test -- test/sound.test.ts test/native-sound.test.ts test/coach-voice.test.ts
+      - name: Native startup and storage regression tests
+        run: npm test -- test/startup.test.ts test/storage.test.ts
       - run: npm run build:native
         env:
           NATIVE_PROFILE: ${{ env.NATIVE_PROFILE }}

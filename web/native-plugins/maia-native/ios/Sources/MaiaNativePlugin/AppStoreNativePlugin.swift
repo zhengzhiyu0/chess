@@ -192,7 +192,9 @@ public class AppStoreNativePlugin: CAPPlugin, CAPBridgedPlugin {
                 defer { sqlite3_finalize(stmt) }
                 guard sqlite3_prepare_v2(db, "SELECT value FROM game_checkpoint WHERE id=1", -1, &stmt, nil) == SQLITE_OK else { throw NSError(domain: "AppStore", code: 4, userInfo: [NSLocalizedDescriptionKey: errorMessage()]) }
                 let status = sqlite3_step(stmt)
-                if status == SQLITE_DONE { return call.resolve() }
+                // A fresh installation has no checkpoint. Always return an object to JS;
+                // resolve() without data becomes undefined on the Capacitor bridge.
+                if status == SQLITE_DONE { return call.resolve([:]) }
                 guard status == SQLITE_ROW, let raw = sqlite3_column_text(stmt, 0) else { throw NSError(domain: "AppStore", code: 5, userInfo: [NSLocalizedDescriptionKey: errorMessage()]) }
                 let value = String(cString: raw)
                 guard let data = value.data(using: .utf8), let game = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw NSError(domain: "AppStore", code: 6, userInfo: [NSLocalizedDescriptionKey: "invalid game checkpoint"]) }

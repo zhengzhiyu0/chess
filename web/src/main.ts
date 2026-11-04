@@ -19,7 +19,8 @@ import { openingZh } from './coach/opening-zh';
 import { PIECE_NAME, confirmedMotifs, explainMove, hangingSquares as hangingOf, isSacrifice, plainEval, type MoveInsight, type Sides } from './coach/explain';
 import { ELO_MAX, ELO_MIN, FIXED_NATIVE_ENGINES, MAIA_LEVELS, defaultSettings, isIOS, loadSettings, saveSettings, type Settings } from './settings';
 import { assistCount, computeRating, emptyAssists, moveDependence, ratingBreakdown, ratingEvidence, ratingPerformance, type Assists, type MoveEvidence, type PerformanceSample, type RatingInfo } from './game/rating';
-import { bootstrapStorage, cacheStored, flushStorage, onStorageFull, readJson, safeSet, storageFull, storageValue } from './storage';
+import { flushStorage, onStorageFull, readJson, safeSet, storageFull, storageValue } from './storage';
+import { initializeAppStorage, startupFailureMessage } from './app/startup';
 import { addMistakes, loadMistakes, mistakeStats, resetMistakeCache, type Mistake } from './training/mistakes';
 import { loadProgress, resetProgressCache, THEME_LABEL } from './training/puzzles';
 import { themesForTag } from './training/recommend';
@@ -4290,32 +4291,26 @@ function init() {
 }
 
 async function startApp() {
-  await bootstrapStorage();
-  if (isNative) {
-    try {
-      const { AppStoreNative } = await import('maia-native');
-      const checkpoint = await AppStoreNative.loadCheckpoint();
-      const game = sanitizeGame(checkpoint.game);
-      if (game) {
-        const peak = (checkpoint.game as { peak?: unknown }).peak;
-        cacheStored(GAME_KEY, JSON.stringify({ ...game, peak: typeof peak === 'number' && Number.isFinite(peak) ? peak : 0 }));
-      }
-    } catch (error) { console.warn('读取原生对局快照失败', error); throw error; }
-  }
+  await initializeAppStorage(isNative);
   init();
 }
 function showStorageError(error: unknown) {
-  console.error('本地数据库初始化失败', error);
+  console.error('应用启动失败', error);
   const panel = document.createElement('div');
   panel.setAttribute('role', 'alert');
   panel.style.cssText = 'position:fixed;inset:0;z-index:99999;display:grid;place-content:center;gap:20px;padding:32px;background:var(--bg,#202020);color:var(--text,#fff)';
   const message = document.createElement('p');
-  message.textContent = '本地数据库未能打开，现有数据尚未读取。请释放设备空间后重试。';
+  message.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;max-width:600px;max-height:65vh;overflow:auto;user-select:text;-webkit-user-select:text';
+  message.textContent = startupFailureMessage(error);
   const retry = document.createElement('button');
   retry.textContent = '重试打开数据库';
   retry.onclick = () => {
     retry.disabled = true;
-    void startApp().then(() => panel.remove()).catch(err => { console.error(err); retry.disabled = false; });
+    void startApp().then(() => panel.remove()).catch(err => {
+      console.error(err);
+      message.textContent = startupFailureMessage(err);
+      retry.disabled = false;
+    });
   };
   panel.append(message, retry);
   document.body.append(panel);

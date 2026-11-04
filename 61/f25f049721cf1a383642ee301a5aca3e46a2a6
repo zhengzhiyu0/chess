@@ -1,0 +1,24 @@
+web/src/style.css
+  s_06844850515ada::t_5dd8d5645fc69e 998,1004-1006,1008-1009,1021-1025,1031,1035,1037,1039,1043-1045
+  s_06844850515ada::t_29bb4c4df2213c 999-1000,1003,2010
+web/src/main.ts
+  s_06844850515ada::t_ee3f9d1023dda4 2510
+web/index.html
+  s_06844850515ada::t_ee3f9d1023dda4 443
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61f25f049721cf1a383642ee301a5aca3e46a2a6",
+  "prompts": {},
+  "sessions": {
+    "s_06844850515ada": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a3ed-9b03-7013-8a55-1c247fe21035",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

@@ -1,0 +1,43 @@
+web/src/game/history.ts
+  s_9ea475e21de691::t_51a60c4e11e49f 7,52-55,269-272
+  s_9ea475e21de691::t_4bb55485d0aa64 141
+web/test/analysis-state.test.ts
+  s_9ea475e21de691::t_f757be097fce01 1-39
+web/index.html
+  s_9ea475e21de691::t_4bb55485d0aa64 206
+web/scripts/rating-review-browser-check.mjs
+  s_9ea475e21de691::t_57d002de9b152e 1-8,10-22,24,26-34,36-49,51-61,82-83
+  s_9ea475e21de691::t_904e65522df069 23,25,35,62-68,72-81
+  s_9ea475e21de691::t_966a9d8acef93a 9,50
+  s_9ea475e21de691::t_14a7a023de8933 69-71
+  s_9ea475e21de691::t_5964c996babf97 84
+web/src/game/analysis-state.ts
+  s_9ea475e21de691::t_51a60c4e11e49f 1-59
+web/src/main.ts
+  s_9ea475e21de691::t_10706f1b2e679a 1359-1362
+  s_9ea475e21de691::t_51a60c4e11e49f 24,177-178,322-324,373-375,408-409,900-901,911,936-937,967-968,979-981,1085-1086,1439
+  s_9ea475e21de691::t_4bb55485d0aa64 179-180,406,887-888,912,914-915,948,954-966,1356,1371,1536,1836-1839,2319,2664-2667,2677-2681,2683,2691-2697
+  s_9ea475e21de691::t_d9959f06ae59df 181,913,1349,3072-3073,3083
+  s_9ea475e21de691::t_4793c10dd0f737 896,903-904,939,3219-3220
+  s_9ea475e21de691::t_b163b8e377391c 977,1597-1598
+.github/workflows/ios.yml
+  s_9ea475e21de691::t_4793c10dd0f737 55
+web/test/rating-storage.test.ts
+  s_9ea475e21de691::t_4793c10dd0f737 4,35-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c089bb7046f1b4f635ddb4051500bc50c3378fd7",
+  "prompts": {},
+  "sessions": {
+    "s_9ea475e21de691": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a3fe-5286-7d91-ad95-b0170ad66f3f",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

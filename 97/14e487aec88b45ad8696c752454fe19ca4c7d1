@@ -1,0 +1,26 @@
+web/index.html
+  s_6163c8a881dede::t_d0a9b3dbdef095 36-55,59,76,79-80
+web/src/style.css
+  s_6163c8a881dede::t_f1f31812a1b82a 3055,3065,3071-3073,3076,3082-3084
+  s_6163c8a881dede::t_d0a9b3dbdef095 399-406,408-421,3085,3154-3156,3159-3163,3216-3218
+  s_6163c8a881dede::t_2a576a5d17a984 407,422
+  s_6163c8a881dede::t_e9c0a41e2628fc 355
+web/src/main.ts
+  s_6163c8a881dede::t_d0a9b3dbdef095 3730-3733
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9714e487aec88b45ad8696c752454fe19ca4c7d1",
+  "prompts": {},
+  "sessions": {
+    "s_6163c8a881dede": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a944-a1b2-7312-b904-bcc6831d3867",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

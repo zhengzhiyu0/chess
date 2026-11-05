@@ -15,29 +15,40 @@ function save(set, color, role, svg) {
   mkdirSync(directory, { recursive: true });
   writeFileSync(join(directory, `${color}${role}.svg`), svg);
 }
-for (const color of ['w', 'b']) for (const [role, name] of Object.entries(roles)) {
-  for (const shadow of [false, true]) {
-    const source = join(johnPablok, shadow ? 'SVG with shadow' : 'SVG No shadow', `${color}_${name}_svg_${shadow ? 'withShadow' : 'NoShadow'}.svg`);
-    let svg = readFileSync(source, 'utf8');
-    const [, , width, height] = svg.match(/viewBox="([^"]+)"/)[1].split(/\s+/).map(Number);
-    // Upstream exports crop each piece independently. Keep the original relative sizes,
-    // align their bases, and leave space for the optional embedded PNG drop shadow.
-    svg = svg.replace(/viewBox="[^"]+"/, `viewBox="${-(450 - width) / 2} ${-(420 - height)} 450 450"`);
-    save(shadow ? 'cburnett-v2-shadow' : 'cburnett-v2', color, role, svg);
-  }
-  for (const [set, directory] of [['kaneo', 'chess_kaneo'], ['kaneo-midnight', 'chess_kaneo_midnight']]) {
-    let svg = readFileSync(join(sourceDir, 'kadagaden/chess-pieces-master', directory, `${color}${role}.svg`), 'utf8');
-    svg = svg.replace(/\s(?:width|height)="[^"]*"/g, '');
-    save(set, color, role, svg);
-  }
-  save('sashite', color, role, readFileSync(join(sourceDir, 'sashite', `${color}${role}.svg`), 'utf8'));
-}
-
-// DG-RA is an SVG sheet with a background group and twelve independent piece groups.
-// Extract only each piece, retaining its local paths/colors, with a shared square viewBox.
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 try {
   const page = await browser.newPage();
+  for (const color of ['w', 'b']) for (const [role, name] of Object.entries(roles)) {
+    for (const shadow of [false, true]) {
+      const source = join(johnPablok, shadow ? 'SVG with shadow' : 'SVG No shadow', `${color}_${name}_svg_${shadow ? 'withShadow' : 'NoShadow'}.svg`);
+      let svg = readFileSync(source, 'utf8');
+      const [, , width, height] = svg.match(/viewBox="([^"]+)"/)[1].split(/\s+/).map(Number);
+      let viewBox = `${-(450 - width) / 2} ${-(420 - height)} 450 450`;
+      if (shadow) {
+        // The embedded shadow adds asymmetric padding to the upstream canvas. Align
+        // the vector piece itself, keeping its scale and room for the king's cross.
+        await page.setContent(svg);
+        const bounds = await page.evaluate(() => {
+          const root = document.querySelector('svg');
+          root.querySelectorAll('image').forEach(image => image.remove());
+          const { x, y, width, height } = root.getBBox();
+          return { x, y, width, height };
+        });
+        viewBox = `${bounds.x + bounds.width / 2 - 225} ${bounds.y + bounds.height - 400} 450 450`;
+      }
+      svg = svg.replace(/viewBox="[^"]+"/, `viewBox="${viewBox}"`);
+      save(shadow ? 'cburnett-v2-shadow' : 'cburnett-v2', color, role, svg);
+    }
+    for (const [set, directory] of [['kaneo', 'chess_kaneo'], ['kaneo-midnight', 'chess_kaneo_midnight']]) {
+      let svg = readFileSync(join(sourceDir, 'kadagaden/chess-pieces-master', directory, `${color}${role}.svg`), 'utf8');
+      svg = svg.replace(/\s(?:width|height)="[^"]*"/g, '');
+      save(set, color, role, svg);
+    }
+    save('sashite', color, role, readFileSync(join(sourceDir, 'sashite', `${color}${role}.svg`), 'utf8'));
+  }
+
+  // DG-RA is an SVG sheet with a background group and twelve independent piece groups.
+  // Extract only each piece, retaining its local paths/colors, with a shared square viewBox.
   await page.setContent(readFileSync(join(sourceDir, 'dg-ra.svg'), 'utf8'));
   const ids = {
     wK: 'g10-37', wQ: 'g10-0', wR: 'g10-7', wB: 'g10-84', wN: 'g10-73', wP: 'g10-8',

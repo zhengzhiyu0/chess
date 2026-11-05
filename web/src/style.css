@@ -1862,7 +1862,7 @@ dialog.sheet[open] {
 .appearance-card:hover, .appearance-card[aria-pressed='true'] { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
 .appearance-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .board-choice-preview { display: block; aspect-ratio: 1; border-radius: 7px; background-position: center; background-repeat: repeat; }
-.piece-choice-preview { display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; min-height: 64px; padding: 4px; border-radius: 7px; background: linear-gradient(135deg, #e7e3dc 50%, #8b8a87 50%); }
+.piece-choice-preview { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; min-height: 64px; padding: 4px; border-radius: 7px; background: linear-gradient(135deg, #e7e3dc 50%, #8b8a87 50%); }
 .piece-choice-preview img { width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
 .sound-options { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; }
 .sound-choice { min-height: 92px; justify-content: center; }

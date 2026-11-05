@@ -273,13 +273,13 @@ const currentLine = () => tree.lineThrough(node);
 const gameLine = () => tree.lineThrough(realOf(node));
 const arrow = (u: string, brush: string): DrawShape => ({ orig: u.slice(0, 2) as Key, dest: u.slice(2, 4) as Key, brush });
 const boardOrientation = (): 'white' | 'black' => (userColor === 'w') !== flipped ? 'white' : 'black';
-const arrowWithOutline = (u: string, brush: keyof typeof BRUSHES | 'green' | 'blue' | 'red' | 'yellow'): DrawShape => {
+const arrowWithOutline = (u: string, brush: keyof typeof BRUSHES | 'green' | 'blue' | 'red' | 'yellow', fen = node.fen): DrawShape => {
   if (!settings.aidArrowOutline) return arrow(u, brush);
   const b = brush === 'green' ? { color: '#5fa83f', opacity: 0.85, lineWidth: 7 } :
     brush === 'blue' ? { color: '#3b82d6', opacity: 0.8, lineWidth: 5 } :
     brush === 'red' ? { color: '#e8402f', opacity: 0.75, lineWidth: 10 } :
     brush === 'yellow' ? { color: '#d9a43a', opacity: 0.75, lineWidth: 6 } : BRUSHES[brush];
-  return outlinedArrow(u, boardOrientation(), b.color, b.opacity, brush, b.lineWidth);
+  return outlinedArrow(u, boardOrientation(), b.color, b.opacity, brush, b.lineWidth, new Chess(fen).get(u.slice(0, 2) as Square)?.type === 'n');
 };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -508,7 +508,7 @@ function arrows(): DrawShape[] {
       if (a.kind === 'best' || a.kind === 'threat') {
         const from = new Chess(a.fen ?? node.fen).get(a.uci.slice(0, 2) as Square);
         shapes.push(coachArrow(a.uci, from?.type === 'n', orientation, a.kind, settings.aidArrowOutline));
-      } else shapes.push(arrowWithOutline(a.uci, a.kind));
+      } else shapes.push(arrowWithOutline(a.uci, a.kind, a.kind === 'should' ? node.parent!.fen : node.fen));
     }
   }
   if (node.uci && badgeOn() && (mode === 'play' || showMove(node))) {
@@ -554,7 +554,7 @@ function renderBoard() {
       movable: { color: undefined, dests: new Map() },
       premovable: { enabled: false },
     });
-    cg.setAutoShapes(next ? [arrowWithOutline(next, 'demo')] : []);
+    cg.setAutoShapes(next ? [arrowWithOutline(next, 'demo', df)] : []);
     return;
   }
   const c = chessOf(node);
@@ -3408,6 +3408,7 @@ const trainerCtx: TrainerCtx = {
   show: () => showScreen('train'),
   close: () => showScreen('home'),
   elo: () => settings.playerElo,
+  arrowOutline: () => settings.aidArrowOutline,
   askPromotion,
 };
 

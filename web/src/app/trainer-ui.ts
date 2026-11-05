@@ -1,8 +1,9 @@
 // Training screen shared by puzzles and the mistake notebook: solve a position move by move.
-import { Chess } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
 import { Chessground } from '@lichess-org/chessground';
 import type { Api } from '@lichess-org/chessground/api';
 import type { Key } from '@lichess-org/chessground/types';
+import { ARROW_COLORS, outlinedArrow } from './coach-arrow';
 import { sanOf, toMove, turnOf, type Color } from '../game/rules';
 import { play, soundForSan, unlockAudio } from '../audio/sound';
 import { $, escapeHtml } from './dom';
@@ -36,6 +37,7 @@ export interface TrainerCtx {
   show(): void;
   /** the player's game rating */
   elo(): number;
+  arrowOutline(): boolean;
   /** promotion piece picker (q / r / b / n); without it pawns always become queens */
   askPromotion?(color: Color): Promise<string>;
 }
@@ -83,7 +85,11 @@ function render(last?: string, shapes: { orig: Key; dest?: Key; brush: string }[
     lastMove: last ? [last.slice(0, 2) as Key, last.slice(2, 4) as Key] : undefined,
     movable: { color: canMove ? turn : undefined, dests: canMove ? dests(c) : new Map() },
   });
-  board().setAutoShapes(shapes);
+  board().setAutoShapes(shapes.map(shape => {
+    if (!ctx.arrowOutline() || !shape.dest) return shape;
+    const color = ARROW_COLORS[shape.brush as keyof typeof ARROW_COLORS] ?? ARROW_COLORS.green;
+    return outlinedArrow(shape.orig + shape.dest, mine === 'w' ? 'white' : 'black', color, 1, shape.brush, 7, c.get(shape.orig as Square)?.type === 'n');
+  }));
 }
 
 function info(html: string, cls = '') {

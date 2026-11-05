@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coachArrow, coachArrowPoints } from '../src/app/coach-arrow';
+import { coachArrow, coachArrowPoints, outlinedArrow } from '../src/app/coach-arrow';
 
 const knightMoves = [
   ['d4e6', 100, -200],
@@ -74,5 +74,50 @@ describe('coach custom SVG', () => {
     expect(html).toContain('fill="#5fa83f" opacity="0.85"');
     expect(html).toContain('d="M50,50 L50,-123"');
     expect(html).not.toMatch(/<animate|<animateTransform|\bstyle=|\bmarker-/);
+  });
+});
+
+describe('slim outlined arrows', () => {
+  it.each([
+    ['green', '#5fa83f', '#8ed438'],
+    ['human', '#3b82d6', '#54afff'],
+    ['threat', '#e8402f', '#ff5058'],
+    ['should', '#d9a43a', '#ffd522'],
+    ['demo', '#8a5cd6', '#b18aff'],
+  ])('%s uses the same route and widths with its own color', (brush, color, ink) => {
+    const html = outlinedArrow('e2e4', 'white', color, 0.5, brush, 10).customSvg!.html;
+    expect(html).toContain('stroke="#15232c" stroke-width="12"');
+    expect(html).toContain(`stroke="${ink}" stroke-width="4.5"`);
+    expect(html).toContain('fill="none" opacity="1"');
+    expect(html).toContain('d="M50,10 L50,-150 M62,-137 L50,-150 L38,-137"');
+  });
+  it('draws the yellow route to the target with an open chevron and rounded casing', () => {
+    const html = outlinedArrow('h5e5', 'white', '#d9a43a', 0.75, 'should', 6).customSvg!.html;
+    expect(html).toContain('fill="none" opacity="1"');
+    expect(html).toContain('stroke-linecap="round" stroke-linejoin="round"');
+    expect(html).toContain('d="M10,50 L-250,50 M-237,38 L-250,50 L-237,62"');
+    expect(html).toContain('stroke="#15232c" stroke-width="12"');
+    expect(html).toContain('stroke="#ffd522" stroke-width="4.5"');
+    expect(html.match(/<path /g)).toHaveLength(2);
+    expect(html).not.toContain(' Z');
+  });
+
+  it('keeps the red knight route bent, starts at the piece edge and ends at the square center', () => {
+    const html = coachArrow('f6h5', true, 'white', 'threat', true).customSvg!.html;
+    expect(html).toContain('d="M50,90 L50,150 L250,150 M237,162 L250,150 L237,138"');
+    expect(html).toContain('stroke="#ff5058"');
+  });
+
+  it.each(knightMoves)('flips the complete outlined route for %s', (uci) => {
+    const white = outlinedArrow(uci, 'white', '#3b82d6', 0.8, 'human', 5, true).customSvg!.html;
+    const black = outlinedArrow(uci, 'black', '#3b82d6', 0.8, 'human', 5, true).customSvg!.html;
+    const coords = (svg: string) => [...svg.matchAll(/[ML](-?[\d.]+),(-?[\d.]+)/g)].map(m => [Number(m[1]), Number(m[2])]);
+    expect(coords(black)).toEqual(coords(white).map(([x, y]) => [100 - x, 100 - y]));
+  });
+
+  it('retains a visible shaft for a one-square move', () => {
+    const html = outlinedArrow('e7e8q', 'white', '#5fa83f', 0.85, 'best', 7).customSvg!.html;
+    expect(html).toContain('M50,10 L50,-50');
+    expect(html).not.toMatch(/NaN|Infinity/);
   });
 });

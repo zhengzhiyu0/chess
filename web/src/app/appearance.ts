@@ -35,6 +35,19 @@ export const BOARD_THEMES: Record<string, BoardTheme> = {
   horsey: { label: '马头', light: '#f0d9b5', dark: '#b58863', image: 'horsey.jpg' },
   coral: { label: '珊瑚', light: '#f3dcd2', dark: '#c0705c' },
   night: { label: '夜间', light: '#8a93a3', dark: '#4b5466' },
+  duoSlate: { label: '深蓝灰（多邻国风格）', light: '#23343c', dark: '#141e24', image: 'duo-slate.svg' },
+  lightWood: { label: '浅橡木', light: '#ddc6a3', dark: '#a76934', image: 'staunton-light-wood.webp' },
+  rosewood: { label: '玫瑰木', light: '#fbe8e1', dark: '#c57461', image: 'staunton-rosewood.webp' },
+  jade: { label: '翡翠玉石', light: '#9a9490', dark: '#194431', image: 'staunton-jade.webp' },
+  porcelainBlue: { label: '青花瓷蓝', light: '#ebe5cf', dark: '#0155b8', image: 'staunton-china-blue.webp' },
+  porcelainGreen: { label: '青瓷绿', light: '#ece5d0', dark: '#60a567', image: 'staunton-china-green.webp' },
+  porcelainRed: { label: '朱砂瓷红', light: '#ebe5cf', dark: '#aa2d2c', image: 'staunton-china-scarlet.webp' },
+  porcelainYellow: { label: '琉璃黄', light: '#ebe4cf', dark: '#d5cb38', image: 'staunton-china-yellow.webp' },
+  brushedAluminium: { label: '拉丝铝', light: '#5c5f63', dark: '#44494d', image: 'staunton-brushed-aluminium.webp' },
+  goldSilver: { label: '金银', light: '#c3c7ca', dark: '#53461f', image: 'staunton-gold-silver.webp' },
+  woodGlass: { label: '木纹玻璃', light: '#e2e5ee', dark: '#e8bf8e', image: 'staunton-wood-glass.webp' },
+  wax: { label: '红蜡', light: '#e1b793', dark: '#d86770', image: 'staunton-wax.webp' },
+  greenGlass: { label: '浅绿玻璃', light: '#fdffff', dark: '#adffad', image: 'staunton-green-glass.webp' },
 };
 
 export const PIECE_SETS: Record<string, string> = {
@@ -61,6 +74,8 @@ export const PIECE_SETS: Record<string, string> = {
   eyes: '大眼睛（Eyes）',
   papercut: '剪纸（Papercut）',
   prmi: '猫咪（Prmi）',
+  totoy: 'Totoy',
+  rounded: '圆润蓝灰（重绘）',
 };
 
 const WEBP_PIECES: Record<string, true> = { pirouetti: true, kosal: true, firi: true, governor: true, 'kiwen-suwi': true };

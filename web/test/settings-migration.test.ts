@@ -64,6 +64,18 @@ describe('settings engine migration (iOS app)', () => {
 
 describe('settings whitelist', () => {
   beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
+  it('keeps interface style independent of light and dark mode across restore', () => {
+    for (const uiStyle of ['classic', 'duolingo'] as const) {
+      for (const theme of ['dark', 'light'] as const) {
+        const s = sanitizeSettings({ uiStyle, theme });
+        expect(s).toMatchObject({ uiStyle, theme });
+        saveSettings(s);
+        expect(loadSettings()).toMatchObject({ uiStyle, theme });
+      }
+    }
+    expect(sanitizeSettings({ uiStyle: 'unknown' }).uiStyle).toBe('classic');
+    expect(sanitizeSettings({ theme: 'light' })).toMatchObject({ uiStyle: 'classic', theme: 'light' });
+  });
   it('replaces removed synth themes with recordings, including imported settings', () => {
     const themes = { wood: 'wood', felt: 'felt', plastic: 'glass', marble: 'glass', pop: 'felt', sfx: 'board', piano: 'board', nes: 'board', futuristic: 'board', retro: 'board' };
     for (const [before, after] of Object.entries(themes)) {

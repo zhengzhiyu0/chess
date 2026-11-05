@@ -41,8 +41,10 @@
                 <span>Maia</span>
                 <b id="home-elo-val"></b>
               </div>
-              <input type="range" id="home-elo" min="0" step="1" aria-label="Maia 难度" />
-              <div id="home-elo-ticks" class="elo-ticks" aria-hidden="true"></div>
+              <div class="elo-slider" id="home-elo-slider">
+                <div id="home-elo-ticks" class="elo-ticks" aria-hidden="true"></div>
+                <input type="range" id="home-elo" min="0" step="1" aria-label="Maia 难度" />
+              </div>
               <div class="seg" id="home-color" role="group" aria-label="选择执色">
                 <button data-color="w"><span class="color-dot color-dot-white" aria-hidden="true"></span>执白</button>
                 <button data-color="random"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m17 3 4 4-4 4M3 17h3c5 0 7-10 12-10h3M17 13l4 4-4 4M3 7h3c2 0 3 1 4 3m4 4c1 2 2 3 4 3h3" /></svg>随机</button>
@@ -245,6 +247,16 @@
           <button class="icon theme-toggle" type="button" title="切换浅色模式" aria-label="切换浅色模式"></button>
         </header>
         <main class="appearance-main">
+          <section class="appearance-section">
+            <div class="appearance-heading"><div><span class="home-kicker">界面</span><h2>界面风格</h2><p>风格与深浅模式独立选择，立即保存。</p></div></div>
+            <div class="ui-style-grid" role="group" aria-label="界面风格">
+              <button type="button" class="ui-style-choice" data-ui-style="classic" aria-pressed="false"><span class="ui-style-preview preview-classic" aria-hidden="true"><i></i><i></i><i></i></span><strong>经典</strong><small>简洁专注</small></button>
+              <button type="button" class="ui-style-choice" data-ui-style="duolingo" aria-pressed="false"><span class="ui-style-preview preview-duolingo" aria-hidden="true"><i></i><i></i><i></i></span><strong>多邻国</strong><small>青绿、描边与轻底边</small></button>
+            </div>
+            <div class="ui-color-modes" role="group" aria-label="深浅模式">
+              <span>深浅模式</span><button type="button" data-color-mode="light" aria-pressed="false">浅色</button><button type="button" data-color-mode="dark" aria-pressed="false">深色</button>
+            </div>
+          </section>
           <section class="appearance-section">
             <div class="appearance-heading"><div><span class="home-kicker">棋盘</span><h2>选择棋盘</h2><p>每一项都可以直接预览，点击后立即应用。</p></div><span class="appearance-current" id="appearance-board-current"></span></div>
             <div class="appearance-grid board-choice-grid" id="appearance-boards"></div>

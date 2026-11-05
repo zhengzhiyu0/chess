@@ -38,6 +38,7 @@ import { dragHaptics, installTapHaptics } from './audio/haptics';
 import { SOUND_THEMES, configureSound, play, previewTheme, soundForSan, unlockAudio, type EndKind } from './audio/sound';
 import { $, escapeHtml, setStatus } from './app/dom';
 import { BOARD_THEMES, PIECE_SETS, applyAppearance, boardImageSize, boardPreview, pieceUrl } from './app/appearance';
+import { themeColor } from './app/theme';
 import { Engines } from './app/engines';
 import { autoOffline, openEngines, type EnginesCtx } from './app/engines-ui';
 import { AVATAR_PRESETS, avatarHtml, coachAvatarHtml } from './app/avatar';
@@ -194,9 +195,10 @@ function applyTheme(theme: Settings['theme']) {
   const isLight = theme === 'light';
   const root = document.documentElement;
   root.dataset.theme = theme;
+  root.dataset.uiStyle = settings.uiStyle;
   root.style.colorScheme = theme;
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  if (meta) meta.content = isLight ? '#f5f6f7' : '#262421';
+  if (meta) meta.content = themeColor(theme, settings.uiStyle);
   document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach((button) => {
     button.innerHTML = isLight
       ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2m0 14v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M3 12h2m14 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" /></svg>'
@@ -204,6 +206,12 @@ function applyTheme(theme: Settings['theme']) {
     const label = isLight ? '切换深色模式' : '切换浅色模式';
     button.title = label;
     button.ariaLabel = label;
+  });
+  document.querySelectorAll<HTMLButtonElement>('button[data-ui-style]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.uiStyle === settings.uiStyle));
+  });
+  document.querySelectorAll<HTMLButtonElement>('button[data-color-mode]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.colorMode === theme));
   });
 }
 
@@ -3456,6 +3464,9 @@ function renderProfileRating() {
 function renderHome() {
   const elo = $<HTMLInputElement>('home-elo');
   elo.value = String(Math.max(0, MAIA_LEVELS.findIndex(level => level === settings.elo)));
+  const levelIndex = Number(elo.value);
+  $('home-elo-slider').style.setProperty('--elo-progress', `${levelIndex / (MAIA_LEVELS.length - 1) * 100}%`);
+  $('home-elo-ticks').querySelectorAll('span').forEach((tick, index) => tick.classList.toggle('passed', index <= levelIndex));
   const levelLabel = `Maia ${settings.elo}`;
   elo.setAttribute('aria-valuetext', levelLabel);
   $('home-elo-val').textContent = String(settings.elo);
@@ -3640,6 +3651,12 @@ function leaveBackground() {
 }
 
 function bind() {
+  document.querySelectorAll<HTMLButtonElement>('button[data-ui-style]').forEach((button) => {
+    button.onclick = () => saveAppearance({ uiStyle: button.dataset.uiStyle as Settings['uiStyle'] });
+  });
+  document.querySelectorAll<HTMLButtonElement>('button[data-color-mode]').forEach((button) => {
+    button.onclick = () => saveAppearance({ theme: button.dataset.colorMode as Settings['theme'] });
+  });
   document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach((button) => {
     button.onclick = toggleTheme;
   });

@@ -1,0 +1,313 @@
+web/public/pieces/prmi/wQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,346,354,356,364,369,371,379,381,389,391,396,401,406,412,418,423,427,430,434,439,444,452,454,462,467,472,477,479,484,490,506,510,526,532,537,539,546,550
+web/scripts/build-rounded-pieces.mjs
+  s_9b661f64446eea::t_779ed5036294ad 66-68
+  s_9b661f64446eea::t_e3dd249a71407f 60
+  s_9b661f64446eea::t_0c3d25b5568494 56
+  s_9b661f64446eea::t_ed474113f96c97 1,3,13-18,22,33-42,45-49,54,58-59,87
+  s_9b661f64446eea::t_c180900168f2c8 57
+  s_9b661f64446eea::t_c7fa612513dacd 65,69,72-80
+  s_9b661f64446eea::t_3b558e2eb5bd68 91
+  s_9b661f64446eea::t_68cfbf345de695 51,53,55,63
+  s_9b661f64446eea::t_18b008fd5409db 2,4-12,19-21,23-32,43-44,50,62,64,70-71,81-86,88-90
+  s_9b661f64446eea::t_307cea80f04b0d 52,61
+web/src/app/trainer-ui.ts
+  s_9b661f64446eea::t_a6f1eba4affb42 6,40,88-90,92
+  s_9b661f64446eea::t_04fa99904a9193 2,91
+web/public/pieces/totoy/bQ.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/eyes/bP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,28,32,147,151,160,172,175,181,190
+web/public/pieces/meridian/bB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/freak/wR.svg
+  s_9b661f64446eea::t_bba5f10d56ebda 3
+  s_9b661f64446eea::t_bb4f7982e41c17 12-13,284,293,296,304,306,318,323,325,330,340,356,359,364,369,374,378
+web/public/pieces/eyes/wR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,146,178,182,191,196
+  s_9b661f64446eea::t_acf70470b78b08 151,158,161,166
+web/public/pieces/eyes/wQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,162,167,173,189,192,198,207,219,223,239
+web/public/pieces/papercut/wR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/public/pieces/meridian-shaded/wB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/papercut/bB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/public/pieces/totoy/bR.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/eyes/wK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,144,160,164,180,183,195,198,203
+web/public/pieces/freak/bB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,247,256,261,266,271,275,279
+  s_9b661f64446eea::t_bba5f10d56ebda 28,39,61,72,76
+web/src/app/appearance.ts
+  s_9b661f64446eea::t_015b72a9ed8f51 39-50
+  s_9b661f64446eea::t_aa29cc23857159 38,77
+  s_9b661f64446eea::t_dcad7d94e7dd5b 78
+web/public/pieces/livius/bQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/totoy/bK.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/meridian/bR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/meridian/bP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/meridian-shaded/bP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/freak/wN.svg
+  s_9b661f64446eea::t_bba5f10d56ebda 3
+  s_9b661f64446eea::t_bb4f7982e41c17 12-13,189,194,199,204,209,214,219,223,228,233,238,243,248,253
+web/public/pieces/totoy/bB.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/papercut/wB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/public/pieces/totoy/wP.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/freak/bQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 12-13,157,162,166,170,175,180,185,189,194,201,206,215,220,225,230,235,240,242,250,252,257,263,272,276,281,286,291,299,301
+  s_9b661f64446eea::t_bba5f10d56ebda 3,43
+web/index.html
+  s_9b661f64446eea::t_d40aba71038180 255
+  s_9b661f64446eea::t_9d8c0583287ca1 351-352
+web/public/pieces/meridian-shaded/bQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/papercut/wQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/public/pieces/totoy/bN.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/freak/wB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,247,256,261,266,271,275,279
+web/public/pieces/livius/wR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/prmi/bR.svg
+  s_9b661f64446eea::t_015b72a9ed8f51 32,39,43,137,142,147,151,155
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13
+web/public/pieces/rounded/wB.svg
+  s_9b661f64446eea::t_e06d00383ab064 1
+web/public/pieces/livius/bN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/rounded/bB.svg
+  s_9b661f64446eea::t_e06d00383ab064 1
+web/src/main.ts
+  s_9b661f64446eea::t_9d8c0583287ca1 276,282,511,557
+  s_9b661f64446eea::t_a6f1eba4affb42 3411
+web/public/pieces/meridian-shaded/bB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/rounded/bK.svg
+  s_9b661f64446eea::t_4cc63ade2698c2 1
+web/public/pieces/rounded/bQ.svg
+  s_9b661f64446eea::t_99ad37ecb1460f 1
+web/public/pieces/eyes/bR.svg
+  s_9b661f64446eea::t_acf70470b78b08 151,158,161,166
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,28,32,146,178,182,191,196
+web/public/pieces/eyes/wN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,115,120,126
+web/public/pieces/rounded/bP.svg
+  s_9b661f64446eea::t_63f9edf4bd699e 1
+web/public/pieces/rounded/bR.svg
+  s_9b661f64446eea::t_b4882b0aa207a2 1
+web/public/pieces/prmi/wR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,137,142,147,151,155
+web/public/pieces/rounded/bN.svg
+  s_9b661f64446eea::t_b4882b0aa207a2 1
+web/public/pieces/livius/wN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/licenses/piece-additions/README.md
+  s_9b661f64446eea::t_aa29cc23857159 19,27-29,42-46
+  s_9b661f64446eea::t_6d4a254c89ed24 36
+  s_9b661f64446eea::t_9e8ab56102fa25 57
+  s_9b661f64446eea::t_2c7b73d4222c3e 7
+  s_9b661f64446eea::t_779ed5036294ad 35
+  s_9b661f64446eea::t_d40aba71038180 5-6,8,26,47-56,58
+  s_9b661f64446eea::t_dcad7d94e7dd5b 30-34,40-41
+  s_9b661f64446eea::t_3b558e2eb5bd68 37-39
+web/public/pieces/eyes/bK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,37,41,144,160,164,180,183,195,198,203
+web/public/pieces/freak/wK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 12-13,242,251,255,259,263,267,272,277,281,285,290,294,298,302,306,310,314,318,322,326,330,334,338,342,346,350,354,358,362,366,370,374,378,382,386,390,394,398,403,407,411,415,419,424,428,432,436,440,444,448,452,456,460,464,468,472,476,480,484,488,492,496,500,504,508,512,516,520,524,528,532,536,540,544,548,552,556,560,564,568,572,576,580,584,588,592,596,600,604,608,612,616,620,624,628,632,636,641,648,651,656,661,665,670,674
+  s_9b661f64446eea::t_bba5f10d56ebda 3
+web/public/pieces/eyes/wB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,156,161,167,183,189,194,196,201,205
+web/public/pieces/livius/bP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/prmi/wK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,358,366,368,376,381,383,391,393,401,403,408,413,418,424,430,435,439,442,446,451,456,464,466,474,479,484,489,491,499,502,511,519,524,526,533,537,541
+web/public/pieces/livius/bR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/meridian-shaded/bR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/livius/bK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/meridian-shaded/bN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/papercut/bQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/test/appearance.test.ts
+  s_9b661f64446eea::t_9e8ab56102fa25 3,23-27,34-47
+  s_d737c7ff1d1ae5::t_95dc05c3101585 48-50
+web/public/pieces/meridian-shaded/wN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/meridian-shaded/bK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/eyes/bB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,28,32,156,161,167,183,189,194,196,201,205
+web/public/pieces/freak/wP.svg
+  s_9b661f64446eea::t_bba5f10d56ebda 3
+  s_9b661f64446eea::t_bb4f7982e41c17 12-13,386,392,401,406,411,416,421,426,430,434,440
+web/public/pieces/freak/bN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 12-13,189,194,199,204,209,214,219,223,228,233,238,243,248,253
+  s_9b661f64446eea::t_bba5f10d56ebda 3,49,60,73,82,86
+web/src/app/coach-arrow.ts
+  s_9b661f64446eea::t_9d8c0583287ca1 26,36-37,39-60,70-72
+  s_9b661f64446eea::t_a6f1eba4affb42 7-10
+web/public/pieces/papercut/bR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/public/pieces/freak/bK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 12-13,242,251,255,259,263,267,272,277,281,285,290,294,298,302,306,310,314,318,322,326,330,334,338,342,346,350,354,358,362,366,370,374,378,382,386,390,394,398,403,407,411,415,419,424,428,432,436,440,444,448,452,456,460,464,468,472,476,480,484,488,492,496,500,504,508,512,516,520,524,528,532,536,540,544,548,552,556,560,564,568,572,576,580,584,588,592,596,600,604,608,612,616,620,624,628,632,636,641,648,651,656,661,665,670,674
+  s_9b661f64446eea::t_bba5f10d56ebda 3,50,54
+web/public/pieces/livius/wB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/prmi/bK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,359,367,404,409,415,421,426,430,433,437,480,482,517,524,528
+  s_9b661f64446eea::t_015b72a9ed8f51 53,222,226,243,247,349,357,372,374,382,384,392,394,399,442,447,455,457,465,470,475,490,493,502,510,515,532
+web/public/pieces/eyes/bN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,28,32,115,120,126
+web/public/pieces/rounded/wK.svg
+  s_9b661f64446eea::t_4cc63ade2698c2 1
+web/public/pieces/totoy/wK.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/test/coach-arrow.test.ts
+  s_9b661f64446eea::t_a87a9a1512cd79 2,79-80,94-122
+  s_9b661f64446eea::t_a6f1eba4affb42 81-93
+  s_9b661f64446eea::t_3405dddb559452 123
+web/public/pieces/prmi/wB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,340,348,350,358,363,365,373,375,383,385,390,395,400,406,412,417,421,424,428,433,438,446,448,456,461,466,471,473,481,486,491,493,501,503,508,512,519,523
+web/public/pieces/prmi/wN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,479,487,489,494,502,504,512,517,519,527,529,537,539,544,549,554,560,566,571,575,578,582,587,592,600,602,610,615,620,625,627,635,640,642,649,653,657,662,670,672,680,682,690,695,697,702,710,712,717
+web/public/pieces/prmi/wP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,300,308,310,318,323,325,333,335,343,345,350,355,360,366,372,377,381,384,388,393,398,406,408,416,421,426,431,433,441,446,448,455,459
+web/public/pieces/prmi/bN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,440,448,465,473,510,515,521,527,532,536,539,543,586,588,603,610,614,623,631,633,641,643,651,656,658,663,671,673,678
+  s_9b661f64446eea::t_015b72a9ed8f51 42,211,215,232,236,450,455,463,478,480,488,490,498,500,505,548,553,561,563,571,576,581,596,601,618
+web/public/pieces/meridian/wK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/prmi/bP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,310,318,355,360,366,372,377,381,384,388,431,433,448,455,459
+  s_9b661f64446eea::t_015b72a9ed8f51 32,51,55,62,66,300,308,323,325,333,335,343,345,350,393,398,406,408,416,421,426,441,446
+web/public/pieces/totoy/wR.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/papercut/bK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/public/pieces/freak/wQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 12-13,157,162,166,170,175,180,185,189,194,201,206,215,220,225,230,235,240,242,250,252,257,263,272,276,281,286,291,299,301
+  s_9b661f64446eea::t_bba5f10d56ebda 3
+web/public/pieces/meridian-shaded/wR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/meridian-shaded/wP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/meridian/wB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/licenses/piece-additions/index.html
+  s_9b661f64446eea::t_aa29cc23857159 14,17
+  s_9b661f64446eea::t_d40aba71038180 5,7-8,15,18
+  s_9b661f64446eea::t_dcad7d94e7dd5b 16
+web/public/pieces/totoy/bP.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/eyes/bQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,38,42,162,167,173,189,192,198,207,219,223,239
+web/public/pieces/totoy/wQ.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/meridian-shaded/wK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/papercut/wN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/src/style.css
+  s_9b661f64446eea::t_d40aba71038180 1865
+web/public/boards/duo-slate.svg
+  s_9b661f64446eea::t_aa29cc23857159 1-10
+web/public/pieces/rounded/wP.svg
+  s_9b661f64446eea::t_63f9edf4bd699e 1
+web/public/pieces/meridian/bQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/papercut/bN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/public/pieces/papercut/bP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/public/pieces/meridian-shaded/wQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/rounded/wR.svg
+  s_9b661f64446eea::t_b4882b0aa207a2 1
+web/public/pieces/eyes/wP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,147,151,160,172,175,181,190
+web/public/pieces/freak/bP.svg
+  s_9b661f64446eea::t_bba5f10d56ebda 3,59,91,112,116
+  s_9b661f64446eea::t_bb4f7982e41c17 12-13,386,392,401,406,411,416,421,426,430,434,440
+web/public/pieces/totoy/wN.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/meridian/bN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/meridian/wP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/livius/wP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/papercut/wP.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/public/pieces/meridian/wQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/livius/wQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/meridian/wR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/livius/wK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/freak/bR.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 12-13,284,293,296,304,306,318,323,325,330,340,356,359,364,369,374,378
+  s_9b661f64446eea::t_bba5f10d56ebda 3,54
+web/public/pieces/prmi/bQ.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,367,375,412,417,423,429,434,438,441,445,488,490,550,557,561
+  s_9b661f64446eea::t_015b72a9ed8f51 53,222,226,243,247,357,365,380,382,390,392,400,402,407,450,455,463,465,473,478,483,495,501,517,521,537,543,548
+web/public/pieces/rounded/wN.svg
+  s_9b661f64446eea::t_b4882b0aa207a2 1
+web/public/pieces/prmi/bB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 3,12-13,361,369,406,411,417,423,428,432,435,439,482,484,504,530,534
+  s_9b661f64446eea::t_015b72a9ed8f51 53,222,226,243,247,351,359,374,376,384,386,394,396,401,444,449,457,459,467,472,477,492,497,502,512,514,519,523
+web/public/pieces/livius/bB.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/rounded/wQ.svg
+  s_9b661f64446eea::t_99ad37ecb1460f 1
+web/public/pieces/meridian/bK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/totoy/wB.svg
+  s_9b661f64446eea::t_e1911c23fb3304 1
+web/public/pieces/meridian/wN.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 4-6
+web/public/pieces/papercut/wK.svg
+  s_9b661f64446eea::t_bb4f7982e41c17 1
+web/public/licenses/piece-additions/Staunton-Pieces-MIT.txt
+  s_9b661f64446eea::t_0b2b8d324edeb9 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "17c7ed112fc128f56f2150d30f42c35a5336377c",
+  "prompts": {},
+  "sessions": {
+    "s_9b661f64446eea": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a578-af79-7680-8494-0c8b7dcfb8e5",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    },
+    "s_d737c7ff1d1ae5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a584-47be-7d71-b5fc-255a51406086",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

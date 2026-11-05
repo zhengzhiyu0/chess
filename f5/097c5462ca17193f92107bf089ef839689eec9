@@ -1,0 +1,47 @@
+web/public/pieces/rounded-outline/wQ.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/public/pieces/rounded-outline/wK.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/public/pieces/rounded-outline/wP.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/public/pieces/rounded-outline/wR.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/public/pieces/rounded-outline/wN.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/public/pieces/rounded-outline/wB.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/public/pieces/rounded-outline/bB.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/public/pieces/rounded-outline/bQ.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/public/licenses/piece-additions/README.md
+  s_6163c8a881dede::t_d90bdc5a84767a 45-48
+web/scripts/build-rounded-pieces.mjs
+  s_6163c8a881dede::t_d90bdc5a84767a 6,80-101,104
+web/public/pieces/rounded-outline/bN.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/src/app/appearance.ts
+  s_6163c8a881dede::t_d90bdc5a84767a 79
+web/public/pieces/rounded-outline/bR.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/public/pieces/rounded-outline/bP.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+web/public/pieces/rounded-outline/bK.svg
+  s_6163c8a881dede::t_9f9a9a1b68f0e8 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f5097c5462ca17193f92107bf089ef839689eec9",
+  "prompts": {},
+  "sessions": {
+    "s_6163c8a881dede": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a944-a1b2-7312-b904-bcc6831d3867",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

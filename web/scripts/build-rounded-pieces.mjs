@@ -3,8 +3,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const output = fileURLToPath(new URL('../public/pieces/rounded/', import.meta.url));
-mkdirSync(output, { recursive: true });
+const piecesRoot = fileURLToPath(new URL('../public/pieces/', import.meta.url));
 const palettes = {
   w: { body: '#b9ceda', shade: '#96afbd', light: '#d9e9f2', mid: '#c7dce6', detail: '#809ba9' },
   b: { body: '#54717e', shade: '#3f5966', light: '#7998a5', mid: '#668692', detail: '#354f5c' },
@@ -78,10 +77,28 @@ function artwork(role, originalPalette, color) {
   }
 }
 
-for (const [color, palette] of Object.entries(palettes)) {
-  for (const role of 'KQRBNP') {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 100 100">${artwork(role, palette, color)}</svg>\n`;
-    writeFileSync(`${output}/${color}${role}.svg`, svg, 'utf8');
+// The underlay follows only the solid silhouette; highlights and shade planes stay unoutlined.
+function outline(role, color) {
+  const shapes = {
+    P: '<path d="M40 49C39 59 28 67 28 77C28 86 37 90 50 91S72 86 72 77C72 67 61 59 60 49Z"/><ellipse cx="50" cy="36" rx="20" ry="20"/>',
+    R: '<path d="M29 57H71V75C71 84 62 89 50 89S29 84 29 75Z"/><path d="M20 32C20 23 24 17 29 13Q31 12 33 15L36 20H40V11Q40 8 44 8H56Q60 8 60 11V20H64L67 15Q69 12 71 13C76 17 80 23 80 32V47C80 59 70 65 50 65S20 59 20 47Z"/>',
+    N: '<path d="M34 48C26 54 20 53 16 49C12 45 10 39 13 35L29 19Q27 13 29 8Q29 5 32 7L41 13C45 10 51 9 58 9C73 9 79 14 79 25V74C79 84 71 89 57 89C43 89 31 84 31 74C31 64 34 55 39 49Z"/>',
+    B: '<path d="M31 73C31 85 39 91 50 91S69 85 69 73Z"/><path d="M45 19L24 45C17 53 17 64 23 72C28 79 38 83 50 83C66 83 77 75 79 64C81 56 77 47 73 43Q71.5 41 69.5 43L58 53Q55 55 56.5 51.5L65 33Q66 31 64 29L54 18Z"/><ellipse cx="50" cy="13" rx="8" ry="6"/>',
+    Q: '<path d="M31 62Q50 52 69 62L68 78Q68 92 50 92Q32 92 32 78Z"/><path d="M32 77C32 60 23 46 12 37Q8 33 13 32L23 32Q25 32 25 29L25 17Q25 12 30 15L39 19Q41 20 43 17L48 12Q50 9 53 12L59 18Q61 20 64 18L73 15Q77 13 77 18L77 29Q77 32 80 32H88Q93 32 89 36C76 46 68 60 68 77Q68 86 50 86Q32 86 32 77Z"/>',
+    K: '<ellipse cx="50" cy="80" rx="17" ry="12"/><path d="M50 29C39 20 20 22 14 35C5 53 22 67 33 79Q36 87 50 88Q64 87 67 79C78 67 95 53 86 35C80 22 61 20 50 29Z"/><rect x="46" y="9" width="8" height="29" rx="3"/><rect x="38" y="16" width="24" height="8" rx="3"/>',
+  };
+  const edge = color === 'b' ? '#87a8b2' : '#7898a8';
+  return `<g fill="${edge}" stroke="${edge}" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round">${shapes[role]}</g>`;
+}
+
+for (const set of ['rounded', 'rounded-outline']) {
+  const output = `${piecesRoot}/${set}`;
+  mkdirSync(output, { recursive: true });
+  for (const [color, palette] of Object.entries(palettes)) {
+    for (const role of 'KQRBNP') {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 100 100">${set === 'rounded-outline' ? outline(role, color) : ''}${artwork(role, palette, color)}</svg>\n`;
+      writeFileSync(`${output}/${color}${role}.svg`, svg, 'utf8');
+    }
   }
 }
-console.log('Generated 12 rounded SVG reference redraws.');
+console.log('Generated 12 rounded SVG pieces and 12 outlined variants.');

@@ -76,6 +76,7 @@ export const PIECE_SETS: Record<string, string> = {
   prmi: '猫咪（Prmi）',
   totoy: 'Totoy',
   rounded: '圆润蓝灰（重绘）',
+  'rounded-outline': '圆润蓝灰·描边',
 };
 
 const WEBP_PIECES: Record<string, true> = { pirouetti: true, kosal: true, firi: true, governor: true, 'kiwen-suwi': true };

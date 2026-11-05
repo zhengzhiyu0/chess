@@ -1,0 +1,53 @@
+web/src/main.ts
+  s_6163c8a881dede::t_88dc966696a4c3 41,198,201,211,214-215,3655-3656,3658
+  s_6163c8a881dede::t_ab382b699e4842 3467-3469
+  s_6163c8a881dede::t_1ecadf86ced459 210,213,3654,3657
+  s_6163c8a881dede::t_9ca7f3ddc405ab 212,3659
+web/src/app/theme.ts
+  s_6163c8a881dede::t_463ae7fbaacb9b 1-4
+web/test/settings-migration.test.ts
+  s_6163c8a881dede::t_4ada45fe00c15c 67-78
+web/public/pieces/rounded/bN.svg
+  s_6163c8a881dede::t_faf5b5b8c41955 1
+web/src/settings.ts
+  s_6163c8a881dede::t_88dc966696a4c3 12,123,227
+web/src/style.css
+  s_6163c8a881dede::t_9ca7f3ddc405ab 44,46,50,59-61,83-84,2362
+  s_6163c8a881dede::t_463ae7fbaacb9b 45,47-49,51-58,65-70,73-79,3112,3114-3115,3119-3120,3122,3133,3135-3153,3156-3170,3172
+  s_6163c8a881dede::t_3e67c36aa2a1a8 2323-2324
+  s_6163c8a881dede::t_2a20f7bf81e1fa 3171
+  s_6163c8a881dede::t_4ada45fe00c15c 3105-3111,3113,3116-3118,3121,3123-3132,3134,3154-3155,3173
+  s_6163c8a881dede::t_88dc966696a4c3 43,62-64,71-72,80-82
+  s_6163c8a881dede::t_ab382b699e4842 2296-2322,2326-2329,2331-2336,2339-2361,2363
+web/public/pieces/rounded/bR.svg
+  s_6163c8a881dede::t_faf5b5b8c41955 1
+web/public/pieces/rounded/bB.svg
+  s_6163c8a881dede::t_faf5b5b8c41955 1
+web/scripts/build-rounded-pieces.mjs
+  s_6163c8a881dede::t_23014781d7f8b1 14,16-17
+web/public/licenses/piece-additions/README.md
+  s_6163c8a881dede::t_23014781d7f8b1 42
+  s_6163c8a881dede::t_11776571a8c710 41
+  s_6163c8a881dede::t_a2b244399b1241 40
+web/index.html
+  s_6163c8a881dede::t_463ae7fbaacb9b 254
+  s_6163c8a881dede::t_ab382b699e4842 44-47
+  s_6163c8a881dede::t_9ca7f3ddc405ab 250,258-259
+  s_6163c8a881dede::t_88dc966696a4c3 251-253,255-257
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0a711bad5bbf709344fde2db66a61705a2428109",
+  "prompts": {},
+  "sessions": {
+    "s_6163c8a881dede": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a944-a1b2-7312-b904-bcc6831d3867",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

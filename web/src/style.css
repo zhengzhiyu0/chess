@@ -40,48 +40,6 @@ html[data-theme='light'] {
   color-scheme: light;
 }
 
-html[data-ui-style='duolingo'][data-theme='light'] {
-  --bg: #ffffff;
-  --bg-dark: #ffffff;
-  --panel: #ffffff;
-  --panel2: #f1f5f5;
-  --panel3: #e8eff0;
-  --line: #dce3e5;
-  --text: #3c3c3c;
-  --text2: #52636b;
-  --muted: #718189;
-  --green: #008d77;
-  --green-dark: #009e85;
-  --green-hover: #007b68;
-  --duo-action: #00c9a7;
-  --duo-selected: #e4f7f2;
-  --duo-selected-edge: #00ac91;
-  --yellow: #946600;
-  --duo-blue: #087db5;
-  color-scheme: light;
-}
-
-html[data-ui-style='duolingo'][data-theme='dark'] {
-  --bg: #142127;
-  --bg-dark: #142127;
-  --panel: #142127;
-  --panel2: #1e3038;
-  --panel3: #263b44;
-  --line: #37464f;
-  --text: #f1f7f8;
-  --text2: #c0d1d8;
-  --muted: #85959e;
-  --green: #35d5bb;
-  --green-dark: #009e85;
-  --green-hover: #56e2cc;
-  --duo-action: #00c9a7;
-  --duo-selected: #193c3c;
-  --duo-selected-edge: #42d8bd;
-  --yellow: #ffc800;
-  --duo-blue: #49c0f8;
-  color-scheme: dark;
-}
-
 * {
   box-sizing: border-box;
 }
@@ -129,6 +87,12 @@ html.letterbox {
   background: var(--panel3);
   border-radius: 6px;
 }
+/* Keep touch scrolling without visible scroll indicators in the native app and home panels. */
+html.native, html.native *, #home .home-body, #home .home-panel { scrollbar-width: none; }
+html.native::-webkit-scrollbar,
+html.native *::-webkit-scrollbar,
+#home .home-body::-webkit-scrollbar,
+#home .home-panel::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 .hidden {
   display: none !important;
@@ -352,7 +316,14 @@ button svg {
   font-size: 19px;
   font-weight: 800;
 }
-#home > .appbar { justify-content: flex-end; }
+#home > .appbar {
+  justify-content: flex-end;
+  height: 44px;
+  gap: 0;
+  padding: 0 10px;
+}
+#home > .appbar button.icon { width: 44px; height: 44px; }
+#home > .appbar button.icon svg { width: 18px; height: 18px; }
 .logo {
   display: grid;
   place-items: center;
@@ -380,7 +351,7 @@ button svg {
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
-  padding: 14px 16px 12px;
+  padding: 6px 16px 12px;
 }
 .home-panel {
   min-height: 0;
@@ -414,12 +385,18 @@ button.home-feature { display: flex; min-width: 0; flex-direction: column; align
 .home-feature-label small { color: var(--muted); font-size: 10px; font-weight: 400; white-space: nowrap; }
 .home-feature.selected .home-feature-label { background: color-mix(in srgb, var(--green) 12%, var(--bg)); color: var(--green); }
 .home-feature.selected small { color: inherit; }
-.home-records { margin-top: 3px; }
+.home-records { flex: none; margin-top: 3px; }
 .home-records-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
 .home-records-head button { padding: 4px 0 4px 12px; font-size: 12px; font-weight: 400; }
 .home-records #btn-continue { min-height: 62px; }
 .home-records #btn-continue:disabled { opacity: .65; }
 .home-panel-play .setup { gap: 8px; padding: 12px; }
+@media (max-width: 719px) and (max-height: 900px) {
+  .home-panel-play { gap: 12px; }
+  .home-feature-art { height: clamp(64px, calc(100dvh - 810px), 112px); }
+  .home-feature-art::before { width: 58px; height: 58px; }
+  .home-feature-art img { height: clamp(64px, calc(100dvh - 810px), 104px); max-width: 100%; }
+}
 .home-panel-library {
   flex: 1;
   flex-direction: column;
@@ -3091,79 +3068,9 @@ html[data-theme='light'] .review-ctrl .rc-btn:hover {
   }
 }
 
-.ui-style-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.ui-style-choice { display: flex; flex-direction: column; align-items: stretch; padding: 12px; gap: 6px; text-align: left; }
-.ui-style-choice small { color: var(--muted); font-size: 12px; font-weight: 500; }
-.ui-style-preview { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 14px 28px; gap: 7px; padding: 12px; border-radius: 10px; background: #171b19; border: 1px solid #3c4837; }
-.ui-style-preview i { display: block; background: #384332; border-radius: 4px; }
-.ui-style-preview i:first-child { grid-column: 1 / 3; width: 45%; background: #81b64c; }
-.ui-style-preview i:last-child { background: #81b64c; }
-.preview-duolingo { background: #142127; border-color: #37464f; border-radius: 12px; }
-.preview-duolingo i { background: #ddf4ff; border-radius: 7px; }
-.preview-duolingo i:first-child { background: #42d8bd; }
-.preview-duolingo i:last-child { background: #00c9a7; box-shadow: 0 3px 0 #009e85; }
 .ui-color-modes { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
 .ui-color-modes > span { margin-right: auto; color: var(--text2); }
 .ui-color-modes button { min-width: 72px; }
-html[data-ui-style='duolingo'] .appbar { border-bottom: 1px solid var(--line); }
-html[data-ui-style='duolingo'] :is(.card, .appearance-section, .pz-cat, .pkg) { border-radius: 12px; }
-html[data-ui-style='duolingo'] .card { border: 2px solid var(--line); }
-html[data-ui-style='duolingo'] .home-nav { border-top: 1px solid var(--line); }
-html[data-ui-style='duolingo'] :is(.brand, h2, h3, .setup-head) { font-weight: 800; }
-html[data-ui-style='duolingo'] :is(.home-kicker, .link) { color: var(--duo-blue); }
-html[data-ui-style='duolingo'] :is(select, input[type='number'], input[type='text'], textarea) { border: 2px solid var(--line); border-radius: 12px; background-color: var(--panel2); color: var(--text); }
-html[data-ui-style='duolingo'] .logo { border-radius: 11px; }
-html[data-ui-style='duolingo'] .toast { background: var(--panel3); color: var(--text); border: 1px solid var(--line); }
-html[data-ui-style='duolingo'][data-theme='light'] .clock { background: var(--panel3); color: var(--text2); }
-html[data-ui-style='duolingo'][data-theme='light'] .clock.active { background: #ddf4ff; color: var(--text); }
-
-/* Important layer order lets the selected style override the shared button contract. */
-@layer duo-buttons {
-  html[data-ui-style='duolingo'] button {
-    border: 2px solid var(--line) !important;
-    border-radius: 12px !important;
-    background: var(--panel) !important;
-    color: var(--text2) !important;
-    box-shadow: 0 2px 0 var(--line) !important;
-    transition: background 0.12s, transform 0.08s, box-shadow 0.08s !important;
-  }
-  html[data-ui-style='duolingo'] button:focus-visible { outline: 3px solid var(--duo-blue) !important; outline-offset: 3px !important; }
-  html[data-ui-style='duolingo'] button:hover { background: var(--panel2) !important; color: var(--text) !important; }
-  html[data-ui-style='duolingo'] button:is(.active, .on, [aria-pressed='true']):not(.primary) {
-    background: var(--duo-selected) !important;
-    color: var(--green) !important;
-    border-color: var(--duo-selected-edge) !important;
-    box-shadow: 0 2px 0 var(--duo-selected-edge) !important;
-  }
-  html[data-ui-style='duolingo'] button.primary {
-    background: var(--duo-action) !important;
-    color: #072b25 !important;
-    border: 2px solid #16d3b2 !important;
-    box-shadow: 0 3px 0 var(--green-dark) !important;
-    font-weight: 800;
-  }
-  html[data-ui-style='duolingo'] button.primary:hover { background: #13d5b4 !important; }
-  html[data-ui-style='duolingo'] button:active:not(:disabled) { transform: translateY(2px) !important; box-shadow: none !important; }
-  html[data-ui-style='duolingo'] button:is(.icon, .nav, .rc-btn),
-  html[data-ui-style='duolingo'] .home-nav button {
-    border-color: transparent !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-  html[data-ui-style='duolingo'] .home-nav button.active {
-    background: var(--duo-selected) !important;
-    border-color: var(--duo-selected-edge) !important;
-    color: var(--green) !important;
-    box-shadow: none !important;
-  }
-  html[data-ui-style='duolingo'] .home-nav button:focus-visible { outline-color: var(--green) !important; }
-  html[data-ui-style='duolingo'] button.home-feature { border-radius: 16px !important; }
-  html[data-ui-style='duolingo'] button.home-feature.selected { border-color: var(--duo-selected-edge) !important; box-shadow: 0 3px 0 var(--duo-selected-edge) !important; }
-  html[data-ui-style='duolingo'] .home-feature.selected .home-feature-label { background: var(--duo-selected); }
-  html[data-ui-style='duolingo'] .home-records-head button { border: 0 !important; background: transparent !important; box-shadow: none !important; color: var(--muted) !important; }
-}
-html[data-ui-style='duolingo'] :is(.seg, #home-color) { background: transparent; border: 0; gap: 8px; padding: 0; }
-
 /* 统一按压反馈；仅主操作保留描边，工具和设置按钮使用无边框表面。 */
 @layer button-contract {
   button {

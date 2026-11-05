@@ -9,7 +9,6 @@ export type Color = 'w' | 'b';
 export interface Settings {
   /** app chrome colour scheme */
   theme: 'dark' | 'light';
-  uiStyle: 'classic' | 'duolingo';
   model: '5m' | '23m' | '79m';
   /** Maia rating for the next game, independent of the player's estimate. */
   elo: number;
@@ -120,7 +119,6 @@ export function defaultSettings(): Settings {
   const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   return {
     theme: 'dark',
-    uiStyle: 'classic',
     model: FIXED_NATIVE_ENGINES ? '79m' : isNative ? '23m' : isIOS ? '5m' : '23m',
     elo: 1500,
     playerElo: 1500,
@@ -224,7 +222,6 @@ type Rule = { oneOf: readonly unknown[] } | { num: [number, number]; int?: boole
 const HEX = /^#[0-9a-f]{6}$/i;
 const RULES: Record<keyof Settings, Rule> = {
   theme: { oneOf: ['dark', 'light'] },
-  uiStyle: { oneOf: ['classic', 'duolingo'] },
   model: { oneOf: ['5m', '23m', '79m'] },
   elo: { num: [ELO_MIN, ELO_MAX], int: true },
   playerElo: { num: [ELO_MIN, ELO_MAX], int: true },

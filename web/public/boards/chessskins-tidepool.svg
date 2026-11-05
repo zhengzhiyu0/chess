@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"><defs>
+<linearGradient id="tp-lg" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#e2f3e9"/>
+<stop offset="1" stop-color="#d0e7db"/>
+</linearGradient>
+<linearGradient id="tp-dg" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#57a8a5"/>
+<stop offset="1" stop-color="#489693"/>
+</linearGradient>
+<g id="tp-l">
+<rect width="100" height="100" fill="url(#tp-lg)"/>
+</g>
+<g id="tp-d">
+<rect width="100" height="100" fill="url(#tp-dg)"/>
+<path d="M8,63 Q26,47 46,55 Q62,61 74,55 Q84,50 92,55" fill="none" stroke="#c9ece4" stroke-opacity="0.4" stroke-width="3.6" stroke-linecap="round"/>
+<path d="M8,63 Q26,47 46,55 Q62,61 74,55 Q84,50 92,55" fill="none" stroke="#f0fbf6" stroke-opacity="0.55" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M18,75 Q36,63 54,69 Q68,73 82,66" fill="none" stroke="#cfeee6" stroke-opacity="0.22" stroke-width="2" stroke-linecap="round"/>
+</g>
+</defs><use href="#tp-l" x="0" y="0"/><use href="#tp-d" x="100" y="0"/><use href="#tp-l" x="200" y="0"/><use href="#tp-d" x="300" y="0"/><use href="#tp-l" x="400" y="0"/><use href="#tp-d" x="500" y="0"/><use href="#tp-l" x="600" y="0"/><use href="#tp-d" x="700" y="0"/><use href="#tp-d" x="0" y="100"/><use href="#tp-l" x="100" y="100"/><use href="#tp-d" x="200" y="100"/><use href="#tp-l" x="300" y="100"/><use href="#tp-d" x="400" y="100"/><use href="#tp-l" x="500" y="100"/><use href="#tp-d" x="600" y="100"/><use href="#tp-l" x="700" y="100"/><use href="#tp-l" x="0" y="200"/><use href="#tp-d" x="100" y="200"/><use href="#tp-l" x="200" y="200"/><use href="#tp-d" x="300" y="200"/><use href="#tp-l" x="400" y="200"/><use href="#tp-d" x="500" y="200"/><use href="#tp-l" x="600" y="200"/><use href="#tp-d" x="700" y="200"/><use href="#tp-d" x="0" y="300"/><use href="#tp-l" x="100" y="300"/><use href="#tp-d" x="200" y="300"/><use href="#tp-l" x="300" y="300"/><use href="#tp-d" x="400" y="300"/><use href="#tp-l" x="500" y="300"/><use href="#tp-d" x="600" y="300"/><use href="#tp-l" x="700" y="300"/><use href="#tp-l" x="0" y="400"/><use href="#tp-d" x="100" y="400"/><use href="#tp-l" x="200" y="400"/><use href="#tp-d" x="300" y="400"/><use href="#tp-l" x="400" y="400"/><use href="#tp-d" x="500" y="400"/><use href="#tp-l" x="600" y="400"/><use href="#tp-d" x="700" y="400"/><use href="#tp-d" x="0" y="500"/><use href="#tp-l" x="100" y="500"/><use href="#tp-d" x="200" y="500"/><use href="#tp-l" x="300" y="500"/><use href="#tp-d" x="400" y="500"/><use href="#tp-l" x="500" y="500"/><use href="#tp-d" x="600" y="500"/><use href="#tp-l" x="700" y="500"/><use href="#tp-l" x="0" y="600"/><use href="#tp-d" x="100" y="600"/><use href="#tp-l" x="200" y="600"/><use href="#tp-d" x="300" y="600"/><use href="#tp-l" x="400" y="600"/><use href="#tp-d" x="500" y="600"/><use href="#tp-l" x="600" y="600"/><use href="#tp-d" x="700" y="600"/><use href="#tp-d" x="0" y="700"/><use href="#tp-l" x="100" y="700"/><use href="#tp-d" x="200" y="700"/><use href="#tp-l" x="300" y="700"/><use href="#tp-d" x="400" y="700"/><use href="#tp-l" x="500" y="700"/><use href="#tp-d" x="600" y="700"/><use href="#tp-l" x="700" y="700"/></svg>

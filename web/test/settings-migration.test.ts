@@ -64,17 +64,17 @@ describe('settings engine migration (iOS app)', () => {
 
 describe('settings whitelist', () => {
   beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
-  it('keeps interface style independent of light and dark mode across restore', () => {
-    for (const uiStyle of ['classic', 'duolingo'] as const) {
+  it('discards retired interface styles while preserving appearance and light or dark mode', () => {
+    for (const uiStyle of ['classic', 'duolingo', 'unknown']) {
       for (const theme of ['dark', 'light'] as const) {
-        const s = sanitizeSettings({ uiStyle, theme });
-        expect(s).toMatchObject({ uiStyle, theme });
+        const s = sanitizeSettings({ uiStyle, theme, pieceSet: 'rounded-outline', boardTheme: 'duoSlate' });
+        expect(s).not.toHaveProperty('uiStyle');
+        expect(s).toMatchObject({ theme, pieceSet: 'rounded-outline', boardTheme: 'duoSlate' });
         saveSettings(s);
-        expect(loadSettings()).toMatchObject({ uiStyle, theme });
+        expect(loadSettings()).toMatchObject({ theme, pieceSet: 'rounded-outline', boardTheme: 'duoSlate' });
+        expect(loadSettings()).not.toHaveProperty('uiStyle');
       }
     }
-    expect(sanitizeSettings({ uiStyle: 'unknown' }).uiStyle).toBe('classic');
-    expect(sanitizeSettings({ theme: 'light' })).toMatchObject({ uiStyle: 'classic', theme: 'light' });
   });
   it('replaces removed synth themes with recordings, including imported settings', () => {
     const themes = { wood: 'wood', felt: 'felt', plastic: 'glass', marble: 'glass', pop: 'felt', sfx: 'board', piano: 'board', nes: 'board', futuristic: 'board', retro: 'board' };

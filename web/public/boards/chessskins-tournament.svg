@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <defs>
+    <radialGradient id="tg-vig" cx="0.5" cy="0.5" r="0.72">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="0.78" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.06"/>
+    </radialGradient>
+    <pattern id="tg-tile" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="200" height="200" fill="#e9dcb7"/>
+      <rect x="100" y="0" width="100" height="100" fill="#497853"/>
+      <rect x="0" y="100" width="100" height="100" fill="#497853"/>
+      <rect x="0" y="0" width="100" height="100" fill="url(#tg-vig)"/>
+      <rect x="100" y="0" width="100" height="100" fill="url(#tg-vig)"/>
+      <rect x="0" y="100" width="100" height="100" fill="url(#tg-vig)"/>
+      <rect x="100" y="100" width="100" height="100" fill="url(#tg-vig)"/>
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="800" height="800" fill="url(#tg-tile)"/>
+</svg>

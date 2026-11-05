@@ -7,6 +7,13 @@ type BoardTheme = { label: string; light: string; dark: string; image?: string }
 
 export const BOARD_THEMES: Record<string, BoardTheme> = {
   green: { label: '绿白', light: '#ebecd0', dark: '#739552' },
+  tournamentGreen: { label: '比赛绿', light: '#e9dcb7', dark: '#497853', image: 'chessskins-tournament.svg' },
+  mossGarden: { label: '苔藓花园', light: '#e6e2c6', dark: '#5f7345', image: 'chessskins-moss.svg' },
+  tatami: { label: '榻榻米绿', light: '#e9dcaa', dark: '#7d8c53', image: 'chessskins-tatami.svg' },
+  chalkboard: { label: '黑板绿', light: '#82a18c', dark: '#2b4035', image: 'chessskins-chalkboard.svg' },
+  circuit: { label: '电路绿', light: '#c3ddc9', dark: '#2e7a53', image: 'chessskins-circuit.svg' },
+  pixelPark: { label: '像素公园', light: '#abd573', dark: '#61923f', image: 'chessskins-pixel-park.svg' },
+  tidepool: { label: '潮汐青绿', light: '#d9ede2', dark: '#4f9f9c', image: 'chessskins-tidepool.svg' },
   brown: { label: '经典棕', light: '#f0d9b5', dark: '#b58863' },
   wood: { label: '胡桃木', light: '#e9c99a', dark: '#a26c3d' },
   wood2: { label: '胡桃木 2', light: '#e9c99a', dark: '#a26c3d', image: 'wood2.jpg' },
@@ -52,6 +59,12 @@ export const BOARD_THEMES: Record<string, BoardTheme> = {
 
 export const PIECE_SETS: Record<string, string> = {
   cburnett: '经典（cburnett）',
+  'cburnett-v2': '经典改版（Cburnett V2）',
+  'cburnett-v2-shadow': '经典改版·阴影',
+  kaneo: 'Kaneo',
+  'kaneo-midnight': 'Kaneo 午夜',
+  sashite: 'Sashité',
+  'dg-ra': 'DG-RA 2.0',
   rhosgfx: 'RhosGFX',
   merida: 'Merida',
   chessnut: 'Chessnut',

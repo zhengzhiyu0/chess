@@ -1,4 +1,3 @@
-export function themeColor(theme: 'dark' | 'light', style: 'classic' | 'duolingo') {
-  if (style === 'duolingo') return theme === 'dark' ? '#142127' : '#ffffff';
+export function themeColor(theme: 'dark' | 'light') {
   return theme === 'dark' ? '#262421' : '#f5f6f7';
 }

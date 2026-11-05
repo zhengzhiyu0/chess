@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+<defs>
+<pattern id="lt" width="100" height="100" patternUnits="userSpaceOnUse">
+<rect width="100" height="100" fill="#e8daa5"/>
+<path d="M0 2H100M0 6H100M0 10H100M0 14H100M0 18H100M0 22H100M0 26H100M0 30H100M0 34H100M0 38H100M0 42H100M0 46H100M0 50H100M0 54H100M0 58H100M0 62H100M0 66H100M0 70H100M0 74H100M0 78H100M0 82H100M0 86H100M0 90H100M0 94H100M0 98H100" stroke="#d8c688" stroke-width="1.5" fill="none"/>
+<path d="M0 4H100M0 8H100M0 12H100M0 16H100M0 20H100M0 24H100M0 28H100M0 32H100M0 36H100M0 40H100M0 44H100M0 48H100M0 52H100M0 56H100M0 60H100M0 64H100M0 68H100M0 72H100M0 76H100M0 80H100M0 84H100M0 88H100M0 92H100M0 96H100M0 100H100" stroke="#f3e8bf" stroke-width="1" fill="none"/>
+<rect width="100" height="100" fill="none" stroke="#c8b374" stroke-width="2.4"/>
+</pattern>
+<pattern id="dk" width="100" height="100" patternUnits="userSpaceOnUse">
+<rect width="100" height="100" fill="#75844c"/>
+<path d="M2 0V100M6 0V100M10 0V100M14 0V100M18 0V100M22 0V100M26 0V100M30 0V100M34 0V100M38 0V100M42 0V100M46 0V100M50 0V100M54 0V100M58 0V100M62 0V100M66 0V100M70 0V100M74 0V100M78 0V100M82 0V100M86 0V100M90 0V100M94 0V100M98 0V100" stroke="#657440" stroke-width="1.5" fill="none"/>
+<path d="M4 0V100M8 0V100M12 0V100M16 0V100M20 0V100M24 0V100M28 0V100M32 0V100M36 0V100M40 0V100M44 0V100M48 0V100M52 0V100M56 0V100M60 0V100M64 0V100M68 0V100M72 0V100M76 0V100M80 0V100M84 0V100M88 0V100M92 0V100M96 0V100M100 0V100" stroke="#84925a" stroke-width="1" fill="none"/>
+<rect width="100" height="100" fill="none" stroke="#5b6a38" stroke-width="2.4"/>
+</pattern>
+</defs>
+<rect width="800" height="800" fill="url(#lt)"/>
+<rect x="100" y="0" width="100" height="100" fill="url(#dk)"/>
+<rect x="300" y="0" width="100" height="100" fill="url(#dk)"/>
+<rect x="500" y="0" width="100" height="100" fill="url(#dk)"/>
+<rect x="700" y="0" width="100" height="100" fill="url(#dk)"/>
+<rect x="0" y="100" width="100" height="100" fill="url(#dk)"/>
+<rect x="200" y="100" width="100" height="100" fill="url(#dk)"/>
+<rect x="400" y="100" width="100" height="100" fill="url(#dk)"/>
+<rect x="600" y="100" width="100" height="100" fill="url(#dk)"/>
+<rect x="100" y="200" width="100" height="100" fill="url(#dk)"/>
+<rect x="300" y="200" width="100" height="100" fill="url(#dk)"/>
+<rect x="500" y="200" width="100" height="100" fill="url(#dk)"/>
+<rect x="700" y="200" width="100" height="100" fill="url(#dk)"/>
+<rect x="0" y="300" width="100" height="100" fill="url(#dk)"/>
+<rect x="200" y="300" width="100" height="100" fill="url(#dk)"/>
+<rect x="400" y="300" width="100" height="100" fill="url(#dk)"/>
+<rect x="600" y="300" width="100" height="100" fill="url(#dk)"/>
+<rect x="100" y="400" width="100" height="100" fill="url(#dk)"/>
+<rect x="300" y="400" width="100" height="100" fill="url(#dk)"/>
+<rect x="500" y="400" width="100" height="100" fill="url(#dk)"/>
+<rect x="700" y="400" width="100" height="100" fill="url(#dk)"/>
+<rect x="0" y="500" width="100" height="100" fill="url(#dk)"/>
+<rect x="200" y="500" width="100" height="100" fill="url(#dk)"/>
+<rect x="400" y="500" width="100" height="100" fill="url(#dk)"/>
+<rect x="600" y="500" width="100" height="100" fill="url(#dk)"/>
+<rect x="100" y="600" width="100" height="100" fill="url(#dk)"/>
+<rect x="300" y="600" width="100" height="100" fill="url(#dk)"/>
+<rect x="500" y="600" width="100" height="100" fill="url(#dk)"/>
+<rect x="700" y="600" width="100" height="100" fill="url(#dk)"/>
+<rect x="0" y="700" width="100" height="100" fill="url(#dk)"/>
+<rect x="200" y="700" width="100" height="100" fill="url(#dk)"/>
+<rect x="400" y="700" width="100" height="100" fill="url(#dk)"/>
+<rect x="600" y="700" width="100" height="100" fill="url(#dk)"/>
+</svg>

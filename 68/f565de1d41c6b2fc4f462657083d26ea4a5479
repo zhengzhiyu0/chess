@@ -1,0 +1,46 @@
+web/public/pieces/cburnett-v2-shadow/bP.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/public/pieces/cburnett-v2-shadow/bK.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/public/pieces/cburnett-v2-shadow/wN.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/public/pieces/cburnett-v2-shadow/bQ.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/src/style.css
+  s_7474f1cd5fad8f::t_9303683d687089 378
+web/public/pieces/cburnett-v2-shadow/wB.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/public/pieces/cburnett-v2-shadow/bR.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/public/pieces/cburnett-v2-shadow/wK.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/scripts/import-classic-pieces.mjs
+  s_7474f1cd5fad8f::t_9303683d687089 41
+  s_7474f1cd5fad8f::t_b6549e90d64ee9 21-40,42-51
+web/public/pieces/cburnett-v2-shadow/bB.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/public/pieces/cburnett-v2-shadow/bN.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/public/pieces/cburnett-v2-shadow/wQ.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/public/pieces/cburnett-v2-shadow/wR.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+web/public/pieces/cburnett-v2-shadow/wP.svg
+  s_7474f1cd5fad8f::t_4aaf4bd5acbdbb 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "68f565de1d41c6b2fc4f462657083d26ea4a5479",
+  "prompts": {},
+  "sessions": {
+    "s_7474f1cd5fad8f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1aa02-699c-79c3-a7be-29bc7a5c391d",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

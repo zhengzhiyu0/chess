@@ -3422,8 +3422,6 @@ const trainerCtx: TrainerCtx = {
 
 // ---------- home ----------
 
-let homeCg: Api;
-
 function setHomeTab(tab: HomeTab) {
   homeTab = tab;
   document.querySelectorAll<HTMLButtonElement>('[data-home-tab]').forEach((button) => {
@@ -3490,7 +3488,6 @@ function renderHome() {
   const at = backupAt();
   // remind to back up once there is something worth keeping and the last backup is old
   $('btn-data').classList.toggle('remind', history.length >= 5 && Date.now() - at > 14 * 86_400_000);
-  homeCg?.set({ fen: t.fen, orientation: userColor === 'w' ? 'white' : 'black', lastMove: undefined });
   setHomeTab(homeTab);
 }
 
@@ -3730,6 +3727,10 @@ function bind() {
     setHomeTab('data');
     openPgnImport();
   };
+  $('btn-home-maia').onclick = () => $('home-elo').focus();
+  $('btn-home-puzzles').onclick = () => $('btn-puzzles').click();
+  $('btn-home-review').onclick = () => $('btn-home-import').click();
+  $('btn-home-history').onclick = () => $('btn-history').click();
   $('btn-history').onclick = () => {
     setHomeTab('data');
     showHistory('list');
@@ -4316,7 +4317,6 @@ function init() {
     premovable: { enabled: false, showDests: true, events: { set: () => renderPlayInfo(), unset: () => renderPlayInfo() } },
     drawable: { enabled: true, brushes: { ...BRUSHES } as unknown as DrawBrushes },
   });
-  homeCg = Chessground($('home-board'), { viewOnly: true, coordinates: false, animation: { enabled: false } });
   fx = new BoardFx($('board').parentElement!, () => cg.state.orientation);
   dodge = new DodgeFx(cg, $('board'));
   applyFx();

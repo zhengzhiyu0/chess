@@ -19,7 +19,6 @@
       <!-- ========== 主页 ========== -->
       <section id="home" class="screen active">
         <header class="appbar">
-          <div class="brand"><span class="logo"><svg viewBox="0 0 512 512" aria-hidden="true"><circle cx="256" cy="142" r="64"/><rect x="168" y="206" width="176" height="38" rx="19"/><path d="M212 236c0 58-26 100-60 146h208c-34-46-60-88-60-146z"/><rect x="118" y="372" width="276" height="62" rx="24"/></svg></span><span>Maia Coach</span></div>
           <button id="btn-engines" class="icon web-only" title="引擎管理" aria-label="引擎管理">
             <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
           </button>
@@ -34,11 +33,30 @@
 
         <div class="home-body">
           <section class="home-panel home-panel-play active" data-home-panel="play">
-            <div class="hero"><div class="hero-board"><div id="home-board" class="cg-wrap"></div></div></div>
+            <div class="home-welcome">
+              <span class="home-kicker">来一局国际象棋</span>
+              <h1>今天，挑战谁？</h1>
+              <p>找到旗鼓相当的对手。</p>
+            </div>
+
+            <div class="home-feature-cards" aria-label="对弈与训练入口">
+              <button type="button" class="home-feature selected" id="btn-home-maia" aria-controls="home-elo">
+                <span class="home-feature-art"><img src="pieces/rounded-outline/wN.svg" alt="" draggable="false" /></span>
+                <span class="home-feature-label"><b>Maia</b><small>像人类一样思考</small></span>
+              </button>
+              <button type="button" class="home-feature" id="btn-home-puzzles">
+                <span class="home-feature-art"><img src="pieces/rounded-outline/wQ.svg" alt="" draggable="false" /></span>
+                <span class="home-feature-label"><b>战术练习</b><small>练习计算与观察</small></span>
+              </button>
+              <button type="button" class="home-feature" id="btn-home-review">
+                <span class="home-feature-art"><img src="pieces/rounded-outline/wP.svg" alt="" draggable="false" /></span>
+                <span class="home-feature-label"><b>导入复盘</b><small>回顾每一步选择</small></span>
+              </button>
+            </div>
 
             <div class="card setup">
               <div class="setup-head">
-                <span>Maia</span>
+                <span>对手等级</span>
                 <b id="home-elo-val"></b>
               </div>
               <div class="elo-slider" id="home-elo-slider">
@@ -55,10 +73,11 @@
 
             <button id="btn-play" class="primary home-game-action">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-              <span>开始对局</span><span class="game-action-arrow" aria-hidden="true">↗</span>
+              <span>挑战 Maia</span><span class="game-action-arrow" aria-hidden="true">→</span>
             </button>
 
-            <div class="home-actions">
+            <div class="home-records">
+              <div class="home-records-head"><b>对战记录</b><button type="button" id="btn-home-history">查看全部 <span aria-hidden="true">›</span></button></div>
               <button id="btn-continue" class="tile home-game-action">
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 5 9 7-9 7z" /></svg>
                 <span><b id="continue-title">继续对局</b><small id="continue-sub"></small></span>

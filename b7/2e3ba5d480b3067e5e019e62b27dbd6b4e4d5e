@@ -1,0 +1,57 @@
+web/scripts/maia-match.mjs
+  s_3d75772e3adde6::t_194cd2597f8db3 1-133
+web/src/main.ts
+  s_3d75772e3adde6::t_07d8972c83babf 3387-3389,3391
+  s_3d75772e3adde6::t_994fad7357075f 1,3386,3390,3392-3393,3416-3417,3421-3427,3691-3695
+web/reports/maia-match-20261106/79m-fp16.pgn
+  s_3d75772e3adde6::t_76501ecf72ba1b 1-431
+web/scripts/rating-review-browser-check.mjs
+  s_3d75772e3adde6::t_e22091de4d0e68 113,138-140,146-152,154-158
+  s_3d75772e3adde6::t_4009b618a03b86 35
+  s_3d75772e3adde6::t_5ed9a09200f6f7 141-145,153
+web/src/game/rating.ts
+  s_3d75772e3adde6::t_e22091de4d0e68 213
+web/src/game/placement.ts
+  s_3d75772e3adde6::t_617a29cef2e3e6 1-30
+web/index.html
+  s_3d75772e3adde6::t_7f831b6452482e 62-72
+web/reports/maia-match-20261106/79m-fp16.json
+  s_3d75772e3adde6::t_76501ecf72ba1b 1-3435
+web/reports/maia-match-20261106/79m-fp16.md
+  s_3d75772e3adde6::t_76501ecf72ba1b 1-17
+web/reports/maia-match-20261106/79m-fp32.json
+  s_3d75772e3adde6::t_76501ecf72ba1b 1-3611
+web/test/placement.test.ts
+  s_3d75772e3adde6::t_92bfc650e3e35a 1-24,31
+  s_3d75772e3adde6::t_5ed9a09200f6f7 25-30
+README.md
+  s_3d75772e3adde6::t_194cd2597f8db3 149-150
+  s_3d75772e3adde6::t_617a29cef2e3e6 43,145-148
+web/reports/maia-match-20261106/79m-fp32.pgn
+  s_3d75772e3adde6::t_76501ecf72ba1b 1-431
+web/reports/maia-match-20261106/README.md
+  s_3d75772e3adde6::t_76501ecf72ba1b 1-17
+web/reports/maia-match-20261106/79m-fp32.md
+  s_3d75772e3adde6::t_76501ecf72ba1b 1-17
+web/src/settings.ts
+  s_3d75772e3adde6::t_994fad7357075f 131
+  s_3d75772e3adde6::t_7f831b6452482e 2,29,139,246
+web/src/style.css
+  s_3d75772e3adde6::t_7f831b6452482e 658-660
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b72e3ba5d480b3067e5e019e62b27dbd6b4e4d5e",
+  "prompts": {},
+  "sessions": {
+    "s_3d75772e3adde6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae6c-ceec-75e1-ba79-1e7f23b39a6a",
+        "model": "naiccc/gpt-6.1-sol"
+      },
+      "human_author": "zhengzhiyu <zhengzhiyuu@icloud.com>"
+    }
+  }
+}

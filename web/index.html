@@ -59,6 +59,17 @@
                 <span>对手等级</span>
                 <b id="home-elo-val"></b>
               </div>
+              <div id="placement-experience">
+                <p class="muted">棋力尚未确定。可选一个熟悉程度，仅用于建议对手。</p>
+                <div class="placement-options">
+                  <button type="button" data-experience="beginner">刚入门</button>
+                  <button type="button" data-experience="casual">下过一些</button>
+                  <button type="button" data-experience="regular">经常下棋</button>
+                  <button type="button" data-experience="skip">跳过</button>
+                </div>
+              </div>
+              <p id="placement-advice" class="muted"></p>
+              <button type="button" id="btn-placement-apply"></button>
               <div class="elo-slider" id="home-elo-slider">
                 <div id="home-elo-ticks" class="elo-ticks" aria-hidden="true"></div>
                 <input type="range" id="home-elo" min="0" step="1" aria-label="Maia 难度" />

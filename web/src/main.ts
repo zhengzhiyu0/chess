@@ -1,3 +1,4 @@
+import { placementRecommendation, type ChessExperience } from './game/placement';
 import { sanitizeRatingPeriod } from './game/glicko2';
 import { Chess, type Square } from 'chess.js';
 import { Chessground } from '@lichess-org/chessground';
@@ -3382,6 +3383,14 @@ function setHomeTab(tab: HomeTab) {
   });
 }
 
+function recommendedOpponent() {
+  const recent = settings.independentGames ? history.filter(g => g.rating?.method === 'glicko2-period-v1'
+    && !g.rating.excluded && g.ratingApplied !== false).sort((a, b) => a.date - b.date)
+    .slice(-Math.min(settings.independentGames, 2)).map(g => ({ rating: g.rating!.opponent, deviation: 0, score: g.rating!.result })) : [];
+  return placementRecommendation({ rating: settings.playerElo, deviation: settings.ratingDeviation,
+    games: settings.independentGames, period: settings.ratingPeriod, recent, experience: settings.chessExperience, levels: MAIA_LEVELS });
+}
+
 function renderProfileRating() {
   const points = ratingHistory(history);
   const current = settings.playerElo;
@@ -3404,10 +3413,18 @@ function renderProfileRating() {
     ? `<svg class="rating-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="我的分数历史走势"><polyline points="${line}" /><g>${plotted.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="3" /><text x="${p.x}" y="${Math.max(10, p.y - 7)}" text-anchor="middle">${Math.round(p.rating)}</text>`).join('')}</g></svg>`
     : '<p class="muted">完成计分对局后，这里会显示历史走势。</p>';
   const estimate = ratingEstimate(current, settings.ratingDeviation, settings.independentGames, MAIA_LEVELS);
-  box.innerHTML = `<div class="profile-rating-head"><span><b>${settings.independentGames < 10 ? '棋力定位中' : estimate.provisional ? '暂定棋力' : '棋力估计'}</b><small>独立计分 ${settings.independentGames} 局 · 本周期 ${settings.ratingPeriod.length}/10 局 · 参考范围 ${estimate.low}–${estimate.high}</small></span><strong>${settings.independentGames < 10 ? '—' : Math.round(current)}</strong></div><p class="muted">建议挑战 Maia ${estimate.opponent}，交替执白和执黑。评估条和胜率不影响计分；提示、最佳着法、战术辅助、局中分析或悔棋转为训练，不计分。此为相对 Maia 的本地估计，每 10 局独立对局统一更新，尚未校准到真人平台 Elo。</p>${chart}`;
+  const recommendation = recommendedOpponent();
+  box.innerHTML = `<div class="profile-rating-head"><span><b>${settings.independentGames < 10 ? '棋力定位中' : estimate.provisional ? 'Maia 棋力估计（暂定）' : 'Maia 棋力估计'}</b><small>独立计分 ${settings.independentGames} 局 · 本周期 ${settings.ratingPeriod.length}/10 局 · 参考范围 ${estimate.low}–${estimate.high}</small></span><strong>${settings.independentGames < 10 ? '—' : Math.round(current)}</strong></div><p class="muted">建议挑战 Maia ${recommendation.opponent}。${recommendation.reason}交替执白和执黑。评估条和胜率不影响计分；提示、最佳着法、战术辅助、局中分析或悔棋转为训练，不计分。此为相对 Maia 的本地估计，每 10 局独立对局统一更新，尚未校准到真人平台 Elo。</p>${chart}`;
 }
 
 function renderHome() {
+  const recommendation = recommendedOpponent();
+  $('placement-experience').hidden = settings.chessExperience !== 'unknown' || settings.independentGames > 0;
+  $('placement-advice').textContent = `${settings.independentGames < 10 ? '棋力尚未确定。' : ''}${recommendation.reason} 建议 Maia ${recommendation.opponent}。`;
+  const apply = $<HTMLButtonElement>('btn-placement-apply');
+  apply.textContent = `采用建议：Maia ${recommendation.opponent}`;
+  apply.hidden = settings.elo === recommendation.opponent;
+
   const elo = $<HTMLInputElement>('home-elo');
   elo.value = String(Math.max(0, MAIA_LEVELS.findIndex(level => level === settings.elo)));
   const levelIndex = Number(elo.value);
@@ -3671,6 +3688,11 @@ function bind() {
     openPgnImport();
   };
   $('btn-home-maia').onclick = () => $('home-elo').focus();
+  document.querySelectorAll<HTMLButtonElement>('[data-experience]').forEach(button => {
+    button.onclick = () => saveHomeSettings({ chessExperience: button.dataset.experience as ChessExperience });
+  });
+  $('btn-placement-apply').onclick = () => saveHomeSettings({ elo: recommendedOpponent().opponent });
+
   $('btn-home-puzzles').onclick = () => $('btn-puzzles').click();
   $('btn-home-review').onclick = () => $('btn-home-import').click();
   $('btn-home-history').onclick = () => $('btn-history').click();

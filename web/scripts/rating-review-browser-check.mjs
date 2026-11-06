@@ -32,7 +32,7 @@ for(const type of [chromium,webkit]){
  const db=await new Promise(resolve=>{const r=indexedDB.open('maia-coach',1);r.onsuccess=()=>resolve(r.result)});
  const tx=db.transaction('documents','readwrite');const store=tx.objectStore('documents');
  store.put(JSON.stringify(game),'maia-coach.game');store.put(JSON.stringify([game]),'maia-coach.history');
- store.put(JSON.stringify({playerElo:profile,independentGames:period.length,ratingPeriod:period,ratingDeviation:350,ratingVolatility:0.06,ratingStreak:0,ratedGames:7,sfLite:false,sfMovetime:1000,ecoAnalysis:true,autoOffline:false,sound:false,haptics:false,boardFx:false,...settingsPatch}),'maia-coach.settings');
+ store.put(JSON.stringify({elo:600,playerElo:profile,independentGames:period.length,ratingPeriod:period,ratingDeviation:350,ratingVolatility:0.06,ratingStreak:0,ratedGames:7,sfLite:false,sfMovetime:1000,ecoAnalysis:true,autoOffline:false,sound:false,haptics:false,boardFx:false,...settingsPatch}),'maia-coach.settings');
  await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onabort=reject});db.close();
  },{game,profile,settingsPatch,period});
  await page.addInitScript(fail=>{window.__failSearch=fail},fail);
@@ -110,7 +110,7 @@ for(const type of [chromium,webkit]){
  await page.locator('[data-home-tab="data"]').click();
  await page.locator('#btn-profile-rating').click();
  await page.locator('#profile-rating').waitFor({state:'visible'});
- assert.match(await page.locator('#profile-rating').innerText(),/棋力定位中[\s\S]*参考范围[\s\S]*Maia 1500/);
+ assert.match(await page.locator('#profile-rating').innerText(),/棋力定位中[\s\S]*参考范围[\s\S]*Maia 600/);
  const overflow=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,items:[...document.querySelectorAll('#dlg-profile-rating, #profile-rating, #profile-rating *')].map(el=>({tag:el.tagName,cls:el.className,left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right})).filter(x=>x.left<0||x.right>innerWidth)}));
  assert.deepEqual(overflow.items,[],'profile dialog must fit the mobile viewport');
  await page.locator('#dlg-profile-rating button').last().click();
@@ -135,6 +135,27 @@ for(const type of [chromium,webkit]){
  await page.waitForTimeout(450);
  data=await saved();assert.equal(data.settings.playerElo,1900.123456789);assert.equal(data.game.ratingPending,undefined);
  assert.equal(data.game.rating.playerBefore,1500);
+ // Experience changes advice only; applying a suggestion changes next opponent only.
+ await seed({live:true});
+ await page.goto(base+'/#home');
+ await page.setViewportSize({width:390,height:844});
+ assert.equal(await page.locator('#placement-experience').isVisible(),true);
+ assert.match(await page.locator('#placement-advice').innerText(),/Maia 600/);
+ const adviceFits=await page.locator('#placement-experience').evaluate(el=>el.getBoundingClientRect().right<=innerWidth && el.getBoundingClientRect().left>=0);
+ assert.equal(adviceFits,true);
+ await page.locator('[data-experience="casual"]').click();
+ data=await saved();assert.equal(data.settings.playerElo,1500);assert.equal(data.settings.ratingDeviation,350);
+ assert.equal(data.settings.elo,600);assert.equal(data.settings.chessExperience,'casual');
+ assert.match(await page.locator('#placement-advice').innerText(),/Maia 1000/);
+ await page.locator('#btn-placement-apply').click();
+ data=await saved();assert.equal(data.settings.elo,1000);assert.equal(data.settings.playerElo,1500);
+ assert.equal(data.game.elo,1500,'live opponent must stay locked');
+ await page.setViewportSize({width:1280,height:900});
+ await seed({live:true,period:[{rating:1000,deviation:0,score:0},{rating:1000,deviation:0,score:0}]});
+ await page.goto(base+'/#home');assert.match(await page.locator('#placement-advice').innerText(),/Maia 800/);
+ data=await saved();assert.equal(data.settings.playerElo,1500);assert.equal(data.settings.elo,600);
+ await page.goto(base+'/#game');await page.locator('#btn-menu').click();await page.locator('#btn-resign').click();
+ await page.waitForSelector('#dlg-result[open]');await page.locator('#btn-result-review').click();
  // Repositioning uses the official initial state and clears the pending period.
  await page.locator('#btn-settings').evaluate(el=>el.click());
  await page.waitForSelector('#settings.active');

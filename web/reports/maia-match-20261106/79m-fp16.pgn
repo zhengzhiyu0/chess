@@ -1,0 +1,431 @@
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 800"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. f3 Bb4 3. Ne2 Qg5 4. Ng1 Qxd2+ 5. Qxd2 Bxd2+ 6. Bxd2 d5 7. exd5 Bf5 8. Bb5+ c6 9. Bc4 Bxc2 10. dxc6 Nxc6 11. Nc3 O-O-O 12. g4 Nf6 13. h4 Nb4 14. Be6+ Kc7 15. Kf2 Nd3+ 16. Ke2 fxe6 17. Nb5+ Kb6 18. Na3 Rc8 19. g5 Nd5 20. Nh3 N5f4+ 21. Nxf4 Rhd8 22. Rac1 Nxf4+ 23. Bxf4 exf4 24. Nxc2 e5 25. Rhd1 Rc7 26. Rxd8 Re7 27. Rh8 h6 28. Rxh6+ gxh6 29. g6 e4 30. Nd4 e3 31. a4 Rg7 32. Rc6+ Ka5 33. Nf5 Rd7 34. g7 Rd8 35. Ne7 bxc6 36. g8=Q Rxg8 37. Nxg8 Kxa4 38. Nxh6 c5 39. Nf5 c4 40. h5 Kb3 41. h6 a5 42. h7 Kxb2 43. h8=Q+ c3 44. Kd1 e2+ 45. Kxe2 a4 46. Kd3 a3 47. Qxc3+ Ka2 48. Nd4 Kb1 49. Nb3 a2 50. Nd2# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 600"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. d4 d6 3. Nf3 f6 4. c3 c6 5. Be3 Bg4 6. Be2 Qb6 7. dxe5 dxe5 8. Bxb6 axb6 9. Na3 Bc5 10. O-O b5 11. Qd2 Nd7 12. Rac1 Ne7 13. Qd3 Ng6 14. Nh4 Bxa3 15. Qc2 Bd6 16. Nxg6 hxg6 17. Bxg4 f5 18. exf5 Rf8 19. fxg6 Rxa2 20. Qd2 Bc5 21. Bxd7+ Kd8 22. Bg4+ Ke8 23. Qd7# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 800"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. d4 g6 2. d5 Bg7 3. d6 exd6 4. c3 c5 5. Nf3 b6 6. e4 Qe7 7. e5 dxe5 8. Bb5 Ba6 9. Ba4 b5 10. Bb3 e4 11. Nd4 cxd4 12. cxd4 Nf6 13. O-O O-O 14. Bg5 Nc6 15. Bd5 b4 16. Qd3 Bxd3 17. Bxf6 Qxf6 18. Bxc6 dxc6 19. Nd2 Qxd4 20. Rae1 Bxf1 21. Kxf1 Qxd2 22. b3 Rad8 23. Rxe4 Qc1+ 24. Re1 Qf4 25. g3 Qd4 26. h4 h6 27. h5 Qd3+ 28. Kg2 gxh5 29. g4 Rd4 30. Kg1 Qd2 31. gxh5 Qe2 32. Rxe2 Rd3 33. f4 Rd1+ 34. Re1 Rxe1+ 35. Kf2 Ba1 36. Kg3 Rfe8 37. Kg4 R1e2 38. f5 R2e4+ 39. Kf3 Re3+ 40. Kg4 R8e4# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 600"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. d4 c5 2. Nf3 cxd4 3. Nxd4 b6 4. Nb5 d5 5. N5c3 Bb7 6. Bf4 Nf6 7. Nb5 Na6 8. N1c3 Nc5 9. Nc7+ Kd7 10. Nxa8 Qxa8 11. Qd4 g6 12. Nb5 Nh5 13. Qxh8 Nxf4 14. Qe5 g5 15. Qf5+ e6 16. Qxf4 gxf4 17. Rd1 Bc6 18. Nd4 Ba4 19. b3 Bxb3 20. axb3 e5 21. Nb5 a6 22. Rxd5+ Kc6 23. Nc3 Qc8 24. Na4 Ne6 25. Rxe5 Ng7 26. Nxb6 f3 27. Nxc8 fxg2 28. Bxg2+ Kc7 29. Bh3 Ne8 30. Rg1 a5 31. Rxe8 f6 32. Rxf8 Kb7 33. Rg7+ Kc6 34. Ne7+ Kd6 35. Nf5+ Kc6 36. c3 a4 37. bxa4 h5 38. Rxf6+ Kd5 39. a5 Ke5 40. Rd6 Kf4 41. a6 h4 42. e3+ Ke4 43. a7 Kf3 44. a8=Q# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 1000"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. d4 d5 2. e3 Nf6 3. Be2 e6 4. Bd3 Nc6 5. a3 Ng4 6. Qxg4 e5 7. Ne2 Bxg4 8. dxe5 Nxe5 9. Nd4 Nxd3+ 10. cxd3 c5 11. h3 cxd4 12. hxg4 Qg5 13. b4 Qxg4 14. f3 Qxg2 15. Rh5 Qg3+ 16. Kd1 Qxf3+ 17. Kd2 Qxh5 18. exd4 Qh2+ 19. Kc3 Rc8+ 20. Kb3 Qh4 21. Nc3 Qxd4 22. a4 Rxc3+ 23. Kb2 Qxb4+ 24. Ka2 Qb3# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1000"]
+[Black "Maia79M 800"]
+[Result "1/2-1/2"]
+[TimeControl "-"]
+[Termination "stalemate"]
+
+1. d4 d5 2. Nc3 Nc6 3. g3 e6 4. a3 Nf6 5. f4 a5 6. Bg2 Bd6 7. f5 exf5 8. Nf3 O-O 9. Ng5 Ng4 10. Nxd5 Be6 11. Ne3 Nxe3 12. Bxe3 Ne7 13. Rf1 Bc4 14. b3 Bd5 15. c4 Bc6 16. h4 Bxg2 17. Rg1 Be4 18. Nxe4 fxe4 19. c5 Bxg3+ 20. Kd2 Bxh4 21. Qf1 Ng6 22. a4 f5 23. Rc1 b6 24. cxb6 cxb6 25. d5 f4 26. Bd4 Qxd5 27. Rc4 Rac8 28. Kc2 Qxd4 29. Rxc8 Rxc8+ 30. Kb1 Qf2 31. Ka2 Qxf1 32. Rxf1 Rc2+ 33. Ka3 Rxe2 34. Rd1 f3 35. b4 f2 36. bxa5 bxa5 37. Kb3 Re1 38. Rxe1 fxe1=Q 39. Ka3 e3 40. Kb3 Qb1+ 41. Ka3 e2 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 1000"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 d6 2. d3 g6 3. Bg5 Bh6 4. Nf3 Bxg5 5. Nxg5 h6 6. Nf3 Nc6 7. Nc3 Bg4 8. Be2 e5 9. Nh4 Qxh4 10. g3 Bxe2 11. Qxe2 Qh3 12. O-O-O Nf6 13. Qf1 Qxf1 14. Rdxf1 Ng4 15. f4 exf4 16. gxf4 O-O-O 17. Nd5 Ne3 18. Nxe3 g5 19. fxg5 hxg5 20. Nf5 d5 21. c4 dxe4 22. dxe4 Nd4 23. Nxd4 Rxd4 24. Rxf7 Rxe4 25. Rf5 Rxc4+ 26. Kd2 Rd8+ 27. Ke3 g4 28. Rf4 Re8+ 29. Kd3 Rxf4 30. Kc3 Rf2 31. Rd1 Rxh2 32. b4 g3 33. Kd3 g2 34. Kd2 Rd8+ 35. Kc1 Rxd1+ 36. Kxd1 g1=Q# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1000"]
+[Black "Maia79M 800"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 c6 2. Qf3 Nf6 3. Bc4 Na6 4. Nh3 d5 5. exd5 cxd5 6. Bb3 Bxh3 7. gxh3 e6 8. d4 Qa5+ 9. Nc3 Ne4 10. Ba4+ b5 11. Bxb5+ Kd8 12. Qxf7 Nb4 13. Qd7# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 1500"]
+[Result "1/2-1/2"]
+[TimeControl "-"]
+[Termination "stalemate"]
+
+1. h4 e5 2. h5 Nc6 3. Nf3 g6 4. hxg6 Qg5 5. Nxg5 fxg6 6. Nxh7 Bb4 7. e4 Nd4 8. Bc4 Ne7 9. Nf6+ Kd8 10. Rxh8+ Ng8 11. Rxg8+ Ke7 12. Nh7 a5 13. Rg7+ Kd8 14. Nf6 Nxc2+ 15. Qxc2 Ra6 16. Bxa6 Bxd2+ 17. Bxd2 a4 18. Rxg6 bxa6 19. Qd3 Ke7 20. Nd5+ Ke8 21. Rxa6 Bxa6 22. Nxc7+ Ke7 23. Nxa6 a3 24. Nb8 axb2 25. Bg5+ Ke8 26. Bf4 bxa1=Q 27. Qxd7+ Kf8 28. Bh6+ Kg8 29. Qd5+ Kh8 30. Qd8+ Kh7 31. Bg7 Kxg7 32. Qd5 Qxb1+ 33. Kd2 Qe1+ 34. Kd3 Qd1+ 35. Kc4 Qc1+ 36. Kd3 Kg6 37. Qxe5 Qb1+ 38. Kd2 Qxa2+ 39. Kd3 Qb3+ 40. Kd4 Qd1+ 41. Kc5 Qc1+ 42. Kd5 Qd1+ 43. Ke6 Qd8 44. Nd7 Qe8+ 45. Kd6 Qf7 46. Kc7 Qxf2 47. Qe6+ Kg5 48. Qe7+ Kf4 49. Kc6 Qxg2 50. Nc5 Qf3 51. Qe6 Ke3 52. Nd7 Kd3 53. Nf6 Ke3 54. Qd6 Qe2 55. e5 Qc4+ 56. Kb6 Qb3+ 57. Kc7 Qc4+ 58. Qc6 Qf4 59. Qc5+ Kf3 60. Kd6 Kg3 61. Nh5+ Kf3 62. Nxf4 Kxf4 63. e6 Kg4 64. e7 Kf4 65. e8=Q Kg3 66. Qe4 Kh2 67. Qce3 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1500"]
+[Black "Maia79M 600"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. d4 d5 2. Nc3 c6 3. Bf4 b5 4. e3 Bh3 5. Nxh3 Na6 6. Bd3 h5 7. e4 g5 8. Nxg5 h4 9. exd5 Nf6 10. dxc6 h3 11. Nxh3 Nd7 12. Nxb5 Nb6 13. Na3 Nc8 14. Bxa6 Qxd4 15. Qxd4 e5 16. Bxe5 Rg8 17. g3 Rb8 18. Qd7# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 1500"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. d4 e6 2. e4 c5 3. Nf3 cxd4 4. Nxd4 Bc5 5. f4 Nc6 6. Nxc6 bxc6 7. a3 Qh4+ 8. g3 Qh6 9. g4 Qh4+ 10. Kd2 Nf6 11. a4 Nxg4 12. Kc3 Ne5 13. Kb3 d6 14. Bh3 Qxh3+ 15. Ka2 Ng4 16. f5 O-O 17. fxe6 fxe6 18. b4 Bxb4 19. Bg5 Ne3 20. Na3 Nxd1 21. Raxd1 Qxa3+ 22. Kb1 Ba6 23. Be7 Rf2 24. h3 Bc3 25. Rhg1 Qb2# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1500"]
+[Black "Maia79M 600"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 d5 2. exd5 Qxd5 3. Nc3 Qe5+ 4. Qe2 Qf5 5. Qf3 Qxc2 6. Bc4 e5 7. Qxf7+ Kd8 8. Qxf8+ Kd7 9. Qxg7+ Kd8 10. Qxh8 Qg6 11. Nf3 Qc2 12. Qxg8+ Ke7 13. Nxe5 Bh3 14. Qf7+ Kd8 15. Qd5+ Kc8 16. Qg8# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 800"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. d4 e6 2. h4 h6 3. a4 g5 4. g3 Bb4+ 5. Qd2 Bxd2+ 6. Bxd2 gxh4 7. Ra3 Ne7 8. Rf3 hxg3 9. Rxh6 Nf5 10. Rxh8+ Ke7 11. Rxd8 Nh4 12. Rxc8 Nxf3+ 13. exf3 gxf2+ 14. Kxf2 Kf6 15. Rxc7 Nc6 16. b4 Nd8 17. Rxd7 Rc8 18. Re7 Kxe7 19. c4 Rxc4 20. Bxc4 Nc6 21. Nc3 Nxd4 22. f4 Nf5 23. Ne4 Nd4 24. Nc5 b6 25. Na6 Nc2 26. Kg3 Nd4 27. a5 bxa5 28. Nc7 a4 29. Bc3 Nb5 30. Kg4 Nxc3 31. Bxe6 a3 32. Ba2 Nxa2 33. b5 Nb4 34. Ne2 a2 35. Nc3 a1=Q 36. N3d5+ Nxd5 37. Kg5 Qf6+ 38. Kg4 Nxf4 39. Kf3 Qd6 40. Na8 Qd5+ 41. Kxf4 Qxa8 42. Ke3 Qb8 43. Kd2 Qxb5 44. Ke3 Qe5+ 45. Kf2 Qe4 46. Kg3 a5 47. Kf2 a4 48. Kf1 a3 49. Kf2 Qf4+ 50. Ke1 a2 51. Kd1 a1=Q+ 52. Kc2 Qc4+ 53. Kd2 Qaa2+ 54. Ke3 Qa3+ 55. Kd2 Qc2+ 56. Kxc2 Qa2+ 57. Kc3 f5 58. Kb4 f4 59. Kc3 f3 60. Kb4 f2 61. Kc5 f1=Q 62. Kc6 Qc1+ 63. Kb5 Qab1+ 64. Ka4 Qcb2 65. Ka5 Q1a1# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 600"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 d5 2. f3 Na6 3. d4 dxe4 4. fxe4 Be6 5. Qh5 Qxd4 6. Nc3 g6 7. Qa5 h5 8. Qa4+ Qxa4 9. Nxa4 Bc4 10. Bxc4 Nb4 11. a3 Nxc2+ 12. Kd2 Nxa1 13. Nf3 Rd8+ 14. Ke1 Bh6 15. Bxh6 Nb3 16. Ng5 Rxh6 17. Nxf7 Rc8 18. Nxh6 Nxh6 19. Bxb3 Rd8 20. Nc5 Rd4 21. Rf1 Ng4 22. Nxb7 Nxh2 23. Rf7 Rxe4+ 24. Kf2 Rf4+ 25. Rxf4 c6 26. Bf7+ Kd7 27. Nc5+ Kc7 28. Na6+ Kb6 29. Rf6 g5 30. Nb4 h4 31. Rxc6+ Ka5 32. Ra6+ Kb5 33. Rxa7 Kc5 34. Rxe7 Kd4 35. a4 h3 36. gxh3 Kc5 37. Nd5 Kc4 38. Ne3+ Kd4 39. a5 Kc5 40. a6 Kb6 41. a7 g4 42. Nxg4 Nxg4+ 43. Kg2 Ka6 44. a8=Q+ Kb6 45. Bb3 Kc5 46. Qa5+ Kd4 47. Qd5# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 800"]
+[Result "1/2-1/2"]
+[TimeControl "-"]
+[Termination "stalemate"]
+
+1. e4 e5 2. a3 Nc6 3. f3 Nf6 4. b3 Bc5 5. b4 Bd4 6. Ne2 Bxa1 7. c3 a5 8. Ng3 axb4 9. cxb4 O-O 10. Bc4 b6 11. Nc3 Nd4 12. O-O c5 13. d3 Bxc3 14. Rf2 cxb4 15. Nf5 bxa3 16. Ra2 b5 17. Bxb5 Nxb5 18. Qa4 Rb8 19. Bg5 h6 20. Nxh6+ gxh6 21. g3 hxg5 22. Qxa3 Bb7 23. Qa7 Bd4+ 24. Kg2 Nxa7 25. Rxa7 d6 26. Ra4 Qc7 27. g4 Qc2+ 28. Kg3 Qxa4 29. h4 gxh4+ 30. Kxh4 Qd1 31. Kg5 Qxf3 32. Kh6 Qxg4 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 600"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. Ke2 d5 3. Nf3 dxe4 4. Nc3 exf3+ 5. Kxf3 Nc6 6. Qe1 Bc5 7. Bb5 Bg4+ 8. Kxg4 Nf6+ 9. Kf3 O-O 10. d3 Qd4 11. Bxc6 bxc6 12. Be3 Qg4# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 800"]
+[Result "1/2-1/2"]
+[TimeControl "-"]
+[Termination "insufficient"]
+
+1. e4 e5 2. d3 Nc6 3. Bd2 Bb4 4. Bxb4 Nxb4 5. Nf3 d6 6. Nc3 Nf6 7. Be2 O-O 8. O-O Qd7 9. Rc1 a5 10. a3 Nc6 11. Rb1 Ra6 12. b4 axb4 13. axb4 Rb6 14. Na4 Rxb4 15. Nc3 b5 16. Rxb4 Nxb4 17. Nxb5 Qxb5 18. c4 Qa4 19. Qxa4 Na6 20. Rb1 Nc5 21. Qa5 Be6 22. Qa7 Bg4 23. Rb8 h6 24. Rxf8+ Kxf8 25. Qxc7 d5 26. Bf1 Ne8 27. Qxc5+ Kg8 28. Nxe5 dxc4 29. Qxc4 Bd1 30. Qxf7+ Kh8 31. Qxe8+ Kh7 32. Nf7 Bh5 33. Qh8+ Kg6 34. Qf8 Kh7 35. Qh8+ Kg6 36. Qf8 Kf6 37. Nxh6+ Kg6 38. Qxg7+ Kxg7 39. Nf5+ Kg6 40. d4 Kg5 41. d5 Kf4 42. Bd3 Ke5 43. f3 Bg6 44. g3 Kf6 45. g4 Bxf5 46. gxf5 Ke5 47. Bb5 Kf4 48. f6 Kxf3 49. e5 Ke3 50. e6 Ke4 51. d6 Kf5 52. Ba6 Kf4 53. d7 Kf5 54. d8=Q Kxe6 55. f7 Kxf7 56. h4 Kg6 57. Bb7 Kh5 58. Qh8+ Kg6 59. Qd4 Kh5 60. Bf3+ Kg6 61. Be4+ Kh5 62. Bf5 Kh6 63. Qd6+ Kh5 64. Qd5 Kxh4 65. Qe4+ Kg5 66. Bh3 Kf6 67. Qf4+ Kg6 68. Qc4 Kg5 69. Qc7 Kh4 70. Bd7 Kg5 71. Qc8 Kf4 72. Qf8+ Ke3 73. Qf3+ Kxf3 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 600"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. Nc3 Nc6 3. f3 Bb4 4. a3 Ba5 5. b4 Bb6 6. Nge2 d6 7. Ng3 Be6 8. d3 Qe7 9. f4 Bd4 10. Bb2 exf4 11. Nh5 g6 12. Nxf4 O-O-O 13. b5 Ne5 14. Ncd5 Qh4+ 15. g3 Bg4 16. Be2 Qh6 17. Bxd4 f6 18. h3 c6 19. Nc3 Bh5 20. bxc6 bxc6 21. Ne6 Ne7 22. g4 Rde8 23. gxh5 Nf5 24. Bxa7 Ng3 25. Rg1 Qg5 26. Rc1 Rxe6 27. d4 gxh5 28. Bxh5 Nxh5 29. Rxg5 Re7 30. Rxh5 Kd8 31. dxe5 Rxa7 32. exd6 Rxa3 33. Rf5 Rxc3 34. Rxf6 h5 35. d7 Rxh3 36. Rxc6 Re8 37. dxe8=Q+ Kxe8 38. Re6+ Kf7 39. Ra6 h4 40. Ra7+ Ke6 41. Ra6+ Ke5 42. c4 Rh1+ 43. Kd2 h3 44. c5 Rxd1+ 45. Rxd1 h2 46. c6 Kxe4 47. c7 Kf3 48. c8=Q h1=Q 49. Rxh1 Kf2 50. Qc1 Kg3 51. Qc7+ Kg2 52. Rh8 Kf1 53. Ke3 Ke1 54. Ke4 Ke2 55. Kf5 Kd1 56. Rd8+ Ke1 57. Ke4 Kf1 58. Ra2 Ke1 59. Qc1# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 800"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. Nf3 Nc6 3. d3 Nf6 4. Nc3 Nd4 5. Nxd4 exd4 6. Nd5 Nxd5 7. exd5 Bb4+ 8. c3 Bc5 9. cxd4 Bxd4 10. Qa4 Qf6 11. Bd2 Bxb2 12. g3 Bxa1 13. Qd1 Bd4 14. Be2 Qxf2# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 600"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. Nf3 Nf6 3. d3 Nc6 4. Nc3 Ng4 5. h3 Nf6 6. a3 d6 7. Be2 Be6 8. O-O h5 9. Be3 h4 10. d4 exd4 11. Nxd4 Bd7 12. a4 Bxh3 13. gxh3 Nxd4 14. Bxd4 d5 15. Ra3 Nxe4 16. Rb3 Qd6 17. Rxb7 Qg6+ 18. Bg4 Nxc3 19. bxc3 f5 20. Rxc7 fxg4 21. Rxa7 Rxa7 22. Kh1 Rxa4 23. hxg4 h3 24. Re1+ Kd7 25. Qb1 Qxg4 26. Qb7+ Kd8 27. Bb6# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 1000"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. Nf3 b6 2. e4 Bb7 3. Bc4 Nc6 4. Ng5 e6 5. O-O Qxg5 6. d3 Nd4 7. Bxg5 f5 8. Qh5+ g6 9. Qd1 fxe4 10. dxe4 Bc5 11. Nc3 h6 12. Bf6 Nxf6 13. e5 Nh5 14. Nb5 Rc8 15. Nxd4 Nf4 16. Nb3 Bxg2 17. Re1 Bb4 18. Bb5 Bxe1 19. Qxe1 Bd5 20. Nd4 O-O 21. Bxd7 Rcd8 22. Bb5 Nh3+ 23. Kf1 Rxf2+ 24. Qxf2 Nxf2 25. Kxf2 Rf8+ 26. Ke3 Rf2 27. h4 Rf3+ 28. Ke2 Rf4 29. Nf3 Bxf3+ 30. Ke3 Rxh4 31. Kxf3 g5 32. Kg3 Kg7 33. Re1 Rb4 34. Bd3 Rh4 35. Re4 h5 36. Rxh4 gxh4+ 37. Kxh4 Kh6 38. c4 c5 39. b3 a5 40. a3 Kg7 41. Kxh5 Kf7 42. Be2 Ke8 43. a4 Kf7 44. Bf3 Ke7 45. Be4 Kf7 46. Bc6 Ke7 47. Be4 Kf7 48. Kg5 Ke7 49. Bg6 Kd7 50. Kf6 Kc7 51. Kxe6 Kc6 52. Kf5 Kd7 53. e6+ Kd6 54. Kf6 Kc6 55. e7 b5 56. cxb5+ Kd5 57. e8=Q Kd6 58. Qe6+ Kc7 59. Qc6+ Kb8 60. Qxc5 Kb7 61. Qc6+ Kb8 62. Bf5 Ka7 63. Bc8 Kb8 64. Ke7 Ka7 65. Qb7# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1000"]
+[Black "Maia79M 800"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e3 c6 2. Bc4 b5 3. Bb3 a6 4. Qf3 Bb7 5. Qxf7# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 1000"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. Nc3 g6 2. a3 d5 3. d4 Bg7 4. Bg5 Nf6 5. Qd3 b6 6. Qf3 Bb7 7. Bxf6 Bxf6 8. O-O-O c6 9. e4 dxe4 10. Qxe4 O-O 11. Nf3 c5 12. Qxb7 Nd7 13. Nd5 cxd4 14. Bb5 Nc5 15. Qc6 a6 16. Bd3 Rb8 17. Nxf6+ exf6 18. Bxa6 Nxa6 19. Rxd4 Qe7 20. Rhd1 Nc5 21. Qd6 Qe8 22. Qxb8 Qxb8 23. Rd5 Kg7 24. b4 Ne4 25. Nh4 Nxf2 26. Rd6 Nxd1 27. Rxd1 Qxh2 28. a4 Qxh4 29. a5 bxa5 30. bxa5 Ra8 31. a6 Rxa6 32. c3 Ra1+ 33. Kd2 Rxd1+ 34. Kxd1 Qc4 35. Kc2 f5 36. g3 Kf6 37. Kc1 Ke5 38. Kb2 Qg4 39. Kb3 Qxg3 40. Kc4 f4 41. Kb3 f3 42. c4 f2+ 43. Kb4 f1=Q 44. c5 Qfd3 45. Ka5 Qb3 46. c6 Qb8 47. Ka4 Qg4+ 48. Ka5 Qgb4+ 49. Ka6 Qa4# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1000"]
+[Black "Maia79M 800"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. c4 a5 2. f3 d6 3. Qa4+ Bd7 4. c5 Bxa4 5. d4 g6 6. Bg5 dxc5 7. b3 Bxb3 8. axb3 b5 9. dxc5 f6 10. Be3 f5 11. Bd4 Qxd4 12. c6 Qxa1 13. Nh3 Qxb1+ 14. Kf2 Qxb3 15. Ng5 e6 16. e4 Qc2+ 17. Be2 b4 18. Nxe6 Bc5+ 19. Kg3 Qxe2 20. Nxc5 fxe4 21. Ne6 h5 22. Ng5 Nf6 23. Ne6 Nxc6 24. Nxc7+ Kd7 25. Nxa8 Rxa8 26. Re1 Qxe1+ 27. Kf4 b3 28. fxe4 Nxe4 29. Kf3 b2 30. Kf4 b1=Q 31. Kf3 Nd4+ 32. Kf4 Rf8+ 33. Ke5 a4 34. Kxd4 a3 35. Kd5 a2 36. Ke5 a1=Q+ 37. Kd5 Qbd1+ 38. Kc4 Qda4+ 39. Kd3 Kd6 40. g3 Qeb4 41. Ke3 Qae1+ 42. Kd3 Qbd2# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 1000"]
+[Result "1/2-1/2"]
+[TimeControl "-"]
+[Termination "threefold"]
+
+1. e4 e6 2. Nf3 c5 3. Nc3 d5 4. Bb5+ Bd7 5. Ne5 Bxb5 6. Nxb5 Nc6 7. Nxc6 Rb8 8. Nd6+ Qxd6 9. Nxb8 Qxb8 10. d4 Qd8 11. dxc5 Bxc5 12. exd5 exd5 13. Bf4 Qh4 14. Bg3 Qe4+ 15. Qe2 Nf6 16. O-O-O Qxe2 17. Rhe1 Qxe1 18. Rxe1+ Kd8 19. Be5 Ne4 20. Bxg7 Rg8 21. Bf6+ Nxf6 22. b4 Bxf2 23. Rf1 Be3+ 24. Kd1 Bg5 25. a4 Ne4 26. Rxf7 Nf2+ 27. Ke1 Ne4 28. Rxb7 Bh4+ 29. Ke2 Nc3+ 30. Kd3 Nxa4 31. g3 Bf6 32. Rxh7 Nb2+ 33. Kd2 d4 34. Rxa7 Bg5+ 35. Ke2 Re8+ 36. Kf3 Nc4 37. Ra8+ Ke7 38. Ra4 Nd2+ 39. Kg4 Bf6 40. b5 Ne4 41. b6 Nc5 42. Rc4 Rg8+ 43. Kh3 Nb7 44. c3 d3 45. Rc7+ Kd8 46. Rxb7 d2 47. Rb8+ Kd7 48. Rxg8 d1=Q 49. b7 Qb1 50. b8=Q Bxc3 51. Qxb1 Ke6 52. Qg6+ Ke5 53. Qe8+ Kd6 54. Rg6+ Kd5 55. Re6 Kd4 56. g4 Kd5 57. Qc6+ Kd4 58. Qd7+ Kc4 59. Qc7+ Kd5 60. Qc6+ Kd4 61. Re4+ Kd3 62. Re6 Kd4 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1000"]
+[Black "Maia79M 800"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e6 2. d4 c6 3. Nc3 b5 4. d5 Bb4 5. dxc6 Nxc6 6. a3 Ba5 7. b4 Nb8 8. Bb2 Bb6 9. Bxb5 Bb7 10. e5 a5 11. Nf3 axb4 12. axb4 Rxa1 13. Qxa1 Nh6 14. Na4 Ba7 15. Nc5 Bb6 16. Nxb7 Qc7 17. Nd6+ Ke7 18. O-O Qxd6 19. exd6+ Kxd6 20. Bxg7 Rg8 21. Bxh6 Rg6 22. Qe5+ Ke7 23. Qxb8 Rxh6 24. Qxb6 Rf6 25. Bc4 h5 26. Qc5+ d6 27. Qc7+ Ke8 28. Qxd6 h4 29. Ra1 Rf4 30. Qxf4 h3 31. b5 Kd7 32. gxh3 Kc8 33. Qxf7 Kd8 34. Qxe6 Kc7 35. Ra7+ Kb8 36. Qf7 Kc8 37. Ra8# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 800"]
+[Black "Maia79M 1000"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. d4 a6 2. e4 e6 3. Nc3 Bb4 4. a3 Bxc3+ 5. bxc3 b5 6. Nf3 g5 7. e5 Bb7 8. c4 g4 9. Nd2 h5 10. Nb3 c5 11. Nxc5 Be4 12. f3 gxf3 13. Nxe4 Qh4+ 14. g3 Qxe4+ 15. Be2 fxe2 16. Qd2 Qxh1+ 17. Kxe2 Qxh2+ 18. Kd3 Qxd2+ 19. Kxd2 h4 20. gxh4 d6 21. exd6 bxc4 22. Bb2 Rxh4 23. a4 f6 24. Rg1 Kf8 25. d5 exd5 26. d7 Nxd7 27. a5 Rb8 28. Rf1 Rxb2 29. Kc3 Rb3+ 30. Kd2 Rf3 31. Rxf3 Nh6 32. Rd3 Rh2+ 33. Ke3 cxd3 34. Kxd3 Rh3+ 35. Kd4 f5 36. Kxd5 f4 37. Kc6 f3 38. Kxd7 f2 39. c4 f1=Q 40. c5 Qb5+ 41. Ke6 Qxc5 42. Kf6 Ng4+ 43. Kg6 Ne3 44. Kf6 Qxa5 45. Ke6 Qb6+ 46. Kd7 Rh7+ 47. Kc8 Rc7+ 48. Kd8 Qb8# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1000"]
+[Black "Maia79M 800"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. d4 h5 2. e4 g5 3. Bxg5 Rh7 4. Bb5 Rg7 5. Bf4 Rxg2 6. Qxh5 Rg3 7. hxg3 a5 8. Qh7 a4 9. Bc4 Ra5 10. b4 e6 11. bxa5 f5 12. Be2 a3 13. Bh5# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 1500"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Bxc6 dxc6 5. Rf1 Bd6 6. Rh1 Nf6 7. Nc3 Bg4 8. d3 Bb4 9. Bg5 Bxc3+ 10. bxc3 h6 11. h3 hxg5 12. hxg4 Rxh1+ 13. Ke2 Rxd1 14. Rxd1 Qd7 15. Rd2 O-O-O 16. Nxg5 Qxg4+ 17. f3 Qxg5 18. Kf2 Qxd2+ 19. Kg3 Rh8 20. a4 Qe1# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1500"]
+[Black "Maia79M 600"]
+[Result "1/2-1/2"]
+[TimeControl "-"]
+[Termination "stalemate"]
+
+1. e4 e5 2. Nf3 Nc6 3. Nc3 Bc5 4. Bc4 d6 5. Nh4 Qxh4 6. O-O Bg4 7. Qe1 d5 8. Bxd5 f5 9. exf5 Bd6 10. Bxc6+ bxc6 11. h3 Bxf5 12. d3 e4 13. dxe4 Bxh3 14. gxh3 Qg5+ 15. Kh1 O-O-O 16. Bxg5 Re8 17. Qe3 h6 18. Bf4 Bxf4 19. Qxf4 g5 20. Qf6 Nxf6 21. f3 g4 22. hxg4 h5 23. Kg2 hxg4 24. fxg4 Nxe4 25. Rae1 Nd2 26. Rxe8+ Rxe8 27. Rd1 Rd8 28. Rxd2 Rxd2+ 29. Kf3 Rxc2 30. b4 Rxc3+ 31. Kf4 Rc4+ 32. Kg3 Rxb4 33. g5 Rb2 34. g6 c5 35. g7 Rb8 36. g8=Q+ Kb7 37. Qg5 Rg8 38. Qxg8 c4 39. Qxc4 c5 40. Qxc5 Ka6 41. a4 Kb7 42. a5 Kb8 43. Kf4 Kb7 44. Ke4 Ka6 45. Qb5+ Kxb5 46. Kd3 Kxa5 47. Kc3 Ka4 48. Kc4 a5 49. Kc3 Kb5 50. Kb3 a4+ 51. Ka3 Ka5 52. Kb2 Kb4 53. Ka2 Kc4 54. Ka3 Kb5 55. Ka2 Kb4 56. Kb2 a3+ 57. Kb1 Kb3 58. Ka1 Ka4 59. Kb1 Kb3 60. Ka1 a2 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 1500"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. Nf3 d5 3. Bd3 dxe4 4. Bxe4 Bc5 5. O-O Nf6 6. Nxe5 Nxe4 7. d3 O-O 8. Nf3 Nxf2 9. Ne5 Nxd1+ 10. Rf2 Qd4 11. Be3 Qxe3 12. Nf3 Qxf2+ 13. Kh1 Qf1+ 14. Ng1 Qxg1# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1500"]
+[Black "Maia79M 600"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. Nf3 Bd6 3. Be2 Nf6 4. O-O Nc6 5. d3 O-O 6. Bg5 Nxe4 7. Bxd8 Nd4 8. Bg5 Nxe2+ 9. Qxe2 Nxg5 10. Nxg5 g6 11. Qg4 e4 12. Qh3 exd3 13. Qxh7# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 1500"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. Nc3 Bb4 3. Bb5 Bxc3 4. dxc3 Qf6 5. f3 c6 6. Bd3 b5 7. c4 Ba6 8. cxb5 cxb5 9. Be3 Qg6 10. Ne2 Qxg2 11. Rf1 b4 12. Nf4 Qxh2 13. Nd5 Bb7 14. b3 Bxd5 15. a3 Bc6 16. axb4 Qh6 17. Bxh6 Nxh6 18. Rg1 O-O 19. c4 f5 20. exf5 Nxf5 21. Bxf5 Rxf5 22. b5 Bxf3 23. Qc1 Rf4 24. Qc3 d6 25. c5 Re4+ 26. Kf1 dxc5 27. Qxc5 Bh5 28. Rh1 a6 29. Qc8+ Kf7 30. Qc7+ Kg8 31. Qd8+ Kf7 32. Qd3 axb5 33. Qxe4 Bd1 34. b4 Ba4 35. Qg4 Nc6 36. Rb1 Kf6 37. Rxh7 Rf8 38. Rxg7 Nd8 39. Qg5+ Ke6+ 40. Ke1 Nf7 41. Rg6+ Kd5 42. Rd1+ Kc4 43. Qg4+ Kb3 44. Kd2 e4 45. Qf4 e3+ 46. Kxe3 Nd8 47. Rd3+ Ka2 48. Qf2+ Kb1 49. Rg1+ Bd1 50. Rdxd1# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1500"]
+[Black "Maia79M 600"]
+[Result "1-0"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. e4 e5 2. Bc4 b5 3. Bb3 Nc6 4. Qh5 a6 5. Qxf7# 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 600"]
+[Black "Maia79M 1500"]
+[Result "0-1"]
+[TimeControl "-"]
+[Termination "checkmate"]
+
+1. d4 e5 2. Nc3 exd4 3. Nd5 c6 4. c3 cxd5 5. cxd4 Nc6 6. e4 dxe4 7. f3 exf3 8. gxf3 Bb4+ 9. Kf2 d5 10. Nh3 Nf6 11. Nf4 O-O 12. Nh5 Nxh5 13. Bg5 Qxg5 14. Ke2 Qf4 15. Qb3 Qd2# 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Maia79M 1500"]
+[Black "Maia79M 600"]
+[Result "1/2-1/2"]
+[TimeControl "-"]
+[Termination "insufficient"]
+
+1. d4 e5 2. dxe5 Bc5 3. e3 f6 4. f4 Nc6 5. Nf3 fxe5 6. fxe5 Bxe3 7. Bxe3 d6 8. exd6 cxd6 9. Bc4 Na5 10. Bb3 Bg4 11. O-O Bxf3 12. Rxf3 g5 13. Bxg5 Qxg5 14. Bxg8 Qxg2+ 15. Kxg2 Rxg8+ 16. Rg3 Rxg3+ 17. Kxg3 Rd8 18. Na3 Nc6 19. Qe1+ Ne5 20. Qxe5+ dxe5 21. b4 e4 22. Kf2 Rd2+ 23. Ke3 Rxh2 24. Kxe4 Kf8 25. Nc4 Rxc2 26. Nd6 h5 27. Nxb7 Re2+ 28. Kd3 Rh2 29. b5 Rh3+ 30. Kc4 h4 31. Rf1+ Ke8 32. Nd6+ Kd7 33. Kc5 Rc3+ 34. Kd5 h3 35. a4 h2 36. Ne4 Rc2 37. Ng3 Rd2+ 38. Ke4 Ra2 39. Ke3 Rxa4 40. Nh1 Rb4 41. Ra1 Rxb5 42. Rxa7+ Kc6 43. Kf3 Rb2 44. Kg3 Kb6 45. Rf7 Rb1 46. Nf2 h1=N+ 47. Kg2 Nxf2 48. Rxf2 Rb4 49. Kf1 Rb1+ 50. Kg2 Kc5 51. Rf8 Rb2+ 52. Kf3 Rb3+ 53. Kf4 Rb4+ 54. Ke5 Kc6 55. Rc8+ Kb5 56. Kd5 Rf4 57. Rb8+ Ka4 58. Ra8+ Kb4 59. Kc6 Rc4+ 60. Kb7 Rc5 61. Ra6 Rb5+ 62. Rb6 Rxb6+ 63. Kxb6 1/2-1/2

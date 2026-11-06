@@ -210,7 +210,7 @@ export function ratingBreakdown(r: RatingInfo): string {
         `已完成 ${r.games ?? 0} 局独立计分对局`);
       if (r.method === 'glicko2-period-v1') parts.push(r.periodCompleted ? '本周期 10/10 局，已统一更新棋力'
         : `本周期 ${r.period?.length ?? 0}/10 局，再完成 ${10 - (r.period?.length ?? 0)} 局后统一更新棋力`);
-      if (Math.abs(r.playerAfter - r.opponent) > 200) parts.push('建议挑战更接近当前估分的 Maia 档位，以缩小估计范围');
+      if ((r.games ?? 0) >= 10 && Math.abs(r.playerAfter - r.opponent) > 200) parts.push('建议挑战更接近当前估分的 Maia 档位，以缩小估计范围');
     }
     if (r.abandoned) parts.push('中途离开，按认输记录');
     return parts.join(' · ');

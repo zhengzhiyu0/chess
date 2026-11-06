@@ -1,4 +1,5 @@
 import { sanitizeRatingPeriod, type Glicko2Result } from './game/glicko2';
+import type { ChessExperience } from './game/placement';
 import { isNative } from './native';
 import { readJson, removeStored, safeSet } from './storage';
 import { BOARD_THEMES, PIECE_SETS } from './app/appearance';
@@ -25,6 +26,7 @@ export interface Settings {
   ratedGames: number;
   /** Independent result-only games since the current placement began (old scores are priors). */
   independentGames: number;
+  chessExperience: ChessExperience;
   color: Color | 'random';
   temperature: number;
   /** Opt-in, device-local capture of committed Maia sampling decisions. */
@@ -126,7 +128,7 @@ export function defaultSettings(): Settings {
   return {
     theme: 'dark',
     model: FIXED_NATIVE_ENGINES ? '79m' : isNative ? '23m' : isIOS ? '5m' : '23m',
-    elo: 1500,
+    elo: 600,
     playerElo: 1500,
     ratingDeviation: 350,
     ratingVolatility: 0.06,
@@ -134,6 +136,7 @@ export function defaultSettings(): Settings {
     ratingStreak: 0,
     ratedGames: 0,
     independentGames: 0,
+    chessExperience: 'unknown',
     color: 'w',
     temperature: 1,
     samplingCapture: false,
@@ -240,6 +243,7 @@ const RULES: Record<keyof Settings, Rule> = {
   ratingStreak: { num: [-8, 8], int: true },
   ratedGames: { num: [0, 1e9], int: true },
   independentGames: { num: [0, 1e9], int: true },
+  chessExperience: { oneOf: ['unknown', 'beginner', 'casual', 'regular', 'skip'] },
   color: { oneOf: ['w', 'b', 'random'] },
   temperature: { num: [0, 1.5] },
   samplingCapture: { bool: true },

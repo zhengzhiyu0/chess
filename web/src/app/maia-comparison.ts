@@ -15,6 +15,7 @@ export interface ComparisonContext {
 interface Options {
   context(): ComparisonContext | null;
   evaluate(fen: string, fens: string[], ratings: number[]): Promise<MaiaResult[]>;
+  onExposure?(): void;
 }
 
 const RATINGS = [600, 800, 1000, 1200, 1400, 1500, 1600, 1800, 2000, 2200, 2400, 2600];
@@ -77,6 +78,7 @@ export function mountMaiaComparison(host: HTMLElement, options: Options): { upda
     note.className = 'muted';
     note.textContent = '列出双方预测前三名及引擎最佳；未列出其他合法走法，因此本表概率不一定合计 100%。';
     result.append(note);
+    options.onExposure?.();
   }
 
   function update() {

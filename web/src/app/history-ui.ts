@@ -41,7 +41,7 @@ function listHtml(games: StoredGame[]) {
         tc ?? '',
         assistCount(g.assists) > 0 ? '使用过辅助' : '',
         g.ratingPending ? '表现结算待完成' : '',
-        g.eloAfter !== undefined && playerBefore !== undefined ? `等级分 ${g.eloAfter - playerBefore >= 0 ? '+' : ''}${g.eloAfter - playerBefore}` : '',
+        g.eloAfter !== undefined && playerBefore !== undefined ? `等级分 ${g.eloAfter - playerBefore >= 0 ? '+' : ''}${Math.round(g.eloAfter) - Math.round(playerBefore)}` : '',
       ].filter(Boolean);
       return (
         `<div class="hg" data-id="${escapeHtml(g.id)}">` +

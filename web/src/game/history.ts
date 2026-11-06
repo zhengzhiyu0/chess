@@ -5,6 +5,7 @@ import { END_REASON_TEXT, type Color, type EndReason } from './rules';
 import { isObj, readJson, safeSet } from '../storage';
 import type { Assists, MoveEvidence, RatingEvidence, RatingInfo } from './rating';
 import { sanitizeAnalysis, type SavedAnalysis } from './analysis-state';
+import { sanitizeRatingPeriod, type Glicko2Result } from './glicko2';
 
 export type { Assists, RatingInfo } from './rating';
 
@@ -30,7 +31,10 @@ export interface StoredGame {
   /** Player rating state locked when the game starts. */
   playerElo?: number;
   ratingDeviation?: number;
+  ratingVolatility?: number;
+  ratingPeriod?: Glicko2Result[];
   ratingStreak?: number;
+  independentGames?: number;
   temperature?: number;
   /** Player's rating after this eligible game was settled. */
   eloAfter?: number;
@@ -138,7 +142,7 @@ export interface RatingPoint {
 /** Settled local rated games, ordered from oldest to newest for profile charts. */
 export function ratingHistory(history: StoredGame[]): RatingPoint[] {
   return history
-    .filter((g) => !g.imported && g.ratingApplied !== false && !g.ratingSkipped && Boolean(outcomeOf(g)) && (g.rating?.playerAfter !== undefined || g.eloAfter !== undefined))
+    .filter((g) => !g.imported && !g.rating?.excluded && (g.rating?.method !== 'glicko2-period-v1' || g.rating.periodCompleted) && g.ratingApplied !== false && !g.ratingSkipped && Boolean(outcomeOf(g)) && (g.rating?.playerAfter !== undefined || g.eloAfter !== undefined))
     .map((g) => ({ date: g.date, rating: g.rating?.playerAfter ?? g.eloAfter! }))
     .filter((p) => Number.isFinite(p.rating))
     .sort((a, b) => a.date - b.date);
@@ -172,11 +176,13 @@ export function saveHistory(h: StoredGame[]): boolean {
 const RESULT_SET = new Set(['', '*', '1-0', '0-1', '1/2-1/2']);
 const REASONS = new Set(Object.keys(END_REASON_TEXT));
 const str = (v: unknown, max = 200) => typeof v === 'string' && v.length <= max;
-const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const inRange = (v: unknown, min: number, max: number, integer = false): v is number =>
   num(v) && (v as number) >= min && (v as number) <= max && (!integer || Number.isInteger(v));
 const elo = (v: unknown): v is number => inRange(v, 0, 2600, true);
-const deviation = (v: unknown): v is number => inRange(v, 60, 350);
+const playerRating = (v: unknown): v is number => num(v);
+const deviation = (v: unknown): v is number => num(v) && (v as number) > 0;
+const volatility = deviation;
 const streak = (v: unknown): v is number => inRange(v, -8, 8, true);
 const assist = (v: unknown): number => num(v) && Number.isInteger(v) && (v as number) >= 0 ? v as number : 0;
 
@@ -196,7 +202,7 @@ function sanitizeCalculation(v: unknown): RatingInfo['calculation'] {
   const c = v;
   if (!inRange(c.score, 0, 1) || !inRange(c.weight, 0, 0.4)
     || !inRange(c.undo, 0, Number.MAX_SAFE_INTEGER, true) || !inRange(c.undoFactor, 0, 1)
-    || !inRange(c.baseDelta, -2600, 2600, true)) return undefined;
+    || !num(c.baseDelta)) return undefined;
   let performance: NonNullable<RatingInfo['calculation']>['performance'] = undefined;
   if (c.performance !== undefined) {
     if (!isObj(c.performance)) return undefined;
@@ -251,11 +257,14 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
   if (typeof r.reason === 'string' && REASONS.has(r.reason)) g.reason = r.reason as EndReason;
   if (num(r.coachAvatar) && Number.isInteger(r.coachAvatar as number) && (r.coachAvatar as number) >= 0 && (r.coachAvatar as number) <= 999) g.coachAvatar = r.coachAvatar as number;
   if (elo(r.elo)) g.elo = r.elo;
-  if (elo(r.playerElo)) g.playerElo = r.playerElo;
+  if (playerRating(r.playerElo)) g.playerElo = r.playerElo;
   if (deviation(r.ratingDeviation)) g.ratingDeviation = r.ratingDeviation;
+  if (volatility(r.ratingVolatility)) g.ratingVolatility = r.ratingVolatility;
+  if (Array.isArray(r.ratingPeriod)) g.ratingPeriod = sanitizeRatingPeriod(r.ratingPeriod);
   if (streak(r.ratingStreak)) g.ratingStreak = r.ratingStreak;
+  if (inRange(r.independentGames, 0, 1e9, true)) g.independentGames = r.independentGames;
   if (inRange(r.temperature, 0, 1.5)) g.temperature = r.temperature;
-  if (elo(r.eloAfter)) g.eloAfter = r.eloAfter;
+  if (playerRating(r.eloAfter)) g.eloAfter = r.eloAfter;
   if (str(r.model, 16)) g.model = r.model as string;
   if (str(r.tc, 16)) g.tc = r.tc as string;
   if (Array.isArray(r.clock) && r.clock.length === 2 && r.clock.every(num)) g.clock = [r.clock[0], r.clock[1]];
@@ -291,8 +300,8 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
   }
   if (isObj(r.rating)) {
     const x = r.rating;
-    if (inRange(x.delta, -2600, 2600, true) && (x.result === 0 || x.result === 0.5 || x.result === 1)
-      && inRange(x.expected, 0, 1) && elo(x.playerBefore) && elo(x.playerAfter) && elo(x.opponent)
+    if (num(x.delta) && (x.result === 0 || x.result === 0.5 || x.result === 1)
+      && inRange(x.expected, 0, 1) && playerRating(x.playerBefore) && playerRating(x.playerAfter) && elo(x.opponent)
       && deviation(x.rdBefore) && deviation(x.rdAfter) && streak(x.streak)) {
       const calculation = sanitizeCalculation(x.calculation);
       g.rating = {
@@ -307,6 +316,12 @@ export function sanitizeGame(raw: unknown): StoredGame | null {
         streak: x.streak,
         ...(x.abandoned === true ? { abandoned: true } : {}),
         ...(calculation ? { calculation } : {}),
+        ...(x.method === 'result-v2' || x.method === 'glicko2-v1' || x.method === 'glicko2-period-v1' ? { method: x.method } : {}),
+        ...(x.method === 'glicko2-period-v1' ? { period: sanitizeRatingPeriod(x.period), periodCompleted: x.periodCompleted === true } : {}),
+        ...(volatility(x.volatilityBefore) ? { volatilityBefore: x.volatilityBefore } : {}),
+        ...(volatility(x.volatilityAfter) ? { volatilityAfter: x.volatilityAfter } : {}),
+        ...(x.excluded === 'assisted' || x.excluded === 'sampling' ? { excluded: x.excluded } : {}),
+        ...(inRange(x.games, 0, 1e9, true) ? { games: x.games } : {}),
       };
     }
   }

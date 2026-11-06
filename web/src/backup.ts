@@ -104,8 +104,11 @@ export function mergeBackup(cur: BackupData, inc: BackupData): BackupData {
     ...cur.settings,
     playerElo: inc.settings.playerElo,
     ratingDeviation: inc.settings.ratingDeviation,
+    ratingVolatility: inc.settings.ratingVolatility,
+    ratingPeriod: inc.settings.ratingPeriod,
     ratingStreak: inc.settings.ratingStreak,
     ratedGames: inc.settings.ratedGames,
+    independentGames: inc.settings.independentGames,
   } : cur.settings;
   return normalizeBackup({
     settings,

@@ -8,7 +8,7 @@ import {
   type PerformanceSample,
 } from '../src/game/rating';
 
-const base = { playerElo: 1500, opponentElo: 1500, deviation: 120, streak: 0 };
+const base = { playerElo: 1500, opponentElo: 1500, deviation: 120, streak: 0, games: 19, period: Array.from({ length: 9 }, () => ({ rating: 1500, deviation: 0, score: 0.5 })) };
 
 function samples(count: number, after: number, patch: Partial<PerformanceSample> = {}): PerformanceSample[] {
   return Array.from({ length: count }, () => ({ before: 50, after, ...patch }));
@@ -19,38 +19,36 @@ function evidenceWithDependence(dependence: number) {
 }
 
 describe('评级表现与辅助证据', () => {
-  it('相同结果也会按双方走子质量拉开分差', () => {
+  it('准确率不改变相同胜负的估分', () => {
     const strongPerformance = ratingPerformance(samples(20, 50), samples(20, 45))!;
     const poorPerformance = ratingPerformance(samples(20, 20), samples(20, 45))!;
     const strong = computeRating({ ...base, result: 1, performance: strongPerformance });
     const poor = computeRating({ ...base, result: 1, performance: poorPerformance });
 
     expect(strongPerformance.playerAccuracy).toBeGreaterThan(poorPerformance.playerAccuracy);
-    expect(strong.delta).toBeGreaterThan(poor.delta);
+    expect(strong.delta).toBe(poor.delta);
     expect(strong.calculation?.performance?.opponentAccuracy).toBe(poor.calculation?.performance?.opponentAccuracy);
   });
 
-  it('强对手胜利仍有更高预期外收益，且评级不会越过低分和高分边界', () => {
-    const strongOpponent = computeRating({ ...base, opponentElo: 2200, result: 1 });
-    const weakOpponent = computeRating({ ...base, opponentElo: 1000, result: 1 });
-    expect(strongOpponent.delta).toBeGreaterThan(weakOpponent.delta);
-
-    const top = computeRating({ playerElo: 2600, opponentElo: 2200, deviation: 120, streak: 0, result: 1 });
-    const bottom = computeRating({ playerElo: 0, opponentElo: 1000, deviation: 120, streak: 0, result: 0 });
-    expect(top.playerAfter).toBe(2600);
-    expect(bottom.playerAfter).toBe(0);
-    expect(top.delta).toBe(0);
-    expect(bottom.delta).toBe(0);
+  it('stronger wins contribute more and player ratings have no artificial bounds', () => {
+    expect(computeRating({ ...base, opponentElo: 2200, result: 1 }).delta)
+      .toBeGreaterThan(computeRating({ ...base, opponentElo: 1000, result: 1 }).delta);
+    for (const [playerElo, result] of [[2600, 1], [0, 0]]) {
+      const period = Array.from({ length: 9 }, () => ({ rating: playerElo, deviation: 0, score: result }));
+      const r = computeRating({ ...base, playerElo, opponentElo: playerElo, result, period });
+      expect(result ? r.playerAfter > 2600 : r.playerAfter < 0).toBe(true);
+      expect(r.delta).toBe(r.playerAfter - playerElo);
+    }
   });
 
-  it('短局的表现证据权重较小，不会盖过胜负结果', () => {
+  it('有效着法数量不改变结果权重', () => {
     const shortPerformance = ratingPerformance(samples(1, 70), samples(1, 60))!;
     const longPerformance = ratingPerformance(samples(20, 70), samples(20, 60))!;
     const shortGame = computeRating({ ...base, result: 1, performance: shortPerformance });
     const longGame = computeRating({ ...base, result: 1, performance: longPerformance });
 
-    expect(shortGame.calculation?.weight).toBeLessThan(longGame.calculation?.weight ?? 0);
-    expect(shortGame.delta).toBeGreaterThan(longGame.delta);
+    expect(shortGame.calculation?.weight).toBe(0);
+    expect(shortGame.delta).toBe(longGame.delta);
   });
 
   it('强制着法和胜负已定的局面不会刷高有效准确率', () => {
@@ -87,20 +85,13 @@ describe('评级表现与辅助证据', () => {
     expect(moveDependence({ best: [] }, 'e2e4')).toBe(0);
   });
 
-  it('分析与重复悔棋会留下可观察影响，但首悔棋不改变收益', () => {
-    const noAnalysis = moveDependence({}, 'e2e4');
-    const analyzed = moveDependence({ analysis: true }, 'e2e4');
-    const reconsidered = moveDependence({ reconsidered: true }, 'e2e4');
-    expect(analyzed).toBeGreaterThan(noAnalysis);
-    expect(reconsidered).toBeGreaterThan(noAnalysis);
-
-    const cleanWin = computeRating({ ...base, result: 1 });
-    const firstUndo = computeRating({ ...base, result: 1, undo: 1 });
-    const secondUndo = computeRating({ ...base, result: 1, undo: 2 });
-    const manyUndos = computeRating({ ...base, result: 1, undo: 5 });
-    expect(firstUndo.delta).toBe(cleanWin.delta);
-    expect(secondUndo.delta).toBeLessThan(firstUndo.delta);
-    expect(manyUndos.delta).toBeLessThan(secondUndo.delta);
+  it('首次悔棋即转为训练，无论次数都不更新独立棋力', () => {
+    for (const result of [0, 0.5, 1]) {
+      for (const undo of [1, 2, 8]) {
+        expect(computeRating({ ...base, games: 7, result, undo }))
+          .toMatchObject({ excluded: 'assisted', delta: 0, rdAfter: base.deviation, games: 7 });
+      }
+    }
   });
 
   it('评级证据区分提示总次数与最终主线的采纳次数', () => {
@@ -125,56 +116,44 @@ describe('评级表现与辅助证据', () => {
   });
 
   it('没有实际证据时，辅助开关或空的提示记录不会改变评级', () => {
-    const noEvidence = ratingEvidence([{ uci: 'e2e4' }], 9);
+    const noEvidence = ratingEvidence([{ uci: 'e2e4' }], 0);
     const plain = computeRating({ ...base, result: 1 });
     const switchesOnly = computeRating({ ...base, result: 1, evidence: noEvidence });
 
     expect(noEvidence.independent).toBe(1);
-    expect(noEvidence.hints).toBe(9);
+    expect(noEvidence.hints).toBe(0);
     expect(noEvidence.dependence).toBe(0);
     expect(switchesOnly.delta).toBe(plain.delta);
     expect(switchesOnly.rdAfter).toBe(plain.rdAfter);
   });
 
-  it('越依赖辅助，胜棋加分越少但仍会结算；独立证据使定位更快收敛', () => {
-    const performance = ratingPerformance(samples(20, 50), samples(20, 50))!;
-    const independent = computeRating({
-      ...base,
-      result: 1,
-      performance,
-      evidence: evidenceWithDependence(0),
-    });
-    const dependent = computeRating({
-      ...base,
-      result: 1,
-      performance,
-      evidence: evidenceWithDependence(0.9),
-    });
-
-    expect(independent.delta).toBeGreaterThan(dependent.delta);
-    expect(dependent.delta).toBeGreaterThan(0);
-    expect(independent.calculation?.confidence).toBeGreaterThan(dependent.calculation?.confidence ?? 1);
-    expect(independent.rdAfter).toBeLessThan(dependent.rdAfter);
-  });
-
-  it('输棋的扣分不因提示后的悔棋次数而免除', () => {
-    const poorPerformance = ratingPerformance(samples(20, 80), samples(20, 50))!;
-    const oneUndo = computeRating({ ...base, result: 0, performance: poorPerformance, undo: 1 });
-    const manyUndos = computeRating({ ...base, result: 0, performance: poorPerformance, undo: 8 });
-
-    expect(oneUndo.delta).toBeLessThan(0);
-    expect(manyUndos.delta).toBe(oneUndo.delta);
-    expect(manyUndos.playerAfter).toBe(oneUndo.playerAfter);
-  });
-
-  it('评级说明包含表现、辅助证据、悔棋和定位依据', () => {
-    const performance = ratingPerformance(samples(20, 50), samples(20, 60))!;
-    const e = ratingEvidence([{ uci: 'e2e4', evidence: { hints: ['e2e4'] } }], 3);
-    const rating = computeRating({ ...base, result: 1, performance, evidence: e, undo: 2 });
-    const breakdown = ratingBreakdown(rating);
-
-    for (const phrase of ['有效着法', '准确率', '提示展示 3 次', '最终主线采纳 1 步', '悔棋 2 次', '扣分不减免', '不确定度']) {
-      expect(breakdown).toContain(phrase);
+  it('局势信息、推荐或局中分析均排除计分，包括未采纳的建议', () => {
+    for (const evidence of [evidenceWithDependence(0.9), ratingEvidence([{ uci: 'e2e4', evidence: { info: true } }], 0),
+      ratingEvidence([{ uci: 'e2e4', evidence: { hints: ['d2d4'] } }], 1),
+      ratingEvidence([{ uci: 'e2e4', evidence: { analysis: true } }], 0)]) {
+      for (const result of [0, 1]) {
+        expect(computeRating({ ...base, result, evidence }))
+          .toMatchObject({ excluded: 'assisted', delta: 0, rdAfter: base.deviation });
+      }
     }
+  });
+
+  it('被删除分支的曝光记录、提示次数与标准采样资格都保留', () => {
+    expect(computeRating({ ...base, result: 1, assists: { undo: 0, hint: 0, positions: { deleted: { best: ['e2e4'] } } } }).excluded).toBe('assisted');
+    expect(computeRating({ ...base, result: 1, assists: { undo: 0, hint: 1 } }).excluded).toBe('assisted');
+    for (const result of [0, 1]) {
+      expect(computeRating({ ...base, result, temperature: 0.8 })).toMatchObject({ excluded: 'sampling', delta: 0, rdAfter: 120 });
+      expect(computeRating({ ...base, result, temperature: 1 }).excluded).toBeUndefined();
+    }
+  });
+
+  it('新版说明解释独立估分与训练排除，历史仍保留旧说明', () => {
+    const clean = computeRating({ ...base, result: 1 });
+    for (const phrase of ['准确率不参与', '参考范围', '独立计分']) expect(ratingBreakdown(clean)).toContain(phrase);
+    const assisted = computeRating({ ...base, result: 1, undo: 1 });
+    expect(ratingBreakdown(assisted)).toContain('辅助训练');
+    expect(ratingBreakdown(assisted)).toContain('保持不变');
+    const legacy = { ...clean, method: undefined, calculation: { ...clean.calculation!, undo: 1 } };
+    expect(ratingBreakdown(legacy)).toContain('首次容错');
   });
 });

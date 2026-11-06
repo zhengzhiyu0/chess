@@ -1,3 +1,4 @@
+import { sanitizeRatingPeriod, type Glicko2Result } from './game/glicko2';
 import { isNative } from './native';
 import { readJson, removeStored, safeSet } from './storage';
 import { BOARD_THEMES, PIECE_SETS } from './app/appearance';
@@ -15,10 +16,15 @@ export interface Settings {
   playerElo: number;
   /** Player rating uncertainty; lower values mean a more stable estimate. */
   ratingDeviation: number;
+  /** Glicko-2 rating volatility, persisted between rating periods. */
+  ratingVolatility: number;
+  ratingPeriod: Glicko2Result[];
   /** Consecutive wins (positive) or losses (negative). */
   ratingStreak: number;
   /** Number of games rated so far, retained when migrating older settings. */
   ratedGames: number;
+  /** Independent result-only games since the current placement began (old scores are priors). */
+  independentGames: number;
   color: Color | 'random';
   temperature: number;
   /** Opt-in, device-local capture of committed Maia sampling decisions. */
@@ -123,8 +129,11 @@ export function defaultSettings(): Settings {
     elo: 1500,
     playerElo: 1500,
     ratingDeviation: 350,
+    ratingVolatility: 0.06,
+    ratingPeriod: [],
     ratingStreak: 0,
     ratedGames: 0,
+    independentGames: 0,
     color: 'w',
     temperature: 1,
     samplingCapture: false,
@@ -217,17 +226,20 @@ export const ELO_MAX = 2600;
 /** Fixed Maia opponent presets within the supported product range. */
 export const MAIA_LEVELS = [600, 800, 1000, 1200, 1400, 1500, 1600, 1800, 2000, 2200, 2400, 2600] as const;
 
-type Rule = { oneOf: readonly unknown[] } | { num: [number, number]; int?: boolean } | { bool: true } | { str: RegExp } | { optInt: true };
+type Rule = { finite: true; positive?: true } | { period: true } | { oneOf: readonly unknown[] } | { num: [number, number]; int?: boolean } | { bool: true } | { str: RegExp } | { optInt: true };
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const RULES: Record<keyof Settings, Rule> = {
   theme: { oneOf: ['dark', 'light'] },
   model: { oneOf: ['5m', '23m', '79m'] },
   elo: { num: [ELO_MIN, ELO_MAX], int: true },
-  playerElo: { num: [ELO_MIN, ELO_MAX], int: true },
-  ratingDeviation: { num: [60, 350] },
+  playerElo: { finite: true },
+  ratingDeviation: { finite: true, positive: true },
+  ratingVolatility: { finite: true, positive: true },
+  ratingPeriod: { period: true },
   ratingStreak: { num: [-8, 8], int: true },
   ratedGames: { num: [0, 1e9], int: true },
+  independentGames: { num: [0, 1e9], int: true },
   color: { oneOf: ['w', 'b', 'random'] },
   temperature: { num: [0, 1.5] },
   samplingCapture: { bool: true },
@@ -281,6 +293,8 @@ const RULES: Record<keyof Settings, Rule> = {
 };
 
 function valid(r: Rule, v: unknown): boolean {
+  if ('finite' in r) return typeof v === 'number' && Number.isFinite(v) && (!r.positive || v > 0);
+  if ('period' in r) return Array.isArray(v);
   if ('oneOf' in r) return r.oneOf.includes(v);
   if ('bool' in r) return typeof v === 'boolean';
   if ('str' in r) return typeof v === 'string' && r.str.test(v);
@@ -302,6 +316,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     const value = k === 'soundTheme' ? soundThemeOf(src[k]) : legacyElo ? src.maiaElo : src[k];
     if (valid(RULES[k], value)) out[k] = value;
   }
+  out.ratingPeriod = sanitizeRatingPeriod(src.ratingPeriod);
   // Keep migration here so local storage and imported backups share the same rules.
   if (src.gameType === 'coach') {
     for (const [current, legacy] of [
@@ -311,17 +326,12 @@ export function sanitizeSettings(raw: unknown): Settings {
       if (!Object.hasOwn(src, current) && typeof src[legacy] === 'boolean') out[current] = src[legacy];
     }
   }
-  if (src.playerElo === undefined) out.playerElo = out.elo;
   if (FIXED_NATIVE_ENGINES) {
     out.model = '79m';
     out.sfLite = false;
   }
   // Only the next-game setting is snapped; persisted games keep their original opponent.
   out.elo = MAIA_LEVELS.reduce<number>((nearest, level) => Math.abs(level - (out.elo as number)) < Math.abs(nearest - (out.elo as number)) ? level : nearest, MAIA_LEVELS[0]);
-  if (src.ratingDeviation === undefined) {
-    const games = out.ratedGames as number;
-    out.ratingDeviation = games === 0 ? 350 : games < 5 ? 250 : games < 15 ? 150 : 80;
-  }
   // Lia is the only active coach; keep the other portrait definitions for future use.
   out.coachAvatar = 0;
   return out as unknown as Settings;

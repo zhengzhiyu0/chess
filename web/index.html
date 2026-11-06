@@ -350,12 +350,9 @@
             <option value="79m">Maia-3 79M（312MB，最准）</option>
           </select>
         </label>
-        <label>我的棋力起点（修改后重新定位）
-          <input type="number" name="playerElo" min="0" max="2600" step="1" required />
-        </label>
-        <small class="muted">这是你的自估起点，默认 1500；标准对局结算后会自动更新棋力估计，不改变所选对手难度。有未完成对局也可修改；当前棋局保留原参数，旧局结束不会覆盖新起点。</small>
-        <p class="muted">对手固定难度、Maia 模型与随机性变更从新局生效。评级结合胜负、对手强弱和双方有效着法的准确率；辅助对局同样计分，按实际展示与采纳的提示、局势信息及分析记录调整加分和定位置信度。首次悔棋容错，后续悔棋逐步减少加分，扣分不减免。导入棋局和非标准起始局面不参与棋力定位。低于 600 的 Maia 水平为模型外推，不等同于正式赛事等级分。</p>
-        <button type="button" id="btn-rating-reset">重置棋力分</button>
+        <small class="muted">棋力自动定位，无需填写起点。每满 10 局独立计分对局，使用 Glicko-2 统一更新估分；定位完成前显示周期进度，不改变所选对手难度。</small>
+        <p class="muted">对手固定难度、Maia 模型与随机性变更从新局生效。独立对局只按胜负与对手等级估分，准确率不参与加减分。评估条和胜率显示不影响计分；实际展示提示、最佳着法、威胁、受攻击棋子提示或局中分析，或使用任何一次悔棋后，本局作为训练，胜负都不计分；仅打开开关而未展示辅助信息不影响计分。计分要求随机性为标准值 1、标准初始局面且非导入棋谱。分数是相对 Maia 的本地估计，个人页显示暂定状态与参考范围，尚未校准为真人平台或赛事 Elo。</p>
+        <button type="button" id="btn-rating-reset">重新定位棋力</button>
         <label>我执
           <select name="color">
             <option value="w">白棋</option>

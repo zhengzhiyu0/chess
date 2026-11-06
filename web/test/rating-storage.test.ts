@@ -17,10 +17,10 @@ const adapter = {
 };
 installStorageAdapter(adapter);
 
-const rating = computeRating({ result: 1, playerElo: 1420, opponentElo: 1600, deviation: 150, streak: 1 });
+const rating = computeRating({ result: 1, playerElo: 1420, opponentElo: 1600, deviation: 150, streak: 1, games: 19, period: Array.from({ length: 9 }, () => ({ rating: 1600, deviation: 0, score: 0.5 })) });
 const game: StoredGame = {
   id: 'rated-game', date: 100, startFen: START_FEN, tree: {}, userColor: 'w', result: '1-0',
-  elo: 1600, playerElo: 1420, ratingDeviation: 150, ratingStreak: 1,
+  elo: 1600, playerElo: 1420, ratingDeviation: 150, ratingVolatility: 0.057, ratingStreak: 1, independentGames: 4,
   temperature: 0.8, model: '23m', eloAfter: rating.playerAfter, rating,
   assists: { undo: 0, hint: 0 },
 };
@@ -32,12 +32,23 @@ const backupData = (settings: Partial<Settings>, history: StoredGame[] = []): Ba
 beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
 
 describe('persisted rating snapshots', () => {
+  it('preserves full-precision and out-of-preset player ratings through history and backup', () => {
+    const full = { ...game, playerElo: 2800.123456789, ratingDeviation: 0.75, ratingVolatility: 0.047123,
+      eloAfter: 2810.987654321, rating: { ...rating, playerBefore: 2800.123456789, playerAfter: 2810.987654321,
+        delta: 10.864197532, rdBefore: 0.75, rdAfter: 0.7 } };
+    expect(sanitizeGame(full)).toEqual(full);
+    const state = backupData({ playerElo: -12.3456789, ratingDeviation: 410.5, ratingVolatility: 0.047123 }, [full]);
+    expect(parseBackup(JSON.stringify(makeBackup(state, 'test'))).data).toEqual(state);
+  });
   it('keeps old-baseline settlements and skipped games out of the profile rating trend', () => {
     const separate = sanitizeGame({ ...game, ratingApplied: false })!;
     const skipped = sanitizeGame({ ...game, ratingSkipped: true })!;
     expect(separate.ratingApplied).toBe(false);
     expect(skipped.ratingSkipped).toBe(true);
-    expect(ratingHistory([separate, skipped, game])).toEqual([{ date: game.date, rating: rating.playerAfter }]);
+    const trainingRating = computeRating({ result: 1, playerElo: 1420, opponentElo: 1600, deviation: 150, streak: 1, undo: 1, games: 4 });
+    const training = sanitizeGame({ ...game, rating: trainingRating, eloAfter: trainingRating.playerAfter })!;
+    expect(training.rating).toEqual(trainingRating);
+    expect(ratingHistory([separate, skipped, training, game])).toEqual([{ date: game.date, rating: rating.playerAfter }]);
   });
   it('validates and round-trips the current cursor and board orientation', () => {
     const restored = sanitizeGame({ ...game, result: '', flipped: true, cursor: [1, 0, 2], mode: 'review' });
@@ -87,10 +98,12 @@ describe('persisted rating snapshots', () => {
   it('drops malformed optional snapshots without rejecting the game', () => {
     const invalid: Record<string, unknown[]> = {
       elo: [-1, 2601, 1000.5, Infinity, '1600'],
-      eloAfter: [-1, 2601, NaN, '1500'],
-      playerElo: [-1, 2601, 1000.5, NaN, null, '1420'],
-      ratingDeviation: [59, 351, Infinity, null, '150'],
+      eloAfter: [NaN, Infinity, '1500'],
+      playerElo: [NaN, Infinity, null, '1420'],
+      ratingDeviation: [0, -1, Infinity, null, '150'],
+      ratingVolatility: [0, -1, Infinity, null, "0.06"],
       ratingStreak: [-9, 9, 1.5, NaN, '-2'],
+      independentGames: [-1, 1.5, Infinity, '4'],
       temperature: [-0.1, 1.6, Infinity, null, '0.8'],
     };
     for (const [field, values] of Object.entries(invalid)) {
@@ -105,15 +118,15 @@ describe('persisted rating snapshots', () => {
   });
 
   it('requires a complete, bounded new rating record and keeps eloAfter if it is invalid', () => {
-    for (const field of Object.keys(rating)) {
+    for (const field of ['delta', 'result', 'expected', 'playerBefore', 'playerAfter', 'opponent', 'rdBefore', 'rdAfter', 'streak']) {
       const missing = { ...rating } as Record<string, unknown>;
       delete missing[field];
       expect(sanitizeGame({ ...game, rating: missing })).not.toHaveProperty('rating');
     }
     const invalid: Record<string, unknown[]> = {
-      delta: [Infinity, 2601, -2601, 0.5], result: [-1, 0.25, 2], expected: [-0.01, 1.01, NaN],
-      playerBefore: [-1, 2601], playerAfter: [-1, 2601], opponent: [-1, 2601],
-      rdBefore: [59, 351], rdAfter: [59, 351], streak: [-9, 9, 0.5],
+      delta: [Infinity, NaN, null, "1"], result: [-1, 0.25, 2], expected: [-0.01, 1.01, NaN],
+      playerBefore: [NaN, Infinity], playerAfter: [NaN, Infinity], opponent: [-1, 2601],
+      rdBefore: [0, -1], rdAfter: [0, -1], streak: [-9, 9, 0.5],
     };
     for (const [field, values] of Object.entries(invalid)) {
       for (const value of values) {
@@ -172,7 +185,7 @@ describe('rating backups', () => {
     });
     const { data, skipped } = parseBackup(file);
     expect(skipped).toBe(0);
-    expect(data.settings).toMatchObject({ elo: 1800, playerElo: 1810, ratedGames: 19, ratingDeviation: 80, ratingStreak: 0 });
+    expect(data.settings).toMatchObject({ elo: 1800, playerElo: 1500, ratedGames: 19, independentGames: 0, ratingDeviation: 350, ratingStreak: 0 });
     expect(data.settings).not.toHaveProperty('autoElo');
     expect(data.history[0].eloAfter).toBe(1860);
     expect(data.history[0]).not.toHaveProperty('rating');
@@ -194,12 +207,13 @@ describe('rating backups', () => {
   });
 
   it('merges more advanced player progress as one unit while keeping the current fixed opponent', () => {
-    const newer = backupData({ elo: 1800, playerElo: 1690, ratingDeviation: 83.25, ratingStreak: -2, ratedGames: 30, theme: 'light' }, [game]);
+    const ratingPeriod = [{ rating: 1600, deviation: 0, score: 1 }, { rating: 1800, deviation: 0, score: 0.5 }];
+    const newer = backupData({ elo: 1800, playerElo: 1690, ratingDeviation: 83.25, ratingVolatility: 0.072, ratingPeriod, ratingStreak: -2, ratedGames: 30, independentGames: 12, theme: 'light' }, [game]);
     const older = backupData({ elo: 1400, playerElo: 1250, ratingDeviation: 270, ratingStreak: 1, ratedGames: 2, theme: 'dark' }, [{ ...game, id: 'older-game', date: 90 }]);
     const { data: restored, skipped } = parseBackup(JSON.stringify(makeBackup(newer, 'test')));
     expect(skipped).toBe(0);
     expect(restored).toEqual(newer);
-    const progress = { playerElo: 1690, ratingDeviation: 83.25, ratingStreak: -2, ratedGames: 30 };
+    const progress = { playerElo: 1690, ratingDeviation: 83.25, ratingVolatility: 0.072, ratingPeriod, ratingStreak: -2, ratedGames: 30, independentGames: 12 };
     const merged = mergeBackup(older, restored);
     expect(merged.settings).toMatchObject({ ...progress, elo: 1400, theme: 'dark' });
     expect(merged.history.map((g) => g.id)).toEqual(['rated-game', 'older-game']);

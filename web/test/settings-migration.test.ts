@@ -176,12 +176,12 @@ describe('independent assistance migration', () => {
 describe('separate player rating migration', () => {
   beforeEach(async () => { mem.clear(); installStorageAdapter(adapter); await bootstrapStorage(); });
 
-  it.each([[0, 350], [1, 250], [4, 250], [5, 150], [14, 150], [15, 80], [90, 80]])(
-    'retains %i rated games and assigns legacy uncertainty %i',
+  it.each([[0, 350], [1, 350], [4, 350], [5, 350], [14, 350], [15, 350], [90, 350]])(
+    'retains %i rated games and uses the default uncertainty without inventing %i',
     (ratedGames, ratingDeviation) => {
       const legacy = { elo: 1820, ratedGames, autoElo: false };
       mem.set(KEY, JSON.stringify(legacy));
-      const expected = { elo: 1800, playerElo: 1820, ratedGames, ratingDeviation, ratingStreak: 0 };
+      const expected = { elo: 1800, playerElo: 1500, ratedGames, ratingDeviation, ratingStreak: 0 };
       expect(loadSettings()).toMatchObject(expected);
       expect(sanitizeSettings(legacy)).toMatchObject(expected);
       expect(loadSettings()).not.toHaveProperty('autoElo');
@@ -191,14 +191,14 @@ describe('separate player rating migration', () => {
 
   it('migrates the earlier Maia field through the backup sanitizer too', () => {
     const migrated = sanitizeSettings({ maiaElo: 1230, myElo: 900, ratedGames: 8 });
-    expect(migrated).toMatchObject({ elo: 1200, playerElo: 1230, ratingDeviation: 150, ratedGames: 8 });
+    expect(migrated).toMatchObject({ elo: 1200, playerElo: 1500, ratingDeviation: 350, ratedGames: 8 });
     expect(migrated).not.toHaveProperty('maiaElo');
     expect(migrated).not.toHaveProperty('myElo');
-    expect(sanitizeSettings({ elo: 1600, maiaElo: 1230 }).playerElo).toBe(1600);
+    expect(sanitizeSettings({ elo: 1600, maiaElo: 1230 }).playerElo).toBe(1500);
   });
 
   it('keeps independent ratings and uncertainty over repeated saves and loads', () => {
-    const settings = { ...defaultSettings(), elo: 1800, playerElo: 1682, ratingDeviation: 91.25, ratingStreak: -3, ratedGames: 27 };
+    const settings = { ...defaultSettings(), elo: 1800, playerElo: 2682.123456789, ratingDeviation: 0.75, ratingStreak: -3, ratedGames: 27 };
     saveSettings(settings);
     for (let i = 0; i < 3; i++) {
       const loaded = loadSettings();
@@ -209,12 +209,12 @@ describe('separate player rating migration', () => {
 
   it('defaults malformed rating fields without discarding valid progress', () => {
     const d = defaultSettings();
-    for (const value of [null, '1200', -1, 2601, 1500.5, NaN, Infinity]) {
+    for (const value of [null, '1200', NaN, Infinity]) {
       expect(sanitizeSettings({ elo: 1800, playerElo: value, ratedGames: 31 })).toMatchObject({
-        elo: 1800, playerElo: d.playerElo, ratedGames: 31, ratingDeviation: 80,
+        elo: 1800, playerElo: d.playerElo, ratedGames: 31, ratingDeviation: 350,
       });
     }
-    for (const value of [null, '80', 59, 351, NaN, Infinity]) {
+    for (const value of [null, '80', 0, -1, NaN, Infinity]) {
       expect(sanitizeSettings({ ratingDeviation: value, ratedGames: 31 })).toMatchObject({ ratingDeviation: d.ratingDeviation, ratedGames: 31 });
     }
     for (const value of [null, '-3', -9, 9, 0.5, NaN, Infinity]) {
@@ -222,6 +222,26 @@ describe('separate player rating migration', () => {
     }
     for (const value of [-1, 1.5, Infinity, '30']) {
       expect(sanitizeSettings({ ratedGames: value })).toMatchObject({ ratedGames: 0, ratingDeviation: 350 });
+    }
+  });
+
+  it('persists Glicko-2 volatility, defaults legacy state and rejects malformed volatility', () => {
+    expect(sanitizeSettings({ playerElo: 771 }).ratingVolatility).toBe(0.06);
+    const settings = sanitizeSettings({ ratingVolatility: 0.071234, ratingDeviation: 35 });
+    saveSettings(settings);
+    expect(loadSettings()).toMatchObject({ ratingVolatility: 0.071234, ratingDeviation: 35 });
+    for (const value of [null, '0.06', 0, -1, Infinity, NaN]) {
+      expect(sanitizeSettings({ ratingVolatility: value }).ratingVolatility).toBe(0.06);
+    }
+  });
+
+  it('preserves an incomplete rating period and rejects corrupt period data as a unit', () => {
+    const ratingPeriod = [{ rating: 600, deviation: 0, score: 1 }, { rating: 800, deviation: 0, score: 0.5 }];
+    saveSettings(sanitizeSettings({ ratingPeriod, independentGames: 2 }));
+    expect(loadSettings().ratingPeriod).toEqual(ratingPeriod);
+    for (const value of [null, {}, Array(10).fill(ratingPeriod[0]), [{ rating: 600, deviation: 0, score: 0.2 }],
+      [{ rating: 600, deviation: 30, score: 1 }], [{ rating: -1, deviation: 0, score: 1 }]]) {
+      expect(sanitizeSettings({ ratingPeriod: value }).ratingPeriod).toEqual([]);
     }
   });
 
@@ -235,7 +255,7 @@ describe('separate player rating migration', () => {
     for (const [old, level] of [[1810, 1800], [1740, 1800], [1450, 1400], [1499, 1500], [20, 600], [420, 600]]) {
       const settings = sanitizeSettings({ elo: old, autoElo: false });
       expect(settings.elo).toBe(level);
-      expect(settings.playerElo).toBe(old);
+      expect(settings.playerElo).toBe(1500);
       expect(settings).not.toHaveProperty('autoElo');
     }
     expect(sanitizeSettings({ elo: 1810, playerElo: 1682 })).toMatchObject({ elo: 1800, playerElo: 1682 });

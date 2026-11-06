@@ -1,5 +1,6 @@
-// Local training rating: Glicko-1 result baseline plus bounded move-quality evidence.
+// Local Elo estimate relative to Maia presets, using result-only Glicko-2 updates.
 import { moveAccuracy } from '../coach/coach';
+import { DEFAULT_VOLATILITY, RATING_PERIOD_GAMES, glicko2Expected, updateGlicko2, type Glicko2Result } from './glicko2';
 
 export interface Assists {
   undo: number;
@@ -70,6 +71,14 @@ export interface RatingInfo {
   streak: number;
   abandoned?: boolean;
   calculation?: RatingCalculation;
+  /** Missing on historical settlements, which keep their original explanation. */
+  method?: 'result-v2' | 'glicko2-v1' | 'glicko2-period-v1';
+  period?: Glicko2Result[];
+  periodCompleted?: boolean;
+  volatilityBefore?: number;
+  volatilityAfter?: number;
+  excluded?: 'assisted' | 'sampling';
+  games?: number;
 }
 
 export const emptyAssists = (): Assists => ({ undo: 0, hint: 0 });
@@ -102,6 +111,19 @@ export function ratingEvidence(moves: { uci: string; evidence?: MoveEvidence }[]
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
+/** Check the whole exposure ledger, including branches removed by takebacks. */
+export function hasRatingAssistance(a?: Assists, e?: RatingEvidence): boolean {
+  return Boolean(assistCount(a) || e && (e.hints || e.informed || e.suggested || e.analysis || e.dependence)
+    || Object.values(a?.positions ?? {}).some(p => p.info || p.analysis || p.reconsidered || p.hints?.length || p.best?.length));
+}
+
+export function ratingEstimate(elo: number, deviation: number, games: number, levels: readonly number[]) {
+  const low = Math.floor((elo - 2 * deviation) / 10) * 10;
+  const high = Math.ceil((elo + 2 * deviation) / 10) * 10;
+  const opponent = levels.reduce((best, level) => Math.abs(level - elo) < Math.abs(best - elo) ? level : best, levels[0]);
+  return { low, high, opponent, provisional: games < 10 || deviation > 100 };
+}
+
 /** Ignore forced moves and already decided positions, which inflate accuracy cheaply. */
 export function ratingPerformance(player: PerformanceSample[], opponent: PerformanceSample[]): RatingPerformance | undefined {
   const useful = (samples: PerformanceSample[]) => samples.filter(s => !s.forced
@@ -125,42 +147,47 @@ export function computeRating(o: {
   playerElo: number;
   opponentElo: number;
   deviation: number;
+  volatility?: number;
   streak: number;
   abandoned?: boolean;
   performance?: RatingPerformance;
   undo?: number;
   evidence?: RatingEvidence;
+  assists?: Assists;
+  temperature?: number;
+  games?: number;
+  period?: readonly Glicko2Result[];
 }): RatingInfo {
   const result = o.abandoned ? 0 : o.result;
-  const confidence = Math.max(0.1, 1 - (o.evidence?.dependence ?? 0));
+  const excluded = hasRatingAssistance(o.assists ?? { undo: o.undo ?? 0, hint: 0 }, o.evidence) ? 'assisted'
+    : o.temperature !== undefined && Math.abs(o.temperature - 1) > 1e-9 ? 'sampling' : undefined;
   const direction = result === 1 ? 1 : result === 0 ? -1 : 0;
-  const streak = confidence < 0.5 ? 0 : clamp(direction === 0 ? 0 : Math.sign(o.streak) === direction ? o.streak + direction : direction, -8, 8);
-  // Project heuristic, not official Glicko: sustained results reopen placement.
-  const rdBefore = Math.max(clamp(o.deviation, 60, 350), Math.abs(streak) >= 3 ? 180 : 60);
-  const q = Math.log(10) / 400;
-  const expected = 1 / (1 + 10 ** ((o.opponentElo - o.playerElo) / 400));
+  const streak = excluded ? o.streak : clamp(direction === 0 ? 0 : Math.sign(o.streak) === direction ? o.streak + direction : direction, -8, 8);
+  const rdBefore = o.deviation;
+  const volatilityBefore = o.volatility ?? DEFAULT_VOLATILITY;
+  const expected = glicko2Expected(o.playerElo, o.opponentElo, 0);
   const p = o.performance;
-  // At most 40% performance evidence; short games contribute proportionally less.
-  const weight = p ? 0.4 * clamp(Math.min(p.playerMoves, p.opponentMoves) / 20, 0, 1) * confidence : 0;
-  const quality = p ? clamp(0.5 + (p.playerAccuracy - p.opponentAccuracy) / 100, 0, 1) : result;
-  let score = result * (1 - weight) + quality * weight;
-  if (result === 1) score = Math.max(expected, score);
-  if (result === 0) score = Math.min(expected, score);
-  const precision = 1 / rdBefore ** 2 + q ** 2 * expected * (1 - expected);
-  const rdAfter = clamp(Math.sqrt(1 / (1 / rdBefore ** 2 + confidence * q ** 2 * expected * (1 - expected))), 60, 350);
-  const baseDelta = Math.round(q / precision * (score - expected));
-  const undo = Math.max(0, Math.floor(o.undo ?? 0));
-  // One accidental takeback is free. Further takebacks reduce gains, never erase losses.
-  const undoFactor = 1 / (1 + 0.25 * Math.max(0, undo - 1));
-  const change = baseDelta > 0 ? Math.round(baseDelta * undoFactor * confidence) : baseDelta;
-  const playerAfter = clamp(o.playerElo + change, 0, 2600);
+  const results = [...(o.period ?? []), ...(!excluded ? [{ rating: o.opponentElo, deviation: 0, score: result }] : [])];
+  const periodCompleted = !excluded && results.length === RATING_PERIOD_GAMES;
+  // Every result uses the same pre-period state; incomplete periods never change it.
+  const updated = !periodCompleted ? { rating: o.playerElo, deviation: rdBefore, volatility: volatilityBefore }
+    : updateGlicko2({ rating: o.playerElo, deviation: rdBefore,
+      volatility: volatilityBefore }, results);
+  const rdAfter = updated.deviation;
+  const baseDelta = updated.rating - o.playerElo;
+  const undo = Math.max(0, Math.floor(o.assists?.undo ?? o.undo ?? 0));
+  const playerAfter = updated.rating;
   return {
     delta: playerAfter - o.playerElo, result, expected,
     playerBefore: o.playerElo, playerAfter, opponent: o.opponentElo,
     rdBefore, rdAfter, streak,
+    method: 'glicko2-period-v1', volatilityBefore, volatilityAfter: updated.volatility,
+    period: periodCompleted ? [] : results, periodCompleted,
+    games: (o.games ?? 0) + (excluded ? 0 : 1),
+    ...(excluded ? { excluded } : {}),
     ...(o.abandoned ? { abandoned: true } : {}),
-    ...(p || o.undo !== undefined || o.evidence ? { calculation: { score, weight, ...(p ? { performance: p } : {}), undo, undoFactor, baseDelta,
-      ...(o.evidence ? { evidence: o.evidence, confidence } : {}) } } : {}),
+    calculation: { score: result, weight: 0, ...(p ? { performance: p } : {}), undo, undoFactor: excluded ? 0 : 1, baseDelta,
+      ...(o.evidence ? { evidence: o.evidence } : {}) },
   };
 }
 
@@ -171,6 +198,23 @@ export function ratingBreakdown(r: RatingInfo): string {
     `预期得分率 ${(r.expected * 100).toFixed(0)}%`,
   ];
   const c = r.calculation;
+  if (r.method === 'result-v2' || r.method === 'glicko2-v1' || r.method === 'glicko2-period-v1') {
+    if (r.excluded) {
+      parts.push(r.excluded === 'assisted' ? '辅助训练：使用了提示、悔棋或局中辅助，不计入独立棋力'
+        : '训练对局：Maia 随机性不是标准值 1，不计入棋力');
+      parts.push('棋力估计与不确定度保持不变');
+    } else {
+      const estimate = ratingEstimate(r.playerAfter, r.rdAfter, r.games ?? 0, [r.opponent]);
+      parts.push(`${r.method?.startsWith('glicko2') ? 'Glicko-2：' : ''}按胜负与对手等级结算，准确率不参与加减分`,
+        `${estimate.provisional ? '暂定估计' : '棋力估计'}，参考范围 ${estimate.low}–${estimate.high}`,
+        `已完成 ${r.games ?? 0} 局独立计分对局`);
+      if (r.method === 'glicko2-period-v1') parts.push(r.periodCompleted ? '本周期 10/10 局，已统一更新棋力'
+        : `本周期 ${r.period?.length ?? 0}/10 局，再完成 ${10 - (r.period?.length ?? 0)} 局后统一更新棋力`);
+      if (Math.abs(r.playerAfter - r.opponent) > 200) parts.push('建议挑战更接近当前估分的 Maia 档位，以缩小估计范围');
+    }
+    if (r.abandoned) parts.push('中途离开，按认输记录');
+    return parts.join(' · ');
+  }
   if (c?.performance) {
     const p = c.performance;
     parts.push(`有效着法 ${p.playerMoves} / ${p.opponentMoves} 步，准确率 ${p.playerAccuracy.toFixed(1)}% / ${p.opponentAccuracy.toFixed(1)}%（我 / Maia）`,

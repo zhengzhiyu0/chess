@@ -1,95 +1,74 @@
 import { describe, expect, it } from 'vitest';
-import { assistCount, computeRating, emptyAssists } from '../src/game/rating';
+import { computeRating, ratingBreakdown, ratingEstimate } from '../src/game/rating';
+import { updateGlicko2, type Glicko2Result } from '../src/game/glicko2';
 
-describe('独立棋力评级', () => {
-  const base = { playerElo: 1500, opponentElo: 1500, deviation: 80, streak: 0 };
+const base = { playerElo: 1500, opponentElo: 1500, deviation: 350, volatility: 0.06, streak: 0 };
+const draws = (n: number): Glicko2Result[] => Array.from({ length: n }, () => ({ rating: 1500, deviation: 0, score: 0.5 }));
 
-  it('相同分数的新玩家单局定位符合已知数值基准', () => {
-    const loss = computeRating({ ...base, deviation: 350, result: 0 });
-    expect(loss.playerAfter).toBe(1325);
-    expect(loss.rdAfter).toBeCloseTo(246.575715, 5);
-    expect(computeRating({ ...base, deviation: 350, result: 1 }).playerAfter).toBe(1675);
-  });
-
-  it('战胜强手收益更多，负于弱手损失更多', () => {
-    const strongWin = computeRating({ ...base, opponentElo: 1800, result: 1 });
-    const weakWin = computeRating({ ...base, opponentElo: 1200, result: 1 });
-    expect(strongWin.delta).toBeGreaterThan(weakWin.delta);
-    expect(weakWin.delta).toBeGreaterThan(0);
-    expect(strongWin.expected).toBeLessThan(weakWin.expected);
-    const strongLoss = computeRating({ ...base, opponentElo: 1800, result: 0 });
-    const weakLoss = computeRating({ ...base, opponentElo: 1200, result: 0 });
-    expect(weakLoss.delta).toBeLessThan(strongLoss.delta);
-    expect(strongLoss.delta).toBeLessThan(0);
-  });
-
-  it('和棋取决于对手强弱，并清除连胜负', () => {
-    expect(computeRating({ ...base, result: 0.5 }).delta).toBe(0);
-    expect(computeRating({ ...base, opponentElo: 1800, result: 0.5 }).delta).toBeGreaterThan(0);
-    expect(computeRating({ ...base, opponentElo: 1200, result: 0.5 }).delta).toBeLessThan(0);
-    const draw = computeRating({ ...base, streak: 7, result: 0.5 });
-    expect(draw.streak).toBe(0);
-    expect(draw.rdBefore).toBe(80);
-  });
-
-  it('定位阶段调整更快，交替胜负逐渐稳定', () => {
-    expect(computeRating({ ...base, deviation: 350, result: 1 }).delta)
-      .toBeGreaterThan(computeRating({ ...base, result: 1 }).delta);
-    let playerElo = 1500;
-    let deviation = 350;
-    let streak = 0;
-    for (let i = 0; i < 40; i++) {
-      const r = computeRating({ playerElo, opponentElo: playerElo, deviation, streak, result: i % 2 === 0 ? 1 : 0 });
-      expect(Math.abs(r.streak)).toBe(1);
-      expect(r.rdAfter).toBeLessThanOrEqual(deviation);
-      playerElo = r.playerAfter;
-      deviation = r.rdAfter;
-      streak = r.streak;
+describe('10-game Glicko-2 rating periods', () => {
+  it('holds rating, RD and volatility for games one through nine and updates all ten together', () => {
+    let period: Glicko2Result[] = [];
+    for (let games = 0; games < 9; games++) {
+      const r = computeRating({ ...base, result: 1, games, period });
+      expect(r).toMatchObject({ playerAfter: 1500, rdAfter: 350, volatilityAfter: 0.06, games: games + 1, periodCompleted: false });
+      expect(r.period).toHaveLength(games + 1);
+      period = r.period!;
     }
-    expect(deviation).toBeLessThan(100);
-    expect(deviation).toBeGreaterThanOrEqual(60);
+    const r = computeRating({ ...base, result: 0, games: 9, period });
+    const expected = updateGlicko2({ rating: 1500, deviation: 350, volatility: 0.06 }, [...period, { rating: 1500, deviation: 0, score: 0 }]);
+    expect(r).toMatchObject({ method: 'glicko2-period-v1', period: [], periodCompleted: true, games: 10 });
+    expect(r.playerAfter).toBe(expected.rating);
+    expect(r.rdAfter).toBe(expected.deviation);
+    expect(r.volatilityAfter).toBe(expected.volatility);
+    expect(ratingBreakdown(r)).toContain('10/10');
   });
 
-  it('第三次同向结果重新定位，反向结果重置连胜负', () => {
-    for (const direction of [-1, 1]) {
-      const result = direction === 1 ? 1 : 0;
-      const second = computeRating({ ...base, streak: direction, result });
-      const third = computeRating({ ...base, streak: direction * 2, result });
-      expect(second.rdBefore).toBe(80);
-      expect(third.rdBefore).toBe(180);
-      expect(Math.abs(third.delta)).toBeGreaterThan(Math.abs(second.delta));
-      expect(third.streak).toBe(direction * 3);
-      expect(computeRating({ ...base, streak: direction * 6, result: 1 - result }).streak).toBe(-direction);
+  it('uses each opponent and result in the period, independent of result order', () => {
+    const prior = [...draws(7), { rating: 1800, deviation: 0, score: 1 }, { rating: 1200, deviation: 0, score: 0 }];
+    const a = computeRating({ ...base, games: 19, period: prior, result: 0.5 });
+    const b = computeRating({ ...base, games: 19, period: [...prior].reverse(), result: 0.5 });
+    expect(a.playerAfter).toBe(b.playerAfter);
+    expect(a.rdAfter).toBeCloseTo(b.rdAfter, 10);
+    expect(a.volatilityAfter).toBeCloseTo(b.volatilityAfter!, 10);
+  });
+
+  it('training wins and losses preserve a nine-game period and all rating state', () => {
+    for (const result of [0, 1]) for (const patch of [{ undo: 1 }, { temperature: 0.8 }, { assists: { undo: 0, hint: 1 } }]) {
+      const r = computeRating({ ...base, deviation: 80, games: 19, period: draws(9), result, ...patch });
+      expect(r).toMatchObject({ playerAfter: 1500, rdAfter: 80, volatilityAfter: 0.06, games: 19, periodCompleted: false, delta: 0 });
+      expect(r.period).toEqual(draws(9));
     }
   });
 
-  it('分数、不确定度和连胜负保持边界，delta是实际变化', () => {
-    for (const [playerElo, result, streak] of [[2600, 1, 8], [0, 0, -8]]) {
-      const r = computeRating({ playerElo, opponentElo: playerElo, deviation: 999, streak, result });
-      expect(r.playerAfter).toBe(playerElo);
-      expect(r.delta).toBe(0);
-      expect(r.streak).toBe(streak);
-      expect(r.rdBefore).toBe(350);
-      expect(r.rdAfter).toBeLessThanOrEqual(350);
-    }
-    const low = computeRating({ ...base, deviation: 1, result: 0.5 });
-    expect(low.rdBefore).toBe(60);
-    expect(low.rdAfter).toBe(60);
-    const win = computeRating({ ...base, result: 1 });
-    expect(win.delta).toBe(win.playerAfter - win.playerBefore);
+  it('starts a new period from the settled state and carries volatility', () => {
+    const settled = computeRating({ ...base, result: 1, games: 9, period: draws(9) });
+    const next = computeRating({ ...base, playerElo: settled.playerAfter, deviation: settled.rdAfter,
+      volatility: settled.volatilityAfter, games: 10, period: settled.period, result: 0 });
+    expect(next.playerAfter).toBe(settled.playerAfter);
+    expect(next.rdAfter).toBe(settled.rdAfter);
+    expect(next.volatilityAfter).toBe(settled.volatilityAfter);
+    expect(next.period).toHaveLength(1);
+    expect(ratingBreakdown(next)).toContain('1/10');
   });
 
-  it('放弃仅按认输，不额外处罚', () => {
-    const loss = computeRating({ ...base, result: 0 });
-    const abandoned = computeRating({ ...base, result: 1, abandoned: true });
-    expect(abandoned).toEqual({ ...loss, abandoned: true });
+  it('streak count does not change the batch calculation and abandonment is an ordinary loss', () => {
+    const loss = computeRating({ ...base, result: 0, games: 9, period: draws(9) });
+    expect(computeRating({ ...base, result: 1, abandoned: true, games: 9, period: draws(9) })).toEqual({ ...loss, abandoned: true });
+    expect(computeRating({ ...base, result: 0, games: 9, period: draws(9), streak: 8 }).playerAfter).toBe(loss.playerAfter);
   });
 
+  it('keeps the rating range and opponent recommendation explicit', () => {
+    expect(ratingEstimate(771, 143, 4, [600, 800, 1000])).toEqual({ low: 480, high: 1060, opponent: 800, provisional: true });
+  });
 
-  it('保留辅助使用记录但不参与评级', () => {
-    expect(assistCount(undefined)).toBe(0);
-    expect(assistCount(emptyAssists())).toBe(0);
-    expect(emptyAssists()).toEqual({ undo: 0, hint: 0 });
-    expect(assistCount({ undo: 3, hint: 1, aids: true, best: true })).toBe(6);
+  it('preserves fractional state across periods and never resets RD from the game count', () => {
+    const state = { ...base, playerElo: 1512.3456789, deviation: 0.8, volatility: 0.047123 };
+    const results = [...draws(9), { rating: 1500, deviation: 0, score: 1 }];
+    const expected = updateGlicko2({ rating: state.playerElo, deviation: state.deviation, volatility: state.volatility }, results);
+    const r = computeRating({ ...state, games: 9, period: draws(9), result: 1 });
+    expect(r.playerAfter).toBe(expected.rating);
+    expect(r.rdAfter).toBe(expected.deviation);
+    expect(r.volatilityAfter).toBe(expected.volatility);
+    expect(ratingEstimate(2800, 400, 20, [600, 2600])).toMatchObject({ low: 2000, high: 3600 });
   });
 });
